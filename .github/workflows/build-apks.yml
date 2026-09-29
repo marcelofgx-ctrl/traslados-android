@@ -1,5 +1,5 @@
-# ACTUALIZADO: 2026-09-29 13:58 (Uruguay, UTC-3)
-# VERSION: build-apks-v6-fix-aceptar-sin-base64-manual
+# ACTUALIZADO: 2026-09-29 14:06 (Uruguay, UTC-3)
+# VERSION: build-apks-v7-fix-aceptar-robusto
 
 name: Build Traslados APKs
 
@@ -69,23 +69,17 @@ jobs:
           p = Path("conductor/src/main/java/uy/com/traslados/conductor/Api.java")
           s = p.read_text()
 
-          old = '''        if(body!=null){
-              c.setDoOutput(true); c.setRequestProperty("Content-Type","application/json");
-              try(OutputStream os=c.getOutputStream()){os.write(body.getBytes("UTF-8"));}
-          }
-          if("PATCH".equals(method)) c.setRequestProperty("Prefer","return=representation");'''
+          prefer = '        if("PATCH".equals(method)) c.setRequestProperty("Prefer","return=representation");'
+          anchor = '        if(body!=null){'
 
-          new = '''        if("PATCH".equals(method)) c.setRequestProperty("Prefer","return=representation");
-          if(body!=null){
-              c.setRequestProperty("Content-Type","application/json");
-              c.setDoOutput(true);
-              try(OutputStream os=c.getOutputStream()){os.write(body.getBytes("UTF-8"));}
-          }'''
+          if prefer not in s:
+              raise SystemExit("No se encontró la línea Prefer en Api.java")
+          if anchor not in s:
+              raise SystemExit("No se encontró el bloque body en Api.java")
 
-          if old not in s:
-              raise SystemExit("No se encontró el bloque HTTP esperado en Api.java")
-
-          p.write_text(s.replace(old, new, 1))
+          s = s.replace(prefer, '', 1)
+          s = s.replace(anchor, prefer + "\n" + anchor, 1)
+          p.write_text(s)
           print("Api.java corregido")
           PY
 
@@ -102,6 +96,6 @@ jobs:
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-APKs-v6
+          name: Traslados-APKs-v7
           path: artifacts/*.apk
           if-no-files-found: error
