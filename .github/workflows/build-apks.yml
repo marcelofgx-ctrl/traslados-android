@@ -537,7 +537,7 @@ jobs:
       - name: Verify Cliente v8.3
         shell: bash
         run: |
-          grep -q "versionName '8.3'" cliente/build.gradle
+          grep -q "versionName '8.4'" cliente/build.gradle
           grep -q "¡Reserva enviada!" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
           grep -q "log_app_event" cliente/src/main/java/uy/com/traslados/cliente/Api.java
           grep -q "USAR ESTA UBICACIÓN" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
