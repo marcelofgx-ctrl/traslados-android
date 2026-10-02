@@ -1,0 +1,225 @@
+# ACTUALIZADO: 2026-10-02
+# VERSION: v11.4 R9.1 — retoque visual de Historial del Conductor
+# ALCANCE: SOLO UI de Historial. No modifica backend, GPS, telemetría, disponibilidad ni lógica de reservas.
+# BASE BINARIA/LÓGICA: R9 FIX exitoso, run 37032387926.
+
+name: Build Traslados Conductor v11.4 R9.1 - Historial UI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-v11.4-supabase-test-R9.1-HISTORIAL.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android base and Conductor v9.2 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-conductor.yml" -o /tmp/conductor-v9.2.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m:
+              raise SystemExit('No se encontró el proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+
+          txt=Path('/tmp/conductor-v9.2.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m:
+              raise SystemExit('No se encontró payload de Conductor v9.2')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces:
+              raise SystemExit('Payload vacío de Conductor v9.2')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          print('Base + Conductor v9.2 restaurados')
+          PYRESTORE
+
+          test -f conductor/build.gradle
+          grep -q "versionName '9.2'" conductor/build.gradle
+
+      - name: Download exact successful R9 patched source
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-v11.4-supabase-r9-patched-source
+          path: /tmp/r9src
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Overlay exact R9 Conductor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/r9src/conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          test -f /tmp/r9src/conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java
+          cp -a /tmp/r9src/conductor/. conductor/
+          echo "Fuente exacta R9 superpuesta"
+
+      - name: Download successful R9 Conductor APK for unchanged raw assets
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-SUPABASE-TEST-R9
+          path: /tmp/r9apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Restore R9 sound assets exactly
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r9apk -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mkdir -p conductor/src/main/res/raw
+          unzip -p "$APK" res/raw/reserva_calida.wav > conductor/src/main/res/raw/reserva_calida.wav
+          unzip -p "$APK" res/raw/viaje_proximo.wav > conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+          echo "Assets de sonido R9 restaurados sin modificación"
+
+      - name: Protect stable R9 backend alerts and GPS source
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum             conductor/src/main/java/uy/com/traslados/conductor/Api.java             conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java             conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java             conductor/src/main/AndroidManifest.xml             > /tmp/r9-protected.sha256
+          cat /tmp/r9-protected.sha256
+
+      - name: Apply R9.1 Historial UI refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnA9UGF0aCgnY29uZHVjdG9yL3NyYy9tYWluL2phdmEvdXkvY29tL3RyYXNsYWRvcy9jb25kdWN0b3IvTWFpbkFjdGl2aXR5LmphdmEnKQpzPXAucmVhZF90ZXh0KGVuY29kaW5nPSd1dGYtOCcpCgpkZWYgcmVwbChvbGQsbmV3LGxhYmVsKToKICAgIGdsb2JhbCBzCiAgICBjPXMuY291bnQob2xkKQogICAgaWYgYyE9MToKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KGYne2xhYmVsfTogZXhwZWN0ZWQgMSwgZ290IHtjfScpCiAgICBzPXMucmVwbGFjZShvbGQsbmV3LDEpCgpyZXBsKCcnJyAgICAgICAgc2NyZWVuVGl0bGU9aGVhZGluZyhoaXN0b3J5PyJISVNUT1JJQUwiOiJTT0xJQ0lUVURFUyIsMjcpO2JveC5hZGRWaWV3KHNjcmVlblRpdGxlLGxwTWF0Y2goLTIsNCwwKSk7CiAgICAgICAgc2NyZWVuU3ViPWJvZHkoaGlzdG9yeT8iVmlhamVzIGZpbmFsaXphZG9zLCBjYW5jZWxhZG9zIHkgcmVjaGF6YWRvcyI6Ik1vbml0b3IgYWN0aXZvIMK3IGVzcGVyYW5kbyBzb2xpY2l0dWRlcyIsMTMsR09MRCk7Ym94LmFkZFZpZXcoc2NyZWVuU3ViLGxwTWF0Y2goLTIsMCwxMCkpOwonJycsJycnICAgICAgICBzY3JlZW5UaXRsZT1oZWFkaW5nKGhpc3Rvcnk/IuKXtyAgSGlzdG9yaWFsIjoiU09MSUNJVFVERVMiLGhpc3Rvcnk/MjQ6MjcpO2JveC5hZGRWaWV3KHNjcmVlblRpdGxlLGxwTWF0Y2goLTIsNCwwKSk7CiAgICAgICAgc2NyZWVuU3ViPWJvZHkoaGlzdG9yeT8iUmVzdW1lbiBkZSB2aWFqZXMiOiJNb25pdG9yIGFjdGl2byDCtyBlc3BlcmFuZG8gc29saWNpdHVkZXMiLDEzLEdPTEQpO2JveC5hZGRWaWV3KHNjcmVlblN1YixscE1hdGNoKC0yLDAsMTApKTsKJycnLCdoaXN0b3J5IHRpdGxlJykKCnJlcGwoJycnICAgICAgICByZWZyZXNoQnRuPXNlY29uZGFyeUJ1dHRvbigiQUNUVUFMSVpBUiIpO2hpc3RvcnlCdG49c2Vjb25kYXJ5QnV0dG9uKGhpc3Rvcnk/IlNPTElDSVRVREVTIjoiSElTVE9SSUFMIik7bG9nb3V0QnRuPXNlY29uZGFyeUJ1dHRvbigiU0FMSVIiKTsKJycnLCcnJyAgICAgICAgcmVmcmVzaEJ0bj1zZWNvbmRhcnlCdXR0b24oaGlzdG9yeT8i4oa7ICBBY3R1YWxpemFyIjoiQUNUVUFMSVpBUiIpO2hpc3RvcnlCdG49c2Vjb25kYXJ5QnV0dG9uKGhpc3Rvcnk/IuKYtyAgU29saWNpdHVkZXMiOiJISVNUT1JJQUwiKTtsb2dvdXRCdG49c2Vjb25kYXJ5QnV0dG9uKGhpc3Rvcnk/IuKGqiAgU2FsaXIiOiJTQUxJUiIpOwonJycsJ2hpc3RvcnkgYWN0aW9ucycpCgpyZXBsKCdDb25kdWN0b3IgdjExLjQgUjkgaW5pY2lhZG8nLCdDb25kdWN0b3IgdjExLjQgUjkuMSBpbmljaWFkbycsJ2FwcCBzdGFydCB2ZXJzaW9uJykKcmVwbChyJ1RyYXNsYWRvcyBDb25kdWN0b3IgwrcgdjExLjQgUjlcbkJhY2tlbmQ6JyxyJ1RyYXNsYWRvcyBDb25kdWN0b3IgwrcgdjExLjQgUjkuMVxuQmFja2VuZDonLCdkaWFnbm9zdGljcyB2ZXJzaW9uJykKCnJlcGwoJycnICAgICAgICBpZihzY3JlZW5TdWIhPW51bGwpc2NyZWVuU3ViLnNldFRleHQoaGlzdD8iSGlzdG9yaWFsIMK3ICIrc2hvd24uc2l6ZSgpKyIgcmVzZXJ2YShzKSI6KGlzTmV0d29ya0F2YWlsYWJsZSgpPyJNb25pdG9yIGFjdGl2byI6Ik1vbml0b3Igc2luIGNvbmV4acOzbiIpKyIgwrcgIitzaG93bi5zaXplKCkrIiB2aXNpYmxlKHMpIGRlICIrY3VycmVudFJvd3Muc2l6ZSgpKTsKJycnLCcnJyAgICAgICAgaWYoc2NyZWVuU3ViIT1udWxsKXNjcmVlblN1Yi5zZXRUZXh0KGhpc3Q/KHNob3duLnNpemUoKSsiICIrKHNob3duLnNpemUoKT09MT8icmVzZXJ2YSI6InJlc2VydmFzIikrIiBlbiBoaXN0b3JpYWwiKTooaXNOZXR3b3JrQXZhaWxhYmxlKCk/Ik1vbml0b3IgYWN0aXZvIjoiTW9uaXRvciBzaW4gY29uZXhpw7NuIikrIiDCtyAiK3Nob3duLnNpemUoKSsiIHZpc2libGUocykgZGUgIitjdXJyZW50Um93cy5zaXplKCkpOwonJycsJ2hpc3Rvcnkgc3VidGl0bGUnKQoKcmVwbCgnJycgICAgICAgIFN0cmluZyBsYXN0RGF5PSIiOwogICAgICAgIGZvcihKU09OT2JqZWN0IHI6c2hvd24pewogICAgICAgICAgICBTdHJpbmcgZGF5PXIub3B0U3RyaW5nKCJwaWNrdXBfZGF0ZSIsIiIpOwogICAgICAgICAgICBpZighZGF5LmVxdWFscyhsYXN0RGF5KSl7VGV4dFZpZXcgZGg9Ym9keShkYXlIZWFkZXIoZGF5KSwxNSxHT0xEKTtkaC5zZXRUeXBlZmFjZShUeXBlZmFjZS5ERUZBVUxULFR5cGVmYWNlLkJPTEQpO2RoLnNldFBhZGRpbmcoZHAoMyksZHAoMTIpLDAsZHAoMikpO2xpc3RCb3guYWRkVmlldyhkaCk7bGFzdERheT1kYXk7fQogICAgICAgICAgICBsaXN0Qm94LmFkZFZpZXcocmVzZXJ2YXRpb25DYXJkKHIsaGlzdCksbHBNYXRjaCgtMiw2LDYpKTsKICAgICAgICB9CicnJywnJycgICAgICAgIFN0cmluZyBsYXN0RGF5PSIiOwogICAgICAgIGZvcihKU09OT2JqZWN0IHI6c2hvd24pewogICAgICAgICAgICBTdHJpbmcgZGF5PXIub3B0U3RyaW5nKCJwaWNrdXBfZGF0ZSIsIiIpOwogICAgICAgICAgICBpZighZGF5LmVxdWFscyhsYXN0RGF5KSl7CiAgICAgICAgICAgICAgICBpZihoaXN0KXtpbnQgZGF5Q291bnQ9MDtmb3IoSlNPTk9iamVjdCB4OnNob3duKWlmKGRheS5lcXVhbHMoeC5vcHRTdHJpbmcoInBpY2t1cF9kYXRlIiwiIikpKWRheUNvdW50Kys7bGlzdEJveC5hZGRWaWV3KGhpc3RvcnlEYXlIZWFkZXIoZGF5LGRheUNvdW50KSxscE1hdGNoKGRwKDQ4KSw4LDQpKTt9CiAgICAgICAgICAgICAgICBlbHNle1RleHRWaWV3IGRoPWJvZHkoZGF5SGVhZGVyKGRheSksMTUsR09MRCk7ZGguc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTtkaC5zZXRQYWRkaW5nKGRwKDMpLGRwKDEyKSwwLGRwKDIpKTtsaXN0Qm94LmFkZFZpZXcoZGgpO30KICAgICAgICAgICAgICAgIGxhc3REYXk9ZGF5OwogICAgICAgICAgICB9CiAgICAgICAgICAgIGxpc3RCb3guYWRkVmlldyhyZXNlcnZhdGlvbkNhcmQocixoaXN0KSxscE1hdGNoKC0yLDYsNikpOwogICAgICAgIH0KJycnLCdkYXkgaGVhZGVycycpCgpyZXBsKCcnJyAgICAgICAgICAgIHN0YXRzQm94LmFkZFZpZXcoc3RhdENhcmQoIkZJTkFMSVpBREFTIixmLEdSRUVOKSxuZXcgTGluZWFyTGF5b3V0LkxheW91dFBhcmFtcygwLC0xLDEpKTtzcGFjZXJIKHN0YXRzQm94LDYpOwogICAgICAgICAgICBzdGF0c0JveC5hZGRWaWV3KHN0YXRDYXJkKCJDQU5DRUxBREFTIixjLFJFRCksbmV3IExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMoMCwtMSwxKSk7c3BhY2VySChzdGF0c0JveCw2KTsKICAgICAgICAgICAgc3RhdHNCb3guYWRkVmlldyhzdGF0Q2FyZCgiUkVDSEFaQURBUyIscmosUkVEKSxuZXcgTGluZWFyTGF5b3V0LkxheW91dFBhcmFtcygwLC0xLDEpKTsKJycnLCcnJyAgICAgICAgICAgIHN0YXRzQm94LmFkZFZpZXcoc3RhdENhcmQoIuKckyAgRklOQUxJWkFEQVMiLGYsR1JFRU4pLG5ldyBMaW5lYXJMYXlvdXQuTGF5b3V0UGFyYW1zKDAsLTEsMSkpO3NwYWNlckgoc3RhdHNCb3gsNik7CiAgICAgICAgICAgIHN0YXRzQm94LmFkZFZpZXcoc3RhdENhcmQoIsOXICBDQU5DRUxBREFTIixjLFJFRCksbmV3IExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMoMCwtMSwxKSk7c3BhY2VySChzdGF0c0JveCw2KTsKICAgICAgICAgICAgc3RhdHNCb3guYWRkVmlldyhzdGF0Q2FyZCgi4oqYICBSRUNIQVpBREFTIixyaixSRUQpLG5ldyBMaW5lYXJMYXlvdXQuTGF5b3V0UGFyYW1zKDAsLTEsMSkpOwonJycsJ2hpc3Rvcnkgc3RhdHMnKQoKYW5jaG9yPScnJyAgICBwcml2YXRlIFZpZXcgcmVzZXJ2YXRpb25DYXJkKEpTT05PYmplY3Qgcixib29sZWFuIGhpc3QpewonJycKaGVscGVyPScnJyAgICBwcml2YXRlIFZpZXcgaGlzdG9yeURheUhlYWRlcihTdHJpbmcgZGF5LGludCBjb3VudCl7CiAgICAgICAgTGluZWFyTGF5b3V0IGJhcj1uZXcgTGluZWFyTGF5b3V0KHRoaXMpO2Jhci5zZXRHcmF2aXR5KEdyYXZpdHkuQ0VOVEVSX1ZFUlRJQ0FMKTtiYXIuc2V0UGFkZGluZyhkcCgxMiksMCxkcCg4KSwwKTtiYXIuc2V0QmFja2dyb3VuZChyb3VuZGVkKFBBTkVMXzIsTElORSwxNSkpOwogICAgICAgIFRleHRWaWV3IGRhdGU9Ym9keShkYXlIZWFkZXIoZGF5KSwxNSxURVhUKTtkYXRlLnNldFR5cGVmYWNlKFR5cGVmYWNlLkRFRkFVTFQsVHlwZWZhY2UuQk9MRCk7YmFyLmFkZFZpZXcoZGF0ZSxuZXcgTGluZWFyTGF5b3V0LkxheW91dFBhcmFtcygwLC0xLDEpKTsKICAgICAgICBUZXh0VmlldyBiYWRnZT1ib2R5KGNvdW50KyIgIisoY291bnQ9PTE/InZpYWplIjoidmlhamVzIiksMTEsVEVYVCk7YmFkZ2Uuc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTtiYWRnZS5zZXRHcmF2aXR5KEdyYXZpdHkuQ0VOVEVSKTtiYWRnZS5zZXRQYWRkaW5nKGRwKDEwKSwwLGRwKDEwKSwwKTtiYWRnZS5zZXRCYWNrZ3JvdW5kKHJvdW5kZWQoQ29sb3IucmdiKDUxLDgyLDkxKSxDb2xvci5yZ2IoNzUsMTExLDEyMCksMTQpKTtiYXIuYWRkVmlldyhiYWRnZSxuZXcgTGluZWFyTGF5b3V0LkxheW91dFBhcmFtcygtMixkcCgzMCkpKTsKICAgICAgICByZXR1cm4gYmFyOwogICAgfQoKJycnCmlmIGFuY2hvciBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgncmVzZXJ2YXRpb24gYW5jaG9yIG1pc3NpbmcnKQpzPXMucmVwbGFjZShhbmNob3IsaGVscGVyK2FuY2hvciwxKQoKb2xkPScnJyAgICAgICAgU3RyaW5nIGR0PXByZXR0eURhdGUoci5vcHRTdHJpbmcoInBpY2t1cF9kYXRlIikpKyIgwrcgIit0cmltVGltZShyLm9wdFN0cmluZygicGlja3VwX3RpbWUiKSk7CiAgICAgICAgVGV4dFZpZXcgZGF0ZT1ib2R5KGR0LDE3LFRFWFQpO2RhdGUuc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTtoZWFkLmFkZFZpZXcoZGF0ZSxscE1hdGNoKC0yLDIsMSkpOwogICAgICAgIFRleHRWaWV3IGN1c3RvbWVyPWJvZHkoci5vcHRTdHJpbmcoImN1c3RvbWVyX25hbWUiKSwxNSxURVhUKTtoZWFkLmFkZFZpZXcoY3VzdG9tZXIsbHBNYXRjaCgtMiwwLDEpKTsKICAgICAgICBTdHJpbmcgcm91dGU9c2hvcnRBZGRyZXNzKHIub3B0U3RyaW5nKCJvcmlnaW5fdGV4dCIpKSsiICDihpIgICIrc2hvcnRBZGRyZXNzKHIub3B0U3RyaW5nKCJkZXN0aW5hdGlvbl90ZXh0IikpOwogICAgICAgIFRleHRWaWV3IHJvdXRlVGV4dD1ib2R5KHJvdXRlLDEzLE1VVEVEKTtyb3V0ZVRleHQuc2V0TWF4TGluZXMoMik7aGVhZC5hZGRWaWV3KHJvdXRlVGV4dCxscE1hdGNoKC0yLDAsMCkpOwogICAgICAgIG91dGVyLmFkZFZpZXcoaGVhZCk7CicnJwpuZXc9JycnICAgICAgICBTdHJpbmcgZHQ9cHJldHR5RGF0ZShyLm9wdFN0cmluZygicGlja3VwX2RhdGUiKSkrIiDCtyAiK3RyaW1UaW1lKHIub3B0U3RyaW5nKCJwaWNrdXBfdGltZSIpKTsKICAgICAgICBpZihoaXN0KXsKICAgICAgICAgICAgTGluZWFyTGF5b3V0IHN1bW1hcnk9bmV3IExpbmVhckxheW91dCh0aGlzKTtzdW1tYXJ5LnNldE9yaWVudGF0aW9uKExpbmVhckxheW91dC5IT1JJWk9OVEFMKTtzdW1tYXJ5LnNldEdyYXZpdHkoR3Jhdml0eS5UT1ApO3N1bW1hcnkuc2V0UGFkZGluZygwLGRwKDUpLDAsMCk7CiAgICAgICAgICAgIExpbmVhckxheW91dCB3aGVuPW5ldyBMaW5lYXJMYXlvdXQodGhpcyk7d2hlbi5zZXRPcmllbnRhdGlvbihMaW5lYXJMYXlvdXQuVkVSVElDQUwpO3doZW4uc2V0R3Jhdml0eShHcmF2aXR5LkNFTlRFUik7d2hlbi5zZXRQYWRkaW5nKGRwKDEwKSxkcCg3KSxkcCgxMCksZHAoNykpO3doZW4uc2V0QmFja2dyb3VuZChyb3VuZGVkKFBBTkVMXzIsQ29sb3IucmdiKDI4LDcyLDgyKSwxMykpOwogICAgICAgICAgICBUZXh0VmlldyB0aW1lPWJvZHkodHJpbVRpbWUoci5vcHRTdHJpbmcoInBpY2t1cF90aW1lIikpLDIwLFRFWFQpO3RpbWUuc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTt0aW1lLnNldEdyYXZpdHkoR3Jhdml0eS5DRU5URVIpO3doZW4uYWRkVmlldyh0aW1lKTsKICAgICAgICAgICAgVGV4dFZpZXcgb25seURhdGU9Ym9keShwcmV0dHlEYXRlKHIub3B0U3RyaW5nKCJwaWNrdXBfZGF0ZSIpKSwxMSxNVVRFRCk7b25seURhdGUuc2V0R3Jhdml0eShHcmF2aXR5LkNFTlRFUik7d2hlbi5hZGRWaWV3KG9ubHlEYXRlKTsKICAgICAgICAgICAgc3VtbWFyeS5hZGRWaWV3KHdoZW4sbmV3IExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMoZHAoOTQpLC0yKSk7CiAgICAgICAgICAgIExpbmVhckxheW91dCB0cmlwPW5ldyBMaW5lYXJMYXlvdXQodGhpcyk7dHJpcC5zZXRPcmllbnRhdGlvbihMaW5lYXJMYXlvdXQuVkVSVElDQUwpO0xpbmVhckxheW91dC5MYXlvdXRQYXJhbXMgdHA9bmV3IExpbmVhckxheW91dC5MYXlvdXRQYXJhbXMoMCwtMiwxKTt0cC5zZXRNYXJnaW5zKGRwKDExKSwwLDAsMCk7c3VtbWFyeS5hZGRWaWV3KHRyaXAsdHApOwogICAgICAgICAgICBUZXh0VmlldyBjdXN0b21lcj1ib2R5KHIub3B0U3RyaW5nKCJjdXN0b21lcl9uYW1lIiksMTQsVEVYVCk7Y3VzdG9tZXIuc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTt0cmlwLmFkZFZpZXcoY3VzdG9tZXIsbHBNYXRjaCgtMiwwLDIpKTsKICAgICAgICAgICAgVGV4dFZpZXcgb3JpZ2luPWJvZHkoIuKAoiAgIitzaG9ydEFkZHJlc3Moci5vcHRTdHJpbmcoIm9yaWdpbl90ZXh0IikpLDEyLE1VVEVEKTtvcmlnaW4uc2V0TWF4TGluZXMoMSk7dHJpcC5hZGRWaWV3KG9yaWdpbixscE1hdGNoKC0yLDEsMSkpOwogICAgICAgICAgICBUZXh0VmlldyBkZXN0aW5hdGlvbj1ib2R5KCLigKIgICIrc2hvcnRBZGRyZXNzKHIub3B0U3RyaW5nKCJkZXN0aW5hdGlvbl90ZXh0IikpLDEyLE1VVEVEKTtkZXN0aW5hdGlvbi5zZXRNYXhMaW5lcygxKTt0cmlwLmFkZFZpZXcoZGVzdGluYXRpb24sbHBNYXRjaCgtMiwwLDApKTsKICAgICAgICAgICAgaGVhZC5hZGRWaWV3KHN1bW1hcnksbHBNYXRjaCgtMiwwLDApKTsKICAgICAgICB9ZWxzZXsKICAgICAgICAgICAgVGV4dFZpZXcgZGF0ZT1ib2R5KGR0LDE3LFRFWFQpO2RhdGUuc2V0VHlwZWZhY2UoVHlwZWZhY2UuREVGQVVMVCxUeXBlZmFjZS5CT0xEKTtoZWFkLmFkZFZpZXcoZGF0ZSxscE1hdGNoKC0yLDIsMSkpOwogICAgICAgICAgICBUZXh0VmlldyBjdXN0b21lcj1ib2R5KHIub3B0U3RyaW5nKCJjdXN0b21lcl9uYW1lIiksMTUsVEVYVCk7aGVhZC5hZGRWaWV3KGN1c3RvbWVyLGxwTWF0Y2goLTIsMCwxKSk7CiAgICAgICAgICAgIFN0cmluZyByb3V0ZT1zaG9ydEFkZHJlc3Moci5vcHRTdHJpbmcoIm9yaWdpbl90ZXh0IikpKyIgIOKGkiAgIitzaG9ydEFkZHJlc3Moci5vcHRTdHJpbmcoImRlc3RpbmF0aW9uX3RleHQiKSk7CiAgICAgICAgICAgIFRleHRWaWV3IHJvdXRlVGV4dD1ib2R5KHJvdXRlLDEzLE1VVEVEKTtyb3V0ZVRleHQuc2V0TWF4TGluZXMoMik7aGVhZC5hZGRWaWV3KHJvdXRlVGV4dCxscE1hdGNoKC0yLDAsMCkpOwogICAgICAgIH0KICAgICAgICBvdXRlci5hZGRWaWV3KGhlYWQpOwonJycKcmVwbChvbGQsbmV3LCdoaXN0b3J5IGNhcmQgc3VtbWFyeScpCgpwLndyaXRlX3RleHQocyxlbmNvZGluZz0ndXRmLTgnKQpwcmludCgnaGlzdG9yeSBVSSBwYXRjaCBhcHBsaWVkJykK' | base64 -d > /tmp/patch_history_ui.py
+          python3 /tmp/patch_history_ui.py
+          grep -q 'historyDayHeader' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q '◷  Historial' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q '✓  FINALIZADAS' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'Conductor v11.4 R9.1 iniciado' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          echo "R9.1 Historial UI aplicado"
+
+      - name: Verify stable source was not touched
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c /tmp/r9-protected.sha256
+          echo "Api, alertas, GPS y Manifest siguen byte a byte como R9"
+
+      - name: Set Conductor version 11.4-R9.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYVERSION'
+          from pathlib import Path
+          import re
+          p=Path('conductor/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s,n1=re.subn(r'versionCode\s+\d+','versionCode 118',s,count=1)
+          s,n2=re.subn(r"versionName\s+'[^']+'","versionName '11.4-R9.1'",s,count=1)
+          if n1!=1 or n2!=1:
+              raise SystemExit(f'No se pudo fijar versión: code={n1}, name={n2}')
+          p.write_text(s,encoding='utf-8')
+          PYVERSION
+
+      - name: Verify R9.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=conductor/src/main/java/uy/com/traslados/conductor
+          grep -q "versionCode 118" conductor/build.gradle
+          grep -q "versionName '11.4-R9.1'" conductor/build.gradle
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' "$D/Api.java"
+          grep -q 'driver_check_route_fit_v11_4' "$D/Api.java"
+          grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
+          grep -q 'traslados_nuevas_v114_r9_visual' "$D/ReservationMonitorService.java"
+          grep -q 'traslados_proximo_v114_r9_visual' "$D/ReservationMonitorService.java"
+          grep -q 'TripTelemetryService' "$D/MainActivity.java"
+          grep -q 'GPS LISTO' "$D/MainActivity.java"
+          grep -q 'WindowInsets.Type.ime()' "$D/MainActivity.java"
+          grep -q 'historyDayHeader' "$D/MainActivity.java"
+          grep -q '◷  Historial' "$D/MainActivity.java"
+          grep -q '✓  FINALIZADAS' "$D/MainActivity.java"
+          grep -q 'reservas")+" en historial' "$D/MainActivity.java"
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+          echo "R9.1 source checks OK"
+
+      - name: Upload R9.1 patched source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R9.1-HISTORIAL-patched-source
+          path: |
+            conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+            conductor/src/main/java/uy/com/traslados/conductor/Api.java
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+            conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java
+            conductor/src/main/AndroidManifest.xml
+            conductor/src/main/res/raw/reserva_calida.wav
+            conductor/src/main/res/raw/viaje_proximo.wav
+          if-no-files-found: error
+
+      - name: Build Conductor v11.4 R9.1
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R9.1_HISTORIAL.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R9.1_HISTORIAL.apk | tee artifacts/SHA256SUMS.txt
+          ls -lh artifacts
+
+      - name: Upload Conductor R9.1 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R9.1-HISTORIAL
+          path: |
+            artifacts/Traslados_Conductor_v11.4_R9.1_HISTORIAL.apk
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
