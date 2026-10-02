@@ -1,0 +1,244 @@
+name: Build Traslados Auto v0.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-traslados-auto-v0.1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android base and Conductor v9.2 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-conductor.yml" -o /tmp/conductor-v9.2.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m:
+              raise SystemExit('No se encontró el proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+
+          txt=Path('/tmp/conductor-v9.2.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m:
+              raise SystemExit('No se encontró payload Conductor v9.2')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces:
+              raise SystemExit('Payload vacío Conductor v9.2')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          print('Conductor v9.2 restaurado',len(raw),'bytes')
+          PYRESTORE
+
+          test -d conductor
+          grep -q "versionName '9.2'" conductor/build.gradle
+
+      - name: Download exact R9 patched source
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-v11.4-supabase-r9-patched-source
+          path: /tmp/r9src
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Overlay R9 Conductor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/r9src/conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          cp -a /tmp/r9src/conductor/. conductor/
+          grep -q '11.4-R9' conductor/src/main/java/uy/com/traslados/conductor/Api.java
+
+      - name: Download exact R9 Conductor APK for audio resources
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-SUPABASE-TEST-R9
+          path: /tmp/r9apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Restore R9 audio resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r9apk -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p conductor/src/main/res/raw /tmp/r9raw
+          unzip -j -o "$APK" 'res/raw/reserva_calida.wav' 'res/raw/viaje_proximo.wav' -d /tmp/r9raw
+          cp /tmp/r9raw/reserva_calida.wav conductor/src/main/res/raw/reserva_calida.wav
+          cp /tmp/r9raw/viaje_proximo.wav conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+
+      - name: Create independent Traslados Auto v0.1 module
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf auto
+          cp -a conductor auto
+
+          python3 - <<'PYAUTO'
+          from pathlib import Path
+          import re, shutil
+
+          root=Path('auto')
+          oldpkg='uy.com.traslados.conductor'
+          newpkg='uy.com.traslados.auto'
+
+          old_dir=root/'src/main/java/uy/com/traslados/conductor'
+          new_dir=root/'src/main/java/uy/com/traslados/auto'
+          new_dir.parent.mkdir(parents=True,exist_ok=True)
+          if not old_dir.exists():
+              raise SystemExit('No existe paquete conductor para clonar')
+          shutil.move(str(old_dir),str(new_dir))
+
+          for p in new_dir.glob('*.java'):
+              s=p.read_text(encoding='utf-8')
+              s=s.replace(oldpkg,newpkg)
+              p.write_text(s,encoding='utf-8')
+
+          # Identidad independiente + landscape para la tablet/coche.
+          manifest=root/'src/main/AndroidManifest.xml'
+          s=manifest.read_text(encoding='utf-8')
+          s=s.replace('android:label="Traslados Conductor"','android:label="Traslados Auto"')
+          s=s.replace('android:screenOrientation="portrait"','android:screenOrientation="landscape"')
+          s=s.replace('<application\n','<application\n        android:resizeableActivity="true"\n',1)
+          manifest.write_text(s,encoding='utf-8')
+
+          gradle=root/'build.gradle'
+          s=gradle.read_text(encoding='utf-8')
+          s=s.replace(oldpkg,newpkg)
+          s=re.sub(r'versionCode\s+\d+','versionCode 1',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '0.1'",s,count=1)
+          gradle.write_text(s,encoding='utf-8')
+
+          settings=Path('settings.gradle')
+          s=settings.read_text(encoding='utf-8')
+          if "':auto'" not in s and '":auto"' not in s:
+              s=s.rstrip()+"\ninclude ':auto'\n"
+          settings.write_text(s,encoding='utf-8')
+
+          main=new_dir/'MainActivity.java'
+          s=main.read_text(encoding='utf-8')
+          s=s.replace('Conductor v11.4 R9 iniciado','Auto v0.1 iniciado')
+          s=s.replace('TextView brand=heading("Traslados Conductor",25);','TextView brand=heading("Traslados Auto",27);')
+          s=s.replace('private String agendaMode="TODAS";','private String agendaMode="DIA";')
+          s=s.replace('screenTitle=heading(history?"HISTORIAL":"SOLICITUDES",27);','screenTitle=heading(history?"HISTORIAL":"TRASLADOS AUTO",30);')
+          s=s.replace('screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Monitor activo · esperando solicitudes",13,GOLD);',
+                      'screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Panel del vehículo · mismo conductor · agenda sincronizada",14,GOLD);')
+          s=s.replace('final boolean telemetryArmed="EN_VIAJE".equals(to);',
+                      'final boolean telemetryArmed=false; // Auto v0.1: la telemetría principal queda en Traslados Conductor')
+
+          # En Auto nunca levanta un segundo GPS: el teléfono Conductor conserva la traza real.
+          s=re.sub(r'private void ensureTelemetryForActiveTrip\(ArrayList<JSONObject> rows\)\{.*?\}\n\s*private String telemetryLine',
+                   'private void ensureTelemetryForActiveTrip(ArrayList<JSONObject> rows){ /* Auto v0.1: GPS principal en el teléfono Conductor */ }\n    private String telemetryLine',
+                   s,count=1,flags=re.S)
+
+          old='''        JSONObject telemetry=TripTelemetryService.summary(this,id);String telemState=telemetry.optString("state","");\n        if(telemetry.optLong("started_at",0)>0||"EN_VIAJE".equals(status)){\n            String telemTitle=TripTelemetryService.STATE_ACTIVE.equals(telemState)?"● GPS REGISTRANDO":(TripTelemetryService.STATE_STARTING.equals(telemState)?"GPS INICIANDO":(TripTelemetryService.STATE_ERROR.equals(telemState)?"⚠ GPS SIN REGISTRO":"TELEMETRÍA GPS"));\n            addDetail(bodyBox,"gps",telemTitle,telemetryLine(telemetry));\n            Button trace=secondaryButton(TripTelemetryService.STATE_ACTIVE.equals(telemState)?"VER GPS EN VIVO":(TripTelemetryService.STATE_ERROR.equals(telemState)?"DIAGNÓSTICO GPS":"VER TRAZA GPS"));trace.setTextSize(11);trace.setOnClickListener(v->showTelemetryDialog(r));bodyBox.addView(trace,lpMatch(dp(46),2,4));\n            if("EN_VIAJE".equals(status)&&!TripTelemetryService.STATE_ACTIVE.equals(telemState)){Button retryGps=secondaryButton("REINTENTAR GPS");retryGps.setTextSize(11);retryGps.setOnClickListener(v->{startTripTelemetry(r);handler.postDelayed(()->verifyTripTelemetryStart(r,0),700);});bodyBox.addView(retryGps,lpMatch(dp(46),2,4));}\n        }'''
+          new='''        JSONObject telemetry=TripTelemetryService.summary(this,id);String telemState=telemetry.optString("state","");\n        if("EN_VIAJE".equals(status)){\n            addDetail(bodyBox,"gps","GPS DEL VIAJE","La traza principal la registra Traslados Conductor en tu teléfono");\n        }'''
+          if old not in s:
+              raise SystemExit('No encontré bloque de telemetría R9 para adaptar Auto')
+          s=s.replace(old,new,1)
+
+          diag_old='Traslados Conductor · v11.4 R9\\nBackend: Supabase propio · '
+          diag_new='Traslados Auto · v0.1\\nBackend: Supabase propio · '
+          s=s.replace(diag_old,diag_new)
+          main.write_text(s,encoding='utf-8')
+
+          # Servicios también deben vivir en el package independiente.
+          for name in ('Api.java','ReservationMonitorService.java','TripTelemetryService.java'):
+              p=new_dir/name
+              txt=p.read_text(encoding='utf-8').replace(oldpkg,newpkg)
+              txt=txt.replace('11.4-R9','0.1-AUTO')
+              p.write_text(txt,encoding='utf-8')
+          PYAUTO
+
+          grep -q "applicationId 'uy.com.traslados.auto'" auto/build.gradle || grep -q 'applicationId "uy.com.traslados.auto"' auto/build.gradle
+          grep -q "versionName '0.1'" auto/build.gradle
+          grep -q 'android:label="Traslados Auto"' auto/src/main/AndroidManifest.xml
+          grep -q 'android:screenOrientation="landscape"' auto/src/main/AndroidManifest.xml
+          grep -q '^package uy.com.traslados.auto;' auto/src/main/java/uy/com/traslados/auto/MainActivity.java
+          grep -q 'GPS principal en el teléfono Conductor' auto/src/main/java/uy/com/traslados/auto/MainActivity.java
+          grep -q "include ':auto'" settings.gradle
+          echo "Traslados Auto v0.1 preparado"
+
+      - name: Verify independent identity and backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          A=auto/src/main/java/uy/com/traslados/auto
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' "$A/Api.java"
+          grep -q 'Traslados Auto' "$A/MainActivity.java"
+          grep -q 'Panel del vehículo' "$A/MainActivity.java"
+          grep -q 'agendaMode="DIA"' "$A/MainActivity.java"
+          ! grep -R -q '^package uy.com.traslados.conductor;' "$A"
+          test -s auto/src/main/res/raw/reserva_calida.wav
+          test -s auto/src/main/res/raw/viaje_proximo.wav
+          echo "Identidad independiente y backend R9 OK"
+
+      - name: Build Traslados Auto v0.1
+        run: gradle :auto:assembleDebug --stacktrace
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp auto/build/outputs/apk/debug/auto-debug.apk artifacts/Traslados_Auto_v0.1.apk
+          sha256sum artifacts/Traslados_Auto_v0.1.apk
+          ls -lh artifacts/Traslados_Auto_v0.1.apk
+
+      - name: Upload Traslados Auto v0.1 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Auto-v0.1
+          path: artifacts/Traslados_Auto_v0.1.apk
+          if-no-files-found: error
