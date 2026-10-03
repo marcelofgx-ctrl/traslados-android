@@ -1,0 +1,236 @@
+# ACTUALIZADO: 2026-10-03
+# VERSION: Traslados Cliente v11.4 R9.1 FIX - estable
+# BASE: fuente exacta Cliente v11.4 R9 exitosa (run 37032387926)
+# FIX: restaura correctamente el paquete Cliente v9.0 antes de superponer R9.
+# ALCANCE: estabilización de release. Sin cambios funcionales ni de backend.
+
+name: Build Traslados Cliente v11.4 R9.1 FIX
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-v11.4-cliente-R9.1-FIX.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android base and Cliente v9.0 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-apks.yml" -o /tmp/cliente-v9.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m:
+              raise SystemExit('No se encontró proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          print('Proyecto Android base restaurado',len(raw),'bytes')
+
+          txt=Path('/tmp/cliente-v9.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m:
+              raise SystemExit('No se encontró payload Cliente v9.0')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces:
+              raise SystemExit('Payload vacío Cliente v9.0')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          print('Cliente v9.0 restaurado',len(raw),'bytes')
+          PYRESTORE
+
+          test -d cliente
+          grep -q "versionName '9.0'" cliente/build.gradle
+          echo "Base Android + Cliente v9.0 restaurados"
+
+      - name: Download exact successful Cliente R9 source
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-v11.4-supabase-r9-patched-source
+          path: /tmp/r9src
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Overlay exact Cliente R9 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/r9src/cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
+          test -f /tmp/r9src/cliente/src/main/java/uy/com/traslados/cliente/Api.java
+          test -f /tmp/r9src/cliente/src/main/java/uy/com/traslados/cliente/CustomerBubbleService.java
+          cp -a /tmp/r9src/cliente/. cliente/
+
+          grep -q 'Cliente v11.4 R9 iniciado' cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
+          grep -q '11.4-R9' cliente/src/main/java/uy/com/traslados/cliente/Api.java
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' cliente/src/main/java/uy/com/traslados/cliente/Api.java
+
+      - name: Download exact successful Cliente R9 APK for audio resource
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.4-SUPABASE-TEST-R9
+          path: /tmp/r9apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Restore exact Cliente R9 audio resource
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r9apk -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p cliente/src/main/res/raw /tmp/r9raw
+          unzip -j -o "$APK" 'res/raw/cliente_actualizacion.wav' -d /tmp/r9raw
+          cp /tmp/r9raw/cliente_actualizacion.wav cliente/src/main/res/raw/cliente_actualizacion.wav
+          test -s cliente/src/main/res/raw/cliente_actualizacion.wav
+
+      - name: Promote Cliente R9 to stable R9.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYSTABLE'
+          from pathlib import Path
+
+          main=Path('cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java')
+          s=main.read_text(encoding='utf-8')
+          old='Cliente v11.4 R9 iniciado'
+          new='Cliente v11.4 R9.1 iniciado'
+          if old not in s:
+              raise SystemExit('R9.1: no encontré marca de inicio R9 en MainActivity.java')
+          main.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          api=Path('cliente/src/main/java/uy/com/traslados/cliente/Api.java')
+          a=api.read_text(encoding='utf-8')
+          old='b.put("p_app_version","11.4-R9");'
+          new='b.put("p_app_version","11.4-R9.1");'
+          if old not in a:
+              raise SystemExit('R9.1: no encontré p_app_version 11.4-R9 en Api.java')
+          api.write_text(a.replace(old,new,1),encoding='utf-8')
+
+          print('Cliente R9 promovido a R9.1 estable sin cambios funcionales')
+          PYSTABLE
+
+      - name: Set Cliente v11.4 R9.1 version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYVERSION'
+          from pathlib import Path
+          import re
+
+          p=Path('cliente/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s,n1=re.subn(r'versionCode\s+\d+','versionCode 118',s,count=1)
+          s,n2=re.subn(r"versionName\s+'[^']+'","versionName '11.4-R9.1'",s,count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f'No pude fijar versionCode/versionName: {n1}/{n2}')
+          p.write_text(s,encoding='utf-8')
+          PYVERSION
+
+      - name: Verify Cliente R9.1 stable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          C=cliente/src/main/java/uy/com/traslados/cliente
+
+          grep -q "versionCode 118" cliente/build.gradle
+          grep -q "versionName '11.4-R9.1'" cliente/build.gradle
+          grep -q 'Cliente v11.4 R9.1 iniciado' "$C/MainActivity.java"
+          grep -q 'p_app_version","11.4-R9.1' "$C/Api.java"
+
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' "$C/Api.java"
+          grep -q 'customer_check_availability_v11_4' "$C/MainActivity.java"
+          grep -q 'customer_get_available_slots_v11_4' "$C/MainActivity.java"
+          grep -q 'customer_create_reservation_v11_4' "$C/MainActivity.java"
+          grep -q 'customer_quote_decision_v11_4' "$C/MainActivity.java"
+          grep -q 'routeEstimate' "$C/Api.java"
+
+          grep -q 'CustomerBubbleService' "$C/MainActivity.java"
+          grep -q 'showPremiumChoiceDialog("Horarios disponibles"' "$C/MainActivity.java"
+          grep -q 'WindowInsets' "$C/MainActivity.java"
+          grep -q 'event_id' "$C/Api.java"
+          ! grep -q 'new AlertDialog.Builder' "$C/MainActivity.java"
+          test -s cliente/src/main/res/raw/cliente_actualizacion.wav
+
+          ! grep -Rqi 'SUPABASE TEST' "$C"
+
+          echo "Cliente v11.4 R9.1 stable source checks OK"
+
+      - name: Upload Cliente R9.1 stable source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.4-R9.1-patched-source
+          path: |
+            cliente/build.gradle
+            cliente/src/main/AndroidManifest.xml
+            cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
+            cliente/src/main/java/uy/com/traslados/cliente/Api.java
+            cliente/src/main/java/uy/com/traslados/cliente/CustomerBubbleService.java
+            cliente/src/main/res/raw/cliente_actualizacion.wav
+          if-no-files-found: error
+
+      - name: Build Traslados Cliente v11.4 R9.1
+        run: gradle :cliente:assembleDebug --stacktrace
+
+      - name: Prepare Cliente stable APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp cliente/build/outputs/apk/debug/cliente-debug.apk artifacts/Traslados_Cliente_v11.4_R9.1.apk
+          sha256sum artifacts/Traslados_Cliente_v11.4_R9.1.apk | tee artifacts/SHA256SUMS.txt
+          ls -lh artifacts/Traslados_Cliente_v11.4_R9.1.apk artifacts/SHA256SUMS.txt
+
+      - name: Upload Traslados Cliente v11.4 R9.1 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.4-R9.1
+          path: |
+            artifacts/Traslados_Cliente_v11.4_R9.1.apk
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
