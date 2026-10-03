@@ -1,0 +1,450 @@
+# ACTUALIZADO: 2026-10-02
+# VERSION: Traslados Conductor v11.4 R10 - móvil
+# BASE: fuente exacta R9 exitosa (run 37032387926)
+
+name: Build Traslados Conductor v11.4 R10
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-v11.4-conductor-R10.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android base and Conductor v9.2 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-conductor.yml" -o /tmp/conductor-v9.2.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m: raise SystemExit('No se encontró proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf: tf.extractall('.')
+          txt=Path('/tmp/conductor-v9.2.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m: raise SystemExit('No se encontró payload Conductor v9.2')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces: raise SystemExit('Payload vacío Conductor v9.2')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf: tf.extractall('.')
+          print('Conductor v9.2 restaurado',len(raw),'bytes')
+          PYRESTORE
+
+          test -d conductor
+          grep -q "versionName '9.2'" conductor/build.gradle
+
+      - name: Download exact successful R9 patched source
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-v11.4-supabase-r9-patched-source
+          path: /tmp/r9src
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Overlay exact R9 Conductor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/r9src/conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          cp -a /tmp/r9src/conductor/. conductor/
+          grep -q '11.4-R9' conductor/src/main/java/uy/com/traslados/conductor/Api.java
+          grep -q 'Conductor v11.4 R9 iniciado' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+
+      - name: Download exact R9 Conductor APK for audio resources
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-SUPABASE-TEST-R9
+          path: /tmp/r9apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37032387926
+
+      - name: Restore R9 audio resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r9apk -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p conductor/src/main/res/raw /tmp/r9raw
+          unzip -j -o "$APK" 'res/raw/reserva_calida.wav' 'res/raw/viaje_proximo.wav' -d /tmp/r9raw
+          cp /tmp/r9raw/reserva_calida.wav conductor/src/main/res/raw/reserva_calida.wav
+          cp /tmp/r9raw/viaje_proximo.wav conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+
+      - name: Apply R10 mobile UX consolidation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/apply_r10.py <<'PYR10'
+          from pathlib import Path
+          import re
+          
+          p=Path('conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java')
+          s=p.read_text(encoding='utf-8')
+          
+          def rep(old,new,label,count=1):
+              global s
+              c=s.count(old)
+              if c < count:
+                  raise SystemExit(f'{label}: expected at least {count}, got {c}')
+              s=s.replace(old,new,count)
+          
+          # State for accordion/day grouping + sync timestamp.
+          rep('''    private final ArrayList<JSONObject> currentRows=new ArrayList<>();
+              private final Set<String> seenPending=new HashSet<>();
+          ''','''    private final ArrayList<JSONObject> currentRows=new ArrayList<>();
+              private final Set<String> seenPending=new HashSet<>();
+              // R10: cada fecha es un acordeón que contiene sus reservas.
+              private final Set<String> collapsedHistoryDays=new HashSet<>();
+              private final Set<String> collapsedActiveDays=new HashSet<>();
+              private boolean historyDayGroupsInitialized=false;
+              private boolean activeDayGroupsInitialized=false;
+              private long lastSuccessfulSyncAt=0L;
+          ''','fields')
+          
+          # Stats block is more compact in history.
+          rep('''        statsBox=new LinearLayout(this);statsBox.setOrientation(LinearLayout.HORIZONTAL);box.addView(statsBox,lpMatch(dp(76),0,10));''',
+              '''        statsBox=new LinearLayout(this);statsBox.setOrientation(LinearLayout.HORIZONTAL);box.addView(statsBox,lpMatch(history?dp(54):dp(76),0,10));''','stats height')
+          
+          # Larger touch targets in top utility buttons.
+          rep('''            for(Button b:new Button[]{alertPrefs,pricePrefs,gpsPrefs}){b.setTextSize(10);b.setPadding(dp(3),0,dp(3),0);}
+                      tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(tools,5);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(tools,5);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(44),1));''',
+          '''            for(Button b:new Button[]{alertPrefs,pricePrefs,gpsPrefs}){b.setTextSize(11);b.setPadding(dp(4),0,dp(4),0);}
+                      tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools,5);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools,5);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(50),1));''','tool row 1')
+          rep('''            Button diagBtn=secondaryButton("🩺 DIAGNÓSTICO"),testBtn=secondaryButton("🧪 MODO PRUEBA");diagBtn.setTextSize(10);testBtn.setTextSize(10);
+                      tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(tools2,5);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(44),1));''',
+          '''            Button diagBtn=secondaryButton("🩺 DIAGNÓSTICO"),testBtn=secondaryButton("🧪 MODO PRUEBA");diagBtn.setTextSize(11);testBtn.setTextSize(11);
+                      tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools2,5);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(50),1));''','tool row 2')
+          
+          # Reset accordion initialization when changing between Solicitudes and Historial.
+          rep('''        historyBtn.setOnClickListener(v->{expandedId="";currentRows.clear();buildDashboard(!historyMode);if(historyMode)loadHistory();else loadActive(true);});''',
+          '''        historyBtn.setOnClickListener(v->{expandedId="";currentRows.clear();historyDayGroupsInitialized=false;activeDayGroupsInitialized=false;collapsedHistoryDays.clear();collapsedActiveDays.clear();buildDashboard(!historyMode);if(historyMode)loadHistory();else loadActive(true);});''','history switch')
+          
+          # Successful sync timestamp.
+          rep('''                    currentRows.clear();currentRows.addAll(rows);ensureTelemetryForActiveTrip(rows);renderRows(false);''',
+          '''                    currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();ensureTelemetryForActiveTrip(rows);renderRows(false);''','active sync')
+          rep('''                runOnUiThread(()->{if(!historyMode)return;currentRows.clear();currentRows.addAll(rows);renderRows(true);});''',
+          '''                runOnUiThread(()->{if(!historyMode)return;currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();renderRows(true);});''','history sync')
+          
+          # Preserve last good data if refresh fails.
+          old_show='''    private void showLoadError(Exception e,boolean history){
+                  if(screenSub!=null)screenSub.setText(history?"Error al cargar historial":"Error al consultar reservas");
+                  if(listBox!=null){listBox.removeAllViews();LinearLayout c=panelCard();c.addView(body("No se pudieron cargar las reservas.\\n"+friendly(e),14,MUTED));Button retry=primaryButton("REINTENTAR");retry.setOnClickListener(v->{if(historyMode)loadHistory();else loadActive(true);});c.addView(retry,lpMatch(dp(56),14,2));listBox.addView(c,lpMatch(-2,8,8));}
+              }
+          '''
+          new_show='''    private void showLoadError(Exception e,boolean history){
+                  if(listBox==null)return;
+                  if(!currentRows.isEmpty()){
+                      renderRows(history);
+                      if(screenSub!=null)screenSub.setText((history?"Historial":"Reservas")+" · no pude actualizar · mostrando última información"+syncSuffix());
+                      LinearLayout warn=panelCard();warn.setBackground(rounded(Color.rgb(48,40,18),GOLD_DARK,16));
+                      warn.addView(body("⚠ No pude sincronizar ahora · la agenda visible es la última recibida.",12,GOLD));
+                      Button retry=secondaryButton("REINTENTAR");retry.setOnClickListener(v->{if(historyMode)loadHistory();else loadActive(true);});warn.addView(retry,lpMatch(dp(48),8,0));
+                      listBox.addView(warn,0,lpMatch(-2,2,8));
+                      return;
+                  }
+                  if(screenSub!=null)screenSub.setText(history?"Error al cargar historial":"Error al consultar reservas");
+                  listBox.removeAllViews();LinearLayout c=panelCard();c.addView(body("No se pudieron cargar las reservas.\\n"+friendly(e),14,MUTED));Button retry=primaryButton("REINTENTAR");retry.setOnClickListener(v->{if(historyMode)loadHistory();else loadActive(true);});c.addView(retry,lpMatch(dp(56),14,2));listBox.addView(c,lpMatch(-2,8,8));
+              }
+          '''
+          rep(old_show,new_show,'load error')
+          
+          # Replace renderRows with day accordion structure.
+          start=s.index('    private void renderRows(boolean hist){')
+          end=s.index('    private void renderStats(boolean hist){',start)
+          new_render='''    private void renderRows(boolean hist){
+                  ArrayList<JSONObject> shown=hist?new ArrayList<>(currentRows):agendaFilteredRows();
+                  if(!hist)refreshAgendaControls();
+                  if(screenSub!=null)screenSub.setText(hist?"Historial · "+shown.size()+" viaje(s)"+syncSuffix():(isNetworkAvailable()?"Monitor activo":"Monitor sin conexión")+" · "+shown.size()+" visible(s) de "+currentRows.size()+syncSuffix());
+                  renderStats(hist);
+                  listBox.removeAllViews();
+                  if(shown.isEmpty()){
+                      listBox.addView(emptyCard(hist?"Todavía no hay viajes finalizados · cuando cierres un viaje aparecerá acá":"Agenda libre para este período · no tenés traslados que requieran atención"),lpMatch(-2,8,8));return;
+                  }
+                  Collections.sort(shown,(a,b)->{String ad=a.optString("pickup_date","")+" "+a.optString("pickup_time","");String bd=b.optString("pickup_date","")+" "+b.optString("pickup_time","");return hist?bd.compareTo(ad):ad.compareTo(bd);});
+                  if(!hist){View next=nextTripBanner(shown);if(next!=null)listBox.addView(next,lpMatch(-2,2,8));}
+          
+                  LinkedHashMap<String,ArrayList<JSONObject>> groups=new LinkedHashMap<>();
+                  for(JSONObject r:shown){String day=r.optString("pickup_date","");ArrayList<JSONObject> g=groups.get(day);if(g==null){g=new ArrayList<>();groups.put(day,g);}g.add(r);}
+                  Set<String> collapsed=hist?collapsedHistoryDays:collapsedActiveDays;
+                  boolean initialized=hist?historyDayGroupsInitialized:activeDayGroupsInitialized;
+                  if(!initialized){
+                      collapsed.clear();boolean first=true;
+                      for(String day:groups.keySet()){if(!first)collapsed.add(day);first=false;}
+                      if(hist)historyDayGroupsInitialized=true;else activeDayGroupsInitialized=true;
+                  }
+                  if(!expandedId.isEmpty())for(JSONObject r:shown)if(expandedId.equals(r.optString("id",""))){collapsed.remove(r.optString("pickup_date",""));break;}
+          
+                  for(Map.Entry<String,ArrayList<JSONObject>> entry:groups.entrySet()){
+                      String day=entry.getKey();ArrayList<JSONObject> rows=entry.getValue();boolean closed=collapsed.contains(day);
+                      listBox.addView(dayGroupHeader(day,rows.size(),closed,hist),lpMatch(-2,7,5));
+                      if(!closed)for(JSONObject r:rows)listBox.addView(reservationCard(r,hist),lpMatch(-2,4,6));
+                  }
+              }
+          
+              private View dayGroupHeader(String day,int count,boolean closed,boolean hist){
+                  LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(13),dp(5),dp(5),dp(5));row.setBackground(rounded(PANEL_2,GOLD_DARK,16));row.setMinimumHeight(dp(54));
+                  TextView title=body(dayHeader(day),15,GOLD);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);row.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+                  TextView chip=body(count+" "+(count==1?"viaje":"viajes"),11,TEXT);chip.setGravity(Gravity.CENTER);chip.setPadding(dp(9),0,dp(9),0);chip.setBackground(rounded(Color.argb(35,224,193,111),GOLD_DARK,14));row.addView(chip,new LinearLayout.LayoutParams(-2,dp(32)));
+                  TextView arrow=body(closed?"›":"⌄",32,TEXT);arrow.setGravity(Gravity.CENTER);arrow.setContentDescription(closed?"Desplegar día":"Plegar día");LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(54),dp(48));ap.setMargins(dp(5),0,0,0);row.addView(arrow,ap);
+                  row.setContentDescription(dayHeader(day)+" · "+count+" "+(count==1?"viaje":"viajes")+" · "+(closed?"plegado":"desplegado"));
+                  row.setOnClickListener(v->{Set<String> set=hist?collapsedHistoryDays:collapsedActiveDays;if(closed)set.remove(day);else{set.add(day);for(JSONObject x:currentRows)if(day.equals(x.optString("pickup_date",""))&&expandedId.equals(x.optString("id",""))){expandedId="";break;}}hapticTick();renderRows(hist);});
+                  return row;
+              }
+          
+              private String syncSuffix(){if(lastSuccessfulSyncAt<=0)return "";return " · actualizado "+new java.text.SimpleDateFormat("HH:mm",Locale.US).format(new Date(lastSuccessfulSyncAt));}
+          
+          '''
+          s=s[:start]+new_render+s[end:]
+          
+          # Compact history counters while preserving active dashboard stats.
+          old_stats='''        }else{
+                      int f=0,c=0,rj=0;for(JSONObject r:currentRows){String s=r.optString("status");if("FINALIZADA".equals(s))f++;else if("CANCELADA".equals(s))c++;else if("RECHAZADA".equals(s))rj++;}
+                      statsBox.addView(statCard("FINALIZADAS",f,GREEN),new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
+                      statsBox.addView(statCard("CANCELADAS",c,RED),new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
+                      statsBox.addView(statCard("RECHAZADAS",rj,RED),new LinearLayout.LayoutParams(0,-1,1));
+                  }
+          '''
+          new_stats='''        }else{
+                      int f=0,c=0,rj=0;for(JSONObject r:currentRows){String s=r.optString("status");if("FINALIZADA".equals(s))f++;else if("CANCELADA".equals(s))c++;else if("RECHAZADA".equals(s))rj++;}
+                      TextView summary=body(f+" finalizadas  ·  "+c+" canceladas  ·  "+rj+" rechazadas",13,TEXT);summary.setTypeface(Typeface.DEFAULT,Typeface.BOLD);summary.setGravity(Gravity.CENTER_VERTICAL);summary.setPadding(dp(14),0,dp(14),0);summary.setBackground(rounded(PANEL_2,LINE,15));statsBox.addView(summary,new LinearLayout.LayoutParams(-1,-1));
+                  }
+          '''
+          rep(old_stats,new_stats,'history stats')
+          
+          # Reservation card ergonomics.
+          rep('''        LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.VERTICAL);head.setPadding(dp(13),dp(11),dp(13),dp(11));''',
+              '''        LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.VERTICAL);head.setPadding(dp(13),dp(9),dp(8),dp(9));head.setMinimumHeight(dp(88));''','card head')
+          rep('''        TextView codeV=body(code.isEmpty()?"RESERVA":code,12,GOLD);''','''        TextView codeV=body(code.isEmpty()?"RESERVA":code,13,GOLD);''','code size')
+          rep('''        TextView arrow=body(open?"⌃":"⌄",25,TEXT);arrow.setGravity(Gravity.CENTER);LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(38),dp(38));ap.setMargins(dp(4),0,0,0);top.addView(arrow,ap);head.addView(top);
+          
+                  String dt=prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time"));
+                  TextView date=body(dt,17,TEXT);date.setTypeface(Typeface.DEFAULT,Typeface.BOLD);head.addView(date,lpMatch(-2,2,1));
+          ''',
+          '''        TextView arrow=body(open?"⌃":"⌄",31,TEXT);arrow.setGravity(Gravity.CENTER);arrow.setContentDescription(open?"Contraer reserva":"Expandir reserva");LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(52),dp(48));ap.setMargins(dp(4),0,0,0);top.addView(arrow,ap);head.addView(top);
+          
+                  String fullDt=prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time"));
+                  String dt=hist?trimTime(r.optString("pickup_time")):fullDt;
+                  TextView date=body(dt,18,TEXT);date.setTypeface(Typeface.DEFAULT,Typeface.BOLD);head.addView(date,lpMatch(-2,2,1));
+          ''','card arrow/date')
+          rep('''        TextView routeText=body(route,13,MUTED);routeText.setMaxLines(2);head.addView(routeText,lpMatch(-2,0,0));''',
+          '''        TextView routeText=body(route,14,MUTED);routeText.setMaxLines(2);routeText.setEllipsize(android.text.TextUtils.TruncateAt.END);head.addView(routeText,lpMatch(-2,0,0));''','route text')
+          rep('''        addDetail(bodyBox,"calendar","FECHA Y HORA",dt+" · "+r.optInt("passengers",1)+" pasajero(s)");''',
+          '''        addDetail(bodyBox,"calendar","FECHA Y HORA",fullDt+" · "+r.optInt("passengers",1)+" pasajero(s)");''','full detail date')
+          rep('''        head.setOnClickListener(v->{expandedId=open?"":id;renderRows(hist);});''',
+          '''        head.setContentDescription((open?"Contraer ":"Expandir ")+(code.isEmpty()?"reserva":code));head.setOnClickListener(v->{expandedId=open?"":id;hapticTick();renderRows(hist);});''','card click')
+          rep('''    private String shortAddress(String s){if(s==null)return "";String a=s.trim();int comma=a.indexOf(',');if(comma>6)a=a.substring(0,comma);return a.length()>34?a.substring(0,31)+"…":a;}''',
+          '''    private String shortAddress(String s){if(s==null)return "";String a=s.trim();int comma=a.indexOf(',');if(comma>10)a=a.substring(0,comma);return a.length()>46?a.substring(0,43)+"…":a;}''','short address')
+          
+          # Quote dialog -> premium Dialog.
+          old_quote='''        AlertDialog d=new AlertDialog.Builder(this).setTitle("Preparar presupuesto · "+r.optString("code")).setView(sc).setNegativeButton("CANCELAR",null).setPositiveButton("ENVIAR",null).create();
+                  d.setOnShowListener(x->{
+                      d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+                          double qkm=num(kmF),rate=num(rateF),minimum=num(minF),unit=Math.max(0,num(tollUnitF)),waiting=num(waitF),pickup=num(pickupF),other=num(otherF);int count=Math.max(0,(int)Math.round(num(tollCountF)));double tolls=count*unit;double reference=quoteReference(qkm,rate,minimum,tolls,waiting,pickup,other);double total=num(totalF);
+                          if(total<=0){toast("Definí el precio final que verá el cliente");return;}
+                          d.dismiss();sendQuote(r,qkm,r.optInt("route_duration_min",0),rate,minimum,count,unit,waiting,num(pickupKmF),pickup,other,reference,total,includes.getText().toString().trim());
+                      });
+                      Window w=d.getWindow();if(w!=null){int max=(int)(getResources().getDisplayMetrics().heightPixels*.82f);w.setLayout((int)(getResources().getDisplayMetrics().widthPixels*.94f),max);}
+                  });
+                  d.show();
+          '''
+          new_quote='''        final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("PREPARAR PRESUPUESTO · "+r.optString("code"),"El cálculo es interno. El cliente recibe únicamente el precio final que decidas.");shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
+                  LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),send=primaryButton("ENVIAR PRESUPUESTO");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(54),1));spacerH(actions,7);actions.addView(send,new LinearLayout.LayoutParams(0,dp(54),2));shell.addView(actions,lpMatch(dp(58),8,0));cancel.setOnClickListener(v->d.dismiss());send.setOnClickListener(v->{double qkm=num(kmF),rate=num(rateF),minimum=num(minF),unit=Math.max(0,num(tollUnitF)),waiting=num(waitF),pickup=num(pickupF),other=num(otherF);int count=Math.max(0,(int)Math.round(num(tollCountF)));double tolls=count*unit;double reference=quoteReference(qkm,rate,minimum,tolls,waiting,pickup,other);double total=num(totalF);if(total<=0){toast("Definí el precio final que verá el cliente");return;}send.setEnabled(false);d.dismiss();sendQuote(r,qkm,r.optInt("route_duration_min",0),rate,minimum,count,unit,waiting,num(pickupKmF),pickup,other,reference,total,includes.getText().toString().trim());});showDriverDialog(d,shell,.96f,.92f);
+          '''
+          rep(old_quote,new_quote,'quote dialog')
+          
+          # Schedule block add -> premium.
+          start=s.index('    private void showAddScheduleBlock(){')
+          end=s.index('    private void showScheduleBlocks(){',start)
+          new_add='''    private void showAddScheduleBlock(){
+                  Calendar c=Calendar.getInstance();final String[] date={new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime())};final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("BLOQUEAR HORARIO","Creá un bloqueo privado para impedir reservas online en ese tramo.");LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);Button dateBtn=secondaryButton("📅 "+prettyDate(date[0]));box.addView(dateBtn,lpMatch(dp(52),0,8));EditText start=availabilityField(box,"Desde (HH:mm)","09:00",false),end=availabilityField(box,"Hasta (HH:mm)","10:00",false),note=availabilityField(box,"Motivo privado (opcional)","",false);dateBtn.setOnClickListener(v->showPremiumDatePicker(c,picked->{date[0]=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(picked.getTime());dateBtn.setText("📅 "+prettyDate(date[0]));}));shell.addView(box,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("BLOQUEAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));shell.addView(actions,lpMatch(dp(56),8,0));cancel.setOnClickListener(v->d.dismiss());save.setOnClickListener(v->{String a=start.getText().toString().trim(),z=end.getText().toString().trim();if(!a.matches("[0-2][0-9]:[0-5][0-9]")||!z.matches("[0-2][0-9]:[0-5][0-9]")){toast("Usá formato HH:mm");return;}save.setEnabled(false);pool.execute(()->{try{Api.addScheduleBlock(pin,date[0],a,z,note.getText().toString().trim());runOnUiThread(()->{toast("Horario bloqueado");d.dismiss();});}catch(Exception e){runOnUiThread(()->{save.setEnabled(true);toast("No pude bloquear: "+friendly(e));});}});});showDriverDialog(d,shell,.92f,.72f);
+              }
+          '''
+          s=s[:start]+new_add+s[end:]
+          
+          # Schedule blocks list -> premium.
+          start=s.index('    private void showScheduleBlocks(){')
+          end=s.index('    private ArrayList<JSONObject> agendaFilteredRows()',start)
+          new_blocks='''    private void showScheduleBlocks(){
+                  Calendar a=Calendar.getInstance(),b=(Calendar)a.clone();b.add(Calendar.DAY_OF_YEAR,90);String from=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(a.getTime()),to=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(b.getTime());toast("Cargando bloqueos…");pool.execute(()->{try{JSONArray rows=Api.listScheduleBlocks(pin,from,to);runOnUiThread(()->{if(rows.length()==0){showDriverInfo("BLOQUEOS","No hay bloqueos manuales en los próximos 90 días.");return;}final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("BLOQUEOS","Tocá un bloqueo para eliminarlo.");ScrollView sc=new ScrollView(this);LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);sc.addView(list);for(int i=0;i<rows.length();i++){JSONObject r=rows.optJSONObject(i);if(r==null)continue;String n=r.optString("note","");String label=prettyDate(r.optString("date"))+" · "+trimTime(r.optString("start"))+"–"+trimTime(r.optString("end"))+(n.isEmpty()?"":"\n"+n);Button item=secondaryButton(label);item.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);item.setTextSize(12);item.setSingleLine(false);item.setPadding(dp(12),dp(5),dp(12),dp(5));item.setOnClickListener(v->showDriverConfirm("ELIMINAR BLOQUEO",label,"VOLVER","ELIMINAR",()->{d.dismiss();pool.execute(()->{try{Api.deleteScheduleBlock(pin,r.optString("id"));runOnUiThread(()->toast("Bloqueo eliminado"));}catch(Exception e){runOnUiThread(()->toast("No pude eliminar: "+friendly(e)));}});}));list.addView(item,lpMatch(dp(64),3,3));}shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));Button close=primaryButton("CERRAR");close.setOnClickListener(v->d.dismiss());shell.addView(close,lpMatch(dp(52),8,0));showDriverDialog(d,shell,.92f,.80f);});}catch(Exception e){runOnUiThread(()->toast("No pude cargar bloqueos: "+friendly(e)));}});
+              }
+          
+          '''
+          s=s[:start]+new_blocks+s[end:]
+          
+          # GPS simple dialogs -> premium helpers.
+          old='''    private void corregirGpsPreflight(){GpsPreflight g=leerGpsPreflight();if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);return;}if(!g.locationEnabled){new AlertDialog.Builder(this).setTitle("Activar ubicación").setMessage("Para registrar kilómetros y recorrido, Android debe tener Ubicación/GPS encendido.").setNegativeButton("CANCELAR",null).setPositiveButton("ABRIR AJUSTES",(d,w)->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}}).show();return;}if(g.backgroundRestricted){new AlertDialog.Builder(this).setTitle("GPS listo con advertencia").setMessage("La ubicación está disponible, pero Android marca esta app como restringida en segundo plano. El servicio de viaje seguirá intentando registrar como servicio en primer plano.").setNegativeButton("CERRAR",null).setPositiveButton("AJUSTES DE APP",(d,w)->{try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}catch(Exception e){}}).show();return;}toast("● GPS LISTO");}'''
+          new='''    private void corregirGpsPreflight(){GpsPreflight g=leerGpsPreflight();if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);return;}if(!g.locationEnabled){showDriverConfirm("ACTIVAR UBICACIÓN","Para registrar kilómetros y recorrido, Android debe tener Ubicación/GPS encendido.","CANCELAR","ABRIR AJUSTES",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}});return;}if(g.backgroundRestricted){showDriverConfirm("GPS LISTO CON ADVERTENCIA","La ubicación está disponible, pero Android marca esta app como restringida en segundo plano. El servicio seguirá registrando como servicio en primer plano.","CERRAR","AJUSTES DE APP",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}catch(Exception e){}});return;}toast("● GPS LISTO");}'''
+          rep(old,new,'gps preflight dialog')
+          old='''    private boolean asegurarGpsAntesDeViaje(){GpsPreflight g=leerGpsPreflight();actualizarGpsPreflightSilencioso();if(g.ready())return true;if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);toast("Autorizá ubicación precisa y volvé a deslizar para iniciar");return false;}if(!g.locationEnabled){new AlertDialog.Builder(this).setTitle("GPS desactivado").setMessage("No voy a iniciar el viaje sin telemetría. Activá Ubicación/GPS y luego volvé a deslizar.").setNegativeButton("CANCELAR",null).setPositiveButton("ACTIVAR GPS",(d,w)->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}}).show();return false;}new AlertDialog.Builder(this).setTitle("GPS no disponible").setMessage("Android no encuentra el servicio de telemetría. El viaje no se iniciará sin registro GPS.").setPositiveButton("OK",null).show();return false;}'''
+          new='''    private boolean asegurarGpsAntesDeViaje(){GpsPreflight g=leerGpsPreflight();actualizarGpsPreflightSilencioso();if(g.ready())return true;if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);toast("Autorizá ubicación precisa y volvé a deslizar para iniciar");return false;}if(!g.locationEnabled){showDriverConfirm("GPS DESACTIVADO","No voy a iniciar el viaje sin telemetría. Activá Ubicación/GPS y luego volvé a deslizar.","CANCELAR","ACTIVAR GPS",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}});return false;}showDriverInfo("GPS NO DISPONIBLE","Android no encuentra el servicio de telemetría. El viaje no se iniciará sin registro GPS.");return false;}'''
+          rep(old,new,'gps required dialog')
+          old='''    private void verifyTripTelemetryStart(JSONObject r,int attempt){JSONObject t=TripTelemetryService.summary(this,r.optString("id",""));String state=t.optString("state","");if(TripTelemetryService.STATE_ACTIVE.equals(state)&&t.optBoolean("active",false)){toast("● GPS REGISTRANDO · "+t.optInt("points",0)+" puntos · "+formatDistance(t.optDouble("distance_km",0)));return;}if((TripTelemetryService.STATE_STARTING.equals(state)||state.isEmpty())&&attempt<2){handler.postDelayed(()->verifyTripTelemetryStart(r,attempt+1),1200);return;}String err=t.optString("last_error","");if(err.isEmpty())err="El servicio GPS no confirmó el inicio";final String msg=err;new AlertDialog.Builder(this).setTitle("⚠ GPS no está registrando").setMessage(msg+"\\n\\nEl viaje quedó iniciado, pero no voy a ocultar el problema. Podés reintentar el GPS ahora.").setNegativeButton("CERRAR",null).setPositiveButton("REINTENTAR",(d,w)->{startTripTelemetry(r);handler.postDelayed(()->verifyTripTelemetryStart(r,0),700);}).show();}'''
+          new='''    private void verifyTripTelemetryStart(JSONObject r,int attempt){JSONObject t=TripTelemetryService.summary(this,r.optString("id",""));String state=t.optString("state","");if(TripTelemetryService.STATE_ACTIVE.equals(state)&&t.optBoolean("active",false)){toast("● GPS REGISTRANDO · "+t.optInt("points",0)+" puntos · "+formatDistance(t.optDouble("distance_km",0)));return;}if((TripTelemetryService.STATE_STARTING.equals(state)||state.isEmpty())&&attempt<2){handler.postDelayed(()->verifyTripTelemetryStart(r,attempt+1),1200);return;}String err=t.optString("last_error","");if(err.isEmpty())err="El servicio GPS no confirmó el inicio";final String msg=err;showDriverConfirm("⚠ GPS NO ESTÁ REGISTRANDO",msg+"\\n\\nEl viaje quedó iniciado, pero no voy a ocultar el problema. Podés reintentar el GPS ahora.","CERRAR","REINTENTAR",()->{startTripTelemetry(r);handler.postDelayed(()->verifyTripTelemetryStart(r,0),700);});}'''
+          rep(old,new,'gps start verify dialog')
+          
+          # Trip finish summary premium.
+          old='''        new AlertDialog.Builder(this).setTitle("✓ Viaje finalizado").setMessage(b.length()>0?b.toString():"La reserva pasó al historial.").setNeutralButton(t.optBoolean("trace_exists",false)?"VER TRAZA":null,(d,w)->showTelemetryDialog(r)).setPositiveButton("LISTO",null).show();'''
+          new='''        final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("✓ VIAJE FINALIZADO",b.length()>0?b.toString():"La reserva pasó al historial.");if(t.optBoolean("trace_exists",false)){Button trace=secondaryButton("VER TRAZA GPS");trace.setOnClickListener(v->{d.dismiss();showTelemetryDialog(r);});shell.addView(trace,lpMatch(dp(50),5,3));}Button ok=primaryButton("LISTO");ok.setOnClickListener(v->d.dismiss());shell.addView(ok,lpMatch(dp(52),7,0));showDriverDialog(d,shell,.92f,.74f);'''
+          rep(old,new,'trip finish')
+          
+          # Telemetry dialog premium.
+          start=s.index('    private void showTelemetryDialog(JSONObject r){')
+          end=s.index('    private void openTelemetryMap(JSONObject r){',start)
+          new_telem='''    private void showTelemetryDialog(JSONObject r){String id=r.optString("id","");JSONObject t=TripTelemetryService.summary(this,id);if(t.optLong("started_at",0)<=0){toast("Todavía no hay telemetría para esta reserva");return;}String state=t.optString("state","");StringBuilder b=new StringBuilder();b.append("Estado: ").append(state.isEmpty()?"SIN DIAGNÓSTICO":state);if(t.optInt("providers",0)>0)b.append(" · ").append(t.optInt("providers",0)).append(" proveedor(es)");String err=t.optString("last_error","");if(!err.isEmpty())b.append("\\nDiagnóstico: ").append(err);long hbAge=t.optLong("heartbeat_age_ms",Long.MAX_VALUE);if(hbAge<Long.MAX_VALUE/2)b.append("\\nÚltima señal del servicio: hace ").append(TripTelemetryService.fmtDuration(hbAge));b.append("\\n\\nDistancia real: ").append(formatDistance(t.optDouble("distance_km",0)));b.append("\\nTiempo total: ").append(TripTelemetryService.fmtDuration(t.optLong("elapsed_ms",0)));b.append("\\nEn movimiento: ").append(TripTelemetryService.fmtDuration(t.optLong("moving_ms",0)));b.append("\\nDetenido: ").append(TripTelemetryService.fmtDuration(t.optLong("stopped_ms",0)));long gap=t.optLong("signal_gap_ms",0);if(gap>15000)b.append("\\nSin señal / no medido: ").append(TripTelemetryService.fmtDuration(gap));b.append("\\nVelocidad actual: ").append(String.format(Locale.US,"%.1f km/h",t.optDouble("current_speed_kmh",0)));b.append("\\nVelocidad media (mov.): ").append(String.format(Locale.US,"%.1f km/h",t.optDouble("avg_moving_speed_kmh",0)));b.append("\\nVelocidad máxima: ").append(String.format(Locale.US,"%.1f km/h",t.optDouble("max_speed_kmh",0)));b.append("\\nPuntos registrados: ").append(t.optInt("points",0));b.append("\\nAvisos de cámaras OSM: ").append(t.optInt("radar_alerts",0));final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("TELEMETRÍA GPS · "+r.optString("code",""),b.toString());LinearLayout actions=new LinearLayout(this);Button export=secondaryButton("EXPORTAR GPX"),map=secondaryButton("VER RECORRIDO");export.setEnabled(t.optInt("points",0)>0);map.setEnabled(t.optInt("points",0)>1);actions.addView(export,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,6);actions.addView(map,new LinearLayout.LayoutParams(0,dp(50),1));shell.addView(actions,lpMatch(dp(54),7,4));Button close=primaryButton("CERRAR");shell.addView(close,lpMatch(dp(52),3,0));export.setOnClickListener(v->{d.dismiss();exportGpx(r);});map.setOnClickListener(v->{d.dismiss();openTelemetryMap(r);});close.setOnClickListener(v->d.dismiss());showDriverDialog(d,shell,.94f,.82f);}
+          '''
+          s=s[:start]+new_telem+s[end:]
+          
+          # Telemetry settings premium.
+          start=s.index('    private void showTelemetrySettings(){')
+          end=s.index('    private void showDriverAlertSettings(){',start)
+          new_set='''    private void showTelemetrySettings(){android.content.SharedPreferences p=getSharedPreferences("telemetry_settings",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("GPS Y TELEMETRÍA","Durante EN VIAJE se registra la traza completa en este teléfono, incluso con la app minimizada.");LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);android.widget.CheckBox radar=new android.widget.CheckBox(this);radar.setText("Alertas audibles de cámaras OSM (experimental)");radar.setTextColor(TEXT);radar.setChecked(p.getBoolean("radar_osm",true));box.addView(radar);box.addView(body("Las cámaras se consultan en OpenStreetMap/Overpass y pueden estar incompletas o desactualizadas. El aviso es complementario; respetá siempre la señalización vial.",11,MUTED),lpMatch(-2,4,0));shell.addView(box,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));shell.addView(actions,lpMatch(dp(56),8,0));cancel.setOnClickListener(v->d.dismiss());save.setOnClickListener(v->{p.edit().putBoolean("radar_osm",radar.isChecked()).apply();toast("Preferencias GPS guardadas");d.dismiss();});showDriverDialog(d,shell,.92f,.64f);}
+          
+          '''
+          s=s[:start]+new_set+s[end:]
+          
+          # Pricing preset premium.
+          start=s.index('    private void showPricingPresetDialog(){')
+          end=s.index('    private String bitsValue',start)
+          new_price='''    private void showPricingPresetDialog(){android.content.SharedPreferences p=getSharedPreferences("pricing",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("PRESET DE PRESUPUESTO","Valores internos predeterminados. El cliente nunca ve este desglose.");ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);sc.addView(box);EditText rate=quoteNumberField(box,"Referencia habitual por km",bitsValue(p,"price_per_km_bits"));EditText min=quoteNumberField(box,"Mínimo habitual",bitsValue(p,"minimum_bits"));EditText toll=quoteNumberField(box,"Valor habitual por peaje",bitsValue(p,"toll_unit_bits"));EditText wait=quoteNumberField(box,"Espera habitual",bitsValue(p,"waiting_bits"));EditText pickup=quoteNumberField(box,"Extra habitual hasta origen",bitsValue(p,"pickup_extra_bits"));EditText other=quoteNumberField(box,"Otros extras habituales",bitsValue(p,"other_bits"));shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));shell.addView(actions,lpMatch(dp(56),8,0));cancel.setOnClickListener(v->d.dismiss());save.setOnClickListener(v->{p.edit().putLong("price_per_km_bits",Double.doubleToRawLongBits(num(rate))).putLong("minimum_bits",Double.doubleToRawLongBits(num(min))).putLong("toll_unit_bits",Double.doubleToRawLongBits(num(toll))).putLong("waiting_bits",Double.doubleToRawLongBits(num(wait))).putLong("pickup_extra_bits",Double.doubleToRawLongBits(num(pickup))).putLong("other_bits",Double.doubleToRawLongBits(num(other))).apply();toast("Preset guardado");d.dismiss();});showDriverDialog(d,shell,.94f,.86f);}
+          '''
+          s=s[:start]+new_price+s[end:]
+          
+          # Version labels in MainActivity.
+          s=s.replace('Conductor v11.4 R9 iniciado','Conductor v11.4 R10 iniciado')
+          s=s.replace('Traslados Conductor · v11.4 R9','Traslados Conductor · v11.4 R10')
+          s=s.replace('v11.4 R9','v11.4 R10')
+          
+          p.write_text(s,encoding='utf-8')
+          api=Path('conductor/src/main/java/uy/com/traslados/conductor/Api.java')
+          a=api.read_text(encoding='utf-8').replace('11.4-R9','11.4-R10')
+          api.write_text(a,encoding='utf-8')
+          print('R10 patch applied',len(s))
+          print('native AlertDialog builders left:',s.count('new AlertDialog.Builder'))
+          PYR10
+          python3 /tmp/apply_r10.py
+
+      - name: Set Conductor v11.4 R10 version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYVERSION'
+          from pathlib import Path
+          import re
+          p=Path('conductor/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'versionCode\s+\d+','versionCode 118',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '11.4-R10'",s,count=1)
+          p.write_text(s,encoding='utf-8')
+          PYVERSION
+
+      - name: Verify R10 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=conductor/src/main/java/uy/com/traslados/conductor
+          grep -q "versionCode 118" conductor/build.gradle
+          grep -q "versionName '11.4-R10'" conductor/build.gradle
+          grep -q '11.4-R10' "$D/Api.java"
+          grep -q 'Conductor v11.4 R10 iniciado' "$D/MainActivity.java"
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' "$D/Api.java"
+          grep -q 'dayGroupHeader' "$D/MainActivity.java"
+          grep -q 'collapsedHistoryDays' "$D/MainActivity.java"
+          grep -q 'collapsedActiveDays' "$D/MainActivity.java"
+          grep -q 'actualizado ' "$D/MainActivity.java"
+          grep -q 'mostrando última información' "$D/MainActivity.java"
+          grep -q 'finalizadas  ·  ' "$D/MainActivity.java"
+          grep -q 'TextUtils.TruncateAt.END' "$D/MainActivity.java"
+          grep -q 'PREPARAR PRESUPUESTO · ' "$D/MainActivity.java"
+          grep -q 'BLOQUEAR HORARIO' "$D/MainActivity.java"
+          grep -q 'GPS Y TELEMETRÍA' "$D/MainActivity.java"
+          grep -q 'PRESET DE PRESUPUESTO' "$D/MainActivity.java"
+          ! grep -q 'new AlertDialog.Builder' "$D/MainActivity.java"
+          grep -q 'TripTelemetryService' "$D/MainActivity.java"
+          grep -q 'GPS LISTO' "$D/MainActivity.java"
+          grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
+          grep -q 'driverTripReminderCheck' "$D/ReservationMonitorService.java"
+          grep -q 'traslados_nuevas_v114_r9_visual' "$D/ReservationMonitorService.java"
+          grep -q 'AJUSTADO 5/5' "$D/MainActivity.java"
+          grep -q 'NORMAL 10/10' "$D/MainActivity.java"
+          grep -q '^import android.media.MediaPlayer;$' "$D/MainActivity.java"
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+          echo "R10 source checks OK"
+
+      - name: Upload R10 patched source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10-patched-source
+          path: |
+            conductor/build.gradle
+            conductor/src/main/AndroidManifest.xml
+            conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+            conductor/src/main/java/uy/com/traslados/conductor/Api.java
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+            conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java
+          if-no-files-found: error
+
+      - name: Build Traslados Conductor v11.4 R10
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.apk
+          ls -lh artifacts/Traslados_Conductor_v11.4_R10.apk
+
+      - name: Upload Traslados Conductor v11.4 R10 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10
+          path: artifacts/Traslados_Conductor_v11.4_R10.apk
+          if-no-files-found: error
