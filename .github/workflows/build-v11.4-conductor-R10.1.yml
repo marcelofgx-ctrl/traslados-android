@@ -1,0 +1,291 @@
+# Traslados Conductor v11.4 R10.1 - UI móvil
+# Base exacta: R10 compilada con éxito, run 37090849004
+# Alcance: safe-area/status bar, espaciados Solicitudes, acordeón real y chevrons vectoriales.
+
+name: Build Traslados Conductor v11.4 R10.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-v11.4-conductor-R10.1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android base and Conductor v9.2 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-conductor.yml" -o /tmp/conductor-v9.2.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m: raise SystemExit('No se encontró proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf: tf.extractall('.')
+
+          txt=Path('/tmp/conductor-v9.2.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m: raise SystemExit('No se encontró payload Conductor v9.2')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces: raise SystemExit('Payload vacío Conductor v9.2')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf: tf.extractall('.')
+          print('Conductor v9.2 restaurado',len(raw),'bytes')
+          PYRESTORE
+
+          test -d conductor
+          grep -q "versionName '9.2'" conductor/build.gradle
+
+      - name: Download exact successful R10 patched source
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10-patched-source
+          path: /tmp/r10src
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37090849004
+
+      - name: Overlay exact R10 Conductor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/r10src/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          cp -a /tmp/r10src/. conductor/
+          grep -q 'Conductor v11.4 R10 iniciado' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q "versionName '11.4-R10'" conductor/build.gradle
+
+      - name: Download exact R10 APK for audio resources
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10
+          path: /tmp/r10apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37090849004
+
+      - name: Restore R10 audio resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r10apk -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p conductor/src/main/res/raw /tmp/r10raw
+          unzip -j -o "$APK" 'res/raw/reserva_calida.wav' 'res/raw/viaje_proximo.wav' -d /tmp/r10raw
+          cp /tmp/r10raw/reserva_calida.wav conductor/src/main/res/raw/reserva_calida.wav
+          cp /tmp/r10raw/viaje_proximo.wav conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+
+      - name: Apply R10.1 mobile UI refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/apply_r101.py <<'PYR101'
+          from pathlib import Path
+          p=Path('conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java')
+          s=p.read_text(encoding='utf-8')
+          
+          def rep(old,new,label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'R10.1: no encontré {label}')
+              s=s.replace(old,new,1)
+          
+          rep('Conductor v11.4 R10 iniciado','Conductor v11.4 R10.1 iniciado','app_start')
+          rep('// R10: cada fecha es un acordeón que contiene sus reservas.','// R10.1: acordeón real por fecha, chevrons vectoriales y safe-area móvil.','comentario R10')
+          
+          # Android 15/16 edge-to-edge: no dibujar contenido scrolleado bajo barras del sistema.
+          rep('ScrollView sc=new ScrollView(this);sc.setFillViewport(true);sc.setClipToPadding(false);',
+              'ScrollView sc=new ScrollView(this);sc.setFillViewport(true);sc.setClipToPadding(true);sc.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);',
+              'baseScreen safe-area')
+          
+          # Solicitudes: corregir hijos de 50 dp dentro de contenedores de 48 dp.
+          rep('tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools,5);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools,5);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(50),1));',
+              'tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools,6);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools,6);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(52),1));',
+              'fila Avisos/Presets/GPS hijos')
+          rep('box.addView(tools,lpMatch(dp(48),0,5));','box.addView(tools,lpMatch(dp(52),0,8));','fila Avisos/Presets/GPS contenedor')
+          rep('tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(tools2,5);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(50),1));',
+              'tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools2,6);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(52),1));',
+              'fila Diagnóstico/Prueba hijos')
+          rep('diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());box.addView(tools2,lpMatch(dp(48),0,6));',
+              'diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());box.addView(tools2,lpMatch(dp(52),0,9));',
+              'fila Diagnóstico/Prueba contenedor')
+          
+          # Nuevo filtro = nuevo acordeón inicial.
+          rep('agendaAllBtn.setOnClickListener(v->{agendaMode="TODAS";agendaCustomDate=false;renderRows(false);});',
+              'agendaAllBtn.setOnClickListener(v->{agendaMode="TODAS";agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});','filtro todas')
+          rep('agendaTodayBtn.setOnClickListener(v->{agendaMode="DIA";agendaDate=Calendar.getInstance();agendaCustomDate=false;renderRows(false);});',
+              'agendaTodayBtn.setOnClickListener(v->{agendaMode="DIA";agendaDate=Calendar.getInstance();agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});','filtro hoy')
+          rep('agendaWeekBtn.setOnClickListener(v->{agendaMode="SEMANA";agendaDate=Calendar.getInstance();agendaCustomDate=false;renderRows(false);});',
+              'agendaWeekBtn.setOnClickListener(v->{agendaMode="SEMANA";agendaDate=Calendar.getInstance();agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});','filtro semana')
+          rep('agendaMonthBtn.setOnClickListener(v->{agendaMode="MES";agendaDate=Calendar.getInstance();agendaCustomDate=false;renderRows(false);});',
+              'agendaMonthBtn.setOnClickListener(v->{agendaMode="MES";agendaDate=Calendar.getInstance();agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});','filtro mes')
+          rep('private void pickAgendaDate(){showPremiumDatePicker(agendaDate,c->{agendaDate=c;agendaMode="DIA";agendaCustomDate=true;renderRows(false);});}',
+              'private void pickAgendaDate(){showPremiumDatePicker(agendaDate,c->{agendaDate=c;agendaMode="DIA";agendaCustomDate=true;resetActiveDayAccordion();renderRows(false);});}',
+              'selector fecha')
+          
+          # Reserva abierta desde alerta/bubble: solo su día queda abierto.
+          rep('if(!expandedId.isEmpty())for(JSONObject r:shown)if(expandedId.equals(r.optString("id",""))){collapsed.remove(r.optString("pickup_date",""));break;}',
+              'if(!expandedId.isEmpty())for(JSONObject r:shown)if(expandedId.equals(r.optString("id",""))){String openDay=r.optString("pickup_date","");collapseAllOtherDays(collapsed,openDay);break;}',
+              'día de reserva expandida')
+          
+          start=s.index('    private View dayGroupHeader(String day,int count,boolean closed,boolean hist){')
+          end=s.index('    private String syncSuffix()',start)
+          new_block='''    private View dayGroupHeader(String day,int count,boolean closed,boolean hist){
+                  LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(13),dp(5),dp(6),dp(5));row.setBackground(rounded(PANEL_2,GOLD_DARK,16));row.setMinimumHeight(dp(56));
+                  TextView title=body(dayHeader(day),15,GOLD);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);row.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+                  TextView chip=body(count+" "+(count==1?"viaje":"viajes"),11,TEXT);chip.setGravity(Gravity.CENTER);chip.setPadding(dp(9),0,dp(9),0);chip.setBackground(rounded(Color.argb(35,224,193,111),GOLD_DARK,14));row.addView(chip,new LinearLayout.LayoutParams(-2,dp(32)));
+                  View arrow=chevronView(!closed,true);arrow.setContentDescription(closed?"Desplegar día":"Plegar día");LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(52),dp(48));ap.setMargins(dp(6),0,0,0);row.addView(arrow,ap);
+                  row.setContentDescription(dayHeader(day)+" · "+count+" "+(count==1?"viaje":"viajes")+" · "+(closed?"plegado":"desplegado"));
+                  row.setOnClickListener(v->{Set<String> set=hist?collapsedHistoryDays:collapsedActiveDays;if(closed){collapseAllOtherDays(set,day);expandedId="";}else{set.add(day);for(JSONObject x:currentRows)if(day.equals(x.optString("pickup_date",""))&&expandedId.equals(x.optString("id",""))){expandedId="";break;}}hapticTick();renderRows(hist);});
+                  return row;
+              }
+          
+              private void resetActiveDayAccordion(){activeDayGroupsInitialized=false;collapsedActiveDays.clear();expandedId="";}
+          
+              private void collapseAllOtherDays(Set<String> set,String openDay){set.clear();for(JSONObject x:currentRows){String d=x.optString("pickup_date","");if(!d.isEmpty()&&!d.equals(openDay))set.add(d);}set.remove(openDay);}
+          
+              private View chevronView(final boolean expanded,final boolean prominent){
+                  View v=new View(this){private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);@Override protected void onDraw(Canvas canvas){super.onDraw(canvas);paint.setStyle(Paint.Style.STROKE);paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);paint.setStrokeWidth(dp(2));paint.setColor(prominent?GOLD:TEXT);float cx=getWidth()/2f,cy=getHeight()/2f,dx=dp(prominent?8:7),dy=dp(prominent?5:4);Path path=new Path();path.moveTo(cx-dx,cy-dy);path.lineTo(cx,cy+dy);path.lineTo(cx+dx,cy-dy);canvas.drawPath(path,paint);}};
+                  v.setRotation(expanded?0f:-90f);v.setAlpha(.96f);v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);return v;
+              }
+          
+          '''
+          s=s[:start]+new_block+s[end:]
+          
+          rep('TextView arrow=body(open?"⌃":"⌄",31,TEXT);arrow.setGravity(Gravity.CENTER);arrow.setContentDescription(open?"Contraer reserva":"Expandir reserva");LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(52),dp(48));ap.setMargins(dp(4),0,0,0);top.addView(arrow,ap);head.addView(top);',
+              'View arrow=chevronView(open,false);arrow.setContentDescription(open?"Contraer reserva":"Expandir reserva");LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(50),dp(48));ap.setMargins(dp(5),0,0,0);top.addView(arrow,ap);head.addView(top);',
+              'chevron reserva')
+          
+          p.write_text(s,encoding='utf-8')
+          api=Path('conductor/src/main/java/uy/com/traslados/conductor/Api.java')
+          a=api.read_text(encoding='utf-8').replace('11.4-R10','11.4-R10.1')
+          api.write_text(a,encoding='utf-8')
+          print('R10.1 aplicado',len(s),'bytes')
+          PYR101
+          python3 /tmp/apply_r101.py
+
+      - name: Set Conductor v11.4 R10.1 version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYVERSION'
+          from pathlib import Path
+          import re
+          p=Path('conductor/build.gradle')
+          s=p.read_text(encoding='utf-8')
+          s=re.sub(r'versionCode\s+\d+','versionCode 119',s,count=1)
+          s=re.sub(r"versionName\s+'[^']+'","versionName '11.4-R10.1'",s,count=1)
+          p.write_text(s,encoding='utf-8')
+          PYVERSION
+
+      - name: Verify R10.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=conductor/src/main/java/uy/com/traslados/conductor
+          grep -q "versionCode 119" conductor/build.gradle
+          grep -q "versionName '11.4-R10.1'" conductor/build.gradle
+          grep -q '11.4-R10.1' "$D/Api.java"
+          grep -q 'Conductor v11.4 R10.1 iniciado' "$D/MainActivity.java"
+          grep -q 'https://zetaudvvutlouiqxopvg.supabase.co' "$D/Api.java"
+
+          # Safe-area y cajas Solicitudes.
+          grep -q 'setFillViewport(true);sc.setClipToPadding(true)' "$D/MainActivity.java"
+          grep -q 'tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(52),1))' "$D/MainActivity.java"
+          grep -q 'box.addView(tools,lpMatch(dp(52),0,8))' "$D/MainActivity.java"
+          grep -q 'box.addView(tools2,lpMatch(dp(52),0,9))' "$D/MainActivity.java"
+
+          # Acordeón real y chevrons dibujados, no glifos de texto.
+          grep -q 'private void collapseAllOtherDays' "$D/MainActivity.java"
+          grep -q 'private View chevronView' "$D/MainActivity.java"
+          grep -q 'View arrow=chevronView(!closed,true)' "$D/MainActivity.java"
+          grep -q 'View arrow=chevronView(open,false)' "$D/MainActivity.java"
+          grep -q 'resetActiveDayAccordion' "$D/MainActivity.java"
+          ! grep -q 'TextView arrow=body(open?' "$D/MainActivity.java"
+          ! grep -q 'TextView arrow=body(closed?' "$D/MainActivity.java"
+
+          # Preservar R10/R9 estable.
+          grep -q 'TripTelemetryService' "$D/MainActivity.java"
+          grep -q 'GPS LISTO' "$D/MainActivity.java"
+          grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
+          grep -q 'driverTripReminderCheck' "$D/ReservationMonitorService.java"
+          grep -q 'traslados_nuevas_v114_r9_visual' "$D/ReservationMonitorService.java"
+          grep -q 'NORMAL 10/10' "$D/MainActivity.java"
+          ! grep -q 'new AlertDialog.Builder' "$D/MainActivity.java"
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+          echo "R10.1 source checks OK"
+
+      - name: Upload R10.1 patched source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10.1-patched-source
+          path: |
+            conductor/build.gradle
+            conductor/src/main/AndroidManifest.xml
+            conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+            conductor/src/main/java/uy/com/traslados/conductor/Api.java
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+            conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java
+          if-no-files-found: error
+
+      - name: Build Traslados Conductor v11.4 R10.1
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.1.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.1.apk
+          ls -lh artifacts/Traslados_Conductor_v11.4_R10.1.apk
+
+      - name: Upload Traslados Conductor v11.4 R10.1 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10.1
+          path: artifacts/Traslados_Conductor_v11.4_R10.1.apk
+          if-no-files-found: error
