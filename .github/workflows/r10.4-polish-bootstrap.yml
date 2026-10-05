@@ -1,0 +1,98 @@
+name: Bootstrap Conductor R10.4 Polish
+
+on:
+  push:
+    branches:
+      - 'feature/conductor-r10.4-polish2'
+    paths:
+      - '.github/workflows/r10.4-polish-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feature/conductor-r10.4-polish2
+          fetch-depth: 0
+
+      - name: Apply R10.4 polish patch
+        run: python3 .github/scripts/patch_r10_4.py
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verify R10.4 source markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "versionCode 122" conductor/build.gradle
+          grep -q "versionName '11.4-R10.4'" conductor/build.gradle
+          grep -q 'Conductor v11.4 R10.4 iniciado' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'v11.4 · R10.4 · build 122' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'collapsed.addAll(groups.keySet())' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'tocá un día para desplegar' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'driverBubbleDp(66),driverBubbleDp(66)' conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+          grep -q 'driverBubbleDp(46),driverBubbleDp(46)' conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+          grep -q '11.4-R10.4' conductor/src/main/java/uy/com/traslados/conductor/Api.java
+
+      - name: Build R10.4
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.4.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.4.apk | tee artifacts/SHA256SUMS.txt
+
+      - name: Commit R10.4 app source after green build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            conductor/build.gradle \
+            conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java \
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java \
+            conductor/src/main/java/uy/com/traslados/conductor/Api.java
+          git commit -m 'Implement Conductor v11.4 R10.4 polish'
+          git push origin HEAD:feature/conductor-r10.4-polish2
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10.4-POLISH
+          path: |
+            artifacts/Traslados_Conductor_v11.4_R10.4.apk
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
