@@ -75,14 +75,26 @@ jobs:
           cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.3.apk
           sha256sum artifacts/Traslados_Conductor_v11.4_R10.3.apk | tee artifacts/SHA256SUMS.txt
 
-      - name: Commit generated source after green build
+      - name: Commit R10.3 app source after green build
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add conductor .github/workflows/build-conductor-source.yml
-          git commit -m 'Implement Conductor v11.4 R10.3 visual UI [r10.3-generated]'
+          git add \
+            conductor/build.gradle \
+            conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java \
+            conductor/src/main/java/uy/com/traslados/conductor/Api.java \
+            conductor/src/main/res/drawable/ic_refresh.xml \
+            conductor/src/main/res/drawable/ic_history.xml \
+            conductor/src/main/res/drawable/ic_logout.xml \
+            conductor/src/main/res/drawable/ic_bell.xml \
+            conductor/src/main/res/drawable/ic_tune.xml \
+            conductor/src/main/res/drawable/ic_gps.xml \
+            conductor/src/main/res/drawable/ic_diagnostics.xml \
+            conductor/src/main/res/drawable/ic_lab.xml \
+            conductor/src/main/res/drawable/ic_calendar.xml
+          git commit -m 'Implement Conductor v11.4 R10.3 visual UI'
           git push origin HEAD:feature/conductor-r10.3-ui
 
       - name: Upload APK
