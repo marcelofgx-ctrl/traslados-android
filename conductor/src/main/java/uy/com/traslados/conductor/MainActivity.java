@@ -94,7 +94,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},55);
         }
-        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.3 iniciado","{}"));
+        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.4 iniciado","{}"));
         checkSetup();
     }
 
@@ -371,7 +371,7 @@ public class MainActivity extends Activity {
     private void renderRows(boolean hist){
         ArrayList<JSONObject> shown=hist?new ArrayList<>(currentRows):agendaFilteredRows();
         if(!hist){refreshAgendaControls();updateStatusStrip();}
-        if(screenSub!=null)screenSub.setText(hist?"Historial · "+shown.size()+" viaje(s)"+syncSuffix():(isNetworkAvailable()?"Monitor activo":"Monitor sin conexión")+" · "+shown.size()+" visible(s) de "+currentRows.size()+syncSuffix());
+        if(screenSub!=null)screenSub.setText(hist?"Historial · "+shown.size()+" viaje(s) · tocá un día para desplegar"+syncSuffix():(isNetworkAvailable()?"Monitor activo":"Monitor sin conexión")+" · "+shown.size()+" visible(s) de "+currentRows.size()+syncSuffix());
         renderStats(hist);
         listBox.removeAllViews();
         if(shown.isEmpty()){
@@ -385,8 +385,13 @@ public class MainActivity extends Activity {
         Set<String> collapsed=hist?collapsedHistoryDays:collapsedActiveDays;
         boolean initialized=hist?historyDayGroupsInitialized:activeDayGroupsInitialized;
         if(!initialized){
-            collapsed.clear();boolean first=true;
-            for(String day:groups.keySet()){if(!first)collapsed.add(day);first=false;}
+            collapsed.clear();
+            if(hist){
+                collapsed.addAll(groups.keySet());
+            }else{
+                boolean first=true;
+                for(String day:groups.keySet()){if(!first)collapsed.add(day);first=false;}
+            }
             if(hist)historyDayGroupsInitialized=true;else activeDayGroupsInitialized=true;
         }
         if(!expandedId.isEmpty())for(JSONObject r:shown)if(expandedId.equals(r.optString("id",""))){String openDay=r.optString("pickup_date","");collapseAllOtherDays(collapsed,openDay);break;}
@@ -808,7 +813,7 @@ public class MainActivity extends Activity {
         TextView brand=heading("Traslados Conductor",22);col.addView(brand);
         TextView privateLine=body("Acceso privado del conductor",11,MUTED);col.addView(privateLine,lpMatch(-2,1,0));
         TextView serviceLine=body("Aeropuerto · Programados · Larga distancia",10,GOLD);col.addView(serviceLine);
-        TextView versionLine=body("v11.4 · R10.3 · build 121",9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
+        TextView versionLine=body("v11.4 · R10.4 · build 122",9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
         hero.addView(row);
 
         LinearLayout meta=new LinearLayout(this);meta.setGravity(Gravity.CENTER_VERTICAL);meta.setPadding(0,dp(8),0,0);
