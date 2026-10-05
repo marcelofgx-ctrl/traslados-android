@@ -1,0 +1,149 @@
+# ACTUALIZADO: 2026-10-05
+# OBJETIVO: convertir Traslados Conductor R10.2 en un proyecto Android versionado y autocontenido
+
+name: Materialize canonical Conductor Android project
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'stabilize/conductor-r10.2-canonical'
+    paths:
+      - '.github/workflows/materialize-conductor-project.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout canonical branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preserve canonical R10.2 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f conductor/build.gradle
+          test -f conductor/src/main/AndroidManifest.xml
+          D=conductor/src/main/java/uy/com/traslados/conductor
+          test -f "$D/MainActivity.java"
+          test -f "$D/Api.java"
+          test -f "$D/ReservationMonitorService.java"
+          test -f "$D/TripTelemetryService.java"
+          grep -q "versionName '11.4-R10.2'" conductor/build.gradle
+          rm -rf /tmp/canonical-conductor
+          mkdir -p /tmp/canonical-conductor
+          cp -a conductor/. /tmp/canonical-conductor/
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore last known-good Android scaffold
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base-v4.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-conductor.yml" -o /tmp/conductor-v9.2.yml
+
+          python3 - <<'PYRESTORE'
+          import base64, io, re, tarfile
+          from pathlib import Path
+
+          base=Path('/tmp/base-v4.yml').read_text(encoding='utf-8')
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m:
+              raise SystemExit('No se encontró proyecto Android base')
+          raw=base64.b64decode(m.group(1),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+
+          txt=Path('/tmp/conductor-v9.2.yml').read_text(encoding='utf-8')
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",txt)
+          if not m:
+              raise SystemExit('No se encontró payload Conductor v9.2')
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces:
+              raise SystemExit('Payload vacío Conductor v9.2')
+          raw=base64.b64decode(''.join(pieces),validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          PYRESTORE
+
+          test -d conductor/src/main/res
+          cp -a /tmp/canonical-conductor/. conductor/
+          grep -q "versionName '11.4-R10.2'" conductor/build.gradle
+
+      - name: Restore exact R10.2 audio resources
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10.2
+          path: /tmp/r102apk
+          github-token: ${{ github.token }}
+          repository: marcelofgx-ctrl/traslados-android
+          run-id: 37126836138
+
+      - name: Extract R10.2 audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find /tmp/r102apk -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          mkdir -p conductor/src/main/res/raw /tmp/r102raw
+          unzip -j -o "$APK" 'res/raw/reserva_calida.wav' 'res/raw/viaje_proximo.wav' -d /tmp/r102raw
+          cp /tmp/r102raw/reserva_calida.wav conductor/src/main/res/raw/reserva_calida.wav
+          cp /tmp/r102raw/viaje_proximo.wav conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+
+      - name: Verify materialized project builds
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Commit complete buildable Conductor project
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf conductor/build .gradle artifacts build
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          for f in settings.gradle settings.gradle.kts build.gradle build.gradle.kts gradle.properties gradlew gradlew.bat; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if [ -d gradle/wrapper ]; then git add gradle/wrapper; fi
+          git add conductor
+
+          if git diff --cached --quiet; then
+            echo 'El proyecto autocontenido ya estaba versionado.'
+          else
+            git commit -m 'Materialize buildable Traslados Conductor R10.2 project'
+            git push origin HEAD:stabilize/conductor-r10.2-canonical
+          fi
