@@ -1,0 +1,100 @@
+# ACTUALIZADO: 2026-10-05
+# FUENTE DE VERDAD: proyecto Android versionado en GitHub
+# No reconstruye desde YAML históricos ni artifacts previos.
+
+name: Build Traslados Conductor from source
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'stabilize/conductor-r10.2-canonical'
+    paths:
+      - 'conductor/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - '.github/workflows/build-conductor-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verify canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f settings.gradle
+          test -f build.gradle
+          test -f conductor/build.gradle
+          test -f conductor/src/main/AndroidManifest.xml
+          D=conductor/src/main/java/uy/com/traslados/conductor
+          test -f "$D/MainActivity.java"
+          test -f "$D/Api.java"
+          test -f "$D/ReservationMonitorService.java"
+          test -f "$D/TripTelemetryService.java"
+          test -s conductor/src/main/res/raw/reserva_calida.wav
+          test -s conductor/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/main/res/drawable-nodpi/app_icon.png
+          grep -q "versionCode 120" conductor/build.gradle
+          grep -q "versionName '11.4-R10.2'" conductor/build.gradle
+          grep -q '11.4-R10.2' "$D/Api.java"
+          grep -q 'Conductor v11.4 R10.2 iniciado' "$D/MainActivity.java"
+          grep -q 'collapseAllOtherDays' "$D/MainActivity.java"
+          grep -q 'WindowInsets' "$D/MainActivity.java"
+          grep -q 'TripTelemetryService' "$D/MainActivity.java"
+          grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
+          echo 'Canonical Conductor R10.2 source verified'
+
+      - name: Build Traslados Conductor
+        run: gradle :conductor:assembleDebug --stacktrace
+
+      - name: Prepare APK and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk | tee artifacts/SHA256SUMS.txt
+          ls -lh artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk artifacts/SHA256SUMS.txt
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.4-R10.2-SOURCE
+          path: |
+            artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
