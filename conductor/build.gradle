@@ -10,8 +10,8 @@ android {
         applicationId 'uy.com.traslados.conductor'
         minSdk 26
         targetSdk 35
-        versionCode 121
-        versionName '11.4-R10.3'
+        versionCode 122
+        versionName '11.4-R10.4'
     }
 
     compileOptions {

@@ -76,10 +76,10 @@ jobs:
           test -f conductor/src/main/res/drawable/ic_diagnostics.xml
           test -f conductor/src/main/res/drawable/ic_lab.xml
           test -f conductor/src/main/res/drawable/ic_calendar.xml
-          grep -q "versionCode 121" conductor/build.gradle
-          grep -q "versionName '11.4-R10.3'" conductor/build.gradle
-          grep -q '11.4-R10.3' "$D/Api.java"
-          grep -q 'Conductor v11.4 R10.3 iniciado' "$D/MainActivity.java"
+          grep -q "versionCode 122" conductor/build.gradle
+          grep -q "versionName '11.4-R10.4'" conductor/build.gradle
+          grep -q '11.4-R10.4' "$D/Api.java"
+          grep -q 'Conductor v11.4 R10.4 iniciado' "$D/MainActivity.java"
           grep -q 'collapseAllOtherDays' "$D/MainActivity.java"
           grep -q 'WindowInsets' "$D/MainActivity.java"
           grep -q 'TripTelemetryService' "$D/MainActivity.java"
@@ -87,8 +87,12 @@ jobs:
           grep -q 'agendaStatusMode' "$D/MainActivity.java"
           grep -q 'gpsStateChip' "$D/MainActivity.java"
           grep -q 'activeSyncInFlight' "$D/MainActivity.java"
-          grep -q 'v11.4 · R10.3 · build 121' "$D/MainActivity.java"
-          echo 'Canonical Conductor R10.3 source verified'
+          grep -q 'v11.4 · R10.4 · build 122' "$D/MainActivity.java"
+          grep -q 'collapsed.addAll(groups.keySet())' "$D/MainActivity.java"
+          grep -q 'tocá un día para desplegar' "$D/MainActivity.java"
+          grep -q 'driverBubbleDp(66),driverBubbleDp(66)' "$D/ReservationMonitorService.java"
+          grep -q 'driverBubbleDp(46),driverBubbleDp(46)' "$D/ReservationMonitorService.java"
+          echo 'Canonical Conductor R10.4 source verified'
 
       - name: Build Traslados Conductor
         run: gradle :conductor:assembleDebug --stacktrace
@@ -98,15 +102,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.3.apk
-          sha256sum artifacts/Traslados_Conductor_v11.4_R10.3.apk | tee artifacts/SHA256SUMS.txt
-          ls -lh artifacts/Traslados_Conductor_v11.4_R10.3.apk artifacts/SHA256SUMS.txt
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.4.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.4.apk | tee artifacts/SHA256SUMS.txt
+          ls -lh artifacts/Traslados_Conductor_v11.4_R10.4.apk artifacts/SHA256SUMS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.4-R10.3
+          name: Traslados-Conductor-v11.4-R10.4
           path: |
-            artifacts/Traslados_Conductor_v11.4_R10.3.apk
+            artifacts/Traslados_Conductor_v11.4_R10.4.apk
             artifacts/SHA256SUMS.txt
           if-no-files-found: error
