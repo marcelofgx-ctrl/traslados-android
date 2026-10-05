@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - main
-      - 'stabilize/conductor-r10.2-canonical'
     paths:
       - 'conductor/**'
       - 'build.gradle'
@@ -68,15 +67,28 @@ jobs:
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
           test -s conductor/src/main/res/drawable-nodpi/app_icon.png
-          grep -q "versionCode 120" conductor/build.gradle
-          grep -q "versionName '11.4-R10.2'" conductor/build.gradle
-          grep -q '11.4-R10.2' "$D/Api.java"
-          grep -q 'Conductor v11.4 R10.2 iniciado' "$D/MainActivity.java"
+          test -f conductor/src/main/res/drawable/ic_refresh.xml
+          test -f conductor/src/main/res/drawable/ic_history.xml
+          test -f conductor/src/main/res/drawable/ic_logout.xml
+          test -f conductor/src/main/res/drawable/ic_bell.xml
+          test -f conductor/src/main/res/drawable/ic_tune.xml
+          test -f conductor/src/main/res/drawable/ic_gps.xml
+          test -f conductor/src/main/res/drawable/ic_diagnostics.xml
+          test -f conductor/src/main/res/drawable/ic_lab.xml
+          test -f conductor/src/main/res/drawable/ic_calendar.xml
+          grep -q "versionCode 121" conductor/build.gradle
+          grep -q "versionName '11.4-R10.3'" conductor/build.gradle
+          grep -q '11.4-R10.3' "$D/Api.java"
+          grep -q 'Conductor v11.4 R10.3 iniciado' "$D/MainActivity.java"
           grep -q 'collapseAllOtherDays' "$D/MainActivity.java"
           grep -q 'WindowInsets' "$D/MainActivity.java"
           grep -q 'TripTelemetryService' "$D/MainActivity.java"
           grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
-          echo 'Canonical Conductor R10.2 source verified'
+          grep -q 'agendaStatusMode' "$D/MainActivity.java"
+          grep -q 'gpsStateChip' "$D/MainActivity.java"
+          grep -q 'activeSyncInFlight' "$D/MainActivity.java"
+          grep -q 'v11.4 · R10.3 · build 121' "$D/MainActivity.java"
+          echo 'Canonical Conductor R10.3 source verified'
 
       - name: Build Traslados Conductor
         run: gradle :conductor:assembleDebug --stacktrace
@@ -86,15 +98,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk
-          sha256sum artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk | tee artifacts/SHA256SUMS.txt
-          ls -lh artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk artifacts/SHA256SUMS.txt
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.3.apk
+          sha256sum artifacts/Traslados_Conductor_v11.4_R10.3.apk | tee artifacts/SHA256SUMS.txt
+          ls -lh artifacts/Traslados_Conductor_v11.4_R10.3.apk artifacts/SHA256SUMS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.4-R10.2-SOURCE
+          name: Traslados-Conductor-v11.4-R10.3
           path: |
-            artifacts/Traslados_Conductor_v11.4_R10.2_SOURCE.apk
+            artifacts/Traslados_Conductor_v11.4_R10.3.apk
             artifacts/SHA256SUMS.txt
           if-no-files-found: error
