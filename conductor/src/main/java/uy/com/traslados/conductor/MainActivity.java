@@ -57,6 +57,8 @@ public class MainActivity extends Activity {
     private boolean historyDayGroupsInitialized=false;
     private boolean activeDayGroupsInitialized=false;
     private long lastSuccessfulSyncAt=0L;
+    private boolean activeSyncInFlight=false;
+    private String lastActiveSnapshot="";
 
     private String pin="";
     private String expandedId="";
@@ -66,9 +68,11 @@ public class MainActivity extends Activity {
 
     private LinearLayout listBox,statsBox,agendaBox;
     private TextView screenTitle,screenSub,agendaLabel,availabilityStatus,gpsPreflightStatus;
+    private TextView gpsStateChip,onlineStateChip,monitorStateChip;
     private Button refreshBtn,historyBtn,logoutBtn;
     private Button agendaAllBtn,agendaTodayBtn,agendaWeekBtn,agendaMonthBtn,agendaDateBtn;
     private String agendaMode="TODAS";
+    private String agendaStatusMode="TODAS";
     private Calendar agendaDate=Calendar.getInstance();
     private boolean agendaCustomDate=false;
 
@@ -90,7 +94,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},55);
         }
-        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.2 iniciado","{}"));
+        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.3 iniciado","{}"));
         checkSetup();
     }
 
@@ -231,28 +235,31 @@ public class MainActivity extends Activity {
     private void buildDashboard(boolean history){
         dashboardVisible=true;historyMode=history;
         ScrollView sc=baseScreen();LinearLayout box=contentOf(sc);addBrand(box);
-        screenTitle=heading(history?"HISTORIAL":"SOLICITUDES",27);box.addView(screenTitle,lpMatch(-2,4,0));
-        screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Monitor activo · esperando solicitudes",13,GOLD);box.addView(screenSub,lpMatch(-2,0,10));
+        screenTitle=heading(history?"HISTORIAL":"SOLICITUDES",24);box.addView(screenTitle,lpMatch(-2,3,0));
+        screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Monitor activo · esperando solicitudes",12,GOLD);box.addView(screenSub,lpMatch(-2,0,7));
 
-        statsBox=new LinearLayout(this);statsBox.setOrientation(LinearLayout.HORIZONTAL);box.addView(statsBox,lpMatch(history?dp(54):dp(76),0,10));
+        statsBox=new LinearLayout(this);statsBox.setOrientation(LinearLayout.HORIZONTAL);box.addView(statsBox,lpMatch(history?dp(50):dp(66),0,8));
 
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
         refreshBtn=secondaryButton("ACTUALIZAR");historyBtn=secondaryButton(history?"SOLICITUDES":"HISTORIAL");logoutBtn=secondaryButton("SALIR");
-        actions.addView(refreshBtn,new LinearLayout.LayoutParams(0,dp(55),1));spacerH(actions,6);
-        actions.addView(historyBtn,new LinearLayout.LayoutParams(0,dp(55),1));spacerH(actions,6);
-        actions.addView(logoutBtn,new LinearLayout.LayoutParams(0,dp(55),1));
-        box.addView(actions,lpMatch(dp(55),0,8));
+        applyActionIcon(refreshBtn,R.drawable.ic_refresh);applyActionIcon(historyBtn,R.drawable.ic_history);applyActionIcon(logoutBtn,R.drawable.ic_logout);
+        actions.addView(refreshBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,6);
+        actions.addView(historyBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,6);
+        actions.addView(logoutBtn,new LinearLayout.LayoutParams(0,dp(50),1));
+        box.addView(actions,lpMatch(dp(50),0,7));
         if(!history){
             LinearLayout tools=new LinearLayout(this);tools.setGravity(Gravity.CENTER_VERTICAL);
-            Button alertPrefs=secondaryButton("🔔 AVISOS"),pricePrefs=secondaryButton("⚙ PRESETS"),gpsPrefs=secondaryButton("🛰 GPS");
-            for(Button b:new Button[]{alertPrefs,pricePrefs,gpsPrefs}){b.setTextSize(11);b.setPadding(dp(4),0,dp(4),0);}
-            tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools,6);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools,6);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(52),1));
+            Button alertPrefs=secondaryButton("AVISOS"),pricePrefs=secondaryButton("PRESETS"),gpsPrefs=secondaryButton("GPS");
+            applyActionIcon(alertPrefs,R.drawable.ic_bell);applyActionIcon(pricePrefs,R.drawable.ic_tune);applyActionIcon(gpsPrefs,R.drawable.ic_gps);
+            for(Button b:new Button[]{alertPrefs,pricePrefs,gpsPrefs}){b.setTextSize(10);b.setPadding(dp(4),0,dp(4),0);}
+            tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools,6);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools,6);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(46),1));
             alertPrefs.setOnClickListener(v->showDriverAlertSettings());pricePrefs.setOnClickListener(v->showPricingPresetDialog());gpsPrefs.setOnClickListener(v->showTelemetrySettings());
-            box.addView(tools,lpMatch(dp(52),0,8));
+            box.addView(tools,lpMatch(dp(46),0,7));
             LinearLayout tools2=new LinearLayout(this);tools2.setGravity(Gravity.CENTER_VERTICAL);
-            Button diagBtn=secondaryButton("🩺 DIAGNÓSTICO"),testBtn=secondaryButton("🧪 MODO PRUEBA");diagBtn.setTextSize(11);testBtn.setTextSize(11);
-            tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(tools2,6);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(52),1));
-            diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());box.addView(tools2,lpMatch(dp(52),0,9));
+            Button diagBtn=secondaryButton("DIAGNÓSTICO"),testBtn=secondaryButton("MODO PRUEBA");diagBtn.setTextSize(10);testBtn.setTextSize(10);
+            applyActionIcon(diagBtn,R.drawable.ic_diagnostics);applyActionIcon(testBtn,R.drawable.ic_lab);
+            tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools2,6);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(46),1));
+            diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());box.addView(tools2,lpMatch(dp(46),0,7));
             gpsPreflightStatus=body("● Comprobando GPS…",12,MUTED);gpsPreflightStatus.setPadding(dp(12),dp(10),dp(12),dp(10));gpsPreflightStatus.setBackground(rounded(PANEL_2,LINE,14));gpsPreflightStatus.setClickable(true);gpsPreflightStatus.setOnClickListener(v->corregirGpsPreflight());box.addView(gpsPreflightStatus,lpMatch(-2,0,8));handler.postDelayed(this::actualizarGpsPreflightSilencioso,120);
         }
         if(!history){
@@ -260,22 +267,22 @@ public class MainActivity extends Activity {
 
             LinearLayout agendaHead=new LinearLayout(this);agendaHead.setOrientation(LinearLayout.HORIZONTAL);agendaHead.setGravity(Gravity.CENTER_VERTICAL);
             LinearLayout agendaText=new LinearLayout(this);agendaText.setOrientation(LinearLayout.VERTICAL);
-            TextView agendaTitle=body("AGENDA",19,TEXT);agendaTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-            agendaLabel=body(agendaDescription(),13,GOLD);
+            TextView agendaTitle=body("AGENDA",18,TEXT);agendaTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+            agendaLabel=body(agendaDescription(),12,GOLD);
             agendaText.addView(agendaTitle,lpMatch(-2,0,1));agendaText.addView(agendaLabel,lpMatch(-2,0,0));
             agendaHead.addView(agendaText,new LinearLayout.LayoutParams(0,-2,1));
-            agendaDateBtn=secondaryButton("📅 FECHA");agendaDateBtn.setTextSize(11);agendaDateBtn.setPadding(dp(6),0,dp(6),0);
-            LinearLayout.LayoutParams dateLp=new LinearLayout.LayoutParams(dp(112),dp(44));dateLp.setMargins(dp(8),0,0,0);agendaHead.addView(agendaDateBtn,dateLp);
+            agendaDateBtn=secondaryButton("FECHA");agendaDateBtn.setTextSize(10);agendaDateBtn.setPadding(dp(6),0,dp(6),0);applyActionIcon(agendaDateBtn,R.drawable.ic_calendar);
+            LinearLayout.LayoutParams dateLp=new LinearLayout.LayoutParams(dp(106),dp(42));dateLp.setMargins(dp(8),0,0,0);agendaHead.addView(agendaDateBtn,dateLp);
             agendaBox.addView(agendaHead,lpMatch(-2,10,8));
 
             LinearLayout filters=new LinearLayout(this);filters.setOrientation(LinearLayout.HORIZONTAL);
             agendaAllBtn=secondaryButton("TODAS");agendaTodayBtn=secondaryButton("HOY");agendaWeekBtn=secondaryButton("SEMANA");agendaMonthBtn=secondaryButton("MES");
-            for(Button b:new Button[]{agendaAllBtn,agendaTodayBtn,agendaWeekBtn,agendaMonthBtn}){b.setTextSize(11);b.setPadding(dp(3),0,dp(3),0);}
-            filters.addView(agendaAllBtn,new LinearLayout.LayoutParams(0,dp(48),1));spacerH(filters,4);
-            filters.addView(agendaTodayBtn,new LinearLayout.LayoutParams(0,dp(48),1));spacerH(filters,4);
-            filters.addView(agendaWeekBtn,new LinearLayout.LayoutParams(0,dp(48),1));spacerH(filters,4);
-            filters.addView(agendaMonthBtn,new LinearLayout.LayoutParams(0,dp(48),1));
-            agendaBox.addView(filters,lpMatch(dp(48),0,10));
+            for(Button b:new Button[]{agendaAllBtn,agendaTodayBtn,agendaWeekBtn,agendaMonthBtn}){b.setTextSize(10);b.setPadding(dp(3),0,dp(3),0);}
+            filters.addView(agendaAllBtn,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(filters,4);
+            filters.addView(agendaTodayBtn,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(filters,4);
+            filters.addView(agendaWeekBtn,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(filters,4);
+            filters.addView(agendaMonthBtn,new LinearLayout.LayoutParams(0,dp(44),1));
+            agendaBox.addView(filters,lpMatch(dp(44),0,8));
 
             agendaAllBtn.setOnClickListener(v->{agendaMode="TODAS";agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});
             agendaTodayBtn.setOnClickListener(v->{agendaMode="DIA";agendaDate=Calendar.getInstance();agendaCustomDate=false;resetActiveDayAccordion();renderRows(false);});
@@ -301,7 +308,8 @@ public class MainActivity extends Activity {
     }
 
     private void loadActive(boolean showLoading){
-        if(pin.isEmpty())return;
+        if(pin.isEmpty()||activeSyncInFlight)return;
+        activeSyncInFlight=true;
         if(showLoading&&screenSub!=null)screenSub.setText("Actualizando reservas…");
         pool.execute(()->{
             try{
@@ -314,14 +322,23 @@ public class MainActivity extends Activity {
                         if(!firstLoad&&!seenPending.contains(id))fresh.add(r);
                     }
                 }
+                String snapshot=rows.toString();
                 seenPending.clear();seenPending.addAll(current);firstLoad=false;
                 runOnUiThread(()->{
+                    activeSyncInFlight=false;
                     if(historyMode)return;
-                    currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();ensureTelemetryForActiveTrip(rows);renderRows(false);
+                    boolean changed=!snapshot.equals(lastActiveSnapshot);lastActiveSnapshot=snapshot;
+                    currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();ensureTelemetryForActiveTrip(rows);
+                    if(changed||showLoading||listBox==null||listBox.getChildCount()==0)renderRows(false);else refreshPassiveDashboard();
                     for(JSONObject r:fresh)alertNew(r);
                 });
-            }catch(Exception e){runOnUiThread(()->{if(!historyMode)showLoadError(e,false);});}
+            }catch(Exception e){runOnUiThread(()->{activeSyncInFlight=false;if(!historyMode)showLoadError(e,false);});}
         });
+    }
+
+    private void refreshPassiveDashboard(){
+        if(screenSub!=null)screenSub.setText((isNetworkAvailable()?"Monitor activo":"Monitor sin conexión")+" · "+agendaFilteredRows().size()+" visible(s) de "+currentRows.size()+syncSuffix());
+        renderStats(false);refreshAgendaControls();updateStatusStrip();
     }
 
     private void loadHistory(){
@@ -353,7 +370,7 @@ public class MainActivity extends Activity {
 
     private void renderRows(boolean hist){
         ArrayList<JSONObject> shown=hist?new ArrayList<>(currentRows):agendaFilteredRows();
-        if(!hist)refreshAgendaControls();
+        if(!hist){refreshAgendaControls();updateStatusStrip();}
         if(screenSub!=null)screenSub.setText(hist?"Historial · "+shown.size()+" viaje(s)"+syncSuffix():(isNetworkAvailable()?"Monitor activo":"Monitor sin conexión")+" · "+shown.size()+" visible(s) de "+currentRows.size()+syncSuffix());
         renderStats(hist);
         listBox.removeAllViews();
@@ -445,26 +462,33 @@ public class MainActivity extends Activity {
     private void renderStats(boolean hist){
         statsBox.removeAllViews();
         if(!hist){
-            int n=0,q=0,c=0;for(JSONObject r:agendaFilteredRows()){String st=r.optString("status"),qs=r.optString("quote_status","SIN_PRESUPUESTO");if("PENDIENTE".equals(st)&&"ENVIADO".equals(qs))q++;else if("PENDIENTE".equals(st))n++;else if("ACEPTADA".equals(st)||"EN_VIAJE".equals(st))c++;}
-            statsBox.addView(statCard("NUEVAS",n,GOLD),new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
-            statsBox.addView(statCard("COTIZADAS",q,CYAN),new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
-            statsBox.addView(statCard("CONFIRM.",c,GREEN),new LinearLayout.LayoutParams(0,-1,1));
+            int n=0,q=0,c=0;for(JSONObject r:currentRows){if(!matchesAgenda(r.optString("pickup_date","")))continue;String st=r.optString("status"),qs=r.optString("quote_status","SIN_PRESUPUESTO");if("PENDIENTE".equals(st)&&"ENVIADO".equals(qs))q++;else if("PENDIENTE".equals(st))n++;else if("ACEPTADA".equals(st)||"CONFIRMADA".equals(st)||"EN_VIAJE".equals(st))c++;}
+            View nCard=statCard("NUEVAS",n,GOLD,"NUEVAS".equals(agendaStatusMode));
+            View qCard=statCard("COTIZADAS",q,CYAN,"COTIZADAS".equals(agendaStatusMode));
+            View cCard=statCard("CONFIRM.",c,GREEN,"CONFIRMADAS".equals(agendaStatusMode));
+            nCard.setOnClickListener(v->setAgendaStatusMode("NUEVAS"));qCard.setOnClickListener(v->setAgendaStatusMode("COTIZADAS"));cCard.setOnClickListener(v->setAgendaStatusMode("CONFIRMADAS"));
+            statsBox.addView(nCard,new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
+            statsBox.addView(qCard,new LinearLayout.LayoutParams(0,-1,1));spacerH(statsBox,6);
+            statsBox.addView(cCard,new LinearLayout.LayoutParams(0,-1,1));
         }else{
             int f=0,c=0,rj=0;for(JSONObject r:currentRows){String s=r.optString("status");if("FINALIZADA".equals(s))f++;else if("CANCELADA".equals(s))c++;else if("RECHAZADA".equals(s))rj++;}
             TextView summary=body(f+" finalizadas  ·  "+c+" canceladas  ·  "+rj+" rechazadas",13,TEXT);summary.setTypeface(Typeface.DEFAULT,Typeface.BOLD);summary.setGravity(Gravity.CENTER_VERTICAL);summary.setPadding(dp(14),0,dp(14),0);summary.setBackground(rounded(PANEL_2,LINE,15));statsBox.addView(summary,new LinearLayout.LayoutParams(-1,-1));
         }
     }
 
-    private View statCard(String label,int count,int color){
-        LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setGravity(Gravity.CENTER);c.setPadding(dp(4),dp(6),dp(4),dp(6));c.setBackground(rounded(PANEL_2,LINE,15));
-        TextView n=body(String.valueOf(count),24,color);n.setTypeface(Typeface.DEFAULT,Typeface.BOLD);n.setGravity(Gravity.CENTER);c.addView(n);
-        TextView l=body(label,10,MUTED);l.setTypeface(Typeface.DEFAULT,Typeface.BOLD);l.setGravity(Gravity.CENTER);c.addView(l);return c;
+    private View statCard(String label,int count,int color,boolean active){
+        LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setGravity(Gravity.CENTER);c.setPadding(dp(4),dp(5),dp(4),dp(5));
+        c.setBackground(rounded(active?Color.argb(58,Color.red(color),Color.green(color),Color.blue(color)):PANEL_2,active?color:LINE,15));c.setElevation(dp(active?4:1));c.setClickable(true);c.setFocusable(true);
+        TextView n=body(String.valueOf(count),22,color);n.setTypeface(Typeface.DEFAULT,Typeface.BOLD);n.setGravity(Gravity.CENTER);c.addView(n);
+        TextView l=body(label,10,active?TEXT:MUTED);l.setTypeface(Typeface.DEFAULT,Typeface.BOLD);l.setGravity(Gravity.CENTER);c.addView(l);return c;
     }
+
+    private void setAgendaStatusMode(String mode){agendaStatusMode=mode.equals(agendaStatusMode)?"TODAS":mode;resetActiveDayAccordion();hapticTick();renderRows(false);}
 
     private View reservationCard(JSONObject r,boolean hist){
         String id=r.optString("id"),status=r.optString("status"),code=r.optString("code");
         boolean open=id.equals(expandedId);
-        LinearLayout outer=new LinearLayout(this);outer.setOrientation(LinearLayout.VERTICAL);outer.setBackground(rounded(PANEL,LINE,18));outer.setElevation(dp(3));
+        LinearLayout outer=new LinearLayout(this);outer.setOrientation(LinearLayout.VERTICAL);int cardAccent=statusColor(displayStatus(r));outer.setBackground(rounded(PANEL,cardAccent,18));outer.setElevation(dp(3));
 
         LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.VERTICAL);head.setPadding(dp(13),dp(9),dp(8),dp(9));head.setMinimumHeight(dp(88));
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
@@ -651,14 +675,15 @@ public class MainActivity extends Activity {
         Calendar a=Calendar.getInstance(),b=(Calendar)a.clone();b.add(Calendar.DAY_OF_YEAR,90);String from=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(a.getTime()),to=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(b.getTime());toast("Cargando bloqueos…");pool.execute(()->{try{JSONArray rows=Api.listScheduleBlocks(pin,from,to);runOnUiThread(()->{if(rows.length()==0){showDriverInfo("BLOQUEOS","No hay bloqueos manuales en los próximos 90 días.");return;}final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("BLOQUEOS","Tocá un bloqueo para eliminarlo.");ScrollView sc=new ScrollView(this);LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);sc.addView(list);for(int i=0;i<rows.length();i++){JSONObject r=rows.optJSONObject(i);if(r==null)continue;String n=r.optString("note","");String label=prettyDate(r.optString("date"))+" · "+trimTime(r.optString("start"))+"–"+trimTime(r.optString("end"))+(n.isEmpty()?"":"\n"+n);Button item=secondaryButton(label);item.setGravity(Gravity.LEFT|Gravity.CENTER_VERTICAL);item.setTextSize(12);item.setSingleLine(false);item.setPadding(dp(12),dp(5),dp(12),dp(5));item.setOnClickListener(v->showDriverConfirm("ELIMINAR BLOQUEO",label,"VOLVER","ELIMINAR",()->{d.dismiss();pool.execute(()->{try{Api.deleteScheduleBlock(pin,r.optString("id"));runOnUiThread(()->toast("Bloqueo eliminado"));}catch(Exception e){runOnUiThread(()->toast("No pude eliminar: "+friendly(e)));}});}));list.addView(item,lpMatch(dp(64),3,3));}shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));Button close=primaryButton("CERRAR");close.setOnClickListener(v->d.dismiss());shell.addView(close,lpMatch(dp(52),8,0));showDriverDialog(d,shell,.92f,.80f);});}catch(Exception e){runOnUiThread(()->toast("No pude cargar bloqueos: "+friendly(e)));}});
     }
 
-    private ArrayList<JSONObject> agendaFilteredRows(){ArrayList<JSONObject> out=new ArrayList<>();for(JSONObject r:currentRows)if(matchesAgenda(r.optString("pickup_date","")))out.add(r);return out;}
+    private ArrayList<JSONObject> agendaFilteredRows(){ArrayList<JSONObject> out=new ArrayList<>();for(JSONObject r:currentRows)if(matchesAgenda(r.optString("pickup_date",""))&&matchesAgendaStatus(r))out.add(r);return out;}
+    private boolean matchesAgendaStatus(JSONObject r){if("TODAS".equals(agendaStatusMode))return true;String st=r.optString("status",""),qs=r.optString("quote_status","SIN_PRESUPUESTO");if("NUEVAS".equals(agendaStatusMode))return "PENDIENTE".equals(st)&&!"ENVIADO".equals(qs);if("COTIZADAS".equals(agendaStatusMode))return "PENDIENTE".equals(st)&&"ENVIADO".equals(qs);if("CONFIRMADAS".equals(agendaStatusMode))return "ACEPTADA".equals(st)||"CONFIRMADA".equals(st)||"EN_VIAJE".equals(st);return true;}
     private boolean matchesAgenda(String date){if("TODAS".equals(agendaMode)||date==null||date.length()<10)return true;try{Calendar d=Calendar.getInstance();d.setTime(new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(date));Calendar a=(Calendar)agendaDate.clone();clearTime(d);clearTime(a);if("DIA".equals(agendaMode))return sameDay(d,a);if("SEMANA".equals(agendaMode)){Calendar end=(Calendar)a.clone();end.add(Calendar.DAY_OF_YEAR,6);return !d.before(a)&&!d.after(end);}if("MES".equals(agendaMode))return d.get(Calendar.YEAR)==a.get(Calendar.YEAR)&&d.get(Calendar.MONTH)==a.get(Calendar.MONTH);}catch(Exception ignored){}return true;}
     private void clearTime(Calendar c){c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);}
     private boolean sameDay(Calendar a,Calendar b){return a.get(Calendar.YEAR)==b.get(Calendar.YEAR)&&a.get(Calendar.DAY_OF_YEAR)==b.get(Calendar.DAY_OF_YEAR);}
     private void pickAgendaDate(){showPremiumDatePicker(agendaDate,c->{agendaDate=c;agendaMode="DIA";agendaCustomDate=true;resetActiveDayAccordion();renderRows(false);});}
-    private String agendaDescription(){if(agendaCustomDate)return "reservas del "+new java.text.SimpleDateFormat("dd/MM/yyyy",Locale.US).format(agendaDate.getTime());if("TODAS".equals(agendaMode))return "todas las reservas activas";if("DIA".equals(agendaMode))return "reservas de hoy";if("SEMANA".equals(agendaMode))return "reservas de los próximos 7 días";return "reservas del mes actual";}
-    private void refreshAgendaControls(){if(agendaLabel!=null)agendaLabel.setText(agendaDescription());String picked=new java.text.SimpleDateFormat("dd/MM",Locale.US).format(agendaDate.getTime());if(agendaDateBtn!=null)agendaDateBtn.setText(agendaCustomDate?"📅 "+picked:"📅 FECHA");setAgendaQuickState(agendaAllBtn,"TODAS",!agendaCustomDate&&"TODAS".equals(agendaMode));setAgendaQuickState(agendaTodayBtn,"HOY",!agendaCustomDate&&"DIA".equals(agendaMode));setAgendaQuickState(agendaWeekBtn,"SEMANA",!agendaCustomDate&&"SEMANA".equals(agendaMode));setAgendaQuickState(agendaMonthBtn,"MES",!agendaCustomDate&&"MES".equals(agendaMode));}
-    private void setAgendaQuickState(Button b,String label,boolean active){if(b==null)return;b.setText(active?"● "+label:label);b.setAlpha(active?1.0f:0.82f);}
+    private String agendaDescription(){String base;if(agendaCustomDate)base="reservas del "+new java.text.SimpleDateFormat("dd/MM/yyyy",Locale.US).format(agendaDate.getTime());else if("TODAS".equals(agendaMode))base="todas las reservas activas";else if("DIA".equals(agendaMode))base="reservas de hoy";else if("SEMANA".equals(agendaMode))base="reservas de los próximos 7 días";else base="reservas del mes actual";if("NUEVAS".equals(agendaStatusMode))return base+" · nuevas";if("COTIZADAS".equals(agendaStatusMode))return base+" · cotizadas";if("CONFIRMADAS".equals(agendaStatusMode))return base+" · confirmadas";return base;}
+    private void refreshAgendaControls(){if(agendaLabel!=null)agendaLabel.setText(agendaDescription());String picked=new java.text.SimpleDateFormat("dd/MM",Locale.US).format(agendaDate.getTime());if(agendaDateBtn!=null)agendaDateBtn.setText(agendaCustomDate?picked:"FECHA");setAgendaQuickState(agendaAllBtn,"TODAS",!agendaCustomDate&&"TODAS".equals(agendaMode));setAgendaQuickState(agendaTodayBtn,"HOY",!agendaCustomDate&&"DIA".equals(agendaMode));setAgendaQuickState(agendaWeekBtn,"SEMANA",!agendaCustomDate&&"SEMANA".equals(agendaMode));setAgendaQuickState(agendaMonthBtn,"MES",!agendaCustomDate&&"MES".equals(agendaMode));}
+    private void setAgendaQuickState(Button b,String label,boolean active){if(b==null)return;b.setText(label);b.setAlpha(active?1.0f:0.84f);b.setTextColor(active?GOLD:TEXT);b.setBackground(rounded(active?Color.argb(52,224,193,111):PANEL_2,active?GOLD:LINE,16));}
     private String dayHeader(String d){try{Date x=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(d);return new java.text.SimpleDateFormat("EEEE dd/MM",new Locale("es","UY")).format(x).toUpperCase(new Locale("es","UY"));}catch(Exception e){return d;}}
     private String formatDistance(double km){return String.format(Locale.US,"%.1f km",km);}
     private String formatMoney(double v){return String.format(Locale.US,"%,.0f",v).replace(',', '.')+" UYU";}
@@ -772,52 +797,32 @@ public class MainActivity extends Activity {
     private void addBrand(LinearLayout box){
         LinearLayout hero=new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setPadding(dp(14),dp(14),dp(14),dp(13));
-        hero.setBackground(rounded(Color.rgb(5,35,43),Color.rgb(55,100,111),22));
-        hero.setElevation(dp(5));
+        hero.setPadding(dp(12),dp(10),dp(12),dp(10));
+        hero.setBackground(rounded(Color.rgb(5,35,43),Color.rgb(55,100,111),20));
+        hero.setElevation(dp(4));
 
-        LinearLayout row=new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.app_icon);logo.setScaleType(ImageView.ScaleType.CENTER_CROP);logo.setBackground(rounded(PANEL_2,GOLD_DARK,16));logo.setClipToOutline(true);row.addView(logo,new LinearLayout.LayoutParams(dp(64),dp(64)));
 
-        ImageView logo=new ImageView(this);
-        logo.setImageResource(R.drawable.app_icon);
-        logo.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        logo.setBackground(rounded(PANEL_2,GOLD_DARK,18));
-        logo.setClipToOutline(true);
-        row.addView(logo,new LinearLayout.LayoutParams(dp(76),dp(76)));
-
-        LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.setMargins(dp(13),0,0,0);row.addView(col,cp);
-
-        TextView brand=heading("Traslados Conductor",25);
-        col.addView(brand);
-        TextView privateLine=body("Acceso privado del conductor",12,MUTED);
-        col.addView(privateLine,lpMatch(-2,2,1));
-        TextView serviceLine=body("Aeropuerto · Programados · Larga distancia",11,GOLD);
-        col.addView(serviceLine);
-
+        LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.setMargins(dp(11),0,0,0);row.addView(col,cp);
+        TextView brand=heading("Traslados Conductor",22);col.addView(brand);
+        TextView privateLine=body("Acceso privado del conductor",11,MUTED);col.addView(privateLine,lpMatch(-2,1,0));
+        TextView serviceLine=body("Aeropuerto · Programados · Larga distancia",10,GOLD);col.addView(serviceLine);
+        TextView versionLine=body("v11.4 · R10.3 · build 121",9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
         hero.addView(row);
 
-        LinearLayout meta=new LinearLayout(this);
-        meta.setGravity(Gravity.CENTER_VERTICAL);
-        meta.setPadding(0,dp(11),0,0);
-        TextView monitor=miniChip("●  MONITOR ACTIVO",GREEN);
-        TextView version=miniChip("V11.4",GOLD);
-        meta.addView(monitor,new LinearLayout.LayoutParams(0,dp(30),1));
-        spacerH(meta,8);
-        meta.addView(version,new LinearLayout.LayoutParams(0,dp(30),1));
-        hero.addView(meta);
-
+        LinearLayout meta=new LinearLayout(this);meta.setGravity(Gravity.CENTER_VERTICAL);meta.setPadding(0,dp(8),0,0);
+        gpsStateChip=miniChip("GPS · …",MUTED);onlineStateChip=miniChip(isNetworkAvailable()?"ONLINE":"SIN RED",isNetworkAvailable()?GREEN:RED);monitorStateChip=miniChip("MONITOR",dashboardVisible?GREEN:MUTED);
+        meta.addView(gpsStateChip,new LinearLayout.LayoutParams(0,dp(28),1));spacerH(meta,5);meta.addView(onlineStateChip,new LinearLayout.LayoutParams(0,dp(28),1));spacerH(meta,5);meta.addView(monitorStateChip,new LinearLayout.LayoutParams(0,dp(28),1));hero.addView(meta);
         box.addView(hero,lpMatch(-2,0,4));
     }
 
     private TextView miniChip(String text,int color){
-        TextView t=body(text,10,color);
-        t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-        t.setGravity(Gravity.CENTER);
-        t.setBackground(rounded(Color.argb(34,Color.red(color),Color.green(color),Color.blue(color)),color,14));
-        return t;
+        TextView t=body(text,9,color);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setGravity(Gravity.CENTER);t.setBackground(rounded(Color.argb(28,Color.red(color),Color.green(color),Color.blue(color)),color,14));return t;
     }
+    private void setMiniChipState(TextView chip,String text,int color){if(chip==null)return;chip.setText(text);chip.setTextColor(color);chip.setBackground(rounded(Color.argb(28,Color.red(color),Color.green(color),Color.blue(color)),color,14));}
+    private void updateStatusStrip(){boolean net=isNetworkAvailable();setMiniChipState(onlineStateChip,net?"ONLINE":"SIN RED",net?GREEN:RED);setMiniChipState(monitorStateChip,dashboardVisible?"MONITOR":"PAUSA",dashboardVisible?GREEN:MUTED);}
+    private void applyActionIcon(Button b,int res){if(b==null)return;try{b.setCompoundDrawablesRelativeWithIntrinsicBounds(res,0,0,0);b.setCompoundDrawablePadding(dp(5));}catch(Exception ignored){}}
 
     private void addIntro(LinearLayout box,String title,String sub){TextView t=heading(title,27);box.addView(t,lpMatch(-2,14,0));TextView s=body(sub,14,GOLD);box.addView(s,lpMatch(-2,0,10));}
     private void addNote(LinearLayout box,String text){LinearLayout note=horizontalCard(PANEL_2,LINE,16);note.setPadding(dp(12),dp(12),dp(12),dp(12));note.addView(icon("info",GOLD),new LinearLayout.LayoutParams(dp(34),dp(34)));TextView t=body(text,13,MUTED);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.setMargins(dp(8),0,0,0);note.addView(t,tp);box.addView(note,lpMatch(-2,0,20));}
@@ -1042,7 +1047,7 @@ public class MainActivity extends Activity {
 
     private long pickupMillis(JSONObject r){try{String d=r.optString("pickup_date","")+" "+trimTime(r.optString("pickup_time",""));java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.US);f.setLenient(false);java.util.Date x=f.parse(d);return x==null?0:x.getTime();}catch(Exception e){return 0;}}
     private String relativePickup(JSONObject r){long t=pickupMillis(r),now=System.currentTimeMillis();if(t<=0)return trimTime(r.optString("pickup_time",""));long m=Math.round((t-now)/60000.0);if(m>=0&&m<60)return "en "+m+" min";if(m>=60&&m<1440)return "en "+(m/60)+" h "+(m%60)+" min";if(m>=1440&&m<2880)return "mañana · "+trimTime(r.optString("pickup_time",""));return prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time",""));}
-    private boolean isConfirmedTrip(JSONObject r){String st=r.optString("status","");return "ACEPTADA".equals(st)||"CONFIRMADA".equals(st)||"ACEPTADA_CLIENTE".equals(st)||"EN_VIAJE".equals(st);}
+    private boolean isConfirmedTrip(JSONObject r){String st=r.optString("status","");return "ACEPTADA".equals(st)||"CONFIRMADA".equals(st);}
     private View nextTripBanner(ArrayList<JSONObject> rows){
         JSONObject best=null;long bestAt=Long.MAX_VALUE,now=System.currentTimeMillis()-30*60000L;
         for(JSONObject r:rows){if(!isConfirmedTrip(r)||"EN_VIAJE".equals(r.optString("status")))continue;long at=pickupMillis(r);if(at>=now&&at<bestAt){bestAt=at;best=r;}}
@@ -1075,7 +1080,7 @@ public class MainActivity extends Activity {
 
     static class GpsPreflight{boolean permission,locationEnabled,serviceDeclared,backgroundRestricted;boolean ready(){return permission&&locationEnabled&&serviceDeclared;}}
     private GpsPreflight leerGpsPreflight(){GpsPreflight g=new GpsPreflight();g.permission=Build.VERSION.SDK_INT<23||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;try{android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);g.locationEnabled=lm!=null&&(Build.VERSION.SDK_INT>=28?lm.isLocationEnabled():(lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)||lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)));}catch(Exception e){g.locationEnabled=false;}try{getPackageManager().getServiceInfo(new ComponentName(this,TripTelemetryService.class),0);g.serviceDeclared=true;}catch(Exception e){g.serviceDeclared=false;}try{if(Build.VERSION.SDK_INT>=28){android.app.ActivityManager am=(android.app.ActivityManager)getSystemService(ACTIVITY_SERVICE);g.backgroundRestricted=am!=null&&am.isBackgroundRestricted();}}catch(Exception ignored){}return g;}
-    private void actualizarGpsPreflightSilencioso(){GpsPreflight g=leerGpsPreflight();if(gpsPreflightStatus==null)return;if(!g.permission){gpsPreflightStatus.setText("⚠ PERMISO DE UBICACIÓN NECESARIO · CORREGIR");gpsPreflightStatus.setTextColor(Color.rgb(235,170,80));}else if(!g.locationEnabled){gpsPreflightStatus.setText("⚠ GPS DESACTIVADO · ACTIVAR");gpsPreflightStatus.setTextColor(Color.rgb(235,170,80));}else if(!g.serviceDeclared){gpsPreflightStatus.setText("⚠ SERVICIO GPS NO DISPONIBLE");gpsPreflightStatus.setTextColor(RED);}else if(g.backgroundRestricted){gpsPreflightStatus.setText("● GPS LISTO · Android restringe segundo plano");gpsPreflightStatus.setTextColor(Color.rgb(235,170,80));}else{gpsPreflightStatus.setText("● GPS LISTO");gpsPreflightStatus.setTextColor(GREEN);}}
+    private void actualizarGpsPreflightSilencioso(){GpsPreflight g=leerGpsPreflight();String detail,chip;int color;if(!g.permission){detail="⚠ PERMISO DE UBICACIÓN NECESARIO · CORREGIR";chip="GPS · PERMISO";color=Color.rgb(235,170,80);}else if(!g.locationEnabled){detail="⚠ GPS DESACTIVADO · ACTIVAR";chip="GPS · OFF";color=Color.rgb(235,170,80);}else if(!g.serviceDeclared){detail="⚠ SERVICIO GPS NO DISPONIBLE";chip="GPS · ERROR";color=RED;}else if(g.backgroundRestricted){detail="● GPS LISTO · Android restringe segundo plano";chip="GPS · LIMITADO";color=Color.rgb(235,170,80);}else{detail="● GPS LISTO";chip="GPS · LISTO";color=GREEN;}if(gpsPreflightStatus!=null){gpsPreflightStatus.setText(detail);gpsPreflightStatus.setTextColor(color);}setMiniChipState(gpsStateChip,chip,color);updateStatusStrip();}
     private void corregirGpsPreflight(){GpsPreflight g=leerGpsPreflight();if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);return;}if(!g.locationEnabled){showDriverConfirm("ACTIVAR UBICACIÓN","Para registrar kilómetros y recorrido, Android debe tener Ubicación/GPS encendido.","CANCELAR","ABRIR AJUSTES",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}});return;}if(g.backgroundRestricted){showDriverConfirm("GPS LISTO CON ADVERTENCIA","La ubicación está disponible, pero Android marca esta app como restringida en segundo plano. El servicio seguirá registrando como servicio en primer plano.","CERRAR","AJUSTES DE APP",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}catch(Exception e){}});return;}toast("● GPS LISTO");}
     private boolean asegurarGpsAntesDeViaje(){GpsPreflight g=leerGpsPreflight();actualizarGpsPreflightSilencioso();if(g.ready())return true;if(!g.permission){if(Build.VERSION.SDK_INT>=23)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},4412);toast("Autorizá ubicación precisa y volvé a deslizar para iniciar");return false;}if(!g.locationEnabled){showDriverConfirm("GPS DESACTIVADO","No voy a iniciar el viaje sin telemetría. Activá Ubicación/GPS y luego volvé a deslizar.","CANCELAR","ACTIVAR GPS",()->{try{startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));}catch(Exception e){}});return false;}showDriverInfo("GPS NO DISPONIBLE","Android no encuentra el servicio de telemetría. El viaje no se iniciará sin registro GPS.");return false;}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==4412)handler.postDelayed(this::actualizarGpsPreflightSilencioso,180);}
