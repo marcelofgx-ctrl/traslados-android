@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+def releaseStorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: 'traslados-conductor'
+def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: releaseStorePassword
+def hasReleaseSigning = releaseKeystorePath && releaseStorePassword
+
 android {
     namespace 'uy.com.traslados.conductor'
     compileSdk 35
@@ -12,6 +18,27 @@ android {
         targetSdk 35
         versionCode 122
         versionName '11.4-R10.4'
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 
     compileOptions {
