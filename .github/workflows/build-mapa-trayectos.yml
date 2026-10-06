@@ -60,17 +60,21 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R7'" mapatrayectos/build.gradle
-          grep -q "versionCode 7" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R8'" mapatrayectos/build.gradle
+          grep -q "versionCode 8" mapatrayectos/build.gradle
           grep -q "SPEED_STALE_DISPLAY_MS=3500L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
-          grep -q "STRONG_GPS_SPEED_KMH=14.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
-          grep -q "ROUTE_CASING_LAYER" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "iconSize(0.80f)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "13.45f" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "requestServiceState" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "18.5f" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "ROUTE_GLOW_LAYER" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "START_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "END_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "cameraBearing" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "iconRotationAlignment" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "13.60f" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "class CompassView" mapatrayectos/src/main/java/uy/com/mapatrayectos/CompassView.java
+          grep -q "history-glow" mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
+          grep -q "start-halo" mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
+          grep -q "end-halo" mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
           grep -q "SYSTEM_ALERT_WINDOW" mapatrayectos/src/main/AndroidManifest.xml
           grep -q "trip_type" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q "amount_uyu" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
@@ -106,16 +110,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R7_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R7_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R7-RELEASE
+          name: Mapa-Trayectos-v0.1-R8-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R7_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
