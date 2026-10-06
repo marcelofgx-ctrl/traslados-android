@@ -13,4 +13,7 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = 'TrasladosAndroid'
-include ':cliente', ':conductor', ':mapatrayectos'
+include ':cliente', ':conductor'
+if (file('mapatrayectos/build.gradle').exists()) {
+    include ':mapatrayectos'
+}
