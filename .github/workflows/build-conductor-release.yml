@@ -95,9 +95,12 @@ jobs:
           set -euo pipefail
           test -f conductor/build.gradle
           test -f conductor/src/main/AndroidManifest.xml
+          test -f conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           grep -q "applicationId 'uy.com.traslados.conductor'" conductor/build.gradle
-          grep -q "versionCode 122" conductor/build.gradle
-          grep -q "versionName '11.4-R10.4'" conductor/build.gradle
+          grep -q "versionCode 123" conductor/build.gradle
+          grep -q "versionName '11.5-R1'" conductor/build.gradle
+          grep -q "org.maplibre.gl:android-sdk:13.6.1" conductor/build.gradle
+          grep -q "DemandMapActivity" conductor/src/main/AndroidManifest.xml
           grep -q "signingConfigs" conductor/build.gradle
           grep -q "ANDROID_KEYSTORE_PATH" conductor/build.gradle
           grep -q "ANDROID_KEYSTORE_PASSWORD" conductor/build.gradle
@@ -132,19 +135,19 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           cp conductor/build/outputs/apk/release/conductor-release.apk \
-            artifacts/Traslados_Conductor_v11.4_R10.4_RELEASE.apk
-          sha256sum artifacts/Traslados_Conductor_v11.4_R10.4_RELEASE.apk \
+            artifacts/Traslados_Conductor_v11.5_R1_MAPA_BETA_RELEASE.apk
+          sha256sum artifacts/Traslados_Conductor_v11.5_R1_MAPA_BETA_RELEASE.apk \
             | tee artifacts/SHA256SUMS.txt
           printf '%s\n' "$EXPECTED_CERT_SHA256" > artifacts/SIGNING_CERT_SHA256.txt
-          ls -lh artifacts/Traslados_Conductor_v11.4_R10.4_RELEASE.apk \
+          ls -lh artifacts/Traslados_Conductor_v11.5_R1_MAPA_BETA_RELEASE.apk \
             artifacts/SHA256SUMS.txt artifacts/SIGNING_CERT_SHA256.txt
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.4-R10.4-RELEASE
+          name: Traslados-Conductor-v11.5-R1-MAPA-BETA-RELEASE
           path: |
-            artifacts/Traslados_Conductor_v11.4_R10.4_RELEASE.apk
+            artifacts/Traslados_Conductor_v11.5_R1_MAPA_BETA_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING_CERT_SHA256.txt
           if-no-files-found: error
