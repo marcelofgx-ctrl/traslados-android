@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = 'TrasladosAndroid'
-include ':cliente', ':conductor'
+include ':cliente', ':conductor', ':mapatrayectos'
