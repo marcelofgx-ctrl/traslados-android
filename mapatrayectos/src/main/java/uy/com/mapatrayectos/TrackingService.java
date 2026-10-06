@@ -28,10 +28,12 @@ public class TrackingService extends Service implements LocationListener {
     private static final float MAX_ACCEL_MPS2=7.0f;
     private static final long NETWORK_FALLBACK_AFTER_MS=15000L;
     private static final long MAX_STATS_GAP_MS=15000L;
+    private static final long CLOCK_TICK_MS=1000L;
 
     private LocationManager lm;
     private TrackDb db;
     private SharedPreferences sp;
+    private Handler clockHandler;
     private Location lastAccepted;
     private long lastAcceptedTs=0;
     private float lastAcceptedAccuracy=999f;
@@ -42,6 +44,8 @@ public class TrackingService extends Service implements LocationListener {
     private float prevMaxSample=-1f;
     private long prevMaxSampleTs=0L;
     private boolean vehicleMoving=false;
+    private int movingEvidence=0,stoppedEvidence=0,clockPersistTick=0;
+    private long lastClockAccountedAt=0L;
     private boolean shiftActive=false,tripActive=false;
     private String shiftId="",tripId="",zone="Buscando zona…";
     private long shiftStarted=0,tripStarted=0;
@@ -49,9 +53,21 @@ public class TrackingService extends Service implements LocationListener {
     private long shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
     private double tripMax=0;
 
+    private final Runnable clockTick=new Runnable(){
+        @Override public void run(){
+            if(!shiftActive||clockHandler==null)return;
+            long now=System.currentTimeMillis();
+            accountClock(now);
+            broadcastState();
+            clockPersistTick++;
+            if(clockPersistTick>=5){clockPersistTick=0;persist();persistLiveStats(now);updateNotification();}
+            clockHandler.postDelayed(this,CLOCK_TICK_MS);
+        }
+    };
+
     @Override public void onCreate(){
-        super.onCreate();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);loadState();Api.init(this);createChannel();vehicleMoving=filteredSpeed>=START_MOVING_KMH;
-        if(shiftActive){startForeground(NOTIFICATION_ID,notification());startLocation();}
+        super.onCreate();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);clockHandler=new Handler(Looper.getMainLooper());loadState();Api.init(this);createChannel();vehicleMoving=filteredSpeed>=START_MOVING_KMH;
+        if(shiftActive){lastClockAccountedAt=System.currentTimeMillis();startForeground(NOTIFICATION_ID,notification());startLocation();startClock();}
     }
 
     @Override public int onStartCommand(Intent intent,int flags,int startId){
@@ -61,31 +77,45 @@ public class TrackingService extends Service implements LocationListener {
         else if(ACTION_START_TRIP.equals(a))startTrip();
         else if(ACTION_STOP_TRIP.equals(a))stopTrip();
         else if(ACTION_REQUEST_STATE.equals(a))broadcastState();
-        else if(shiftActive){startForeground(NOTIFICATION_ID,notification());startLocation();}
+        else if(shiftActive){startForeground(NOTIFICATION_ID,notification());startLocation();startClock();}
         return shiftActive?START_STICKY:START_NOT_STICKY;
     }
 
     private void startShift(){
         if(shiftActive){broadcastState();return;}
-        long now=System.currentTimeMillis();shiftActive=true;tripActive=false;shiftId=UUID.randomUUID().toString();tripId="";shiftStarted=now;tripStarted=0;shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0;zone=lastAccepted==null?"Buscando zona…":ZoneResolver.resolve(lastAccepted.getLatitude(),lastAccepted.getLongitude());db.beginShift(shiftId,now,zone);persist();startForeground(NOTIFICATION_ID,notification());startLocation();broadcastState();Api.syncPendingAsync();
+        long now=System.currentTimeMillis();shiftActive=true;tripActive=false;shiftId=UUID.randomUUID().toString();tripId="";shiftStarted=now;tripStarted=0;shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0;movingEvidence=stoppedEvidence=0;lastClockAccountedAt=now;zone=lastAccepted==null?"Buscando zona…":ZoneResolver.resolve(lastAccepted.getLatitude(),lastAccepted.getLongitude());db.beginShift(shiftId,now,zone);persist();startForeground(NOTIFICATION_ID,notification());startLocation();startClock();broadcastState();Api.syncPendingAsync();
     }
 
     private void stopShift(){
         if(!shiftActive){broadcastState();return;}
-        if(tripActive)stopTripInternal(false);
-        long now=System.currentTimeMillis();db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();broadcastState();Api.syncShiftAsync(endedShift);stopLocation();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();
+        long now=System.currentTimeMillis();accountClock(now);if(tripActive)stopTripInternal(false);db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();broadcastState();Api.syncShiftAsync(endedShift);stopClock();stopLocation();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();
     }
 
     private void startTrip(){
         if(!shiftActive||tripActive){broadcastState();return;}
-        tripActive=true;tripId=UUID.randomUUID().toString();tripStarted=System.currentTimeMillis();tripDistance=0;tripMoving=0;tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0L;db.beginTrip(tripId,shiftId,tripStarted,zone);persist();broadcastState();updateNotification();
+        long now=System.currentTimeMillis();accountClock(now);tripActive=true;tripId=UUID.randomUUID().toString();tripStarted=now;tripDistance=0;tripMoving=0;tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0L;db.beginTrip(tripId,shiftId,tripStarted,zone);persist();broadcastState();updateNotification();
     }
 
     private void stopTrip(){stopTripInternal(true);}
 
     private void stopTripInternal(boolean send){
         if(!tripActive){if(send)broadcastState();return;}
-        long now=System.currentTimeMillis();double avg=tripMoving>0?(tripDistance/1000.0)/(tripMoving/3600000.0):0;db.updateTrip(tripId,now,tripDistance,tripMoving,tripStopped,tripMax,avg,zone);shiftTripMs+=Math.max(0,now-tripStarted);String endedTrip=tripId;tripActive=false;tripId="";tripStarted=0;tripDistance=0;tripMoving=0;tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0;db.updateShift(shiftId,null,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);persist();Api.syncTripAsync(endedTrip);if(send)broadcastState();updateNotification();
+        long now=System.currentTimeMillis();accountClock(now);double avg=tripMoving>0?(tripDistance/1000.0)/(tripMoving/3600000.0):0;db.updateTrip(tripId,now,tripDistance,tripMoving,tripStopped,tripMax,avg,zone);shiftTripMs+=Math.max(0,now-tripStarted);String endedTrip=tripId;tripActive=false;tripId="";tripStarted=0;tripDistance=0;tripMoving=0;tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0;db.updateShift(shiftId,null,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);persist();Api.syncTripAsync(endedTrip);if(send)broadcastState();updateNotification();
+    }
+
+    private void startClock(){if(clockHandler==null||!shiftActive)return;clockHandler.removeCallbacks(clockTick);if(lastClockAccountedAt<=0)lastClockAccountedAt=System.currentTimeMillis();clockHandler.post(clockTick);}
+    private void stopClock(){if(clockHandler!=null)clockHandler.removeCallbacks(clockTick);lastClockAccountedAt=0L;clockPersistTick=0;}
+    private void accountClock(long now){
+        if(!shiftActive){lastClockAccountedAt=now;return;}
+        if(lastClockAccountedAt<=0){lastClockAccountedAt=now;return;}
+        long dt=now-lastClockAccountedAt;if(dt<=0)return;lastClockAccountedAt=now;
+        if(vehicleMoving)shiftMoving+=dt;else shiftStopped+=dt;
+        if(tripActive){if(vehicleMoving)tripMoving+=dt;else tripStopped+=dt;}
+    }
+    private void persistLiveStats(long now){
+        if(!shiftActive)return;
+        db.updateShift(shiftId,null,shiftDistance,shiftMoving,shiftStopped,shiftTripMs+(tripActive?Math.max(0,now-tripStarted):0),zone);
+        if(tripActive){double avg=tripMoving>0?(tripDistance/1000.0)/(tripMoving/3600000.0):0;db.updateTrip(tripId,null,tripDistance,tripMoving,tripStopped,tripMax,avg,zone);}
     }
 
     private void startLocation(){
@@ -124,23 +154,39 @@ public class TrackingService extends Service implements LocationListener {
         if(candidate>MAX_PLAUSIBLE_KMH)candidate=filteredSpeed;
         if(loc.hasSpeed()&&accuracy>12f){float diff=Math.abs(candidate-derived);float tolerance=Math.max(18f,Math.max(candidate,derived)*0.45f);if(diff>tolerance)candidate=derived;}
 
+        accountClock(System.currentTimeMillis());
+
         float noiseRadius=Math.max(3.0f,Math.min(14.0f,(lastAcceptedAccuracy+accuracy)*0.30f));
-        boolean positionStable=dist<=noiseRadius;
-        boolean speedSaysMoving=loc.hasSpeed()?candidate>=START_MOVING_KMH:(candidate>=START_MOVING_KMH&&dist>noiseRadius);
-        boolean speedSaysStopped=loc.hasSpeed()?candidate<=STOP_MOVING_KMH:(candidate<=STOP_MOVING_KMH||positionStable);
+        float movementDistanceThreshold=Math.max(1.8f,Math.min(4.5f,noiseRadius*0.35f));
+        boolean displacementSupportsMove=dist>=movementDistanceThreshold&&derived>=3.5f;
+        boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;
+        boolean strongGpsSpeed=isGps&&accuracy<=12f&&speedAccuracyGood&&candidate>=10f;
+        boolean movementEvidenceNow=candidate>=START_MOVING_KMH&&(displacementSupportsMove||strongGpsSpeed);
+        boolean stationaryGeometry=dist<=movementDistanceThreshold;
+        boolean stoppedEvidenceNow=candidate<=STOP_MOVING_KMH||(stationaryGeometry&&candidate<9f);
 
-        if(vehicleMoving){if(speedSaysStopped)vehicleMoving=false;}
-        else if(speedSaysMoving)vehicleMoving=true;
+        if(vehicleMoving){
+            movingEvidence=0;
+            if(stoppedEvidenceNow){stoppedEvidence++;if(stoppedEvidence>=2){vehicleMoving=false;stoppedEvidence=0;filteredSpeed=0f;}}
+            else stoppedEvidence=0;
+        }else{
+            stoppedEvidence=0;
+            if(movementEvidenceNow){movingEvidence++;if(movingEvidence>=2){vehicleMoving=true;movingEvidence=0;}}
+            else movingEvidence=0;
+        }
 
-        // Un auto detenido debe verse en 0: velocidades residuales GNSS de 1-2 km/h no son movimiento real.
-        float displaySpeed=vehicleMoving?candidate:0f;if(displaySpeed<ZERO_DISPLAY_KMH)displaySpeed=0f;
-        double segment=(vehicleMoving&&dist>Math.max(1.5f,noiseRadius*0.35f))?dist:0.0;
-        if(!vehicleMoving||derived>140f)segment=0.0;
+        // La pantalla queda clavada en 0 mientras el movimiento no esté confirmado.
+        float displaySpeed=vehicleMoving?candidate:0f;
+        if(stationaryGeometry&&candidate<9f)displaySpeed=0f;
+        if(displaySpeed<ZERO_DISPLAY_KMH)displaySpeed=0f;
+
+        double segment=(vehicleMoving&&!stoppedEvidenceNow&&dist>Math.max(1.5f,noiseRadius*0.30f))?dist:0.0;
+        if(!vehicleMoving||derived>140f||stationaryGeometry)segment=0.0;
 
         long statDt=dt<=MAX_STATS_GAP_MS?dt:0L;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());
         if(shiftActive&&statDt>0){
-            shiftDistance+=segment;if(vehicleMoving)shiftMoving+=statDt;else shiftStopped+=statDt;
-            if(tripActive){tripDistance+=segment;if(vehicleMoving)tripMoving+=statDt;else tripStopped+=statDt;if(vehicleMoving)considerConfirmedMaximum(displaySpeed,accuracy,isGps,ts);}
+            shiftDistance+=segment;
+            if(tripActive){tripDistance+=segment;if(vehicleMoving)considerConfirmedMaximum(displaySpeed,accuracy,isGps,ts);}
         }
 
         filteredSpeed=Math.max(0f,displaySpeed);filteredSpeedTs=ts;
@@ -149,14 +195,15 @@ public class TrackingService extends Service implements LocationListener {
 
         if(shiftActive){
             db.addPoint(UUID.randomUUID().toString(),shiftId,tripActive?tripId:null,ts,loc.getLatitude(),loc.getLongitude(),accuracy,filteredSpeed,lastBearing,zone,tripActive);
-            db.updateShift(shiftId,null,shiftDistance,shiftMoving,shiftStopped,shiftTripMs+(tripActive?Math.max(0,System.currentTimeMillis()-tripStarted):0),zone);
-            if(tripActive){double avg=tripMoving>0?(tripDistance/1000.0)/(tripMoving/3600000.0):0;db.updateTrip(tripId,null,tripDistance,tripMoving,tripStopped,tripMax,avg,zone);}persist();
+            persistLiveStats(System.currentTimeMillis());persist();
         }
         broadcastState();updateNotification();
     }
 
     private void acceptBaseline(Location loc,long ts,float accuracy,boolean isGps){
-        float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>MAX_PLAUSIBLE_KMH)raw=0f;vehicleMoving=raw>=START_MOVING_KMH;filteredSpeed=vehicleMoving?raw:0f;if(filteredSpeed<ZERO_DISPLAY_KMH)filteredSpeed=0f;filteredSpeedTs=ts;
+        float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>MAX_PLAUSIBLE_KMH)raw=0f;
+        boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;
+        vehicleMoving=isGps&&accuracy<=10f&&speedAccuracyGood&&raw>=15f;movingEvidence=stoppedEvidence=0;filteredSpeed=vehicleMoving?raw:0f;if(filteredSpeed<ZERO_DISPLAY_KMH)filteredSpeed=0f;filteredSpeedTs=ts;
         if(loc.hasBearing()&&filteredSpeed>=START_MOVING_KMH)lastBearing=loc.getBearing();lastAccepted=new Location(loc);lastAcceptedTs=ts;lastAcceptedAccuracy=accuracy;if(isGps)lastGoodGpsTs=ts;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());
         if(shiftActive){db.addPoint(UUID.randomUUID().toString(),shiftId,tripActive?tripId:null,ts,loc.getLatitude(),loc.getLongitude(),accuracy,filteredSpeed,lastBearing,zone,tripActive);persist();}broadcastState();updateNotification();
     }
@@ -168,7 +215,7 @@ public class TrackingService extends Service implements LocationListener {
     }
 
     private void broadcastState(){
-        Intent i=new Intent(ACTION_STATE).setPackage(getPackageName());i.putExtra("shift_active",shiftActive);i.putExtra("trip_active",tripActive);i.putExtra("shift_id",shiftId);i.putExtra("trip_id",tripId);i.putExtra("shift_started",shiftStarted);i.putExtra("trip_started",tripStarted);i.putExtra("shift_distance",shiftDistance);i.putExtra("trip_distance",tripDistance);i.putExtra("shift_moving",shiftMoving);i.putExtra("shift_stopped",shiftStopped);i.putExtra("shift_trip_ms",shiftTripMs+(tripActive?Math.max(0,System.currentTimeMillis()-tripStarted):0));i.putExtra("trip_moving",tripMoving);i.putExtra("trip_stopped",tripStopped);i.putExtra("trip_max",tripMax);i.putExtra("zone",zone);if(lastAccepted!=null){i.putExtra("has_location",true);i.putExtra("lat",lastAccepted.getLatitude());i.putExtra("lon",lastAccepted.getLongitude());i.putExtra("accuracy",lastAcceptedAccuracy);i.putExtra("speed",filteredSpeed);i.putExtra("bearing",lastBearing);}sendBroadcast(i);
+        Intent i=new Intent(ACTION_STATE).setPackage(getPackageName());i.putExtra("shift_active",shiftActive);i.putExtra("trip_active",tripActive);i.putExtra("vehicle_moving",vehicleMoving);i.putExtra("state_at",System.currentTimeMillis());i.putExtra("shift_id",shiftId);i.putExtra("trip_id",tripId);i.putExtra("shift_started",shiftStarted);i.putExtra("trip_started",tripStarted);i.putExtra("shift_distance",shiftDistance);i.putExtra("trip_distance",tripDistance);i.putExtra("shift_moving",shiftMoving);i.putExtra("shift_stopped",shiftStopped);i.putExtra("shift_trip_ms",shiftTripMs+(tripActive?Math.max(0,System.currentTimeMillis()-tripStarted):0));i.putExtra("trip_moving",tripMoving);i.putExtra("trip_stopped",tripStopped);i.putExtra("trip_max",tripMax);i.putExtra("zone",zone);if(lastAccepted!=null){i.putExtra("has_location",true);i.putExtra("lat",lastAccepted.getLatitude());i.putExtra("lon",lastAccepted.getLongitude());i.putExtra("accuracy",lastAcceptedAccuracy);i.putExtra("speed",filteredSpeed);i.putExtra("bearing",lastBearing);i.putExtra("location_age_ms",Math.max(0,System.currentTimeMillis()-lastAcceptedTs));}sendBroadcast(i);
     }
 
     private void persist(){sp.edit().putBoolean("shift_active",shiftActive).putBoolean("trip_active",tripActive).putString("shift_id",shiftId).putString("trip_id",tripId).putLong("shift_started",shiftStarted).putLong("trip_started",tripStarted).putLong("shift_distance_bits",Double.doubleToLongBits(shiftDistance)).putLong("trip_distance_bits",Double.doubleToLongBits(tripDistance)).putLong("shift_moving",shiftMoving).putLong("shift_stopped",shiftStopped).putLong("shift_trip_ms",shiftTripMs).putLong("trip_moving",tripMoving).putLong("trip_stopped",tripStopped).putLong("trip_max_bits",Double.doubleToLongBits(tripMax)).putString("zone",zone).apply();}
@@ -181,6 +228,6 @@ public class TrackingService extends Service implements LocationListener {
     @Override public void onProviderEnabled(String provider){}
     @Override public void onProviderDisabled(String provider){}
     @Override public void onStatusChanged(String provider,int status,Bundle extras){}
-    @Override public void onDestroy(){stopLocation();db.close();super.onDestroy();}
+    @Override public void onDestroy(){stopClock();stopLocation();db.close();super.onDestroy();}
     @Nullable @Override public IBinder onBind(Intent intent){return null;}
 }
