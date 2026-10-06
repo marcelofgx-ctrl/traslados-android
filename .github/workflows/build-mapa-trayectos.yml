@@ -66,9 +66,14 @@ jobs:
           grep -q "accountClock" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "movingEvidence" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "vehicle_moving" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "ACTION_UI_HIDDEN" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "Settings.canDrawOverlays" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "SYSTEM_ALERT_WINDOW" mapatrayectos/src/main/AndroidManifest.xml
+          grep -q "trip_type" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "amount_uyu" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "class TripFlowDialogs" mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
           grep -q "previewMovingEvidence" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "setGpsBadge" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SEGUIRME" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "MODE_SHIFT_START" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "MODE_SHIFT_CLOSE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class FeedbackReceiver" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
