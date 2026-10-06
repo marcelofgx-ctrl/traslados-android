@@ -60,17 +60,19 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R4'" mapatrayectos/build.gradle
-          grep -q "versionCode 4" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R5'" mapatrayectos/build.gradle
+          grep -q "versionCode 5" mapatrayectos/build.gradle
           grep -q "ZERO_DISPLAY_KMH=3.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "START_MOVING_KMH=5.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "vehicleMoving" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "class TelemetryQuality" mapatrayectos/src/main/java/uy/com/mapatrayectos/TelemetryQuality.java
           grep -q "MODE_SHIFT_START" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "MODE_SHIFT_CLOSE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "ToneGenerator" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "VibrationEffect" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "class FeedbackReceiver" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
+          grep -q "STREAM_MUSIC, 85" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
+          grep -q "VibrationEffect.createWaveform" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
           grep -q "android.permission.VIBRATE" mapatrayectos/src/main/AndroidManifest.xml
+          grep -q "FeedbackReceiver" mapatrayectos/src/main/AndroidManifest.xml
           grep -q "DESLIZAR PARA FINALIZAR VIAJE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "FLAG_KEEP_SCREEN_ON" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
@@ -100,16 +102,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R4_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R4_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R5_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R5_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R4-RELEASE
+          name: Mapa-Trayectos-v0.1-R5-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R4_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R5_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
