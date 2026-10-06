@@ -37,6 +37,14 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".FeedbackReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="uy.com.mapatrayectos.STATE" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".TrackingService"
             android:exported="false"
