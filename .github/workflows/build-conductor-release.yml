@@ -109,7 +109,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle :conductor:assembleRelease --stacktrace
+          gradle :conductor:assembleRelease --stacktrace 2>&1 | tee conductor-release-build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Conductor-v11.5-R1-build-log
+          path: conductor-release-build.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Verify APK signature and signer identity
         shell: bash
