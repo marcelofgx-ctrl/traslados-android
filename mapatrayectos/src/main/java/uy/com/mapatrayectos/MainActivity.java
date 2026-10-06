@@ -40,6 +40,7 @@ public class MainActivity extends Activity {
     private String zone="Buscando zona…",loadedTripId="";
     private final ArrayList<double[]> route=new ArrayList<>();
     private LocationManager previewLm; private long lastCameraAt=0;
+    private double lastLat=Double.NaN,lastLon=Double.NaN; private float lastBearing=0f;
 
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{if(loc==null)return;float speed=loc.hasSpeed()?loc.getSpeed()*3.6f:0f;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()?loc.getBearing():0f,true);speedText.setText(String.format(Locale.getDefault(),"%.0f",speed));zoneText.setText(zone);gpsText.setText(String.format(Locale.getDefault(),"GPS ±%.0f m",loc.hasAccuracy()?loc.getAccuracy():0f));};
@@ -52,26 +53,38 @@ public class MainActivity extends Activity {
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);
         mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
 
-        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(12),dp(8),dp(12),dp(8));top.setBackground(rounded(Color.argb(235,7,25,31),20,0,0));
-        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);TextView title=text("MAPA TRAYECTOS",20,TEXT,true);zoneText=text(zone,13,GOLD,true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
-        followBtn=button("SEGUIR");followBtn.setOnClickListener(v->{follow=!follow;followBtn.setText(follow?"SEGUIR":"LIBRE");if(follow)recenter();});top.addView(followBtn,new LinearLayout.LayoutParams(dp(84),dp(46)));
-        historyBtn=button("HISTORIAL");historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(105),dp(46));hp.setMargins(dp(6),0,0,0);top.addView(historyBtn,hp);
-        FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(78),Gravity.TOP);topLp.setMargins(dp(10),dp(10),dp(10),0);root.addView(top,topLp);
+        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(12),dp(6),dp(12),dp(6));top.setBackground(rounded(Color.argb(238,7,25,31),19,0,0));
+        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title=text("MAPA TRAYECTOS",17,TEXT,true);title.setSingleLine(true);zoneText=text(zone,12,GOLD,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
+        followBtn=button("SEGUIR");followBtn.setOnClickListener(v->{follow=!follow;followBtn.setText(follow?"SEGUIR":"LIBRE");if(follow)recenter();});top.addView(followBtn,new LinearLayout.LayoutParams(dp(72),dp(40)));
+        historyBtn=button("HISTORIAL");historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(88),dp(40));hp.setMargins(dp(5),0,0,0);top.addView(historyBtn,hp);
+        FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(66),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
 
-        LinearLayout speedCard=new LinearLayout(this);speedCard.setOrientation(LinearLayout.VERTICAL);speedCard.setGravity(Gravity.CENTER);speedCard.setBackground(rounded(Color.argb(235,255,255,255),26,1,Color.rgb(215,220,224)));speedText=text("0",39,Color.rgb(14,27,32),true);TextView kmh=text("km/h",11,Color.rgb(85,94,98),true);speedCard.addView(speedText);speedCard.addView(kmh);FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(100),dp(96),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(98),dp(14),0);root.addView(speedCard,spdLp);
+        LinearLayout speedCard=new LinearLayout(this);speedCard.setOrientation(LinearLayout.VERTICAL);speedCard.setGravity(Gravity.CENTER);speedCard.setBackground(rounded(Color.argb(238,255,255,255),23,1,Color.rgb(215,220,224)));speedText=text("0",34,Color.rgb(14,27,32),true);TextView kmh=text("km/h",10,Color.rgb(85,94,98),true);speedCard.addView(speedText);speedCard.addView(kmh);FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(88),dp(82),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(84),dp(14),0);root.addView(speedCard,spdLp);
 
-        gpsText=text("GPS buscando…",11,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setBackground(rounded(Color.argb(220,7,25,31),18,0,0));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(118),dp(34),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(98),0,0);root.addView(gpsText,gpsLp);
+        gpsText=text("GPS buscando…",11,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setBackground(rounded(Color.argb(225,7,25,31),17,0,0));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(116),dp(32),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(84),0,0);root.addView(gpsText,gpsLp);
 
-        LinearLayout bottom=new LinearLayout(this);bottom.setOrientation(LinearLayout.VERTICAL);bottom.setPadding(dp(14),dp(12),dp(14),dp(12));bottom.setBackground(rounded(Color.argb(244,7,25,31),26,1,Color.rgb(31,74,84)));
-        LinearLayout head=new LinearLayout(this);head.setGravity(Gravity.CENTER_VERTICAL);modeText=text("LISTO PARA JORNADA",16,TEXT,true);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));endShiftBtn=button("CERRAR JORNADA");endShiftBtn.setTextSize(9);endShiftBtn.setVisibility(View.GONE);endShiftBtn.setOnClickListener(v->sendAction(TrackingService.ACTION_STOP_SHIFT));head.addView(endShiftBtn,new LinearLayout.LayoutParams(dp(130),dp(38)));bottom.addView(head,new LinearLayout.LayoutParams(-1,dp(42)));
+        LinearLayout bottom=new LinearLayout(this);bottom.setOrientation(LinearLayout.VERTICAL);bottom.setPadding(dp(14),dp(10),dp(14),dp(10));bottom.setBackground(rounded(Color.argb(246,7,25,31),25,1,Color.rgb(31,74,84)));
+        LinearLayout head=new LinearLayout(this);head.setGravity(Gravity.CENTER_VERTICAL);modeText=text("LISTO PARA JORNADA",15,TEXT,true);modeText.setSingleLine(true);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));endShiftBtn=button("CERRAR JORNADA");endShiftBtn.setTextSize(9);endShiftBtn.setVisibility(View.GONE);endShiftBtn.setOnClickListener(v->sendAction(TrackingService.ACTION_STOP_SHIFT));head.addView(endShiftBtn,new LinearLayout.LayoutParams(dp(122),dp(36)));bottom.addView(head,new LinearLayout.LayoutParams(-1,dp(38)));
 
-        LinearLayout metrics=new LinearLayout(this);metrics.setOrientation(LinearLayout.HORIZONTAL);distanceText=metric(metrics,"0.0","km");elapsedText=metric(metrics,"00:00","tiempo");movingText=metric(metrics,"00:00","mov.");stoppedText=metric(metrics,"00:00","det.");bottom.addView(metrics,new LinearLayout.LayoutParams(-1,dp(64)));
-        idleText=text("Sin viaje: 00:00  ·  Máx.: 0 km/h",12,MUTED,true);idleText.setGravity(Gravity.CENTER);bottom.addView(idleText,new LinearLayout.LayoutParams(-1,dp(30)));
-        slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);bottom.addView(slider,new LinearLayout.LayoutParams(-1,dp(72)));
-        FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(220),Gravity.BOTTOM);bottomLp.setMargins(dp(10),0,dp(10),dp(8));root.addView(bottom,bottomLp);
+        LinearLayout metrics=new LinearLayout(this);metrics.setOrientation(LinearLayout.HORIZONTAL);distanceText=metric(metrics,"0.0","km");elapsedText=metric(metrics,"00:00","tiempo");movingText=metric(metrics,"00:00","mov.");stoppedText=metric(metrics,"00:00","det.");bottom.addView(metrics,new LinearLayout.LayoutParams(-1,dp(56)));
+        idleText=text("Sin viaje: 00:00  ·  Máx.: 0 km/h",11,MUTED,true);idleText.setGravity(Gravity.CENTER);bottom.addView(idleText,new LinearLayout.LayoutParams(-1,dp(26)));
+        slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);bottom.addView(slider,new LinearLayout.LayoutParams(-1,dp(64)));
+        FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(204),Gravity.BOTTOM);bottomLp.setMargins(dp(10),0,dp(10),dp(8));root.addView(bottom,bottomLp);
+
+        root.setOnApplyWindowInsetsListener((v,insets)->{
+            int topInset=insets.getSystemWindowInsetTop();
+            int bottomInset=insets.getSystemWindowInsetBottom();
+            FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);
+            FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedCard.getLayoutParams();c.topMargin=topInset+dp(78);speedCard.setLayoutParams(c);
+            FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(78);gpsText.setLayoutParams(g);
+            FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottom.getLayoutParams();z.bottomMargin=bottomInset+dp(8);bottom.setLayoutParams(z);
+            return insets;
+        });
+        root.requestApplyInsets();
 
         setContentView(root);updateUi();
-        mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.4));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{style=s;style.addImage(DRIVER_IMAGE,driverArrow());GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.58f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")));style.addLayer(dl);GeoJsonSource rs=new GeoJsonSource(ROUTE_SOURCE,lineGeoJson(route));style.addSource(rs);LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(GOLD),PropertyFactory.lineWidth(5f),PropertyFactory.lineOpacity(0.88f));style.addLayerBelow(rl,DRIVER_LAYER);if(!tripId.isEmpty())loadRoute(tripId);});});
+        mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.4));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{style=s;style.addImage(DRIVER_IMAGE,driverArrow());GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.67f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")));style.addLayer(dl);GeoJsonSource rs=new GeoJsonSource(ROUTE_SOURCE,lineGeoJson(route));style.addSource(rs);LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(GOLD),PropertyFactory.lineWidth(5f),PropertyFactory.lineOpacity(0.88f));style.addLayerBelow(rl,DRIVER_LAYER);if(!tripId.isEmpty())loadRoute(tripId);});});
     }
 
     private void performSliderAction(){if(!shiftActive)sendAction(TrackingService.ACTION_START_SHIFT);else if(!tripActive)sendAction(TrackingService.ACTION_START_TRIP);else sendAction(TrackingService.ACTION_STOP_TRIP);}
@@ -97,10 +110,15 @@ public class MainActivity extends Activity {
         if(!shiftActive){modeText.setText("LISTO PARA JORNADA");slider.setLabel("DESLIZAR PARA INICIAR JORNADA  →");endShiftBtn.setVisibility(View.GONE);}else if(!tripActive){modeText.setText("JORNADA ACTIVA · "+zone);slider.setLabel("DESLIZAR PARA INICIAR VIAJE  →");endShiftBtn.setVisibility(View.VISIBLE);}else{modeText.setText("VIAJE ACTIVO · "+zone);slider.setLabel("DESLIZAR PARA FINALIZAR VIAJE  →");endShiftBtn.setVisibility(View.GONE);}
     }
 
-    private TextView metric(LinearLayout row,String value,String label){TextView t=text(value+"\n"+label,14,TEXT,true);t.setGravity(Gravity.CENTER);row.addView(t,new LinearLayout.LayoutParams(0,-1,1));return t;}
+    private TextView metric(LinearLayout row,String value,String label){TextView t=text(value+"\n"+label,13,TEXT,true);t.setGravity(Gravity.CENTER);row.addView(t,new LinearLayout.LayoutParams(0,-1,1));return t;}
 
-    private void updateDriver(double lat,double lon,float bearing,boolean maybeFollow){if(style==null||map==null)return;GeoJsonSource s=style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lat,lon,bearing));if(maybeFollow&&follow&&System.currentTimeMillis()-lastCameraAt>2200){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lat,lon)).zoom(12.7).tilt(18).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),700);}}
-    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");}
+    private void updateDriver(double lat,double lon,float bearing,boolean maybeFollow){
+        lastLat=lat;lastLon=lon;lastBearing=bearing;
+        if(style==null||map==null)return;
+        GeoJsonSource s=style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lat,lon,bearing));
+        if(maybeFollow&&follow&&System.currentTimeMillis()-lastCameraAt>2200){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lat,lon)).zoom(12.45).tilt(14).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),650);}
+    }
+    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");if(!Double.isNaN(lastLat)){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(12.45).tilt(14).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),550);}}
 
     private void addRoutePoint(double lat,double lon){if(!route.isEmpty()){double[] p=route.get(route.size()-1);float[] out=new float[1];Location.distanceBetween(p[0],p[1],lat,lon,out);if(out[0]<2)return;}route.add(new double[]{lat,lon});if(route.size()>6000)route.remove(0);refreshRoute();}
     private void refreshRoute(){if(style==null)return;GeoJsonSource s=style.getSourceAs(ROUTE_SOURCE);if(s!=null)s.setGeoJson(lineGeoJson(route));}
@@ -109,7 +127,17 @@ public class MainActivity extends Activity {
     private String pointGeoJson(double lat,double lon,float bearing){return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{\"bearing\":"+bearing+"},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lon+","+lat+"]}}]}";}
     private String lineGeoJson(List<double[]> pts){StringBuilder sb=new StringBuilder("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":[");for(int i=0;i<pts.size();i++){if(i>0)sb.append(',');double[] p=pts.get(i);sb.append('[').append(p[1]).append(',').append(p[0]).append(']');}return sb.append("]}}]}").toString();}
 
-    private Bitmap driverArrow(){int n=72;Bitmap b=Bitmap.createBitmap(n,n,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);Paint halo=new Paint(Paint.ANTI_ALIAS_FLAG);halo.setColor(Color.WHITE);halo.setStyle(Paint.Style.FILL);Path ph=new Path();ph.moveTo(36,3);ph.lineTo(64,65);ph.lineTo(36,54);ph.lineTo(8,65);ph.close();c.drawPath(ph,halo);Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setColor(BG);p.setStyle(Paint.Style.FILL);Path q=new Path();q.moveTo(36,10);q.lineTo(57,57);q.lineTo(36,49);q.lineTo(15,57);q.close();c.drawPath(q,p);Paint g=new Paint(Paint.ANTI_ALIAS_FLAG);g.setColor(GOLD);g.setStyle(Paint.Style.FILL);Path z=new Path();z.moveTo(36,16);z.lineTo(45,48);z.lineTo(36,44);z.lineTo(27,48);z.close();c.drawPath(z,g);return b;}
+    private Bitmap driverArrow(){
+        int n=84;Bitmap b=Bitmap.createBitmap(n,n,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);
+        Path outer=new Path();outer.moveTo(42,3);outer.lineTo(74,75);outer.lineTo(42,63);outer.lineTo(10,75);outer.close();
+        Paint halo=new Paint(Paint.ANTI_ALIAS_FLAG);halo.setColor(Color.WHITE);halo.setStyle(Paint.Style.FILL);c.drawPath(outer,halo);
+        Path body=new Path();body.moveTo(42,8);body.lineTo(68,69);body.lineTo(42,59);body.lineTo(16,69);body.close();
+        Paint dark=new Paint(Paint.ANTI_ALIAS_FLAG);dark.setColor(Color.rgb(7,25,31));dark.setStyle(Paint.Style.FILL);c.drawPath(body,dark);
+        Path core=new Path();core.moveTo(42,14);core.lineTo(60,63);core.lineTo(42,55);core.lineTo(24,63);core.close();
+        Paint gold=new Paint(Paint.ANTI_ALIAS_FLAG);gold.setColor(GOLD);gold.setStyle(Paint.Style.FILL);c.drawPath(core,gold);
+        Paint tip=new Paint(Paint.ANTI_ALIAS_FLAG);tip.setColor(Color.rgb(12,31,37));tip.setStyle(Paint.Style.FILL);Path t=new Path();t.moveTo(42,19);t.lineTo(50,54);t.lineTo(42,50);t.lineTo(34,54);t.close();c.drawPath(t,tip);
+        return b;
+    }
 
     private void requestNeededPermissions(){if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},REQ_LOCATION);else startPreview();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF);}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==REQ_LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)startPreview();}
@@ -118,7 +146,7 @@ public class MainActivity extends Activity {
     private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}}
 
     private TextView text(String s,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);if(bold)t.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);return t;}
-    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10);b.setTextColor(TEXT);b.setAllCaps(false);b.setPadding(dp(8),0,dp(8),0);b.setBackground(rounded(PANEL,16,1,Color.rgb(50,91,100)));return b;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10);b.setTextColor(TEXT);b.setAllCaps(false);b.setPadding(dp(7),0,dp(7),0);b.setBackground(rounded(PANEL,15,1,Color.rgb(50,91,100)));return b;}
     private GradientDrawable rounded(int fill,int radius,int stroke,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(stroke>0)g.setStroke(dp(stroke),strokeColor);return g;}
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000;long h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
@@ -133,7 +161,7 @@ public class MainActivity extends Activity {
 
     public static final class SlideActionView extends LinearLayout {
         private final TextView label;private final SeekBar seek;private Runnable completed;
-        public SlideActionView(Context c){super(c);setOrientation(VERTICAL);setGravity(Gravity.CENTER);setPadding(12,4,12,4);GradientDrawable bg=new GradientDrawable();bg.setColor(Color.rgb(12,57,66));bg.setCornerRadius(36);setBackground(bg);label=new TextView(c);label.setTextColor(Color.WHITE);label.setTextSize(12);label.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);label.setGravity(Gravity.CENTER);addView(label,new LinearLayout.LayoutParams(-1,28));seek=new SeekBar(c);seek.setMax(100);seek.setProgress(0);addView(seek,new LinearLayout.LayoutParams(-1,38));seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int p,boolean from){}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){if(s.getProgress()>=88&&completed!=null)completed.run();s.setProgress(0);}});}
+        public SlideActionView(Context c){super(c);setOrientation(VERTICAL);setGravity(Gravity.CENTER);setPadding(12,3,12,3);GradientDrawable bg=new GradientDrawable();bg.setColor(Color.rgb(12,57,66));bg.setCornerRadius(34);setBackground(bg);label=new TextView(c);label.setTextColor(Color.WHITE);label.setTextSize(11);label.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);label.setGravity(Gravity.CENTER);addView(label,new LinearLayout.LayoutParams(-1,25));seek=new SeekBar(c);seek.setMax(100);seek.setProgress(0);addView(seek,new LinearLayout.LayoutParams(-1,33));seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int p,boolean from){}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){if(s.getProgress()>=88&&completed!=null)completed.run();s.setProgress(0);}});}
         public void setLabel(String s){label.setText(s);}public void setOnCompleted(Runnable r){completed=r;}
     }
 }
