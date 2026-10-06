@@ -60,15 +60,20 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R2'" mapatrayectos/build.gradle
-          grep -q "versionCode 2" mapatrayectos/build.gradle
-          grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R3'" mapatrayectos/build.gradle
+          grep -q "versionCode 3" mapatrayectos/build.gradle
           grep -q "class TrackingService" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
-          grep -q "DESLIZAR PARA INICIAR VIAJE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "MAX_ACCEL_MPS2=7.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "NETWORK_FALLBACK_AFTER_MS=15000L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "class TelemetryQuality" mapatrayectos/src/main/java/uy/com/mapatrayectos/TelemetryQuality.java
+          grep -q "confirmedMaxKmh" mapatrayectos/src/main/java/uy/com/mapatrayectos/TelemetryQuality.java
+          grep -q "class SpeedGaugeView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "class SlideActionView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "DESLIZAR PARA FINALIZAR VIAJE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "FLAG_KEEP_SCREEN_ON" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "setOnApplyWindowInsetsListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "iconSize(0.67f)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "tiles.openfreemap.org/styles/liberty" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "iconSize(0.72f)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "Vel. máx." mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
+          grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
 
       - name: Build signed release
         shell: bash
@@ -95,16 +100,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R2_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R2_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R3_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R3_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R2-RELEASE
+          name: Mapa-Trayectos-v0.1-R3-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R2_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R3_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
