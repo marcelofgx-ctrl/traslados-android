@@ -44,16 +44,48 @@ public class MainActivity extends Activity {
     private LocationManager previewLm; private long lastCameraAt=0;
     private double lastLat=Double.NaN,lastLon=Double.NaN; private float lastBearing=0f,currentSpeedKmh=0f;
     private float previewLastSpeed=0f; private long previewLastTs=0L;
+    private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
 
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{
         if(loc==null)return;
         float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;if(accuracy>45f)return;
         long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();
-        float speed=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(speed>160f)return;if(speed<3f)speed=0f;
-        if(previewLastTs>0&&speed>previewLastSpeed){double sec=Math.max(.25,(ts-previewLastTs)/1000.0);double accel=((speed-previewLastSpeed)/3.6)/sec;if(accel>7.0)return;}
-        previewLastSpeed=speed;previewLastTs=ts;currentSpeedKmh=speed;
-        zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()?loc.getBearing():lastBearing,true);speedGauge.setSpeed(speed);zoneText.setText(zone);gpsText.setText(String.format(Locale.getDefault(),"GPS ±%.0f m",accuracy));
+        boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());
+        float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>160f)return;
+
+        if(previewLastLocation==null){
+            boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;
+            previewMoving=isGps&&accuracy<=10f&&speedAccuracyGood&&raw>=15f;
+            previewMovingEvidence=previewStoppedEvidence=0;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=previewMoving?raw:0f;
+            float shown=previewMoving?raw:0f;if(shown<3f)shown=0f;currentSpeedKmh=shown;
+            zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);return;
+        }
+
+        long dt=ts-previewLastTs;if(dt<=0)return;double sec=dt/1000.0;double dist=previewLastLocation.distanceTo(loc);float derived=(float)((dist/sec)*3.6);if(derived>160f||(dt<800L&&derived>60f))return;
+        float candidate=loc.hasSpeed()?raw:derived;
+        if(candidate>previewLastSpeed&&previewLastTs>0){double accel=((candidate-previewLastSpeed)/3.6)/Math.max(.25,sec);if(accel>7.0)candidate=derived;}
+        if(candidate>160f)return;
+
+        float lastAccuracy=previewLastLocation.hasAccuracy()?previewLastLocation.getAccuracy():accuracy;
+        float noiseRadius=Math.max(3.0f,Math.min(14.0f,(lastAccuracy+accuracy)*0.30f));
+        float movementThreshold=Math.max(1.8f,Math.min(4.5f,noiseRadius*0.35f));
+        boolean displacementSupportsMove=dist>=movementThreshold&&derived>=3.5f;
+        boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;
+        boolean strongGpsSpeed=isGps&&accuracy<=12f&&speedAccuracyGood&&candidate>=10f;
+        boolean movementEvidenceNow=candidate>=5f&&(displacementSupportsMove||strongGpsSpeed);
+        boolean stationaryGeometry=dist<=movementThreshold;
+        boolean stoppedEvidenceNow=candidate<=2.5f||(stationaryGeometry&&candidate<9f);
+
+        if(previewMoving){
+            previewMovingEvidence=0;if(stoppedEvidenceNow){previewStoppedEvidence++;if(previewStoppedEvidence>=2){previewMoving=false;previewStoppedEvidence=0;}}else previewStoppedEvidence=0;
+        }else{
+            previewStoppedEvidence=0;if(movementEvidenceNow){previewMovingEvidence++;if(previewMovingEvidence>=2){previewMoving=true;previewMovingEvidence=0;}}else previewMovingEvidence=0;
+        }
+
+        float shown=previewMoving?candidate:0f;if(stationaryGeometry&&candidate<9f)shown=0f;if(shown<3f)shown=0f;
+        previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=shown;currentSpeedKmh=shown;
+        zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()&&shown>=5f?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);
     };
 
     @Override public void onCreate(Bundle b){
@@ -68,7 +100,7 @@ public class MainActivity extends Activity {
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(12),dp(6),dp(12),dp(6));top.setBackground(rounded(Color.argb(240,7,25,31),19,0,0));
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);
         TextView title=text("MAPA TRAYECTOS",17,TEXT,true);title.setSingleLine(true);zoneText=text(zone,12,GOLD,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
-        followBtn=button("SEGUIR");followBtn.setOnClickListener(v->{follow=!follow;followBtn.setText(follow?"SEGUIR":"LIBRE");if(follow)recenter();});top.addView(followBtn,new LinearLayout.LayoutParams(dp(72),dp(40)));
+        followBtn=button("SEGUIRME");followBtn.setOnClickListener(v->{follow=!follow;followBtn.setText(follow?"SEGUIRME":"MAPA LIBRE");if(follow)recenter();});top.addView(followBtn,new LinearLayout.LayoutParams(dp(84),dp(40)));
         historyBtn=button("HISTORIAL");historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(88),dp(40));hp.setMargins(dp(5),0,0,0);top.addView(historyBtn,hp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(66),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
 
@@ -108,10 +140,15 @@ public class MainActivity extends Activity {
     private void applyState(Intent i){
         boolean oldTrip=tripActive;String oldTripId=tripId;
         shiftActive=i.getBooleanExtra("shift_active",false);tripActive=i.getBooleanExtra("trip_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");if(shiftId==null)shiftId="";if(tripId==null)tripId="";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
-        if(i.getBooleanExtra("has_location",false)){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);if(speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);gpsText.setText(String.format(Locale.getDefault(),"GPS ±%.0f m",accuracy));updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
+        if(i.getBooleanExtra("has_location",false)){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
         if(!oldTrip&&tripActive){route.clear();loadedTripId="";refreshRoute();}
         if(tripActive&&!tripId.equals(oldTripId)&&!tripId.equals(loadedTripId))loadRoute(tripId);
         if(shiftActive)stopPreview();else startPreview();updateUi();
+    }
+
+    private void setGpsBadge(float accuracy,long ageMs){
+        int border;if(ageMs>7000L)border=Color.rgb(210,88,76);else if(accuracy<=10f)border=Color.rgb(59,190,126);else if(accuracy<=25f)border=GOLD;else border=Color.rgb(218,132,67);
+        String suffix=ageMs>7000L?" · demora":"";gpsText.setText(String.format(Locale.getDefault(),"GPS ±%.0f m%s",accuracy,suffix));gpsText.setBackground(rounded(Color.argb(228,7,25,31),17,1,border));
     }
 
     private void updateUi(){
@@ -125,7 +162,7 @@ public class MainActivity extends Activity {
 
     private float followZoom(){if(currentSpeedKmh<12f)return 13.15f;if(currentSpeedKmh<45f)return 13.00f;if(currentSpeedKmh<80f)return 12.75f;return 12.50f;}
     private void updateDriver(double lat,double lon,float bearing,boolean maybeFollow){lastLat=lat;lastLon=lon;lastBearing=bearing;if(style==null||map==null)return;GeoJsonSource s=style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lat,lon,bearing));if(maybeFollow&&follow&&System.currentTimeMillis()-lastCameraAt>1800){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lat,lon)).zoom(followZoom()).tilt(12).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),600);}}
-    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");if(!Double.isNaN(lastLat)){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(12).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),500);}}
+    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIRME");if(!Double.isNaN(lastLat)){lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(12).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),500);}}
 
     private void addRoutePoint(double lat,double lon){if(!route.isEmpty()){double[] p=route.get(route.size()-1);float[] out=new float[1];Location.distanceBetween(p[0],p[1],lat,lon,out);if(out[0]<2)return;}route.add(new double[]{lat,lon});if(route.size()>6000)route.remove(0);refreshRoute();}
     private void refreshRoute(){if(style==null)return;GeoJsonSource s=style.getSourceAs(ROUTE_SOURCE);if(s!=null)s.setGeoJson(lineGeoJson(route));}
@@ -140,7 +177,7 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==REQ_LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)startPreview();}
 
     private void startPreview(){if(shiftActive||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;if(previewLm==null)previewLm=(LocationManager)getSystemService(LOCATION_SERVICE);if(previewLm==null)return;try{boolean gps=previewLm.isProviderEnabled(LocationManager.GPS_PROVIDER);Location l=previewLm.getLastKnownLocation(gps?LocationManager.GPS_PROVIDER:LocationManager.NETWORK_PROVIDER);if(l!=null&&Math.abs(System.currentTimeMillis()-l.getTime())<120000L)previewListener.onLocationChanged(l);if(gps)previewLm.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500L,1f,previewListener,Looper.getMainLooper());else if(previewLm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))previewLm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000L,12f,previewListener,Looper.getMainLooper());}catch(Exception ignored){}}
-    private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}}
+    private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}previewLastLocation=null;previewLastTs=0L;previewLastSpeed=0f;previewMoving=false;previewMovingEvidence=previewStoppedEvidence=0;}
 
     private TextView text(String s,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);if(bold)t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);return t;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10);b.setTextColor(TEXT);b.setAllCaps(false);b.setPadding(dp(7),0,dp(7),0);b.setBackground(rounded(PANEL,15,1,Color.rgb(50,91,100)));return b;}
@@ -169,8 +206,8 @@ public class MainActivity extends Activity {
         public static final int MODE_SHIFT_START=0,MODE_TRIP_START=1,MODE_TRIP_STOP=2,MODE_SHIFT_CLOSE=3;
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();private Runnable completed;private String label="";private int mode=MODE_SHIFT_START;private boolean dragging=false,thresholdBuzzed=false;private float progress=0f;
         public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");}
-        public void setLabel(String s){label=s;setContentDescription(s);invalidate();}
-        public void setMode(int m){mode=m;progress=isReverse()?1f:0f;invalidate();}
+        public void setLabel(String s){if(Objects.equals(label,s))return;label=s;setContentDescription(s);invalidate();}
+        public void setMode(int m){if(mode==m)return;mode=m;progress=isReverse()?1f:0f;invalidate();}
         public void setOnCompleted(Runnable r){completed=r;}
         private boolean isReverse(){return mode==MODE_SHIFT_CLOSE;}
         private int dark(){if(mode==MODE_TRIP_START)return Color.rgb(7,79,53);if(mode==MODE_TRIP_STOP)return Color.rgb(91,27,32);return Color.rgb(88,61,10);}
@@ -180,9 +217,8 @@ public class MainActivity extends Activity {
             float radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=w-pad-dpv(4)-radius,cx=minX+(maxX-minX)*progress,cy=h/2f;p.setShadowLayer(dpv(6),0,dpv(2),Color.argb(110,0,0,0));p.setColor(Color.rgb(248,247,241));c.drawCircle(cx,cy,radius,p);p.clearShadowLayer();p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(2));p.setColor(accent());c.drawCircle(cx,cy,radius-dpv(2),p);p.setStyle(Paint.Style.FILL);p.setColor(dark());Path arrow=new Path();float a=dpv(6);if(isReverse()){arrow.moveTo(cx+a,cy-a);arrow.lineTo(cx-a,cy);arrow.lineTo(cx+a,cy+a);}else{arrow.moveTo(cx-a,cy-a);arrow.lineTo(cx+a,cy);arrow.lineTo(cx-a,cy+a);}arrow.close();c.drawPath(arrow,p);
             p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));p.setTextSize((getHeight()<dpv(55)?9.5f:12f)*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.WHITE);Paint.FontMetrics fm=p.getFontMetrics();float offset=isReverse()?-dpv(8):dpv(10),textX=w/2f+offset,textY=h/2f-(fm.ascent+fm.descent)/2f;c.drawText(label,textX,textY,p);
         }
-        @Override public boolean onTouchEvent(MotionEvent e){float h=getHeight(),pad=dpv(4),radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=getWidth()-pad-dpv(4)-radius;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:dragging=true;thresholdBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;case MotionEvent.ACTION_MOVE:if(dragging){updateProgress(e.getX(),minX,maxX);boolean armed=isReverse()?progress<=.18f:progress>=.82f;if(armed&&!thresholdBuzzed){thresholdBuzzed=true;performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);}else if(!armed)thresholdBuzzed=false;return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(dragging){boolean fire=e.getActionMasked()==MotionEvent.ACTION_UP&&(isReverse()?progress<=.16f:progress>=.84f);dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();if(fire){performClick();completionFeedback();if(completed!=null)completed.run();}return true;}break;}return super.onTouchEvent(e);}
+        @Override public boolean onTouchEvent(MotionEvent e){float h=getHeight(),pad=dpv(4),radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=getWidth()-pad-dpv(4)-radius;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:dragging=true;thresholdBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;case MotionEvent.ACTION_MOVE:if(dragging){updateProgress(e.getX(),minX,maxX);boolean armed=isReverse()?progress<=.18f:progress>=.82f;if(armed&&!thresholdBuzzed){thresholdBuzzed=true;performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);}else if(!armed)thresholdBuzzed=false;return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(dragging){boolean fire=e.getActionMasked()==MotionEvent.ACTION_UP&&(isReverse()?progress<=.16f:progress>=.84f);dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();if(fire){performClick();performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);if(completed!=null)completed.run();}return true;}break;}return super.onTouchEvent(e);}
         private void updateProgress(float x,float min,float max){progress=Math.max(0f,Math.min(1f,(x-min)/Math.max(1f,max-min)));invalidate();}
-        private void completionFeedback(){Context c=getContext();try{Vibrator v=(Vibrator)c.getSystemService(Context.VIBRATOR_SERVICE);if(v!=null){if(Build.VERSION.SDK_INT>=26)v.vibrate(VibrationEffect.createOneShot(55,VibrationEffect.DEFAULT_AMPLITUDE));else v.vibrate(55);}}catch(Exception ignored){}try{ToneGenerator tg=new ToneGenerator(AudioManager.STREAM_SYSTEM,48);int tone=mode==MODE_TRIP_STOP?ToneGenerator.TONE_PROP_BEEP2:ToneGenerator.TONE_PROP_ACK;tg.startTone(tone,90);postDelayed(tg::release,180);}catch(Exception ignored){}}
         @Override public boolean performClick(){super.performClick();return true;}
         private float dpv(float v){return v*getResources().getDisplayMetrics().density;}
     }
