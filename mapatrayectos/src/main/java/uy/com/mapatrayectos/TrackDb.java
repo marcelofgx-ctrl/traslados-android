@@ -38,6 +38,10 @@ public final class TrackDb extends SQLiteOpenHelper {
         getWritableDatabase().update("shifts",v,"shift_id=?",new String[]{id});
     }
 
+    public void beginTrip(String id, String shiftId, long startedAt, String zone) {
+        beginTrip(id,shiftId,startedAt,zone,"other");
+    }
+
     public void beginTrip(String id, String shiftId, long startedAt, String zone, String tripType) {
         ContentValues v=new ContentValues();v.put("trip_id",id);v.put("shift_id",shiftId);v.put("started_at_ms",startedAt);v.put("start_zone",zone);v.put("end_zone",zone);v.put("trip_type",normalizeType(tripType));v.put("trip_status","active");v.putNull("amount_uyu");v.put("synced",0);
         getWritableDatabase().insertWithOnConflict("trips",null,v,SQLiteDatabase.CONFLICT_IGNORE);
