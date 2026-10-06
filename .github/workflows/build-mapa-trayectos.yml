@@ -1,0 +1,108 @@
+name: Build Mapa Trayectos RELEASE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mapatrayectos/**'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/build-mapa-trayectos.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore signing keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+
+      - name: Verify Mapa Trayectos source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R1'" mapatrayectos/build.gradle
+          grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
+          grep -q "class TrackingService" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q "DESLIZAR PARA INICIAR VIAJE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "FLAG_KEEP_SCREEN_ON" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "tiles.openfreemap.org/styles/liberty" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+
+      - name: Build signed release
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :mapatrayectos:assembleRelease --stacktrace 2>&1 | tee mapa-trayectos-build.log
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
+          test -n "$APK"
+          APKSIGNER="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signing.txt
+          grep -qi 'Verified' signing.txt
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R1_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R1_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp signing.txt artifacts/SIGNING.txt
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-Trayectos-v0.1-R1-RELEASE
+          path: |
+            artifacts/Mapa_Trayectos_v0.1_R1_RELEASE.apk
+            artifacts/SHA256SUMS.txt
+            artifacts/SIGNING.txt
+          if-no-files-found: error
+          retention-days: 90
