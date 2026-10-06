@@ -18,7 +18,7 @@ import java.util.*;
 
 public class TripDetailActivity extends Activity {
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
-    private static final int BG=Color.rgb(7,25,31),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(174,188,191),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84);
+    private static final int BG=Color.rgb(7,25,31),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(174,188,191),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225);
     private MapView mapView;
 
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);MapLibre.getInstance(this);String tripId=getIntent().getStringExtra("trip_id");TrackDb db=new TrackDb(this);JSONObject trip=db.getTrip(tripId);JSONArray points=TelemetryQuality.cleanRoute(db.getTripPoints(tripId));db.close();build(b,trip,points);}
@@ -44,7 +44,14 @@ public class TripDetailActivity extends Activity {
         setContentView(root);
 
         final String routeJson=lineGeoJson(points);final double[] camera=cameraFor(points);
-        mapView.getMapAsync(map->{map.setStyle(new Style.Builder().fromUri(STYLE_URL),style->{GeoJsonSource src=new GeoJsonSource("history-route",routeJson);style.addSource(src);style.addLayer(new LineLayer("history-line","history-route").withProperties(PropertyFactory.lineColor(GOLD),PropertyFactory.lineWidth(6.5f),PropertyFactory.lineOpacity(0.95f)));if(points.length()>0){JSONObject first=points.optJSONObject(0),last=points.optJSONObject(points.length()-1);GeoJsonSource s1=new GeoJsonSource("start",point(first));GeoJsonSource s2=new GeoJsonSource("end",point(last));style.addSource(s1);style.addSource(s2);style.addLayer(new CircleLayer("start-dot","start").withProperties(PropertyFactory.circleRadius(7f),PropertyFactory.circleColor(Color.rgb(38,178,112)),PropertyFactory.circleStrokeColor(Color.WHITE),PropertyFactory.circleStrokeWidth(2f)));style.addLayer(new CircleLayer("end-dot","end").withProperties(PropertyFactory.circleRadius(7f),PropertyFactory.circleColor(Color.rgb(220,77,77)),PropertyFactory.circleStrokeColor(Color.WHITE),PropertyFactory.circleStrokeWidth(2f)));}CameraPosition cp=new CameraPosition.Builder().target(new LatLng(camera[0],camera[1])).zoom(camera[2]).tilt(0).bearing(0).build();map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp));});});
+        mapView.getMapAsync(map->{map.setStyle(new Style.Builder().fromUri(STYLE_URL),style->{
+            GeoJsonSource src=new GeoJsonSource("history-route",routeJson);style.addSource(src);
+            style.addLayer(new LineLayer("history-casing","history-route").withProperties(PropertyFactory.lineColor(BG),PropertyFactory.lineWidth(11f),PropertyFactory.lineOpacity(0.76f)));
+            style.addLayer(new LineLayer("history-glow","history-route").withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(8.5f),PropertyFactory.lineOpacity(0.30f)));
+            style.addLayer(new LineLayer("history-line","history-route").withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(5.6f),PropertyFactory.lineOpacity(0.99f)));
+            if(points.length()>0){JSONObject first=points.optJSONObject(0),last=points.optJSONObject(points.length()-1);GeoJsonSource s1=new GeoJsonSource("start",point(first));GeoJsonSource s2=new GeoJsonSource("end",point(last));style.addSource(s1);style.addSource(s2);style.addLayer(new CircleLayer("start-halo","start").withProperties(PropertyFactory.circleRadius(10f),PropertyFactory.circleColor(Color.WHITE),PropertyFactory.circleOpacity(0.88f)));style.addLayer(new CircleLayer("start-dot","start").withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(GREEN),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));style.addLayer(new CircleLayer("end-halo","end").withProperties(PropertyFactory.circleRadius(10f),PropertyFactory.circleColor(Color.WHITE),PropertyFactory.circleOpacity(0.88f)));style.addLayer(new CircleLayer("end-dot","end").withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(RED),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));}
+            CameraPosition cp=new CameraPosition.Builder().target(new LatLng(camera[0],camera[1])).zoom(camera[2]).tilt(0).bearing(0).build();map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp));
+        });});
     }
 
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
