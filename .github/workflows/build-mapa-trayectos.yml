@@ -60,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R13'" mapatrayectos/build.gradle
-          grep -q "versionCode 13" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R14'" mapatrayectos/build.gradle
+          grep -q "versionCode 14" mapatrayectos/build.gradle
           grep -q "SPEED_STALE_DISPLAY_MS=3500L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -76,6 +76,14 @@ jobs:
           test "$(grep -o 'new LineLayer("history-casing"' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java | wc -l)" -eq 1
           test "$(grep -o 'new LineLayer("history-glow"' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java | wc -l)" -eq 1
           grep -q "dashboard_sheet_state_r13" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "showMaintenanceMenu" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "ACTION_CREATE_DOCUMENT" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "ACTION_OPEN_DOCUMENT" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "class DatabaseBackup" mapatrayectos/src/main/java/uy/com/mapatrayectos/DatabaseBackup.java
+          grep -q "wal_checkpoint" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "Agrupado por día" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "30 días" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "CANCELADO" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
           grep -q "SHEET_PEEK_DP=34" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "sheet_shift_close" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "headerGradient" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -124,16 +132,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R13_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R13_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R14_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R14_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R13-RELEASE
+          name: Mapa-Trayectos-v0.1-R14-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R13_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R14_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
