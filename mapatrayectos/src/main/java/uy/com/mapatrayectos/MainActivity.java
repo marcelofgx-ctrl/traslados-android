@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
-    private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer";
+    private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer",ROUTE_POINTS_SOURCE="route-points",ROUTE_POINTS_LAYER="route-points-layer";
     private static final String START_SOURCE="route-start",END_SOURCE="route-end",START_HALO="route-start-halo",START_LAYER="route-start-dot",END_HALO="route-end-halo",END_LAYER="route-end-dot";
     private static final int BG=Color.rgb(7,25,31),PANEL=Color.rgb(8,42,50),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(196,207,209),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225);
 
@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
     private String zone="Buscando zona…",loadedTripId="";
     private final ArrayList<double[]> route=new ArrayList<>();
     private final Handler uiHandler=new Handler(Looper.getMainLooper());
-    private LocationManager previewLm; private long lastCameraAt=0;
+    private LocationManager previewLm; private long lastCameraAt=0,lastRouteDbSyncAt=0;
     private double lastLat=Double.NaN,lastLon=Double.NaN; private float lastBearing=0f,currentSpeedKmh=0f,cameraBearing=0f;
     private float previewLastSpeed=0f; private long previewLastTs=0L;
     private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
@@ -88,11 +88,13 @@ public class MainActivity extends Activity {
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
             style=s;style.addImage(DRIVER_IMAGE,driverArrow());
             GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);
-            SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.84f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")),PropertyFactory.iconRotationAlignment("viewport"));style.addLayer(dl);
+            SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.86f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")),PropertyFactory.iconRotationAlignment("viewport"));style.addLayer(dl);
             GeoJsonSource rs=new GeoJsonSource(ROUTE_SOURCE,lineGeoJson(route));style.addSource(rs);
-            LineLayer casing=new LineLayer(ROUTE_CASING_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(BG),PropertyFactory.lineWidth(11f),PropertyFactory.lineOpacity(0.78f));style.addLayerBelow(casing,DRIVER_LAYER);
-            LineLayer glow=new LineLayer(ROUTE_GLOW_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(8.5f),PropertyFactory.lineOpacity(0.30f));style.addLayerBelow(glow,DRIVER_LAYER);
-            LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(5.6f),PropertyFactory.lineOpacity(0.99f));style.addLayerBelow(rl,DRIVER_LAYER);
+            LineLayer casing=new LineLayer(ROUTE_CASING_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(BG),PropertyFactory.lineWidth(11f),PropertyFactory.lineOpacity(0.80f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(casing,DRIVER_LAYER);
+            LineLayer glow=new LineLayer(ROUTE_GLOW_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(8.8f),PropertyFactory.lineOpacity(0.28f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(glow,DRIVER_LAYER);
+            LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(5.8f),PropertyFactory.lineOpacity(0.99f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(rl,DRIVER_LAYER);
+            GeoJsonSource rps=new GeoJsonSource(ROUTE_POINTS_SOURCE,routePointsGeoJson(route));style.addSource(rps);
+            CircleLayer crumbs=new CircleLayer(ROUTE_POINTS_LAYER,ROUTE_POINTS_SOURCE).withProperties(PropertyFactory.circleRadius(2.0f),PropertyFactory.circleColor(Color.rgb(180,241,250)),PropertyFactory.circleOpacity(0.72f),PropertyFactory.circleStrokeColor(ROUTE),PropertyFactory.circleStrokeWidth(0.7f));style.addLayerBelow(crumbs,DRIVER_LAYER);
             GeoJsonSource ss=new GeoJsonSource(START_SOURCE,emptyFeatureCollection());GeoJsonSource es=new GeoJsonSource(END_SOURCE,emptyFeatureCollection());style.addSource(ss);style.addSource(es);
             style.addLayer(new CircleLayer(START_HALO,START_SOURCE).withProperties(PropertyFactory.circleRadius(10f),PropertyFactory.circleColor(Color.WHITE),PropertyFactory.circleOpacity(0.88f)));
             style.addLayer(new CircleLayer(START_LAYER,START_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(GREEN),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));
@@ -108,10 +110,16 @@ public class MainActivity extends Activity {
     private void applyState(Intent i){
         boolean oldTrip=tripActive;String oldTripId=tripId;
         shiftActive=i.getBooleanExtra("shift_active",false);tripActive=i.getBooleanExtra("trip_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");tripType=i.getStringExtra("trip_type");if(shiftId==null)shiftId="";if(tripId==null)tripId="";if(tripType==null||tripType.isEmpty())tripType="other";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
-        if(!oldTrip&&tripActive){route.clear();loadedTripId="";routeEnded=false;refreshRoute();}
-        boolean hasLoc=i.getBooleanExtra("has_location",false);if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive||oldTrip&&!tripActive)addRoutePoint(lat,lon);}
-        if(oldTrip&&!tripActive){routeEnded=true;refreshRoute();}
-        if(tripActive&&!tripId.equals(oldTripId)&&!tripId.equals(loadedTripId))loadRoute(tripId);if(shiftActive)stopPreview();else startPreview();updateUi();
+        boolean justStarted=!oldTrip&&tripActive;
+        if(justStarted){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
+        boolean hasLoc=i.getBooleanExtra("has_location",false);
+        if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive||oldTrip&&!tripActive)addRoutePoint(lat,lon);}
+        if(oldTrip&&!tripActive){routeEnded=true;lastRouteDbSyncAt=0;refreshRoute();}
+        if(tripActive){
+            if(!justStarted&&!tripId.equals(loadedTripId))loadRoute(tripId);
+            long now=System.currentTimeMillis();if(now-lastRouteDbSyncAt>=3500L){lastRouteDbSyncAt=now;reconcileRouteFromDb(tripId);}
+        }
+        if(shiftActive)stopPreview();else startPreview();updateUi();
     }
 
     private void setGpsBadge(float accuracy,long ageMs){int border;if(ageMs>7000L)border=Color.rgb(210,88,76);else if(accuracy<=10f)border=GREEN;else if(accuracy<=25f)border=GOLD;else border=Color.rgb(218,132,67);String suffix=ageMs>7000L?" · demora":"";gpsText.setText(String.format(Locale.getDefault(),"GPS ±%.0f m%s",accuracy,suffix));gpsText.setBackground(rounded(Color.argb(235,7,25,31),17,1,border));}
@@ -142,13 +150,41 @@ public class MainActivity extends Activity {
     private void northUpFreeMode(){if(map==null)return;cameraBearing=0f;if(compassView!=null)compassView.setMapBearing(0f);if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,lastBearing));}CameraPosition old=map.getCameraPosition();CameraPosition cp=new CameraPosition.Builder().target(old.target).zoom(old.zoom).tilt(0).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),420);}
     private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");cameraBearing=currentSpeedKmh>=4.5f?lastBearing:cameraBearing;if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,0));lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(16).bearing(cameraBearing).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),450);}if(compassView!=null)compassView.setMapBearing(cameraBearing);}
     private void addRoutePoint(double lat,double lon){if(!route.isEmpty()){double[] p=route.get(route.size()-1);float[] out=new float[1];Location.distanceBetween(p[0],p[1],lat,lon,out);if(out[0]<1.5f)return;}route.add(new double[]{lat,lon});if(route.size()>6000)route.remove(0);refreshRoute();}
-    private void refreshRoute(){if(style==null)return;GeoJsonSource s=style.getSourceAs(ROUTE_SOURCE);if(s!=null)s.setGeoJson(lineGeoJson(route));GeoJsonSource ss=style.getSourceAs(START_SOURCE);if(ss!=null)ss.setGeoJson(route.isEmpty()?emptyFeatureCollection():simplePointGeoJson(route.get(0)[0],route.get(0)[1]));GeoJsonSource es=style.getSourceAs(END_SOURCE);if(es!=null)es.setGeoJson(routeEnded&&!route.isEmpty()?simplePointGeoJson(route.get(route.size()-1)[0],route.get(route.size()-1)[1]):emptyFeatureCollection());}
-    private void loadRoute(String id){if(id==null||id.isEmpty())return;loadedTripId=id;new Thread(()->{TrackDb db=new TrackDb(this);JSONArray a=TelemetryQuality.cleanRoute(db.getTripPoints(id));db.close();ArrayList<double[]> r=new ArrayList<>();for(int x=0;x<a.length();x++){JSONObject o=a.optJSONObject(x);if(o!=null)r.add(new double[]{o.optDouble("lat"),o.optDouble("lon")});}runOnUiThread(()->{route.clear();route.addAll(r);routeEnded=!tripActive;refreshRoute();if(!Double.isNaN(lastLat))updateDriver(lastLat,lastLon,lastBearing,false);});},"load-route").start();}
+    private void refreshRoute(){
+        if(style==null)return;
+        GeoJsonSource s=style.getSourceAs(ROUTE_SOURCE);if(s!=null)s.setGeoJson(lineGeoJson(route));
+        GeoJsonSource ps=style.getSourceAs(ROUTE_POINTS_SOURCE);if(ps!=null)ps.setGeoJson(routePointsGeoJson(route));
+        GeoJsonSource ss=style.getSourceAs(START_SOURCE);if(ss!=null)ss.setGeoJson(route.isEmpty()?emptyFeatureCollection():simplePointGeoJson(route.get(0)[0],route.get(0)[1]));
+        GeoJsonSource es=style.getSourceAs(END_SOURCE);if(es!=null)es.setGeoJson(routeEnded&&!route.isEmpty()?simplePointGeoJson(route.get(route.size()-1)[0],route.get(route.size()-1)[1]):emptyFeatureCollection());
+    }
+    private ArrayList<double[]> routeFromJson(JSONArray a){
+        ArrayList<double[]> r=new ArrayList<>();for(int x=0;x<a.length();x++){JSONObject o=a.optJSONObject(x);if(o!=null)r.add(new double[]{o.optDouble("lat"),o.optDouble("lon")});}return r;
+    }
+    private void loadRoute(String id){
+        if(id==null||id.isEmpty())return;loadedTripId=id;
+        new Thread(()->{TrackDb db=new TrackDb(this);JSONArray a=TelemetryQuality.cleanRoute(db.getTripPoints(id));db.close();ArrayList<double[]> r=routeFromJson(a);runOnUiThread(()->{if(tripActive&&!id.equals(tripId))return;route.clear();route.addAll(r);routeEnded=!tripActive;refreshRoute();if(!Double.isNaN(lastLat))updateDriver(lastLat,lastLon,lastBearing,false);});},"load-route").start();
+    }
+    private void reconcileRouteFromDb(String id){
+        if(id==null||id.isEmpty())return;
+        new Thread(()->{TrackDb db=new TrackDb(this);JSONArray a=TelemetryQuality.cleanRoute(db.getTripPoints(id));db.close();ArrayList<double[]> r=routeFromJson(a);if(r.size()<2)return;runOnUiThread(()->{if(!tripActive||!id.equals(tripId))return;if(route.size()<2||r.size()>=route.size()){route.clear();route.addAll(r);routeEnded=false;refreshRoute();}});},"route-reconcile").start();
+    }
     private String emptyFeatureCollection(){return "{\"type\":\"FeatureCollection\",\"features\":[]}";}
     private String simplePointGeoJson(double lat,double lon){return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lon+","+lat+"]}}]}";}
     private String pointGeoJson(double lat,double lon,float bearing){return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{\"bearing\":"+bearing+"},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lon+","+lat+"]}}]}";}
-    private String lineGeoJson(List<double[]> pts){StringBuilder sb=new StringBuilder("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":[");for(int i=0;i<pts.size();i++){if(i>0)sb.append(',');double[] p=pts.get(i);sb.append('[').append(p[1]).append(',').append(p[0]).append(']');}return sb.append("]}}]}").toString();}
-    private Bitmap driverArrow(){int n=104;Bitmap b=Bitmap.createBitmap(n,n,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);Path outer=new Path();outer.moveTo(52,2);outer.lineTo(91,95);outer.lineTo(52,78);outer.lineTo(13,95);outer.close();Paint halo=new Paint(Paint.ANTI_ALIAS_FLAG);halo.setColor(Color.WHITE);halo.setShadowLayer(6,0,2,Color.argb(120,0,0,0));c.drawPath(outer,halo);halo.clearShadowLayer();Path edge=new Path();edge.moveTo(52,7);edge.lineTo(84,86);edge.lineTo(52,72);edge.lineTo(20,86);edge.close();Paint dark=new Paint(Paint.ANTI_ALIAS_FLAG);dark.setColor(BG);c.drawPath(edge,dark);Path fill=new Path();fill.moveTo(52,11);fill.lineTo(78,80);fill.lineTo(52,68);fill.lineTo(26,80);fill.close();Paint gold=new Paint(Paint.ANTI_ALIAS_FLAG);gold.setColor(GOLD);c.drawPath(fill,gold);Path core=new Path();core.moveTo(52,18);core.lineTo(70,71);core.lineTo(52,62);core.lineTo(34,71);core.close();Paint light=new Paint(Paint.ANTI_ALIAS_FLAG);light.setColor(Color.rgb(255,249,224));c.drawPath(core,light);Paint center=new Paint(Paint.ANTI_ALIAS_FLAG);center.setColor(ROUTE);c.drawCircle(52,63,4.2f,center);return b;}
+    private String lineGeoJson(List<double[]> pts){
+        if(pts==null||pts.size()<2)return emptyFeatureCollection();
+        StringBuilder sb=new StringBuilder("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":[");
+        for(int i=0;i<pts.size();i++){if(i>0)sb.append(',');double[] p=pts.get(i);sb.append('[').append(p[1]).append(',').append(p[0]).append(']');}
+        return sb.append("]}}]}").toString();
+    }
+    private String routePointsGeoJson(List<double[]> pts){
+        if(pts==null||pts.size()<2)return emptyFeatureCollection();
+        StringBuilder sb=new StringBuilder("{\"type\":\"FeatureCollection\",\"features\":[");boolean first=true;int lastAdded=-1;
+        for(int i=0;i<pts.size();i+=4){double[] p=pts.get(i);if(!first)sb.append(',');first=false;sb.append("{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Point\",\"coordinates\":[").append(p[1]).append(',').append(p[0]).append("]}}");lastAdded=i;}
+        int last=pts.size()-1;if(lastAdded!=last){double[] p=pts.get(last);if(!first)sb.append(',');sb.append("{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Point\",\"coordinates\":[").append(p[1]).append(',').append(p[0]).append("]}}");}
+        return sb.append("]}").toString();
+    }
+    private Bitmap driverArrow(){int n=104;Bitmap b=Bitmap.createBitmap(n,n,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);Path outer=new Path();outer.moveTo(52,2);outer.lineTo(91,95);outer.lineTo(52,78);outer.lineTo(13,95);outer.close();Paint halo=new Paint(Paint.ANTI_ALIAS_FLAG);halo.setColor(Color.WHITE);halo.setShadowLayer(6,0,2,Color.argb(120,0,0,0));c.drawPath(outer,halo);halo.clearShadowLayer();Path edge=new Path();edge.moveTo(52,7);edge.lineTo(84,86);edge.lineTo(52,72);edge.lineTo(20,86);edge.close();Paint dark=new Paint(Paint.ANTI_ALIAS_FLAG);dark.setColor(BG);c.drawPath(edge,dark);Path fill=new Path();fill.moveTo(52,11);fill.lineTo(78,80);fill.lineTo(52,68);fill.lineTo(26,80);fill.close();Paint gold=new Paint(Paint.ANTI_ALIAS_FLAG);gold.setColor(GOLD);c.drawPath(fill,gold);Path core=new Path();core.moveTo(52,18);core.lineTo(70,71);core.lineTo(52,62);core.lineTo(34,71);core.close();Paint light=new Paint(Paint.ANTI_ALIAS_FLAG);light.setColor(Color.rgb(255,249,224));c.drawPath(core,light);Paint center=new Paint(Paint.ANTI_ALIAS_FLAG);center.setColor(ROUTE);c.drawCircle(52,63,4.8f,center);return b;}
 
     private void requestNeededPermissions(){if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},REQ_LOCATION);else startPreview();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF);}
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==REQ_LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)startPreview();}

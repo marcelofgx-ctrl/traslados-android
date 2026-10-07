@@ -60,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R8'" mapatrayectos/build.gradle
-          grep -q "versionCode 8" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R9'" mapatrayectos/build.gradle
+          grep -q "versionCode 9" mapatrayectos/build.gradle
           grep -q "SPEED_STALE_DISPLAY_MS=3500L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -117,7 +117,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R8-RELEASE
+          name: Mapa-Trayectos-v0.1-R9-RELEASE
           path: |
             artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk
             artifacts/SHA256SUMS.txt
