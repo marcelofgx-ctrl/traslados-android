@@ -16,6 +16,7 @@ import java.util.zip.*;
 
 public final class DatabaseBackup {
     private static final long MAX_BACKUP_BYTES=512L*1024L*1024L;
+    private static final int MIN_IMPORT_DB_VERSION=2;
     private DatabaseBackup(){}
 
     public static final class BackupInfo {
@@ -104,6 +105,7 @@ public final class DatabaseBackup {
                 Files.move(staged.toPath(),db.toPath(),StandardCopyOption.REPLACE_EXISTING);
             }
             validateDatabase(db,e.info.dbVersion,e.info.shifts,e.info.trips,e.info.points);
+            if(e.info.dbVersion<TrackDb.DB_VERSION){TrackDb upgraded=new TrackDb(context);upgraded.getWritableDatabase();upgraded.checkpoint();upgraded.close();validateDatabase(db,TrackDb.DB_VERSION,e.info.shifts,e.info.trips,e.info.points);}
             deleteQuietly(oldCopy);
             return e.info;
         }catch(Exception failure){
@@ -141,7 +143,7 @@ public final class DatabaseBackup {
         JSONObject m=new JSONObject(manifestText);
         if(!"mapa-trayectos-backup".equals(m.optString("format"))) throw new IOException("Formato de backup no reconocido");
         int dbVersion=m.optInt("db_version",-1);
-        if(dbVersion!=TrackDb.DB_VERSION) throw new IOException("Versión de base incompatible: "+dbVersion+" (actual "+TrackDb.DB_VERSION+")");
+        if(dbVersion<MIN_IMPORT_DB_VERSION||dbVersion>TrackDb.DB_VERSION) throw new IOException("Versión de base incompatible: "+dbVersion+" (compatibles "+MIN_IMPORT_DB_VERSION+"–"+TrackDb.DB_VERSION+")");
         String expected=m.optString("db_sha256","");
         String actual=sha256(db);
         if(expected.isEmpty()||!expected.equalsIgnoreCase(actual)) throw new IOException("Checksum SHA-256 inválido");
