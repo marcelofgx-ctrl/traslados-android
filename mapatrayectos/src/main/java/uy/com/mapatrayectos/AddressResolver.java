@@ -50,8 +50,7 @@ public final class AddressResolver {
         new Thread(()->{
             String address=resolve(app,lat,lon,zone);
             TrackDb db=new TrackDb(app);
-            db.setTripStartLocation(tripId,lat,lon,address);
-            db.close();
+            db.setTripStartLocation(tripId,lat,lon,address);JSONObject t=db.getTrip(tripId);boolean ended=t!=null&&!t.isNull("ended_at_ms");db.close();if(ended)Api.syncTripAsync(tripId);
         },"address-start").start();
     }
 
@@ -60,8 +59,7 @@ public final class AddressResolver {
         new Thread(()->{
             String address=resolve(app,lat,lon,zone);
             TrackDb db=new TrackDb(app);
-            db.setTripEndLocation(tripId,lat,lon,address);
-            db.close();
+            db.setTripEndLocation(tripId,lat,lon,address);db.close();Api.syncTripAsync(tripId);
         },"address-end").start();
     }
 
