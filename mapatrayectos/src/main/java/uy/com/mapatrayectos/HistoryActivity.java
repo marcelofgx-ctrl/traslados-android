@@ -5,6 +5,8 @@ import android.content.*;
 import android.graphics.*;
 import android.os.Build;
 import android.os.Bundle;
+import android.net.Uri;
+import android.text.TextUtils;
 import android.view.*;
 import android.widget.*;
 import org.json.*;
@@ -20,7 +22,9 @@ public class HistoryActivity extends Activity {
     private static final int WHITE=Color.rgb(251,250,244);
 
     private JSONArray allTrips=new JSONArray();
+    private final HashMap<String,JSONObject> shiftsById=new HashMap<>();
     private LinearLayout summaryHost,listHost;
+    private boolean endpointBackfillStarted=false;
     private int periodDays=30;
     private String typeFilter="all",statusFilter="all";
     private String expandedDay=null;
@@ -115,9 +119,19 @@ public class HistoryActivity extends Activity {
     private void loadData(){
         TrackDb db=new TrackDb(this);
         allTrips=db.listTrips();
+        shiftsById.clear();
+        JSONArray shifts=db.listShifts();
+        for(int i=0;i<shifts.length();i++){JSONObject s=shifts.optJSONObject(i);if(s!=null)shiftsById.put(s.optString("shift_id",""),s);}
         db.close();
         expandedDay=null;
         renderFiltered();
+        if(!endpointBackfillStarted){
+            endpointBackfillStarted=true;
+            new Thread(()->{
+                int changed=AddressResolver.backfillMissingTripLocations(getApplicationContext());
+                if(changed>0)runOnUiThread(()->{TrackDb x=new TrackDb(this);allTrips=x.listTrips();x.close();renderFiltered();});
+            },"history-address-backfill").start();
+        }
     }
 
     private ArrayList<JSONObject> filteredTrips(){
@@ -143,10 +157,11 @@ public class HistoryActivity extends Activity {
 
     private void renderSummary(List<JSONObject> trips){
         summaryHost.removeAllViews();
-        int completed=0,cancelled=0;double income=0,km=0;long totalMs=0,moving=0,stopped=0;
+        int completed=0,cancelled=0,uber=0,cabify=0,personal=0,other=0;double income=0,km=0;long totalMs=0,moving=0,stopped=0;
         for(JSONObject o:trips){
             km+=o.optDouble("distance_m",0)/1000.0;
             String st=o.optString("trip_status","completed");if("cancelled".equals(st))cancelled++;else completed++;
+            String tp=o.optString("trip_type","other");if("uber".equals(tp))uber++;else if("cabify".equals(tp))cabify++;else if("personal".equals(tp))personal++;else other++;
             if(!o.isNull("amount_uyu"))income+=Math.max(0,o.optDouble("amount_uyu",0));
             long start=o.optLong("started_at_ms",0),end=o.optLong("ended_at_ms",0);
             totalMs+=end>start?end-start:o.optLong("moving_ms",0)+o.optLong("stopped_ms",0);
@@ -178,9 +193,11 @@ public class HistoryActivity extends Activity {
         TextView line=text("Completados "+completed+"   ·   Cancelados "+cancelled+"   ·   Movimiento "+duration(moving)+"   ·   Detenido "+duration(stopped),10.7f,INK_SOFT,true);
         line.setGravity(Gravity.CENTER);
         dash.addView(line,lp(3,0));
+        TextView platforms=text("Uber "+uber+"   ·   Cabify "+cabify+"   ·   Personal "+personal+"   ·   Otro "+other,10.4f,TEAL_DARK,true);
+        platforms.setGravity(Gravity.CENTER);dash.addView(platforms,lp(5,0));
 
         if(km>0&&income>0){
-            TextView eff=text(String.format(locale,"Rendimiento  $ %.0f/km",income/km),10.5f,GOLD_DEEP,true);
+            double perHour=totalMs>0?income/(totalMs/3600000.0):0;TextView eff=text(String.format(locale,"Rendimiento  $ %.0f/km   ·   $ %.0f/h",income/km,perHour),10.5f,GOLD_DEEP,true);
             eff.setGravity(Gravity.CENTER);dash.addView(eff,lp(5,0));
         }
         summaryHost.addView(dash);
@@ -260,7 +277,14 @@ public class HistoryActivity extends Activity {
             if(expanded){
                 View div=divider();group.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));
                 LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(8),dp(3),dp(8),dp(9));
-                for(JSONObject o:dayTrips)body.addView(tripCard(o),lp(6,0));
+                LinkedHashMap<String,ArrayList<JSONObject>> byShift=new LinkedHashMap<>();
+                for(JSONObject trip:dayTrips){String sid=trip.optString("shift_id","");byShift.computeIfAbsent(sid,k->new ArrayList<>()).add(trip);}
+                int shiftNo=1;
+                for(Map.Entry<String,ArrayList<JSONObject>> se:byShift.entrySet()){
+                    ArrayList<JSONObject> shiftTrips=se.getValue();
+                    if(byShift.size()>1)body.addView(shiftHeader(se.getKey(),shiftTrips,shiftNo++),lp(7,1));
+                    for(JSONObject o:shiftTrips)body.addView(tripCard(o),lp(6,0));
+                }
                 group.addView(body,new LinearLayout.LayoutParams(-1,-2));
             }
             listHost.addView(group,lp(6,0));
@@ -283,7 +307,11 @@ public class HistoryActivity extends Activity {
         TextView tag=text(typeLabel(type)+("cancelled".equals(status)?" · CANCELADO":""),9.5f,"cancelled".equals(status)?RED:GREEN,true);tag.setGravity(Gravity.RIGHT);top.addView(tag);
         card.addView(top);
 
-        TextView route=text((from.isEmpty()?"Origen":from)+"  →  "+(to.isEmpty()?"Destino":to),14.2f,INK,true);card.addView(route,lp(4,0));
+        double startLat=o.isNull("start_lat")?Double.NaN:o.optDouble("start_lat"),startLon=o.isNull("start_lon")?Double.NaN:o.optDouble("start_lon");
+        double endLat=o.isNull("end_lat")?Double.NaN:o.optDouble("end_lat"),endLon=o.isNull("end_lon")?Double.NaN:o.optDouble("end_lon");
+        String startAddress=endpointText(o,true),endAddress=endpointText(o,false);
+        card.addView(endpointRow("ORIGEN",startAddress,startLat,startLon,GREEN),lp(5,0));
+        card.addView(endpointRow("DESTINO",endAddress,endLat,endLon,RED),lp(3,0));
         long total=end>start?end-start:moving+stopped;
         TextView details=text(String.format(locale,"%.1f km · %s · prom. %.0f · máx. %.0f km/h",km,duration(total),avg,max),10.4f,INK_SOFT,true);card.addView(details,lp(5,0));
         String extra="Movimiento "+duration(moving)+" · Detenido "+duration(stopped)+(amount>0?" · $ "+String.format(locale,"%.0f",amount):"");
@@ -291,6 +319,48 @@ public class HistoryActivity extends Activity {
         TextView open=text("VER RECORRIDO  ›",10.2f,ROUTE,true);open.setGravity(Gravity.RIGHT);card.addView(open,lp(6,0));
         card.setOnClickListener(v->{Intent d=new Intent(this,TripDetailActivity.class);d.putExtra("trip_id",id);startActivity(d);});
         return card;
+    }
+
+    private View shiftHeader(String shiftId,List<JSONObject> trips,int number){
+        long start=Long.MAX_VALUE,end=0;double km=0;for(JSONObject t:trips){start=Math.min(start,t.optLong("started_at_ms",Long.MAX_VALUE));end=Math.max(end,t.optLong("ended_at_ms",0));km+=t.optDouble("distance_m",0)/1000.0;}
+        JSONObject shift=shiftsById.get(shiftId);if(shift!=null){start=shift.optLong("started_at_ms",start);end=shift.optLong("ended_at_ms",end);}
+        SimpleDateFormat tf=new SimpleDateFormat("HH:mm",locale);
+        String times=start<Long.MAX_VALUE?tf.format(new Date(start))+(end>start?"–"+tf.format(new Date(end)):""):"";
+        TextView v=text("JORNADA "+number+"   ·   "+times+"   ·   "+trips.size()+" viajes   ·   "+String.format(locale,"%.1f km",km),9.8f,GOLD_DEEP,true);
+        v.setPadding(dp(8),dp(5),dp(8),dp(5));
+        v.setBackground(new TexturedDrawable(this,Color.argb(190,251,238,192),Color.argb(190,236,218,158),Color.argb(120,214,174,67),12f,1f,true));
+        return v;
+    }
+
+    private String endpointText(JSONObject o,boolean start){
+        String prefix=start?"start_":"end_";String address=o.optString(prefix+"address","");
+        if(!address.isEmpty())return address;
+        String zone=o.optString(prefix+"zone","");
+        if(!o.isNull(prefix+"lat")&&!o.isNull(prefix+"lon"))return AddressResolver.fallback(o.optDouble(prefix+"lat"),o.optDouble(prefix+"lon"),zone);
+        return zone.isEmpty()?(start?"Origen sin dirección":"Destino sin dirección"):zone;
+    }
+
+    private View endpointRow(String label,String address,double lat,double lon,int accent){
+        LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView dot=text("●",10,accent,true);dot.setGravity(Gravity.CENTER);row.addView(dot,new LinearLayout.LayoutParams(dp(20),dp(32)));
+        LinearLayout txt=new LinearLayout(this);txt.setOrientation(LinearLayout.VERTICAL);
+        TextView l=text(label,8.7f,GOLD_DEEP,true);TextView a=text(address,11.6f,INK,true);a.setSingleLine(true);a.setEllipsize(TextUtils.TruncateAt.END);txt.addView(l);txt.addView(a);
+        row.addView(txt,new LinearLayout.LayoutParams(0,dp(38),1));
+        if(!Double.isNaN(lat)&&!Double.isNaN(lon)){
+            TextView nav=text("↗",18,TEAL_DARK,true);nav.setGravity(Gravity.CENTER);nav.setContentDescription("Navegar a "+label.toLowerCase(locale));
+            nav.setBackground(new TexturedDrawable(this,Color.argb(220,250,251,246),Color.argb(220,224,241,237),Color.argb(140,17,111,118),17f,1f,true));
+            nav.setOnClickListener(v->openNavigation(lat,lon,address));
+            row.addView(nav,new LinearLayout.LayoutParams(dp(38),dp(36)));
+        }
+        return row;
+    }
+
+    private void openNavigation(double lat,double lon,String label){
+        try{
+            Uri u=Uri.parse("google.navigation:q="+lat+","+lon+"&mode=d");Intent i=new Intent(Intent.ACTION_VIEW,u);i.setPackage("com.google.android.apps.maps");startActivity(i);
+        }catch(Exception e){
+            Uri u=Uri.parse("geo:"+lat+","+lon+"?q="+lat+","+lon+"("+Uri.encode(label)+")");startActivity(new Intent(Intent.ACTION_VIEW,u));
+        }
     }
 
     private View periodFilterRow(){
