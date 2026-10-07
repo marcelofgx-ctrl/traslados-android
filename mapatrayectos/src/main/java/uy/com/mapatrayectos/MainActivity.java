@@ -25,7 +25,7 @@ import org.maplibre.android.style.sources.GeoJsonSource;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003;
+    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011;
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
 
     private MapView mapView; private MapLibreMap map; private Style style;
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron;
-    private Button historyBtn,followBtn,bubbleBtn;
+    private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private SlideActionView slider,endShiftSlider;
     private LinearLayout bottomSheet;
@@ -73,10 +73,11 @@ public class MainActivity extends Activity {
         FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(8),dp(6),dp(8),dp(6));top.setBackground(headerGradient());top.setElevation(dp(7));
         TextView brand=text("⌖",17,BG,true);brand.setGravity(Gravity.CENTER);brand.setContentDescription("Mapa Trayectos");brand.setBackground(rounded(Color.rgb(238,198,88),16,0,0));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(30),dp(30));brandLp.setMargins(0,0,dp(5),0);top.addView(brand,brandLp);
-        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",14.2f,TEXT,true);title.setSingleLine(true);zoneText=text(zone,11.2f,Color.rgb(236,195,92),true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
-        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(68),dp(42)));
-        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(Color.rgb(61,132,151),Color.argb(50,73,199,225)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(62),dp(42));hp.setMargins(dp(4),0,0,0);top.addView(historyBtn,hp);
-        bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante");bubbleBtn.setOnClickListener(v->openBubblePermission());LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(42),dp(42));bp.setMargins(dp(4),0,0,0);top.addView(bubbleBtn,bp);
+        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);zoneText=text(zone,10.8f,Color.rgb(236,195,92),true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
+        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(58),dp(42)));
+        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(Color.rgb(61,132,151),Color.argb(50,73,199,225)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
+        bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante");bubbleBtn.setOnClickListener(v->openBubblePermission());LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
+        maintenanceBtn=button("⚒");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMaintenanceMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
 
         speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(100),dp(100),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(94),dp(12),0);root.addView(speedGauge,spdLp);
@@ -156,7 +157,74 @@ public class MainActivity extends Activity {
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
     private void maybeOfferBubblePermission(){if(Settings.canDrawOverlays(this))return;SharedPreferences p=getSharedPreferences("ui_prefs",MODE_PRIVATE);if(p.getBoolean("bubble_offer_r6",false))return;p.edit().putBoolean("bubble_offer_r6",true).apply();new AlertDialog.Builder(this).setTitle("Acceso flotante").setMessage("Durante una jornada, Mapa Trayectos puede quedar como un globito encima de Uber, Cabify u otras apps. Tocándolo volvés al mapa en un instante.").setPositiveButton("ACTIVAR",(d,w)->openBubblePermission()).setNegativeButton("MÁS TARDE",null).show();}
     private void openBubblePermission(){if(Settings.canDrawOverlays(this)){Toast.makeText(this,"Burbuja activada: aparecerá al salir de la app durante una jornada.",Toast.LENGTH_LONG).show();return;}try{startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())),REQ_OVERLAY);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}
-    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){super.onActivityResult(requestCode,resultCode,data);if(requestCode==REQ_OVERLAY){updateUi();Toast.makeText(this,Settings.canDrawOverlays(this)?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();}}
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==REQ_OVERLAY){updateUi();Toast.makeText(this,Settings.canDrawOverlays(this)?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();return;}
+        if(resultCode!=RESULT_OK||data==null||data.getData()==null)return;
+        Uri uri=data.getData();
+        if(requestCode==REQ_EXPORT_DB){performExport(uri);return;}
+        if(requestCode==REQ_IMPORT_DB){inspectAndConfirmImport(uri);}
+    }
+
+    private boolean maintenanceBusy(){
+        SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        return shiftActive||tripActive||s.getBoolean("shift_active",false)||s.getBoolean("trip_active",false);
+    }
+
+    private void showMaintenanceMenu(View anchor){
+        LinearLayout menu=new LinearLayout(this);menu.setOrientation(LinearLayout.VERTICAL);menu.setPadding(dp(10),dp(8),dp(10),dp(8));menu.setBackground(rounded(Color.rgb(6,30,37),18,1,GOLD));
+        TextView title=text("MANTENIMIENTO",10.5f,GOLD,true);title.setPadding(dp(8),dp(3),dp(8),dp(6));menu.addView(title,new LinearLayout.LayoutParams(-1,-2));
+        TextView export=text("▣   Exportar base",15,TEXT,true);export.setGravity(Gravity.CENTER_VERTICAL);export.setPadding(dp(10),0,dp(10),0);menu.addView(export,new LinearLayout.LayoutParams(-1,dp(54)));
+        View divider=new View(this);divider.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
+        TextView imp=text("⇧   Importar base",15,TEXT,true);imp.setGravity(Gravity.CENTER_VERTICAL);imp.setPadding(dp(10),0,dp(10),0);menu.addView(imp,new LinearLayout.LayoutParams(-1,dp(54)));
+
+        TrackDb db=new TrackDb(this);JSONObject cnt=db.counts();db.close();
+        long last=getSharedPreferences("maintenance_prefs",MODE_PRIVATE).getLong("last_backup_ms",0);
+        String lastText=last>0?new java.text.SimpleDateFormat("dd/MM HH:mm",new Locale("es","UY")).format(new Date(last)):"sin copia";
+        TextView status=text("Base OK · "+cnt.optInt("trips")+" viajes · Última copia "+lastText,10.5f,MUTED,false);status.setPadding(dp(8),dp(7),dp(8),dp(5));menu.addView(status,new LinearLayout.LayoutParams(-1,-2));
+
+        PopupWindow popup=new PopupWindow(menu,dp(224),-2,true);popup.setOutsideTouchable(true);popup.setElevation(dp(10));popup.setBackgroundDrawable(rounded(Color.rgb(6,30,37),18,1,GOLD));
+        export.setOnClickListener(v->{popup.dismiss();startExportBase();});
+        imp.setOnClickListener(v->{popup.dismiss();startImportBase();});
+        popup.showAsDropDown(anchor,-dp(184),dp(5));
+    }
+
+    private void startExportBase(){
+        if(maintenanceBusy()){new AlertDialog.Builder(this).setTitle("Copia de seguridad").setMessage("Para crear una copia consistente, finalizá primero el viaje y cerrá la jornada activa.").setPositiveButton("ENTENDIDO",null).show();return;}
+        Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip").putExtra(Intent.EXTRA_TITLE,DatabaseBackup.suggestedName());startActivityForResult(i,REQ_EXPORT_DB);
+    }
+
+    private void startImportBase(){
+        if(maintenanceBusy()){new AlertDialog.Builder(this).setTitle("Importación bloqueada").setMessage("No se puede restaurar una base mientras haya una jornada o un viaje activo. Cerralo primero.").setPositiveButton("ENTENDIDO",null).show();return;}
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip");startActivityForResult(i,REQ_IMPORT_DB);
+    }
+
+    private void performExport(Uri uri){
+        Toast.makeText(this,"Creando copia…",Toast.LENGTH_SHORT).show();
+        new Thread(()->{try{
+            DatabaseBackup.BackupInfo info=DatabaseBackup.exportBackup(getApplicationContext(),uri);
+            getSharedPreferences("maintenance_prefs",MODE_PRIVATE).edit().putLong("last_backup_ms",System.currentTimeMillis()).apply();
+            runOnUiThread(()->Toast.makeText(this,"✓ Copia creada · "+info.trips+" viajes",Toast.LENGTH_LONG).show());
+        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("No se pudo exportar").setMessage(e.getMessage()==null?e.toString():e.getMessage()).setPositiveButton("OK",null).show());}},"db-export").start();
+    }
+
+    private void inspectAndConfirmImport(Uri uri){
+        Toast.makeText(this,"Validando backup…",Toast.LENGTH_SHORT).show();
+        new Thread(()->{try{
+            DatabaseBackup.BackupInfo info=DatabaseBackup.inspectBackup(getApplicationContext(),uri);
+            runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Restaurar base").setMessage(info.summary()+"\n\nSe creará una copia preventiva de la base actual. Si la restauración falla, se hará rollback automático.").setNegativeButton("CANCELAR",null).setPositiveButton("RESTAURAR",(d,w)->performImport(uri)).show());
+        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Backup inválido").setMessage(e.getMessage()==null?e.toString():e.getMessage()).setPositiveButton("OK",null).show());}},"db-inspect").start();
+    }
+
+    private void performImport(Uri uri){
+        if(maintenanceBusy())return;
+        Toast.makeText(this,"Restaurando base…",Toast.LENGTH_SHORT).show();
+        new Thread(()->{try{
+            DatabaseBackup.BackupInfo info=DatabaseBackup.importBackup(getApplicationContext(),uri);
+            Api.syncPendingAsync();
+            runOnUiThread(()->new AlertDialog.Builder(this).setTitle("✓ Base restaurada").setMessage("Jornadas: "+info.shifts+"\nViajes: "+info.trips+"\nPuntos GPS: "+info.points+"\n\nEl Historial ya puede abrirse con los datos restaurados.").setPositiveButton("ABRIR HISTORIAL",(d,w)->startActivity(new Intent(this,HistoryActivity.class))).setNegativeButton("CERRAR",null).show());
+        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("No se pudo restaurar").setMessage((e.getMessage()==null?e.toString():e.getMessage())+"\n\nLa base anterior se conservó.").setPositiveButton("OK",null).show());}},"db-import").start();
+    }
     private void sendUiSignal(String action){if(!shiftActive)return;try{startService(new Intent(this,TrackingService.class).setAction(action));}catch(Exception ignored){}}
     private void requestServiceState(){if(!shiftActive)return;try{Intent svc=new Intent(this,TrackingService.class).setAction(TrackingService.ACTION_REQUEST_STATE);if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}catch(Exception ignored){}}
 
