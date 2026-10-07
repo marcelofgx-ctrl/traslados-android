@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class TripDetailActivity extends Activity {
-    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/dark";
+    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final int BG=Color.rgb(7,25,31),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(174,188,191),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225);
     private MapView mapView;
 
