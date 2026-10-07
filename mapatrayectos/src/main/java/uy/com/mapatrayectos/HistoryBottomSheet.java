@@ -89,18 +89,19 @@ public final class HistoryBottomSheet extends LinearLayout {
         addFilterChip(filterRow,"30 días","period","30",periodDays==30);
         addFilterChip(filterRow,"Todo","period","0",periodDays==0);
         addSeparator(filterRow);
-        addFilterChip(filterRow,"Todos","type","all","all".equals(typeFilter));
+        addFilterChip(filterRow,"Tipo: Todos","type","all","all".equals(typeFilter));
         addFilterChip(filterRow,"Uber","type","uber","uber".equals(typeFilter));
         addFilterChip(filterRow,"Cabify","type","cabify","cabify".equals(typeFilter));
         addFilterChip(filterRow,"Personal","type","personal","personal".equals(typeFilter));
         addSeparator(filterRow);
+        addFilterChip(filterRow,"Estado: Todos","status","all","all".equals(statusFilter));
         addFilterChip(filterRow,"Completados","status","completed","completed".equals(statusFilter));
         addFilterChip(filterRow,"Cancelados","status","cancelled","cancelled".equals(statusFilter));
         addView(filters,new LayoutParams(-1,dp(44)));
 
         summaryHost=new LinearLayout(activity);
         summaryHost.setOrientation(VERTICAL);
-        addView(summaryHost,new LayoutParams(-1,dp(72)));
+        addView(summaryHost,new LayoutParams(-1,dp(84)));
 
         ScrollView scroll=new ScrollView(activity);
         scroll.setFillViewport(false);
@@ -154,11 +155,12 @@ public final class HistoryBottomSheet extends LinearLayout {
         addFilterChip(row,"30 días","period","30",periodDays==30);
         addFilterChip(row,"Todo","period","0",periodDays==0);
         addSeparator(row);
-        addFilterChip(row,"Todos","type","all","all".equals(typeFilter));
+        addFilterChip(row,"Tipo: Todos","type","all","all".equals(typeFilter));
         addFilterChip(row,"Uber","type","uber","uber".equals(typeFilter));
         addFilterChip(row,"Cabify","type","cabify","cabify".equals(typeFilter));
         addFilterChip(row,"Personal","type","personal","personal".equals(typeFilter));
         addSeparator(row);
+        addFilterChip(row,"Estado: Todos","status","all","all".equals(statusFilter));
         addFilterChip(row,"Completados","status","completed","completed".equals(statusFilter));
         addFilterChip(row,"Cancelados","status","cancelled","cancelled".equals(statusFilter));
     }
