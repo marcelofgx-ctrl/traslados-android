@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class TripDetailActivity extends Activity {
-    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
+    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/dark";
     private static final int BG=Color.rgb(7,25,31),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(174,188,191),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225);
     private MapView mapView;
 
@@ -60,5 +60,12 @@ public class TripDetailActivity extends Activity {
     private GradientDrawable rounded(int fill,int radius,int stroke,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(stroke>0)g.setStroke(dp(stroke),strokeColor);return g;}
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String duration(long ms){long x=Math.max(0,ms)/1000,h=x/3600,m=(x%3600)/60,s=x%60;return h>0?String.format(Locale.getDefault(),"%d:%02d:%02d",h,m,s):String.format(Locale.getDefault(),"%02d:%02d",m,s);}
-    @Override protected void onStart(){super.onStart();mapView.onStart();}@Override protected void onResume(){super.onResume();mapView.onResume();}@Override protected void onPause(){mapView.onPause();super.onPause();}@Override protected void onStop(){mapView.onStop();super.onStop();}@Override protected void onDestroy(){mapView.onDestroy();super.onDestroy();}@Override public void onLowMemory(){super.onLowMemory();mapView.onLowMemory();}@Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);mapView.onSaveInstanceState(out);}
+    private void signalTrackingUi(boolean visible){android.content.SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);if(!s.getBoolean("shift_active",false))return;try{startService(new android.content.Intent(this,TrackingService.class).setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN));}catch(Exception ignored){}}
+    @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
+    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();signalTrackingUi(true);}
+    @Override protected void onPause(){signalTrackingUi(false);if(mapView!=null)mapView.onPause();super.onPause();}
+    @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
+    @Override protected void onDestroy(){if(mapView!=null)mapView.onDestroy();super.onDestroy();}
+    @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);}
 }
