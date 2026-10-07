@@ -30,9 +30,9 @@ public class MainActivity extends Activity {
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
-    private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer",ROUTE_POINTS_SOURCE="route-points",ROUTE_POINTS_LAYER="route-points-layer";
+    private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer",ROUTE_POINTS_SOURCE="route-points",ROUTE_POINTS_LAYER="route-points-layer",RETURN_SOURCE="route-return-source",RETURN_GLOW_LAYER="route-return-glow",RETURN_LAYER="route-return-layer";
     private static final String START_SOURCE="route-start",END_SOURCE="route-end",START_HALO="route-start-halo",START_LAYER="route-start-dot",END_HALO="route-end-halo",END_LAYER="route-end-dot";
-    private static final int BG=Color.rgb(7,25,31),PANEL=Color.rgb(8,42,50),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(196,207,209),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225);
+    private static final int BG=Color.rgb(7,25,31),PANEL=Color.rgb(8,42,50),GOLD=Color.rgb(224,193,111),TEXT=Color.rgb(245,244,238),MUTED=Color.rgb(196,207,209),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225),RETURN_ROUTE=Color.rgb(235,166,65);
 
     private MapView mapView; private MapLibreMap map; private Style style;
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron;
@@ -126,6 +126,9 @@ public class MainActivity extends Activity {
             LineLayer casing=new LineLayer(ROUTE_CASING_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(BG),PropertyFactory.lineWidth(11f),PropertyFactory.lineOpacity(0.80f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(casing,DRIVER_LAYER);
             LineLayer glow=new LineLayer(ROUTE_GLOW_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(8.8f),PropertyFactory.lineOpacity(0.28f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(glow,DRIVER_LAYER);
             LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(5.8f),PropertyFactory.lineOpacity(0.99f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(rl,DRIVER_LAYER);
+            GeoJsonSource ret=new GeoJsonSource(RETURN_SOURCE,emptyFeatureCollection());style.addSource(ret);
+            LineLayer returnGlow=new LineLayer(RETURN_GLOW_LAYER,RETURN_SOURCE).withProperties(PropertyFactory.lineColor(RETURN_ROUTE),PropertyFactory.lineWidth(8.0f),PropertyFactory.lineOpacity(0.28f),PropertyFactory.lineOffset(2.2f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(returnGlow,DRIVER_LAYER);
+            LineLayer returnLine=new LineLayer(RETURN_LAYER,RETURN_SOURCE).withProperties(PropertyFactory.lineColor(RETURN_ROUTE),PropertyFactory.lineWidth(4.8f),PropertyFactory.lineOpacity(0.98f),PropertyFactory.lineOffset(2.2f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(returnLine,DRIVER_LAYER);
             GeoJsonSource rps=new GeoJsonSource(ROUTE_POINTS_SOURCE,routePointsGeoJson(route));style.addSource(rps);
             CircleLayer crumbs=new CircleLayer(ROUTE_POINTS_LAYER,ROUTE_POINTS_SOURCE).withProperties(PropertyFactory.circleRadius(2.0f),PropertyFactory.circleColor(Color.rgb(180,241,250)),PropertyFactory.circleOpacity(0.72f),PropertyFactory.circleStrokeColor(ROUTE),PropertyFactory.circleStrokeWidth(0.7f));style.addLayerBelow(crumbs,DRIVER_LAYER);
             GeoJsonSource ss=new GeoJsonSource(START_SOURCE,emptyFeatureCollection());GeoJsonSource es=new GeoJsonSource(END_SOURCE,emptyFeatureCollection());style.addSource(ss);style.addSource(es);
@@ -212,8 +215,8 @@ public class MainActivity extends Activity {
         boolean justStarted=!oldTrip&&tripActive;
         if(justStarted){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
         boolean hasLoc=i.getBooleanExtra("has_location",false);
-        if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive||oldTrip&&!tripActive)addRoutePoint(lat,lon);}
-        if(oldTrip&&!tripActive){routeEnded=true;lastRouteDbSyncAt=0;refreshRoute();}
+        if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
+        if(!tripActive&&(oldTrip||!route.isEmpty()||routeEnded)){clearActiveRoute();if(oldTrip)Toast.makeText(this,"✓ Viaje guardado · mapa limpio",Toast.LENGTH_SHORT).show();}
         if(tripActive){
             if(!justStarted&&!tripId.equals(loadedTripId))loadRoute(tripId);
             long now=System.currentTimeMillis();if(now-lastRouteDbSyncAt>=3500L){lastRouteDbSyncAt=now;reconcileRouteFromDb(tripId);}
@@ -333,9 +336,13 @@ public class MainActivity extends Activity {
     private void northUpFreeMode(){if(map==null)return;cameraBearing=0f;if(compassView!=null)compassView.setMapBearing(0f);if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,lastBearing));}CameraPosition old=map.getCameraPosition();CameraPosition cp=new CameraPosition.Builder().target(old.target).zoom(old.zoom).tilt(0).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),420);}
     private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");cameraBearing=currentSpeedKmh>=4.5f?lastBearing:cameraBearing;if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,0));lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(16).bearing(cameraBearing).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),450);}if(compassView!=null)compassView.setMapBearing(cameraBearing);}
     private void addRoutePoint(double lat,double lon){if(!route.isEmpty()){double[] p=route.get(route.size()-1);float[] out=new float[1];Location.distanceBetween(p[0],p[1],lat,lon,out);if(out[0]<1.5f)return;}route.add(new double[]{lat,lon});if(route.size()>6000)route.remove(0);refreshRoute();}
+    private void clearActiveRoute(){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
+    private int returnSplitIndex(List<double[]> pts){if(pts==null||pts.size()<8)return -1;double[] start=pts.get(0);float maxDist=0f,endDist=0f;int maxIndex=-1;float[] out=new float[1];for(int i=1;i<pts.size();i++){double[] p=pts.get(i);Location.distanceBetween(start[0],start[1],p[0],p[1],out);float d=out[0];if(d>maxDist){maxDist=d;maxIndex=i;}if(i==pts.size()-1)endDist=d;}if(maxDist<300f||maxIndex<3||maxIndex>pts.size()-4)return -1;if(endDist>maxDist*0.78f)return -1;double returnMeters=0;for(int i=maxIndex+1;i<pts.size();i++){double[] a=pts.get(i-1),b=pts.get(i);Location.distanceBetween(a[0],a[1],b[0],b[1],out);returnMeters+=out[0];}if(returnMeters<Math.max(180.0,maxDist*0.22))return -1;return maxIndex;}
+    private String returnSegmentGeoJson(List<double[]> pts){int split=returnSplitIndex(pts);return split<0?emptyFeatureCollection():lineGeoJsonRange(pts,split,pts.size()-1);}
     private void refreshRoute(){
         if(style==null)return;
         GeoJsonSource s=style.getSourceAs(ROUTE_SOURCE);if(s!=null)s.setGeoJson(lineGeoJson(route));
+        GeoJsonSource ret=style.getSourceAs(RETURN_SOURCE);if(ret!=null)ret.setGeoJson(returnSegmentGeoJson(route));
         GeoJsonSource ps=style.getSourceAs(ROUTE_POINTS_SOURCE);if(ps!=null)ps.setGeoJson(routePointsGeoJson(route));
         GeoJsonSource ss=style.getSourceAs(START_SOURCE);if(ss!=null)ss.setGeoJson(route.isEmpty()?emptyFeatureCollection():simplePointGeoJson(route.get(0)[0],route.get(0)[1]));
         GeoJsonSource es=style.getSourceAs(END_SOURCE);if(es!=null)es.setGeoJson(routeEnded&&!route.isEmpty()?simplePointGeoJson(route.get(route.size()-1)[0],route.get(route.size()-1)[1]):emptyFeatureCollection());
@@ -354,10 +361,11 @@ public class MainActivity extends Activity {
     private String emptyFeatureCollection(){return "{\"type\":\"FeatureCollection\",\"features\":[]}";}
     private String simplePointGeoJson(double lat,double lon){return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lon+","+lat+"]}}]}";}
     private String pointGeoJson(double lat,double lon,float bearing){return "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{\"bearing\":"+bearing+"},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lon+","+lat+"]}}]}";}
-    private String lineGeoJson(List<double[]> pts){
-        if(pts==null||pts.size()<2)return emptyFeatureCollection();
+    private String lineGeoJson(List<double[]> pts){return lineGeoJsonRange(pts,0,pts==null?-1:pts.size()-1);}
+    private String lineGeoJsonRange(List<double[]> pts,int from,int to){
+        if(pts==null||pts.size()<2||from<0||to<=from||to>=pts.size())return emptyFeatureCollection();
         StringBuilder sb=new StringBuilder("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":[");
-        for(int i=0;i<pts.size();i++){if(i>0)sb.append(',');double[] p=pts.get(i);sb.append('[').append(p[1]).append(',').append(p[0]).append(']');}
+        boolean first=true;for(int i=from;i<=to;i++){if(!first)sb.append(',');first=false;double[] p=pts.get(i);sb.append('[').append(p[1]).append(',').append(p[0]).append(']');}
         return sb.append("]}}]}").toString();
     }
     private String routePointsGeoJson(List<double[]> pts){
