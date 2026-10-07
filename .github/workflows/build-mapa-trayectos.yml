@@ -60,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R15P1'" mapatrayectos/build.gradle
-          grep -q "versionCode 17" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R15P2'" mapatrayectos/build.gradle
+          grep -q "versionCode 18" mapatrayectos/build.gradle
           grep -q "SPEED_STALE_DISPLAY_MS=3500L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -85,7 +85,12 @@ jobs:
           grep -q "Agrupado por día" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
           grep -q "30 días" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
           grep -q "CANCELADO" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
-          grep -q "didInitialAutoExpand" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "Todos contraídos" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "HISTORIAL DE TRAYECTOS" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "expandedDay=null" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "new Intent(this,HistoryActivity.class)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "class TexturedDrawable" mapatrayectos/src/main/java/uy/com/mapatrayectos/TexturedDrawable.java
+          grep -q "new TexturedDrawable(this,Color.rgb(5,47,56)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "maxSheetState" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "BUBBLE_SHOW_DELAY_MS=320L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "signalTrackingUi(true)" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
@@ -145,16 +150,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R15P1_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R15P1_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R15P1-RELEASE
+          name: Mapa-Trayectos-v0.1-R15P2-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R15P1_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
