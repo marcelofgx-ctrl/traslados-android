@@ -129,7 +129,7 @@ public class HistoryActivity extends Activity {
             endpointBackfillStarted=true;
             new Thread(()->{
                 int changed=AddressResolver.backfillMissingTripLocations(getApplicationContext());
-                if(changed>0)runOnUiThread(()->{TrackDb x=new TrackDb(this);allTrips=x.listTrips();x.close();renderFiltered();});
+                if(changed>0){Api.syncPendingAsync();runOnUiThread(()->{TrackDb x=new TrackDb(this);allTrips=x.listTrips();x.close();renderFiltered();});}
             },"history-address-backfill").start();
         }
     }
