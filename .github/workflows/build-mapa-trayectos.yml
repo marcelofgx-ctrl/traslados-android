@@ -60,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R15P2'" mapatrayectos/build.gradle
-          grep -q "versionCode 18" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R16'" mapatrayectos/build.gradle
+          grep -q "versionCode 19" mapatrayectos/build.gradle
           grep -q "SPEED_STALE_DISPLAY_MS=3500L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -123,6 +123,18 @@ jobs:
           grep -q "STREAM_MUSIC, 85" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
           grep -q "FLAG_KEEP_SCREEN_ON" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class TelemetryQuality" mapatrayectos/src/main/java/uy/com/mapatrayectos/TelemetryQuality.java
+          grep -q "DB_VERSION = 3" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "start_address" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "class AddressResolver" mapatrayectos/src/main/java/uy/com/mapatrayectos/AddressResolver.java
+          grep -q "google.navigation:q=" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "JORNADA " mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "Uber " mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q "RETURN_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "lineOffset(2.2f)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "clearActiveRoute" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "history-return-line" mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
+          grep -q "start_lat" mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q "MIN_IMPORT_DB_VERSION=2" mapatrayectos/src/main/java/uy/com/mapatrayectos/DatabaseBackup.java
           grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
 
       - name: Build signed release
@@ -150,16 +162,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R16_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R16_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R15P2-RELEASE
+          name: Mapa-Trayectos-v0.1-R16-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R15P2_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R16_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
