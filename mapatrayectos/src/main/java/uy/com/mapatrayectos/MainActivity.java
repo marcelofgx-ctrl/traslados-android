@@ -38,8 +38,16 @@ public class MainActivity extends Activity {
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private SlideActionView slider,endShiftSlider;
+    private FrameLayout rootFrame;
     private LinearLayout bottomSheet;
+    private HistoryBottomSheet historySheet;
     private View sheetHandle;
+    private boolean historyOpen=false;
+    private int historySheetState=1;
+    private float historyDownY=0f;
+    private int historyStartHeight=0;
+    private boolean historyDragging=false;
+    private static final int HISTORY_PEEK_DP=96,HISTORY_MID_DP=360,HISTORY_FULL_DP=600;
     private int sheetState=1;
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
@@ -70,12 +78,12 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);tripActive=live.getBoolean("trip_active",false);tripType=live.getString("trip_type","other");Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
 
     private void buildUi(Bundle b){
-        FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
+        FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(8),dp(6),dp(8),dp(6));top.setBackground(headerGradient());top.setElevation(dp(7));
         TextView brand=text("⌖",17,BG,true);brand.setGravity(Gravity.CENTER);brand.setContentDescription("Mapa Trayectos");brand.setBackground(rounded(Color.rgb(238,198,88),16,0,0));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(30),dp(30));brandLp.setMargins(0,0,dp(5),0);top.addView(brand,brandLp);
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);zoneText=text(zone,10.8f,Color.rgb(236,195,92),true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(58),dp(42)));
-        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(Color.rgb(61,132,151),Color.argb(50,73,199,225)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
+        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(Color.rgb(61,132,151),Color.argb(50,73,199,225)));historyBtn.setOnClickListener(v->toggleHistoryPanel());LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: aparece al salir de Mapa Trayectos durante una jornada");bubbleBtn.setOnClickListener(v->openBubblePermission());LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
         maintenanceBtn=button("⚒");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMaintenanceMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
@@ -107,7 +115,15 @@ public class MainActivity extends Activity {
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
-        root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(92);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(94);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(90);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);return insets;});root.requestApplyInsets();
+        historySheet=new HistoryBottomSheet(this,new HistoryBottomSheet.Listener(){
+            @Override public void onCloseHistory(){closeHistoryPanel();}
+            @Override public void onOpenTrip(String id){if(id==null||id.isEmpty())return;Intent d=new Intent(MainActivity.this,TripDetailActivity.class);d.putExtra("trip_id",id);startActivity(d);}
+        });
+        historySheet.getDragHandle().setOnTouchListener(this::onHistorySheetTouch);
+        historySheet.setVisibility(View.GONE);
+        FrameLayout.LayoutParams historyLp=new FrameLayout.LayoutParams(-1,dp(HISTORY_MID_DP),Gravity.BOTTOM);historyLp.setMargins(dp(7),0,dp(7),dp(5));root.addView(historySheet,historyLp);
+
+        root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(92);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(94);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(90);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
         setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",1)));setSheetState(sheetState,false);updateUi();
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
             style=s;style.addImage(DRIVER_IMAGE,driverArrow());
@@ -126,6 +142,72 @@ public class MainActivity extends Activity {
             style.addLayer(new CircleLayer(END_LAYER,END_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(RED),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));
             refreshRoute();if(!Double.isNaN(lastLat))updateDriver(lastLat,lastLon,lastBearing,false);if(!tripId.isEmpty())loadRoute(tripId);if(shiftActive)uiHandler.postDelayed(this::requestServiceState,180);
         });});
+    }
+
+    private int historyHeightDp(int state){return state<=0?HISTORY_PEEK_DP:(state==1?HISTORY_MID_DP:HISTORY_FULL_DP);}
+    private void toggleHistoryPanel(){if(historyOpen)closeHistoryPanel();else openHistoryPanel();}
+    private void openHistoryPanel(){
+        if(historySheet==null)return;
+        historyOpen=true;
+        historySheet.reload();
+        bottomSheet.setVisibility(View.GONE);
+        historySheet.setVisibility(View.VISIBLE);
+        historySheet.bringToFront();
+        historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(76,224,193,111)));
+        setHistorySheetState(1,false);
+    }
+    private void closeHistoryPanel(){
+        if(historySheet==null)return;
+        historyOpen=false;
+        historySheet.setVisibility(View.GONE);
+        bottomSheet.setVisibility(View.VISIBLE);
+        historyBtn.setBackground(headerButtonGradient(Color.rgb(61,132,151),Color.argb(50,73,199,225)));
+        setSheetState(sheetState,false);
+    }
+    private void setHistorySheetHeightPx(int h){
+        if(historySheet==null)return;
+        FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)historySheet.getLayoutParams();
+        lp.height=Math.max(dp(HISTORY_PEEK_DP),Math.min(dp(HISTORY_FULL_DP),h));
+        historySheet.setLayoutParams(lp);
+    }
+    private void setHistorySheetState(int state,boolean animate){
+        historySheetState=Math.max(0,Math.min(2,state));
+        int target=dp(historyHeightDp(historySheetState));
+        if(!animate){setHistorySheetHeightPx(target);return;}
+        int start=historySheet.getLayoutParams().height;
+        android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,target);
+        a.setDuration(220);
+        a.setInterpolator(new android.view.animation.DecelerateInterpolator());
+        a.addUpdateListener(v->setHistorySheetHeightPx((Integer)v.getAnimatedValue()));
+        a.start();
+    }
+    private boolean onHistorySheetTouch(View v,MotionEvent e){
+        if(historySheet==null)return false;
+        switch(e.getActionMasked()){
+            case MotionEvent.ACTION_DOWN:
+                historyDragging=true;historyDownY=e.getRawY();historyStartHeight=historySheet.getLayoutParams().height;
+                v.getParent().requestDisallowInterceptTouchEvent(true);return true;
+            case MotionEvent.ACTION_MOVE:
+                if(historyDragging){
+                    int h=Math.round(historyStartHeight+(historyDownY-e.getRawY()));
+                    setHistorySheetHeightPx(h);return true;
+                }break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if(historyDragging){
+                    float delta=e.getRawY()-historyDownY;historyDragging=false;
+                    v.getParent().requestDisallowInterceptTouchEvent(false);
+                    if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){
+                        setHistorySheetState(historySheetState==1?2:1,true);return true;
+                    }
+                    int h=historySheet.getLayoutParams().height;
+                    int p=dp(HISTORY_PEEK_DP),m=dp(HISTORY_MID_DP),f=dp(HISTORY_FULL_DP);
+                    int target=Math.abs(h-f)<=Math.abs(h-m)&&Math.abs(h-f)<=Math.abs(h-p)?2:(Math.abs(h-m)<=Math.abs(h-p)?1:0);
+                    if(target==0&&delta>dp(40)){closeHistoryPanel();return true;}
+                    setHistorySheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;
+                }break;
+        }
+        return false;
     }
 
     private void performSliderAction(){if(!shiftActive){if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0))maybeOfferBubblePermission();return;}if(!tripActive){TripFlowDialogs.chooseTripType(this,type->sendAction(TrackingService.ACTION_START_TRIP,type,null,0));return;}TripFlowDialogs.closeTrip(this,tripType,(status,amount)->sendAction(TrackingService.ACTION_STOP_TRIP,null,status,amount));}
@@ -305,13 +387,14 @@ public class MainActivity extends Activity {
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
-    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);tripActive=s.getBoolean("trip_active",false);tripType=s.getString("trip_type","other");if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();updateUi();}
+    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);tripActive=s.getBoolean("trip_active",false);tripType=s.getString("trip_type","other");if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
     @Override protected void onPause(){if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
     @Override protected void onDestroy(){uiHandler.removeCallbacksAndMessages(null);if(mapView!=null)mapView.onDestroy();super.onDestroy();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);}
+    @Override public void onBackPressed(){if(historyOpen){closeHistoryPanel();return;}super.onBackPressed();}
 
     public static final class SpeedGaugeView extends View {
         private float speed=0f;private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF r=new RectF();
