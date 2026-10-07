@@ -40,6 +40,7 @@ public class TrackingService extends Service implements LocationListener {
     private static final long SPEED_STALE_DISPLAY_MS=3500L;
     private static final long SPEED_STALE_STOP_MS=6000L;
     private static final long SPEED_STALE_FORCE_STOP_MS=10000L;
+    private static final long BUBBLE_SHOW_DELAY_MS=320L;
 
     private LocationManager lm;
     private TrackDb db;
@@ -61,6 +62,8 @@ public class TrackingService extends Service implements LocationListener {
 
     private WindowManager bubbleWm;private View bubbleView;private WindowManager.LayoutParams bubbleLp;
 
+    private final Runnable bubbleShow=()->showBubbleIfAllowed();
+
     private final Runnable clockTick=new Runnable(){
         @Override public void run(){
             if(!shiftActive||clockHandler==null)return;
@@ -81,8 +84,8 @@ public class TrackingService extends Service implements LocationListener {
         else if(ACTION_STOP_SHIFT.equals(a))stopShift();
         else if(ACTION_START_TRIP.equals(a))startTrip(intent==null?null:intent.getStringExtra("trip_type"));
         else if(ACTION_STOP_TRIP.equals(a))stopTrip(intent==null?null:intent.getStringExtra("trip_status"),intent!=null&&intent.hasExtra("amount_uyu")?intent.getDoubleExtra("amount_uyu",0):0);
-        else if(ACTION_UI_VISIBLE.equals(a)){appVisible=true;hideBubble();broadcastState();}
-        else if(ACTION_UI_HIDDEN.equals(a)){appVisible=false;showBubbleIfAllowed();}
+        else if(ACTION_UI_VISIBLE.equals(a)){appVisible=true;if(clockHandler!=null)clockHandler.removeCallbacks(bubbleShow);hideBubble();broadcastState();}
+        else if(ACTION_UI_HIDDEN.equals(a)){appVisible=false;if(clockHandler!=null){clockHandler.removeCallbacks(bubbleShow);clockHandler.postDelayed(bubbleShow,BUBBLE_SHOW_DELAY_MS);}else showBubbleIfAllowed();}
         else if(ACTION_REQUEST_STATE.equals(a))broadcastState();
         else if(shiftActive){startForeground(NOTIFICATION_ID,notification());startLocation();startClock();showBubbleIfAllowed();}
         return shiftActive?START_STICKY:START_NOT_STICKY;
@@ -168,6 +171,6 @@ public class TrackingService extends Service implements LocationListener {
     @Override public void onProviderEnabled(String provider){}
     @Override public void onProviderDisabled(String provider){}
     @Override public void onStatusChanged(String provider,int status,Bundle extras){}
-    @Override public void onDestroy(){stopClock();hideBubble();stopLocation();if(db!=null)db.close();super.onDestroy();}
+    @Override public void onDestroy(){if(clockHandler!=null)clockHandler.removeCallbacks(bubbleShow);stopClock();hideBubble();stopLocation();if(db!=null)db.close();super.onDestroy();}
     @Nullable @Override public IBinder onBind(Intent intent){return null;}
 }
