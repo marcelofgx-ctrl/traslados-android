@@ -62,11 +62,11 @@ public final class TrackDb extends SQLiteOpenHelper {
     }
 
     public void setTripStartLocation(String id,double lat,double lon,String address){
-        ContentValues v=new ContentValues();v.put("start_lat",lat);v.put("start_lon",lon);if(address!=null&&!address.isEmpty())v.put("start_address",address);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
+        ContentValues v=new ContentValues();v.put("start_lat",lat);v.put("start_lon",lon);if(address!=null&&!address.isEmpty())v.put("start_address",address);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
     public void setTripEndLocation(String id,double lat,double lon,String address){
-        ContentValues v=new ContentValues();v.put("end_lat",lat);v.put("end_lon",lon);if(address!=null&&!address.isEmpty())v.put("end_address",address);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
+        ContentValues v=new ContentValues();v.put("end_lat",lat);v.put("end_lon",lon);if(address!=null&&!address.isEmpty())v.put("end_address",address);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
     public int backfillTripEndpointsFromPoints(){
@@ -77,7 +77,7 @@ public final class TrackDb extends SQLiteOpenHelper {
                 ContentValues v=new ContentValues();
                 if(needStart){Cursor p=getReadableDatabase().rawQuery("select lat,lon from points where trip_id=? order by recorded_at_ms asc limit 1",new String[]{id});try{if(p.moveToFirst()){v.put("start_lat",p.getDouble(0));v.put("start_lon",p.getDouble(1));}}finally{p.close();}}
                 if(needEnd){Cursor p=getReadableDatabase().rawQuery("select lat,lon from points where trip_id=? order by recorded_at_ms desc limit 1",new String[]{id});try{if(p.moveToFirst()){v.put("end_lat",p.getDouble(0));v.put("end_lon",p.getDouble(1));}}finally{p.close();}}
-                if(v.size()>0){getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});changed++;}
+                if(v.size()>0){v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});changed++;}
             }
         }finally{trips.close();}
         return changed;
