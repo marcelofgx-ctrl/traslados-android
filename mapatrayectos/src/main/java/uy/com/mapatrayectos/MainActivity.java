@@ -27,7 +27,7 @@ import java.util.*;
 public class MainActivity extends Activity {
     private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011;
     private static final long SPEED_UI_STALE_MS=3500L;
-    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
+    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/dark";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
     private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer",ROUTE_POINTS_SOURCE="route-points",ROUTE_POINTS_LAYER="route-points-layer";
     private static final String START_SOURCE="route-start",END_SOURCE="route-end",START_HALO="route-start-halo",START_LAYER="route-start-dot",END_HALO="route-end-halo",END_LAYER="route-end-dot";
