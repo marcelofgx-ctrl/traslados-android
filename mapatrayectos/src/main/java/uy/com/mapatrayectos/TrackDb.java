@@ -6,8 +6,8 @@ import android.database.sqlite.*;
 import org.json.*;
 
 public final class TrackDb extends SQLiteOpenHelper {
-    private static final String DB_NAME = "mapa_trayectos.db";
-    private static final int DB_VERSION = 2;
+    static final String DB_NAME = "mapa_trayectos.db";
+    static final int DB_VERSION = 2;
 
     public TrackDb(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
@@ -64,6 +64,9 @@ public final class TrackDb extends SQLiteOpenHelper {
     public JSONObject getShift(String id) { return one("select * from shifts where shift_id=?",new String[]{id}); }
     public JSONObject getTrip(String id) { return one("select * from trips where trip_id=?",new String[]{id}); }
     public JSONArray listTrips() { return many("select * from trips order by started_at_ms desc",null); }
+    public JSONArray listShifts() { return many("select * from shifts order by started_at_ms desc",null); }
+    public JSONObject counts() { JSONObject o=new JSONObject();try{o.put("shifts",scalarCount("shifts"));o.put("trips",scalarCount("trips"));o.put("points",scalarCount("points"));}catch(Exception ignored){}return o; }
+    public void checkpoint() { Cursor c=getWritableDatabase().rawQuery("PRAGMA wal_checkpoint(FULL)",null);try{if(c.moveToFirst()){} }finally{c.close();} }
     public JSONArray getTripPoints(String tripId) { return many("select * from points where trip_id=? order by recorded_at_ms",new String[]{tripId}); }
     public JSONArray getRoutePoints(String shiftId,String tripId) { if(tripId!=null&&!tripId.isEmpty())return getTripPoints(tripId);return many("select * from points where shift_id=? order by recorded_at_ms",new String[]{shiftId}); }
     public JSONArray unsyncedEndedShifts() { return many("select * from shifts where synced=0 and ended_at_ms is not null order by started_at_ms",null); }
@@ -77,6 +80,7 @@ public final class TrackDb extends SQLiteOpenHelper {
     private String normalizeType(String s){if(s==null)return "other";String x=s.toLowerCase();if(x.equals("uber")||x.equals("cabify")||x.equals("personal"))return x;return "other";}
     private String normalizeStatus(String s){if(s==null)return "completed";String x=s.toLowerCase();return x.equals("cancelled")?"cancelled":"completed";}
 
+    private int scalarCount(String table){Cursor c=getReadableDatabase().rawQuery("select count(*) from "+table,null);try{return c.moveToFirst()?c.getInt(0):0;}finally{c.close();}}
     private JSONObject one(String sql,String[] args) { Cursor c=getReadableDatabase().rawQuery(sql,args);try{return c.moveToFirst()?row(c):null;}catch(Exception e){return null;}finally{c.close();} }
     private JSONArray many(String sql,String[] args) { JSONArray a=new JSONArray();Cursor c=getReadableDatabase().rawQuery(sql,args);try{while(c.moveToNext())a.put(row(c));}catch(Exception ignored){}finally{c.close();}return a; }
     private JSONObject row(Cursor c) throws JSONException { JSONObject o=new JSONObject();for(int i=0;i<c.getColumnCount();i++){String n=c.getColumnName(i);int type=c.getType(i);if(type==Cursor.FIELD_TYPE_NULL)o.put(n,JSONObject.NULL);else if(type==Cursor.FIELD_TYPE_INTEGER)o.put(n,c.getLong(i));else if(type==Cursor.FIELD_TYPE_FLOAT)o.put(n,c.getDouble(i));else o.put(n,c.getString(i));}return o; }
