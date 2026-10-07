@@ -110,8 +110,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R9_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R9_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
@@ -119,7 +119,7 @@ jobs:
         with:
           name: Mapa-Trayectos-v0.1-R9-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R8_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R9_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
