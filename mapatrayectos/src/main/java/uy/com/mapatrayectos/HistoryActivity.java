@@ -3,6 +3,7 @@ package uy.com.mapatrayectos;
 import android.app.*;
 import android.content.*;
 import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.net.Uri;
@@ -14,12 +15,15 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class HistoryActivity extends Activity {
-    private static final int BG1=Color.rgb(244,243,234),BG2=Color.rgb(229,241,236);
-    private static final int INK=Color.rgb(10,47,57),INK_SOFT=Color.rgb(73,97,101);
-    private static final int TEAL=Color.rgb(17,111,118),TEAL_DARK=Color.rgb(7,72,80);
-    private static final int GOLD=Color.rgb(214,174,67),GOLD_DEEP=Color.rgb(171,128,35);
-    private static final int GREEN=Color.rgb(24,142,101),RED=Color.rgb(196,67,72),ROUTE=Color.rgb(32,143,168);
-    private static final int WHITE=Color.rgb(251,250,244);
+    // R17 visual refinement: cleaner surfaces, stronger contrast and almost no visual noise.
+    private static final int BG1=Color.rgb(249,247,239),BG2=Color.rgb(242,248,244);
+    private static final int INK=Color.rgb(5,52,63),INK_SOFT=Color.rgb(79,101,105);
+    private static final int TEAL=Color.rgb(18,105,113),TEAL_DARK=Color.rgb(7,63,72);
+    private static final int GOLD=Color.rgb(220,181,74),GOLD_DEEP=Color.rgb(164,112,15);
+    private static final int GREEN=Color.rgb(18,145,96),RED=Color.rgb(205,55,63),ROUTE=Color.rgb(20,137,164);
+    private static final int PANEL=Color.rgb(255,253,247),PANEL_ALT=Color.rgb(247,250,246);
+    private static final int BORDER_GOLD=Color.rgb(224,191,102),BORDER_TEAL=Color.rgb(119,165,168);
+    private static final int WHITE=Color.rgb(253,252,248);
 
     private JSONArray allTrips=new JSONArray();
     private final HashMap<String,JSONObject> shiftsById=new HashMap<>();
@@ -48,23 +52,39 @@ public class HistoryActivity extends Activity {
         ScrollView sc=new ScrollView(this);
         sc.setFillViewport(true);
         sc.setClipToPadding(false);
-        sc.setBackground(new TexturedDrawable(this,BG1,BG2,Color.argb(0,0,0,0),0f,0f,true));
+        sc.setBackground(roundedGradient(BG1,BG2,Color.TRANSPARENT,0f,0f));
 
         LinearLayout root=new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(12),dp(10),dp(12),dp(34));
+        final int baseLeft=dp(12),baseTop=dp(10),baseRight=dp(12),baseBottom=dp(34);
+        root.setPadding(baseLeft,baseTop,baseRight,baseBottom);
+        if(Build.VERSION.SDK_INT>=23){
+            root.setOnApplyWindowInsetsListener((v,insets)->{
+                int topInset,bottomInset;
+                if(Build.VERSION.SDK_INT>=30){
+                    topInset=insets.getInsets(WindowInsets.Type.statusBars()).top;
+                    bottomInset=insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+                }else{
+                    topInset=insets.getSystemWindowInsetTop();
+                    bottomInset=insets.getSystemWindowInsetBottom();
+                }
+                v.setPadding(baseLeft,baseTop+topInset,baseRight,baseBottom+bottomInset);
+                return insets;
+            });
+            root.requestApplyInsets();
+        }
         sc.addView(root,new ScrollView.LayoutParams(-1,-2));
 
         LinearLayout header=new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(10),dp(8),dp(10),dp(8));
-        header.setBackground(new TexturedDrawable(this,Color.rgb(6,52,61),Color.rgb(11,82,88),Color.argb(220,214,174,67),22f,1f,false));
+        header.setBackground(roundedGradient(Color.rgb(5,49,58),Color.rgb(10,78,84),Color.argb(210,213,177,78),22f,1f));
         header.setElevation(dp(5));
 
         TextView back=text("‹",28,INK,true);
         back.setGravity(Gravity.CENTER);
         back.setContentDescription("Volver al mapa");
-        back.setBackground(new TexturedDrawable(this,Color.argb(245,252,244,211),Color.argb(245,236,219,158),Color.argb(200,214,174,67),18f,1f,true));
+        back.setBackground(roundedGradient(Color.rgb(255,244,205),Color.rgb(239,219,158),Color.argb(210,214,174,67),18f,1f));
         back.setOnClickListener(v->finish());
         header.addView(back,new LinearLayout.LayoutParams(dp(42),dp(42)));
 
@@ -78,7 +98,7 @@ public class HistoryActivity extends Activity {
 
         TextView badge=text("30D",10.5f,Color.rgb(252,245,216),true);
         badge.setGravity(Gravity.CENTER);
-        badge.setBackground(new TexturedDrawable(this,Color.argb(230,15,87,93),Color.argb(230,20,108,111),Color.argb(180,214,174,67),16f,1f,false));
+        badge.setBackground(roundedGradient(Color.rgb(13,86,92),Color.rgb(18,105,109),Color.argb(190,214,174,67),16f,1f));
         badge.setText(periodDays==1?"HOY":periodDays==7?"7D":periodDays==30?"30D":"TODO");
         header.addView(badge,new LinearLayout.LayoutParams(dp(48),dp(36)));
         root.addView(header,lp(0,10));
@@ -175,7 +195,7 @@ public class HistoryActivity extends Activity {
         dash.setElevation(dp(3));
 
         LinearLayout titleRow=new LinearLayout(this);titleRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView icon=text("▥",20,GOLD_DEEP,true);icon.setGravity(Gravity.CENTER);icon.setBackground(new TexturedDrawable(this,Color.argb(235,252,239,186),Color.argb(235,239,217,143),Color.argb(160,214,174,67),16f,1f,true));
+        TextView icon=text("▥",20,GOLD_DEEP,true);icon.setGravity(Gravity.CENTER);icon.setBackground(roundedGradient(Color.rgb(255,243,199),Color.rgb(243,222,157),Color.argb(180,214,174,67),16f,1f));
         titleRow.addView(icon,new LinearLayout.LayoutParams(dp(42),dp(42)));
         LinearLayout copy=new LinearLayout(this);copy.setOrientation(LinearLayout.VERTICAL);copy.setPadding(dp(9),0,0,0);
         copy.addView(text("RESUMEN DEL PERÍODO",13.5f,INK,true));
@@ -184,10 +204,10 @@ public class HistoryActivity extends Activity {
         dash.addView(titleRow,new LinearLayout.LayoutParams(-1,dp(48)));
 
         LinearLayout metrics=new LinearLayout(this);metrics.setOrientation(LinearLayout.HORIZONTAL);
-        metrics.addView(summaryMetric(String.valueOf(trips.size()),"VIAJES","╱╲"),new LinearLayout.LayoutParams(0,dp(66),1));
-        metrics.addView(summaryMetric(String.format(locale,"%.1f",km),"KM","⌖"),new LinearLayout.LayoutParams(0,dp(66),1));
-        metrics.addView(summaryMetric(duration(totalMs),"TIEMPO","◷"),new LinearLayout.LayoutParams(0,dp(66),1));
-        metrics.addView(summaryMetric("$ "+String.format(locale,"%.0f",income),"INGRESOS","●"),new LinearLayout.LayoutParams(0,dp(66),1));
+        metrics.addView(summaryMetric(String.valueOf(trips.size()),"VIAJES","╱╲"),new LinearLayout.LayoutParams(0,dp(70),1));
+        metrics.addView(summaryMetric(String.format(locale,"%.1f",km),"KM","⌖"),new LinearLayout.LayoutParams(0,dp(70),1));
+        metrics.addView(summaryMetric(duration(totalMs),"TIEMPO","◷"),new LinearLayout.LayoutParams(0,dp(70),1));
+        metrics.addView(summaryMetric("$ "+String.format(locale,"%.0f",income),"INGRESOS","●"),new LinearLayout.LayoutParams(0,dp(70),1));
         dash.addView(metrics,lp(3,5));
 
         TextView line=text("Completados "+completed+"   ·   Cancelados "+cancelled+"   ·   Movimiento "+duration(moving)+"   ·   Detenido "+duration(stopped),10.7f,INK_SOFT,true);
@@ -205,10 +225,10 @@ public class HistoryActivity extends Activity {
 
     private View summaryMetric(String value,String label,String iconText){
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(3),dp(4),dp(3),dp(2));
-        box.setBackground(new TexturedDrawable(this,Color.argb(210,253,251,239),Color.argb(210,231,244,239),Color.argb(120,17,111,118),14f,1f,true));
+        box.setBackground(roundedGradient(Color.rgb(255,254,249),Color.rgb(247,250,246),Color.argb(115,17,111,118),14f,0.8f));
         TextView icon=text(iconText,15,GOLD_DEEP,true);icon.setGravity(Gravity.CENTER);
-        TextView v=text(value,17,INK,true);v.setGravity(Gravity.CENTER);v.setSingleLine(true);
-        TextView l=text(label,8.8f,INK_SOFT,true);l.setGravity(Gravity.CENTER);l.setSingleLine(true);
+        TextView v=text(value,18.2f,INK,true);v.setGravity(Gravity.CENTER);v.setSingleLine(true);
+        TextView l=text(label,9.0f,INK_SOFT,true);l.setGravity(Gravity.CENTER);l.setSingleLine(true);
         box.addView(icon,new LinearLayout.LayoutParams(-1,0,.8f));box.addView(v,new LinearLayout.LayoutParams(-1,0,1.1f));box.addView(l,new LinearLayout.LayoutParams(-1,0,.7f));
         LinearLayout wrap=new LinearLayout(this);wrap.setPadding(dp(3),0,dp(3),0);wrap.addView(box,new LinearLayout.LayoutParams(-1,-1));return wrap;
     }
@@ -255,7 +275,7 @@ public class HistoryActivity extends Activity {
             LinearLayout head=new LinearLayout(this);head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(dp(9),dp(8),dp(8),dp(8));
 
             LinearLayout dateBadge=new LinearLayout(this);dateBadge.setOrientation(LinearLayout.VERTICAL);dateBadge.setGravity(Gravity.CENTER);
-            dateBadge.setBackground(new TexturedDrawable(this,Color.argb(245,251,237,183),Color.argb(245,235,213,141),Color.argb(190,214,174,67),14f,1f,true));
+            dateBadge.setBackground(roundedGradient(Color.rgb(255,244,199),Color.rgb(244,222,157),Color.argb(200,214,174,67),14f,1f));
             TextView dow=text(dowFmt.format(new Date(ts)).toUpperCase(locale),9.2f,INK,true);dow.setGravity(Gravity.CENTER);
             TextView dn=text(dayFmt.format(new Date(ts)),19,INK,true);dn.setGravity(Gravity.CENTER);
             dateBadge.addView(dow);dateBadge.addView(dn);head.addView(dateBadge,new LinearLayout.LayoutParams(dp(57),dp(56)));
@@ -267,7 +287,7 @@ public class HistoryActivity extends Activity {
             middle.addView(date);middle.addView(daySum,lp(3,0));head.addView(middle,new LinearLayout.LayoutParams(0,-2,1));
 
             TextView chevron=text(expanded?"⌃":"⌄",23,INK,true);chevron.setGravity(Gravity.CENTER);
-            chevron.setBackground(new TexturedDrawable(this,Color.argb(225,255,255,250),Color.argb(225,234,244,240),Color.argb(120,9,47,57),21f,1f,true));
+            chevron.setBackground(roundedGradient(Color.rgb(255,255,252),Color.rgb(242,248,246),Color.argb(145,9,73,82),21f,1f));
             head.addView(chevron,new LinearLayout.LayoutParams(dp(42),dp(42)));
 
             View.OnClickListener toggle=v->{expandedDay=expanded?null:dayKey;renderDays(trips);};
@@ -300,7 +320,8 @@ public class HistoryActivity extends Activity {
         SimpleDateFormat tf=new SimpleDateFormat("HH:mm",locale);
 
         LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setPadding(dp(11),dp(9),dp(11),dp(9));
-        card.setBackground(new TexturedDrawable(this,Color.argb(230,255,255,250),Color.argb(230,235,247,243),Color.argb(120,17,111,118),15f,1f,true));
+        card.setBackground(roundedGradient(Color.rgb(255,255,252),Color.rgb(248,251,248),Color.argb(130,17,111,118),15f,1f));
+        card.setElevation(dp(1));
 
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
         TextView time=text(tf.format(new Date(start))+(end>start?"–"+tf.format(new Date(end)):""),11.5f,GOLD_DEEP,true);top.addView(time,new LinearLayout.LayoutParams(0,-2,1));
@@ -328,7 +349,7 @@ public class HistoryActivity extends Activity {
         String times=start<Long.MAX_VALUE?tf.format(new Date(start))+(end>start?"–"+tf.format(new Date(end)):""):"";
         TextView v=text("JORNADA "+number+"   ·   "+times+"   ·   "+trips.size()+" viajes   ·   "+String.format(locale,"%.1f km",km),9.8f,GOLD_DEEP,true);
         v.setPadding(dp(8),dp(5),dp(8),dp(5));
-        v.setBackground(new TexturedDrawable(this,Color.argb(190,251,238,192),Color.argb(190,236,218,158),Color.argb(120,214,174,67),12f,1f,true));
+        v.setBackground(roundedGradient(Color.rgb(255,244,204),Color.rgb(245,225,169),Color.argb(145,214,174,67),12f,0.8f));
         return v;
     }
 
@@ -348,7 +369,7 @@ public class HistoryActivity extends Activity {
         row.addView(txt,new LinearLayout.LayoutParams(0,dp(38),1));
         if(!Double.isNaN(lat)&&!Double.isNaN(lon)){
             TextView nav=text("↗",18,TEAL_DARK,true);nav.setGravity(Gravity.CENTER);nav.setContentDescription("Navegar a "+label.toLowerCase(locale));
-            nav.setBackground(new TexturedDrawable(this,Color.argb(220,250,251,246),Color.argb(220,224,241,237),Color.argb(140,17,111,118),17f,1f,true));
+            nav.setBackground(roundedGradient(Color.rgb(255,255,251),Color.rgb(239,248,245),Color.argb(155,17,111,118),17f,1f));
             nav.setOnClickListener(v->openNavigation(lat,lon,address));
             row.addView(nav,new LinearLayout.LayoutParams(dp(38),dp(36)));
         }
@@ -390,8 +411,8 @@ public class HistoryActivity extends Activity {
     private TextView chip(String s,boolean selected){
         TextView v=text(s,10.8f,INK,true);v.setGravity(Gravity.CENTER);v.setPadding(dp(14),0,dp(14),0);
         v.setBackground(selected
-            ?new TexturedDrawable(this,Color.rgb(249,224,147),Color.rgb(230,191,84),Color.rgb(184,139,34),17f,1f,true)
-            :new TexturedDrawable(this,Color.argb(225,250,251,246),Color.argb(225,226,241,237),Color.argb(145,17,111,118),17f,1f,true));
+            ?roundedGradient(Color.rgb(255,226,139),Color.rgb(239,199,91),Color.rgb(181,133,26),17f,1f)
+            :roundedGradient(Color.rgb(255,255,251),Color.rgb(245,249,247),Color.argb(175,17,111,118),17f,1f));
         return v;
     }
 
@@ -401,8 +422,15 @@ public class HistoryActivity extends Activity {
         TextView l=text(label,10.5f,INK,true);row.addView(l,new LinearLayout.LayoutParams(0,dp(28),1));return row;
     }
 
-    private View divider(){View v=new View(this);v.setBackgroundColor(Color.argb(55,10,47,57));return v;}
-    private TexturedDrawable lightPanel(float radius){return new TexturedDrawable(this,Color.argb(245,253,251,239),Color.argb(245,228,243,238),Color.argb(165,214,174,67),radius,1f,true);}
+    private View divider(){View v=new View(this);v.setBackgroundColor(Color.argb(48,10,47,57));return v;}
+    private GradientDrawable lightPanel(float radius){return roundedGradient(PANEL,PANEL_ALT,Color.argb(190,224,191,102),radius,1f);}
+    private GradientDrawable roundedGradient(int c1,int c2,int strokeColor,float radiusDp,float strokeDp){
+        GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{c1,c2});
+        g.setCornerRadius(dpF(radiusDp));
+        if(strokeDp>0f&&Color.alpha(strokeColor)>0)g.setStroke(Math.max(1,Math.round(dpF(strokeDp))),strokeColor);
+        return g;
+    }
+    private float dpF(float v){return v*getResources().getDisplayMetrics().density;}
     private String periodLabel(){return periodDays==1?"Hoy":periodDays==7?"Últimos 7 días":periodDays==30?"Últimos 30 días":"Todo el historial";}
     private void savePrefs(){getSharedPreferences("history_prefs",MODE_PRIVATE).edit().putInt("period_days",periodDays).putString("type_filter",typeFilter).putString("status_filter",statusFilter).apply();}
     private void signalTrackingUi(boolean visible){SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);if(!s.getBoolean("shift_active",false))return;try{startService(new Intent(this,TrackingService.class).setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN));}catch(Exception ignored){}}
