@@ -66,6 +66,7 @@ jobs:
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "ROUTE_GLOW_LAYER" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "https://tiles.openfreemap.org/styles/dark" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "START_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "END_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "cameraBearing" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
