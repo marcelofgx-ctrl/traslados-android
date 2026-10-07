@@ -19,6 +19,7 @@ public class HistoryActivity extends Activity {
     private int periodDays=30;
     private String typeFilter="all",statusFilter="all";
     private final LinkedHashSet<String> expandedDays=new LinkedHashSet<>();
+    private boolean didInitialAutoExpand=false;
     private final Locale locale=new Locale("es","UY");
 
     @Override public void onCreate(Bundle b){
@@ -103,7 +104,7 @@ public class HistoryActivity extends Activity {
         LinkedHashMap<String,ArrayList<JSONObject>> days=new LinkedHashMap<>();
         SimpleDateFormat keyFmt=new SimpleDateFormat("yyyy-MM-dd",locale);
         for(JSONObject o:trips){String k=keyFmt.format(new Date(o.optLong("started_at_ms",0)));days.computeIfAbsent(k,x->new ArrayList<>()).add(o);}
-        if(expandedDays.isEmpty()&&!days.isEmpty())expandedDays.add(days.keySet().iterator().next());
+        if(!didInitialAutoExpand&&!days.isEmpty()){expandedDays.add(days.keySet().iterator().next());didInitialAutoExpand=true;}
 
         SimpleDateFormat titleFmt=new SimpleDateFormat("EEEE d 'de' MMMM",locale);
         for(Map.Entry<String,ArrayList<JSONObject>> e:days.entrySet()){
@@ -139,22 +140,23 @@ public class HistoryActivity extends Activity {
 
     private View filterRow(FilterItem... items){
         HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);sc.addView(row,new HorizontalScrollView.LayoutParams(-2,-2));
-        for(FilterItem x:items){boolean selected=periodDays==x.days;Button b=chip(x.label,selected);b.setOnClickListener(v->{periodDays=x.days;expandedDays.clear();savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
+        for(FilterItem x:items){boolean selected=periodDays==x.days;Button b=chip(x.label,selected);b.setOnClickListener(v->{periodDays=x.days;expandedDays.clear();didInitialAutoExpand=false;savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
     }
 
     private View typeFilterRow(){
         HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);sc.addView(row,new HorizontalScrollView.LayoutParams(-2,-2));
         String[][] values={{"Todos","all"},{"Uber","uber"},{"Cabify","cabify"},{"Personal","personal"},{"Otro","other"}};
-        for(String[] x:values){Button b=chip(x[0],typeFilter.equals(x[1]));b.setOnClickListener(v->{typeFilter=x[1];expandedDays.clear();savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
+        for(String[] x:values){Button b=chip(x[0],typeFilter.equals(x[1]));b.setOnClickListener(v->{typeFilter=x[1];expandedDays.clear();didInitialAutoExpand=false;savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
     }
 
     private View statusFilterRow(){
         HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);sc.addView(row,new HorizontalScrollView.LayoutParams(-2,-2));
         String[][] values={{"Todos","all"},{"Completados","completed"},{"Cancelados","cancelled"}};
-        for(String[] x:values){Button b=chip(x[0],statusFilter.equals(x[1]));b.setOnClickListener(v->{statusFilter=x[1];expandedDays.clear();savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
+        for(String[] x:values){Button b=chip(x[0],statusFilter.equals(x[1]));b.setOnClickListener(v->{statusFilter=x[1];expandedDays.clear();didInitialAutoExpand=false;savePrefs();buildUi();loadData();});LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,dp(38));p.setMargins(0,0,dp(7),0);row.addView(b,p);}return sc;
     }
 
     private void savePrefs(){getSharedPreferences("history_prefs",MODE_PRIVATE).edit().putInt("period_days",periodDays).putString("type_filter",typeFilter).putString("status_filter",statusFilter).apply();}
+    private void signalTrackingUi(boolean visible){SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);if(!s.getBoolean("shift_active",false))return;try{startService(new Intent(this,TrackingService.class).setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN));}catch(Exception ignored){}}
     private long startOfToday(long now){Calendar c=Calendar.getInstance();c.setTimeInMillis(now);c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);return c.getTimeInMillis();}
     private String cap(String s){if(s==null||s.isEmpty())return s;return Character.toUpperCase(s.charAt(0))+s.substring(1);}
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
@@ -169,4 +171,6 @@ public class HistoryActivity extends Activity {
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String duration(long ms){long t=Math.max(0,ms)/1000,h=t/3600,m=(t%3600)/60,s=t%60;return h>0?String.format(locale,"%d:%02d:%02d",h,m,s):String.format(locale,"%02d:%02d",m,s);}
     private static final class FilterItem{final String label;final int days;FilterItem(String label,int days){this.label=label;this.days=days;}}
+    @Override protected void onResume(){super.onResume();signalTrackingUi(true);}
+    @Override protected void onPause(){signalTrackingUi(false);super.onPause();}
 }
