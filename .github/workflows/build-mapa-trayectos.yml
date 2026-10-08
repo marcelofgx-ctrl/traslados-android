@@ -131,7 +131,7 @@ jobs:
           grep -q "playChime" mapatrayectos/src/main/java/uy/com/mapatrayectos/FeedbackReceiver.java
           grep -q "FLAG_KEEP_SCREEN_ON" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class TelemetryQuality" mapatrayectos/src/main/java/uy/com/mapatrayectos/TelemetryQuality.java
-          grep -q "DB_VERSION = 3" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "DB_VERSION = 4" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q "start_address" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q "class AddressResolver" mapatrayectos/src/main/java/uy/com/mapatrayectos/AddressResolver.java
           grep -q "google.navigation:q=" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
