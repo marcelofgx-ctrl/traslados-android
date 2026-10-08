@@ -60,8 +60,11 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R19'" mapatrayectos/build.gradle
-          grep -q "versionCode 22" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R20'" mapatrayectos/build.gradle
+          grep -q "versionCode 23" mapatrayectos/build.gradle
+          grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -174,16 +177,16 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R19_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R19_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R20_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R20_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R19-RELEASE
+          name: Mapa-Trayectos-v0.1-R20-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R19_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R20_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
           if-no-files-found: error
