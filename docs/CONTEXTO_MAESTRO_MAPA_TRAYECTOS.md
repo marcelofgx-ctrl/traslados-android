@@ -81,3 +81,13 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - APK https://drive.google.com/file/d/1nwBpGxAyCwgJ8R2IT2Jx_ReNBzZz9Zw9/view
 - 13 MP3 https://drive.google.com/file/d/1bBXYtcE3UNlfFC5BXsX5_rD65AxdpQgK/view
 - Estado: Implementado en código / compilación verificada / audios reales pendientes de prueba del usuario en Samsung.
+
+## R22.3 — corrección de recordatorios aprobada por usuario (08/10/2026)
+- Incidente REAL en Samsung: recordatorio para «14:20» no llegó. No hay acceso remoto al almacenamiento privado de la app. Código R22.2 parseaba HH:mm solo si incluía «hoy/mañana», y en silencio podía usar mañana 10:00.
+- R22.3 versionCode 33, build RELEASE exitoso GitHub Actions run 37817234425, SHA256 9edcd9c09c0f526d2149ddac6073b0b54702b3b90b4fb8d8fadfe282f7187dcb, certificado release existente.
+- Cambios código: hora sola «14:20» ahora hoy a esa hora (si ya pasó se pide otra fecha); calendario elegido explícitamente tiene prioridad; siempre muestra propuesta para confirmar. Prueba «PROBAR ALERTA EN 1 MINUTO» programa 65 s si notificaciones y alarmas exactas están autorizadas.
+- Diagnostics: notificaciones Android, alarmas exactas, permiso superposición, próximo recordatorio, último aviso registrado y error. Notifications HIGH con acciones HECHO/+10 MIN. Si notificación bloqueada no se marca fired (corrección clave).
+- Visual «globito de historieta»: ReminderBubbleService shortService overlay de 60 s con triangulito, identidad gráfica, Hecho/+10 MIN/Cerrar, anclaje aproximado a posición de burbuja y notificación Android como fallback permanente. Android/Samsung puede bloquear inicio de overlay en segundo plano; no prometer siempre visible sin permiso/prueba.
+- REQUIERE PRUEBA EN TELÉFONO: Ajustes → notificaciones Mapa Trayectos, permiso «Alarmas y recordatorios», «Mostrar sobre otras aplicaciones» para globo. Ejecutar prueba en 1 minuto saliendo de app y bloqueando pantalla, comprobar presentación y acción +10.
+- El usuario confirmó que sonido original R22.2 quedó bien y no desea nuevos cambios en identidad sonora.
+- Intento de crear carpeta R22.3 en Google Drive fue bloqueado por seguridad de conexión, NO se ha confirmado un enlace de Drive R22.3; archivo GitHub Actions sí existente.
