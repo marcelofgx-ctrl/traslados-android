@@ -14,7 +14,7 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 | R22 | 30 | Recordatorios locales tipo chat, alertas Android, vaciar base SQLite tras backup ZIP opcional y doble confirmación, pausar/reanudar jornada con pause_ms, burbuja premium 52dp, corregido fallback Cabify | Éxito GitHub Actions run 37795345311, APK firmada SHA-256 45384acec978cd1389a5526e26fbf454fd08765cfdc30fbd8e7690bebc543509 | Pendiente pruebas en Samsung |
 | R22.1 | 31 | Recupera los cinco MP3 originales subidos al chat, crea paquete ZIP inalterado, importación segura una vez en Mantenimiento con SHA-256 y reproducción local desde almacenamiento privado | Éxito, run 37797357725; SHA-256 APK 4d9aa3e4526ffa1fa6ffd9b349022fc88466a9151b4cf173733713bab6fa6a92; firma anterior idéntica | PENDIENTE IMPORTACIÓN EN SAMSUNG |
 
-| R22.2 | 32 | Completar 13 sonidos originales; pruebas individualizadas de cada evento; pausa/reanudación, sonidos Cabify, botones, fin jornada; reproductor con referencia viva y registro de fallos | COMPILACIÓN PENDIENTE | Prueba en Samsung pendiente |
+| R22.2 | 32 | Completar 13 sonidos originales; pruebas individualizadas de cada evento; pausa/reanudación, Cabify, botones, cierre; reproductor con referencia viva y registro de fallos | Éxito, run 37812971829, APK SHA-256 ca7095fab62d3e6ccb5ec33d2b4bd68dae09e1f044688f35aae55dafd8cd232d | Prueba en Samsung pendiente |
 
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
@@ -71,3 +71,13 @@ El viejo paquete de 5 sonidos continúa siendo reconocible en la app (5/13). Los
 
 Reproductor R22.2: una instancia fuerte de MediaPlayer para todo audio, evita superposiciones y guarda último error; con 13/13 importados no debe sonar pip-pip por fallback silencioso. Se agregó panel con fila PROBAR/PENDIENTE de los 13 eventos. 
 Fuera del dispositivo no puede certificarse la reproducción real.
+
+
+### Entrega R22.2 en Google Drive (verificada)
+- Cuenta: marcelof.gx@gmail.com.
+- Carpeta: https://drive.google.com/drive/folders/105ACyatGtj239RA3avgHFlp2cCl3_8eI
+- APK firmado 52.212.183 bytes: https://drive.google.com/file/d/1nwBpGxAyCwgJ8R2IT2Jx_ReNBzZz9Zw9/view
+- ZIP 13 originales 1.712.154 bytes: https://drive.google.com/file/d/1bBXYtcE3UNlfFC5BXsX5_rD65AxdpQgK/view
+- GitHub Actions R22.2: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37812971829
+- Instalación: actualizar APK sobre R22.1, ir a Mantenimiento → Sonidos originales → INSTALAR ZIP, elegir el nuevo paquete de 13 (no el viejo de cinco), comprobar 13/13 y usar PROBAR en cada evento.
+- El ZIP está fuera del instalador por limitación de transferencia binaria hacia GitHub; no confundir compilación verificada con sonidos probados en Samsung.
