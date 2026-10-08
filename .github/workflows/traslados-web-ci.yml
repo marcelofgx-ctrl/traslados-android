@@ -1,0 +1,42 @@
+name: Traslados Web — Compilación independiente
+
+on:
+  push:
+    branches:
+      - web-traslados-rescate-20261008
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar-web:
+    name: Compilar código rescatado
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Instalar Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.4'
+      - name: Dependencias
+        run: bun install --frozen-lockfile
+      - name: Compilar web fuera de Lovable
+        env:
+          VITE_SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
+          SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: build-only-test-key
+          SUPABASE_PUBLISHABLE_KEY: build-only-test-key
+        run: bun run build
+      - name: Guardar artefacto de compilación
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traslados-web-build
+          path: |
+            .output/
+            dist/
+          if-no-files-found: warn
+          retention-days: 7
