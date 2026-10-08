@@ -5,10 +5,12 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -19,97 +21,201 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public final class QuickActionsMenu {
     private static final String PHONE="+598 97 228 175";
     private static final String BOOKING_URL="https://traslados-con-reserva.lovable.app/";
     private static final String DOWNLOAD_URL="https://traslados-con-reserva.lovable.app/descargas";
-    private static final int BG=Color.rgb(8,49,57), GOLD=Color.rgb(231,202,130), WHITE=Color.rgb(247,246,241);
+    private static final int GOLD=Color.rgb(231,202,130),WHITE=Color.rgb(247,246,241),
+            PETROL=Color.rgb(7,43,51),PETROL_LIGHT=Color.rgb(9,66,74);
+    private static PopupWindow currentPopup;
+
     private QuickActionsMenu(){}
 
-    public static void show(Activity activity, View anchor) {
-        LinearLayout content=new LinearLayout(activity);
+    public static void show(Activity activity, View anchor){
+        if(currentPopup!=null&&currentPopup.isShowing()){
+            dismiss(currentPopup,null);
+            return;
+        }
+        final LinearLayout content=new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(activity,12),dp(activity,12),dp(activity,12),dp(activity,12));
-        content.setBackground(new TexturedDrawable(activity,Color.rgb(7,46,54),Color.rgb(10,72,78),Color.argb(210,231,202,130),20f,1f,false));
-        TextView title=item(activity,"ACCIONES RÁPIDAS",12,GOLD);
-        content.addView(title,new LinearLayout.LayoutParams(-1,dp(activity,40)));
-        PopupWindow popup=new PopupWindow(content,dp(activity,254),-2,true);
-        popup.setBackgroundDrawable(new TexturedDrawable(activity,Color.rgb(7,46,54),Color.rgb(10,72,78),Color.argb(210,231,202,130),20f,1f,false));
-        popup.setElevation(dp(activity,12));
+        content.setPadding(dp(activity,8),dp(activity,7),dp(activity,8),dp(activity,8));
+        content.setBackground(new TexturedDrawable(activity,PETROL,PETROL_LIGHT,Color.argb(210,231,202,130),17f,0.8f,false));
+
+        TextView header=text(activity,"ACCIONES",10,GOLD,true);
+        header.setLetterSpacing(0.12f);
+        header.setPadding(dp(activity,11),0,0,0);
+        content.addView(header,new LinearLayout.LayoutParams(-1,dp(activity,28)));
+
+        PopupWindow popup=new PopupWindow(content,dp(activity,207),-2,true);
+        popup.setBackgroundDrawable(new TexturedDrawable(activity,PETROL,PETROL_LIGHT,Color.argb(210,231,202,130),17f,0.8f,false));
+        popup.setElevation(dp(activity,9));
         popup.setOutsideTouchable(true);
-        add(activity,content,"✉   Enviar tarjeta por WhatsApp",popup,()->askPhone(activity));
-        add(activity,content,"▣   Compartir contacto (.VCF)",popup,()->shareVcard(activity,null));
-        add(activity,content,"⌁   Compartir reservas",popup,()->shareLink(activity,"Reservas de traslados",BOOKING_URL));
-        add(activity,content,"⇩   Compartir descargas",popup,()->shareLink(activity,"Descargar aplicaciones de Traslados",DOWNLOAD_URL));
-        int y=Math.max(dp(activity,100),(int)anchor.getY()-dp(activity,72));
-        popup.showAtLocation(anchor,Gravity.TOP|Gravity.RIGHT,dp(activity,12),y);
+        popup.setOnDismissListener(()->{if(currentPopup==popup)currentPopup=null;});
+
+        add(activity,content,"↗", "Enviar tarjeta",popup,()->askPhone(activity));
+        add(activity,content,"▣", "Contacto .VCF",popup,()->shareVcard(activity));
+        add(activity,content,"⌁", "Link de reservas",popup,()->shareLink(activity,"Reservas de traslados",BOOKING_URL));
+        add(activity,content,"⇩", "Link de descarga",popup,()->shareLink(activity,"Descargar aplicaciones de Traslados",DOWNLOAD_URL));
+
+        currentPopup=popup;
+        content.setAlpha(0f);
+        content.setTranslationY(-dp(activity,11));
+        try {
+            // Align to the right edge of the small floating control; never anchor at screen center.
+            popup.showAsDropDown(anchor,-dp(activity,163),dp(activity,8));
+            content.animate().alpha(1f).translationY(0f).setDuration(200L)
+                    .setInterpolator(new DecelerateInterpolator()).start();
+        } catch(Exception e){
+            currentPopup=null;
+            Toast.makeText(activity,"No se pudo abrir el menú",Toast.LENGTH_SHORT).show();
+        }
     }
-    private static void add(Activity a,LinearLayout content,String label,PopupWindow p,Runnable action){
-        TextView button=item(a,label,14,WHITE);button.setBackgroundColor(Color.argb(30,217,194,128));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(a,49));lp.bottomMargin=dp(a,5);content.addView(button,lp);
-        button.setOnClickListener(v->{p.dismiss();action.run();});
+
+    private static void add(Activity a, LinearLayout group, String icon, String label,
+                            PopupWindow popup, Runnable action){
+        LinearLayout row=new LinearLayout(a);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setBackground(itemBackground());
+        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(a,40));
+        rp.bottomMargin=dp(a,3);
+        group.addView(row,rp);
+        TextView ic=text(a,icon,15,GOLD,true);
+        ic.setGravity(Gravity.CENTER);
+        row.addView(ic,new LinearLayout.LayoutParams(dp(a,35),-1));
+        TextView name=text(a,label,13.1f,WHITE,false);
+        row.addView(name,new LinearLayout.LayoutParams(0,-1,1));
+        name.setGravity(Gravity.CENTER_VERTICAL);
+        row.setContentDescription(label);
+        row.setOnClickListener(v->dismiss(popup,action));
     }
-    private static TextView item(Activity a,String s,int size,int color){
-        TextView v=new TextView(a);v.setText(s);v.setTextSize(size);v.setTextColor(color);
-        v.setGravity(Gravity.CENTER_VERTICAL);v.setPadding(dp(a,12),0,dp(a,8),0);
-        return v;
+
+    private static GradientDrawable itemBackground(){
+        GradientDrawable b=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.argb(50,22,93,100),Color.argb(17,10,57,63)});
+        b.setCornerRadius(12f);
+        b.setStroke(1,Color.argb(55,231,202,130));
+        return b;
     }
+
+    private static TextView text(Activity a,String value,float size,int color,boolean bold){
+        TextView t=new TextView(a);
+        t.setText(value);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        if(bold)t.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+        return t;
+    }
+
+    private static void dismiss(PopupWindow popup,Runnable callback){
+        if(popup==null||!popup.isShowing()){
+            if(callback!=null)callback.run();
+            return;
+        }
+        View c=popup.getContentView();
+        c.animate().cancel();
+        c.animate().alpha(0f).translationY(-c.getResources().getDisplayMetrics().density*7f)
+                .setInterpolator(new DecelerateInterpolator()).setDuration(115L)
+                .withEndAction(()->{
+                    try{popup.dismiss();}catch(Exception ignored){}
+                    if(callback!=null)callback.run();
+                }).start();
+    }
+
     private static void askPhone(Activity a){
-        EditText input=new EditText(a);input.setInputType(InputType.TYPE_CLASS_PHONE);
-        input.setSingleLine(true);input.setHint("Ej.: 099 123 456 / +598 99 123 456");
-        LinearLayout wrap=new LinearLayout(a);wrap.setPadding(dp(a,22),dp(a,5),dp(a,22),0);wrap.addView(input);
-        new AlertDialog.Builder(a).setTitle("Enviar mi tarjeta")
-            .setMessage("Ingresá el teléfono del destinatario. WhatsApp abrirá el envío para que lo confirmes.")
-            .setView(wrap).setNegativeButton("CANCELAR",null)
-            .setNeutralButton("ENVIAR TEXTO",(d,w)->{
-                String number=normalizePhone(input.getText().toString());
-                if(number==null){Toast.makeText(a,"Número inválido",Toast.LENGTH_LONG).show();return;}
-                String text="Marcelo Fernández\nTraslados con Reserva\nTel: "+PHONE+"\nReservas: "+BOOKING_URL;
-                try{
-                    Uri url=Uri.parse("https://wa.me/"+number+"?text="+URLEncoder.encode(text,"UTF-8"));
-                    a.startActivity(new Intent(Intent.ACTION_VIEW,url));
-                }catch(Exception e){Toast.makeText(a,"No se pudo abrir WhatsApp",Toast.LENGTH_LONG).show();}
-            })
-            .setPositiveButton("ENVIAR VCF",(d,w)->{
-                String number=normalizePhone(input.getText().toString());
-                if(number==null){Toast.makeText(a,"Número inválido",Toast.LENGTH_LONG).show();return;}
-                shareVcard(a,number);
-            }).show();
-    }
-    private static String normalizePhone(String source){
-        String d=source.replaceAll("[^0-9]","");
-        if(d.startsWith("0")&&d.length()==9)d="598"+d.substring(1);
-        if(d.length()<9||d.length()>15)return null;
-        return d;
-    }
-    private static void shareVcard(Activity a,String recipient){
-        try{
-            String vcard="BEGIN:VCARD\r\nVERSION:3.0\r\nN:Fernandez;Marcelo;;;\r\nFN:Marcelo Fernández\r\nORG:Traslados con Reserva\r\nTITLE:Traslados programados\r\nTEL;TYPE=CELL:+59897228175\r\nURL:"+BOOKING_URL+"\r\nNOTE:Aeropuerto, larga distancia y traslados programados. Montevideo, Ciudad de la Costa, Canelones.\r\nEND:VCARD\r\n";
-            File dir=new File(a.getCacheDir(),"shared_contacts");
-            if(!dir.exists()&&!dir.mkdirs())throw new IllegalStateException("No se pudo crear el contacto");
-            File vcf=new File(dir,"Marcelo_Fernandez_Contacto.vcf");
-            try(FileOutputStream f=new FileOutputStream(vcf)){f.write(vcard.getBytes(StandardCharsets.UTF_8));}
-            Uri uri=FileProvider.getUriForFile(a,a.getPackageName()+".share",vcf);
-            Intent send=new Intent(Intent.ACTION_SEND).setType("text/x-vcard");
-            send.putExtra(Intent.EXTRA_STREAM,uri);send.setClipData(ClipData.newUri(a.getContentResolver(),"Contacto de Marcelo",uri));
-            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            if(recipient!=null){
-                send.setPackage("com.whatsapp");
-                // WhatsApp may not honor the recipient hint; user confirms the chat before sending.
-                send.putExtra("jid",recipient+"@s.whatsapp.net");
-                try{a.startActivity(send);return;}catch(Exception ignored){send.setPackage(null);}
+        EditText input=new EditText(a);
+        input.setInputType(InputType.TYPE_CLASS_PHONE);
+        input.setSingleLine(true);
+        input.setHint("099 123 456 o +598 99 123 456");
+        LinearLayout wrap=new LinearLayout(a);
+        wrap.setPadding(dp(a,22),dp(a,4),dp(a,22),0);
+        wrap.addView(input,new LinearLayout.LayoutParams(-1,dp(a,55)));
+        AlertDialog d=new AlertDialog.Builder(a)
+            .setTitle("Enviar mi tarjeta")
+            .setMessage("Ingresá el número de la persona. Se abrirá WhatsApp con tu contacto preparado; vos confirmás el envío.")
+            .setView(wrap)
+            .setNegativeButton("CANCELAR",null)
+            .setNeutralButton("COMPARTIR VCF",(dialog,which)->shareVcard(a))
+            .setPositiveButton("ABRIR WHATSAPP",null)
+            .create();
+        d.setOnShowListener(unused->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            String number=normalizePhone(input.getText().toString());
+            if(number==null){
+                input.setError("Verificá el teléfono");
+                return;
             }
-            a.startActivity(Intent.createChooser(send,"Compartir contacto VCF"));
-        }catch(Exception e){Toast.makeText(a,"No se pudo compartir el contacto: "+e.getMessage(),Toast.LENGTH_LONG).show();}
+            if(openWhatsApp(a,number))d.dismiss();
+        }));
+        d.show();
     }
+
+    private static boolean openWhatsApp(Activity a,String number){
+        String message="*Marcelo Fernández*\n"
+                +"Traslados programados\n"
+                +"Tel.: "+PHONE+"\n"
+                +"Guardá mi contacto y escribime cuando necesites un traslado.";
+        try{
+            Uri uri=Uri.parse("https://wa.me/"+number+"?text="+URLEncoder.encode(message,"UTF-8"));
+            Intent direct=new Intent(Intent.ACTION_VIEW,uri);
+            direct.setPackage("com.whatsapp");
+            try{a.startActivity(direct);return true;}
+            catch(Exception ignored){
+                Intent business=new Intent(Intent.ACTION_VIEW,uri);
+                business.setPackage("com.whatsapp.w4b");
+                try{a.startActivity(business);return true;}
+                catch(Exception ignoredBusiness){
+                    a.startActivity(new Intent(Intent.ACTION_VIEW,uri));return true;
+                }
+            }
+        }catch(Exception e){
+            Toast.makeText(a,"No se pudo abrir WhatsApp. Revisá el teléfono y la instalación.",Toast.LENGTH_LONG).show();
+            return false;
+        }
+    }
+
+    private static String normalizePhone(String raw){
+        String number=raw.replaceAll("[^0-9]","");
+        if(number.startsWith("00"))number=number.substring(2);
+        if(number.startsWith("0")&&number.length()==9)number="598"+number.substring(1);
+        if(number.length()<9||number.length()>15)return null;
+        return number;
+    }
+
+    private static void shareVcard(Activity a){
+        try{
+            String vcard="BEGIN:VCARD\r\nVERSION:3.0\r\nN:Fernández;Marcelo;;;\r\n"
+                +"FN:Marcelo Fernández\r\nORG:Traslados programados\r\n"
+                +"TEL;TYPE=CELL:+59897228175\r\n"
+                +"NOTE:Traslados programados. Montevideo, Ciudad de la Costa y Canelones.\r\nEND:VCARD\r\n";
+            File directory=new File(a.getCacheDir(),"shared_contacts");
+            if(!directory.exists()&&!directory.mkdirs())throw new IllegalStateException("No se pudo crear el directorio");
+            File file=new File(directory,"Marcelo_Fernandez_Contacto.vcf");
+            try(FileOutputStream out=new FileOutputStream(file)){
+                out.write(vcard.getBytes(StandardCharsets.UTF_8));
+            }
+            Uri uri=FileProvider.getUriForFile(a,a.getPackageName()+".share",file);
+            Intent send=new Intent(Intent.ACTION_SEND);
+            send.setType("text/x-vcard");
+            send.putExtra(Intent.EXTRA_STREAM,uri);
+            send.setClipData(ClipData.newUri(a.getContentResolver(),"Contacto Marcelo",uri));
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            a.startActivity(Intent.createChooser(send,"Enviar contacto por WhatsApp u otra aplicación"));
+        }catch(Exception e){
+            Toast.makeText(a,"No se pudo compartir el archivo VCF: "+e.getMessage(),Toast.LENGTH_LONG).show();
+        }
+    }
+
     private static void shareLink(Activity a,String subject,String url){
-        Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain");
+        Intent send=new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
         send.putExtra(Intent.EXTRA_SUBJECT,subject);
         send.putExtra(Intent.EXTRA_TEXT,subject+"\n"+url);
-        a.startActivity(Intent.createChooser(send,"Compartir enlace"));
+        try{a.startActivity(Intent.createChooser(send,"Compartir enlace"));}
+        catch(Exception e){Toast.makeText(a,"No hay aplicaciones disponibles para compartir",Toast.LENGTH_SHORT).show();}
     }
-    private static int dp(Activity a,int v){return Math.round(v*a.getResources().getDisplayMetrics().density);}
+
+    private static int dp(Activity a,int d){return Math.round(d*a.getResources().getDisplayMetrics().density);}
 }
