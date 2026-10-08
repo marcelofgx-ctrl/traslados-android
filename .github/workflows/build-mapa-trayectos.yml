@@ -84,8 +84,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R22.3'" mapatrayectos/build.gradle
-          grep -q "versionCode 33" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R22.4'" mapatrayectos/build.gradle
+          grep -q "versionCode 34" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -146,6 +146,13 @@ jobs:
           grep -q 'ReminderActionReceiver' mapatrayectos/src/main/AndroidManifest.xml
           grep -q 'setExactAndAllowWhileIdle' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderStore.java
           grep -q 'SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED' mapatrayectos/src/main/AndroidManifest.xml
+          grep -q 'shift_completed_trips' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'completedTripsForShift' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'shiftStripText' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'formatClock' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'MetricIconView.TRIPS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'secondMetricLabel.setText("SERVICIO")' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'thirdMetricLabel.setText("DET.")' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "ACTION_PICKUP_PASSENGER" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "ACTION_START_STOP" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "PARADAS REGISTRADAS" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
@@ -252,17 +259,17 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_3_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_3_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_4_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_4_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R22-3-RELEASE
+          name: Mapa-Trayectos-v0.1-R22-4-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R22_3_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R22_4_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
