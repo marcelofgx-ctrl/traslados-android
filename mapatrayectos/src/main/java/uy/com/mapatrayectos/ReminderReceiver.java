@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.util.Log;
 
-/** Alarm receiver: do not consume reminders when notification permissions block delivery. */
+/** R22.6: foreground callouts anchor to ✦; exact-alarm audio is kept alive with goAsync(). */
 public final class ReminderReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context c,Intent i){
         if(i==null||!ReminderStore.ACTION.equals(i.getAction()))return;
@@ -15,21 +15,29 @@ public final class ReminderReceiver extends BroadcastReceiver {
         if(item==null||item.done||item.fired)return;
         long now=System.currentTimeMillis();
         if(item.time>now+30000L)return;
-        if(ReminderStore.alert(c,item)){
-            ReminderStore.markFired(c,id);
-            ReminderSound.play(c);
-            // Best-effort cartoon speech bubble only if the user granted overlay permission.
-            // A standard high-priority notification remains available if Android disallows popups.
-            if(Settings.canDrawOverlays(c)){
-                try{
-                    Intent popup=new Intent(c,ReminderBubbleService.class).putExtra("id",id);
-                    c.startForegroundService(popup);
-                }catch(Exception ex){
-                    Log.w("MapaReminders","Overlay service unavailable; heads-up notification remains",ex);
-                }
-            }
-        }else{
+        if(!ReminderStore.alert(c,item)){
             ReminderStore.recordError(c,"Alarma recibida pero Android bloqueó la notificación");
+            return;
         }
+        ReminderStore.markFired(c,id);
+        // The map displays a callout as a REAL child of its FrameLayout when visible.
+        boolean inMap=c.getSharedPreferences("bubble_state",Context.MODE_PRIVATE).getBoolean("ui_visible",false);
+        if(inMap){
+            Intent display=new Intent(MainActivity.ACTION_REMINDER_POPUP).setPackage(c.getPackageName());
+            display.putExtra("id",id);c.sendBroadcast(display);
+        }else if(Settings.canDrawOverlays(c)){
+            try{c.startForegroundService(new Intent(c,ReminderBubbleService.class).putExtra("id",id));}
+            catch(Exception ex){Log.w("MapaReminders","External overlay unavailable; persistent notification is fallback",ex);}
+        }
+
+        final PendingResult pending=goAsync();
+        final Context app=c.getApplicationContext();
+        new Thread(()->{
+            try{
+                ReminderSound.Result outcome=ReminderSound.playBlocking(app);
+                if(!outcome.ok)Log.w("MapaReminderAudio",outcome.detail);
+            }catch(Exception ex){Log.e("MapaReminderAudio","Cue error",ex);}
+            finally{pending.finish();}
+        },"mapa-reminder-sound").start();
     }
 }
