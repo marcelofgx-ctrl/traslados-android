@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -34,13 +35,34 @@ public final class FeedbackReceiver extends BroadcastReceiver {
         else if(oldTrip&&trip&&oldStop&&!stop)event=STOP_END;
         else if(oldTrip&&!trip&&shift)event=TRIP_END;
         else if(oldShift&&!shift)event=SHIFT_END;
-        if(event!=0)playFeedback(context,event);
+        if(event!=0)playFeedback(context,event,intent.getStringExtra("trip_type"),intent.getStringExtra("trip_status"));
     }
 
-    private void playFeedback(Context context,int event){
+    private void playFeedback(Context context,int event,String type,String status){
         vibrate(context,event);
         final PendingResult pending=goAsync();
-        new Thread(()->{try{playChime(event);}catch(Exception ignored){}finally{pending.finish();}},"mapa-chime").start();
+        new Thread(()->{
+            try{if(!playSelectedSound(context,event,type,status))playChime(event);}
+            catch(Exception ignored){try{playChime(event);}catch(Exception ignoredAgain){}}
+            finally{pending.finish();}
+        },"mapa-sound").start();
+    }
+
+    private boolean playSelectedSound(Context context,int event,String type,String status){
+        String name=null;
+        if(event==SHIFT_START)name="sound_shift_start";
+        else if(event==SERVICE_START)name="uber".equalsIgnoreCase(type)?"sound_uber":"cabify".equalsIgnoreCase(type)?"sound_cabify":"sound_trip_start";
+        else if(event==TRIP_END)name="cancelled".equalsIgnoreCase(status)?"sound_cancel":"sound_trip_end";
+        if(name==null)return false;
+        int id=context.getResources().getIdentifier(name,"raw",context.getPackageName());
+        if(id==0&&"sound_cabify".equals(name))id=context.getResources().getIdentifier("sound_uber","raw",context.getPackageName());
+        if(id==0)return false;
+        MediaPlayer mp=MediaPlayer.create(context.getApplicationContext(),id);
+        if(mp==null)return false;
+        mp.setOnCompletionListener(MediaPlayer::release);
+        mp.setOnErrorListener((player,what,extra)->{player.release();return true;});
+        mp.start();
+        return true;
     }
 
     private void playChime(int event){
