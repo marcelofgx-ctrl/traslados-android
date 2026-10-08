@@ -7,8 +7,8 @@
 - 112 archivos de texto originales respaldados: React, Tailwind, TanStack Start, hooks, UI, rutas, SQL legacy y módulos nuevos. Otros archivos de documentación y workflow añadidos en esta rama.
 - Faltan recursos binarios `public/favicon.png`, `public/icons/*.png` y `public/downloads/TrasladosConductor-v8.apk`. Recuperar de la web publicada o sustituir con assets propios.
 - No hay `.env`: se excluyó a propósito. Nunca copiar claves secretas. Usar secretos/variables de despliegue; cliente web usa **solo** la clave publicable.
-- No se ha demostrado compilación exitosa independiente aún. Existe `.github/workflows/traslados-web-ci.yml`, pero no hay ejecución verificada.
-- El código legacy incluye componentes de servidor que dependen de Lovable. Aún hay que eliminar `@lovable.dev/vite-tanstack-config`, sustituirlo por plugins oficiales y configurar Cloudflare Worker.
+- **Compilación independiente de Lovable verificada:** GitHub Actions run `37792286193` (08/10/2026), SUCCESS, tras eliminar `@lovable.dev/vite-tanstack-config` de package.json y usar plugin Vite oficial de Cloudflare (`@cloudflare/vite-plugin@1.63.0`, `wrangler@4.148.0`). Artefacto `web-traslados-cloudflare` publicado por Actions; esto valida BUILD, NO comportamiento en navegador ni despliegue.
+- `vite.config.ts` y `package.json` en esta rama **ya son autónomos** de Lovable y construyen con Cloudflare Workers. Quedan por migrar referencias legacy a Lovable runtime/backend en los componentes, configurar variables reales y verificar funcionamiento desplegado.
 - **Backend de producción correcto:** Supabase `zetaudvvutlouiqxopvg`. La web legacy apuntaba a **otra** base (`xetklwcxebcpnkrdrmaa`). Los nuevos módulos `src/lib/operativa/*` ya preparan conexión a la operativa real, pero TODAVÍA NO están conectados a la UI.
 - En base real, migración v12 fue aplicada con éxito: tabla `reservation_stops`, campos de persona que viaja, RPCs `customer_create_reservation_v12` y `customer_list_reservations_v12`. Conteo tras migración: 12 reservas existentes, 1 cliente, 0 paradas. Prueba con token inválido rechazada. No se hicieron reservas ficticias.
 - Formato 24 h: existe `src/components/TimeSelect24.tsx`, pero aún no reemplazó todos los selectores.
@@ -38,14 +38,20 @@
 
 - [ ] Migrar a repo GitHub exclusivo para la web.
 - [ ] Recuperar iconos/assets y rediseñar si necesario.
-- [ ] Compilación en GitHub Actions sin créditos Lovable, más revisión de TypeScript y tests.
-- [ ] Reemplazar configuración Lovable por Cloudflare Vite plugin + wrangler; configurar variables.
+- [x] Compilación en GitHub Actions sin créditos Lovable (`37792286193`, SUCCESS). Pendiente revisión de TypeScript, tests y validación en navegador.
+- [x] Reemplazar configuración Lovable por Cloudflare Vite plugin + wrangler; **pendiente configurar variables del hosting**.
 - [ ] Construir y probar todas las pantallas nuevas.
 - [ ] Configurar verificación real de identidad (no solo teléfono+PIN).
 - [ ] Asegurar que al reservar paradas se guarda de modo atómico; pruebas con cuentas autorizadas.
 - [ ] Comprobar vista conductor de paradas y notificaciones reales.
 - [ ] Previsualizar en Cloudflare. Probar Android móvil, teclado, gestos, horario, historial, logout.
 - [ ] Publicar mediante corte controlado de dominio; no sustituir web actual antes de pruebas.
+
+## Enlaces de validación
+
+- Desarrollo: https://github.com/marcelofgx-ctrl/traslados-android/tree/web-traslados-desarrollo
+- Compilación independiente SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37792286193
+- Rescate histórico: https://github.com/marcelofgx-ctrl/traslados-android/tree/web-traslados-rescate-20261008
 
 ## Alcance económico orientativo
 
