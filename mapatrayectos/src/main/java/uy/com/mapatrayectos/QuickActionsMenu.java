@@ -131,15 +131,11 @@ public final class QuickActionsMenu {
                 }).start();
     }
 
+    /** Primary action is the entered number; image sharing is explicitly a separate action. */
     private static void askPhone(Activity a){
-        EditText phone=new EditText(a);
-        phone.setInputType(InputType.TYPE_CLASS_PHONE);
-        phone.setSingleLine(true);
-        phone.setTextSize(14);
-        phone.setHint("Número (opcional)");
         LinearLayout wrapper=new LinearLayout(a);
         wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setPadding(dp(a,18),dp(a,4),dp(a,18),0);
+        wrapper.setPadding(dp(a,18),0,dp(a,18),dp(a,12));
 
         Bitmap thumbnail=null;
         try{
@@ -149,34 +145,78 @@ public final class QuickActionsMenu {
             ImageView image=new ImageView(a);
             image.setImageBitmap(thumbnail);
             image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(a,176));
+            LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(a,150));
             imageLp.bottomMargin=dp(a,8);
             wrapper.addView(image,imageLp);
         }catch(Exception e){
             Toast.makeText(a,"La vista previa no está disponible",Toast.LENGTH_SHORT).show();
         }
-        wrapper.addView(phone,new LinearLayout.LayoutParams(-1,dp(a,51)));
+
+        TextView description=text(a,
+            "Ingresá un teléfono para abrir su chat con tus datos, aunque no esté agendado. Para enviar la tarjeta gráfica, elegí Compartir imagen.",
+            12.3f,Color.rgb(210,218,218),false);
+        description.setPadding(dp(a,8),dp(a,6),dp(a,6),dp(a,10));
+        wrapper.addView(description,new LinearLayout.LayoutParams(-1,-2));
+
+        EditText phone=new EditText(a);
+        phone.setInputType(InputType.TYPE_CLASS_PHONE);
+        phone.setSingleLine(true);
+        phone.setTextSize(16);
+        phone.setHint("099 123 456 o +598 99 123 456");
+        LinearLayout.LayoutParams numberLp=new LinearLayout.LayoutParams(-1,dp(a,54));
+        numberLp.bottomMargin=dp(a,11);
+        wrapper.addView(phone,numberLp);
+
         final Bitmap toRecycle=thumbnail;
         AlertDialog dialog=new AlertDialog.Builder(a)
-            .setTitle("Tarjeta de traslados")
-            .setMessage("Compartí la imagen con QR desde WhatsApp. Allí elegís el destinatario y confirmás el envío. El número sirve para abrir un chat por separado.")
+            .setTitle("Enviar tarjeta")
             .setView(wrapper)
-            .setNegativeButton("CANCELAR",null)
-            .setNeutralButton("ABRIR CHAT",null)
-            .setPositiveButton("COMPARTIR IMAGEN",null)
             .create();
-        dialog.setOnDismissListener(d->{if(toRecycle!=null&&!toRecycle.isRecycled())toRecycle.recycle();});
-        dialog.setOnShowListener(d->{
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
-                String normalized=normalizePhone(phone.getText().toString());
-                if(normalized==null){phone.setError("Ingresá un teléfono válido");return;}
-                if(openWhatsApp(a,normalized))dialog.dismiss();
-            });
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-                if(shareBusinessImage(a))dialog.dismiss();
-            });
+
+        TextView send=dialogAction(a,"↗  ENVIAR AL NÚMERO",true);
+        TextView image=dialogAction(a,"▣  COMPARTIR IMAGEN",false);
+        TextView cancel=dialogAction(a,"CANCELAR",false);
+
+        wrapper.addView(send,dialogButtonLp(a));
+        wrapper.addView(image,dialogButtonLp(a));
+        wrapper.addView(cancel,dialogButtonLp(a)); // Cancelar siempre al final.
+
+        send.setOnClickListener(v->{
+            String number=normalizePhone(phone.getText().toString());
+            if(number==null){
+                phone.setError("Escribí un número válido, con código de país si corresponde");
+                phone.requestFocus();
+                return;
+            }
+            if(openWhatsApp(a,number))dialog.dismiss();
+        });
+        image.setOnClickListener(v->{if(shareBusinessImage(a))dialog.dismiss();});
+        cancel.setOnClickListener(v->dialog.dismiss());
+        dialog.setOnDismissListener(d->{
+            if(toRecycle!=null&&!toRecycle.isRecycled())toRecycle.recycle();
         });
         dialog.show();
+    }
+
+    private static LinearLayout.LayoutParams dialogButtonLp(Activity a){
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(a,46));
+        lp.bottomMargin=dp(a,7);
+        return lp;
+    }
+
+    private static TextView dialogAction(Activity a,String label,boolean primary){
+        TextView button=text(a,label,13.2f,
+            primary?Color.rgb(7,43,51):Color.rgb(247,246,241),true);
+        button.setGravity(Gravity.CENTER);
+        GradientDrawable bg=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            primary?new int[]{Color.rgb(238,206,134),Color.rgb(218,174,85)}
+                   :new int[]{Color.rgb(9,70,78),Color.rgb(6,47,56)});
+        bg.setCornerRadius(dp(a,13));
+        bg.setStroke(dp(a,1),Color.rgb(189,159,96));
+        button.setBackground(bg);
+        button.setClickable(true);
+        button.setFocusable(true);
+        return button;
     }
 
     /** WhatsApp attachment recipient selection must happen in WhatsApp itself. */
@@ -211,24 +251,26 @@ public final class QuickActionsMenu {
 
     private static boolean openWhatsApp(Activity a,String number){
         String message="*Marcelo Fernández*\n"
-                +"Traslados programados\n"
-                +"Tel.: "+PHONE+"\n"
-                +"Guardá mi contacto y escribime cuando necesites un traslado.";
+            +"Traslados programados\n"
+            +"Tel.: "+PHONE+"\n"
+            +"Contacto: "+BusinessCardImage.CONTACT_URL+"\n"
+            +"Guardá mis datos para tu próximo traslado.";
         try{
-            Uri uri=Uri.parse("https://wa.me/"+number+"?text="+URLEncoder.encode(message,"UTF-8"));
-            Intent direct=new Intent(Intent.ACTION_VIEW,uri);
-            direct.setPackage("com.whatsapp");
-            try{a.startActivity(direct);return true;}
-            catch(Exception ignored){
-                Intent business=new Intent(Intent.ACTION_VIEW,uri);
-                business.setPackage("com.whatsapp.w4b");
-                try{a.startActivity(business);return true;}
-                catch(Exception ignoredBusiness){
-                    a.startActivity(new Intent(Intent.ACTION_VIEW,uri));return true;
-                }
+            String encoded=URLEncoder.encode(message,"UTF-8");
+            // Official click-to-chat link works for unlisted numbers. WhatsApp still requires
+            // the user to confirm the outgoing message; attachments cannot be injected here.
+            Uri first=Uri.parse("https://api.whatsapp.com/send?phone="+number+"&text="+encoded);
+            Intent direct=new Intent(Intent.ACTION_VIEW,first);
+            try{
+                a.startActivity(direct);
+                return true;
+            }catch(Exception firstError){
+                Uri fallback=Uri.parse("https://wa.me/"+number+"?text="+encoded);
+                a.startActivity(new Intent(Intent.ACTION_VIEW,fallback));
+                return true;
             }
         }catch(Exception e){
-            Toast.makeText(a,"No se pudo abrir WhatsApp. Revisá el teléfono y la instalación.",Toast.LENGTH_LONG).show();
+            Toast.makeText(a,"No se pudo abrir WhatsApp. Verificá el número o la aplicación.",Toast.LENGTH_LONG).show();
             return false;
         }
     }
@@ -237,6 +279,7 @@ public final class QuickActionsMenu {
         String number=raw.replaceAll("[^0-9]","");
         if(number.startsWith("00"))number=number.substring(2);
         if(number.startsWith("0")&&number.length()==9)number="598"+number.substring(1);
+        else if(number.length()==8&&number.startsWith("9"))number="598"+number;
         if(number.length()<9||number.length()>15)return null;
         return number;
     }
