@@ -101,3 +101,10 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - Tiempos dibujados a HH:MM:SS; fuente adaptada a cuatro columnas, service emite cada segundo incluso sin GPS.
 - Alcance: métricas por JORNADA activa, no sumatoria de distintas jornadas de un día calendario. Consolidación por fecha queda como mejora futura de Historial; no presentarla como implementada.
 - Verificación requerida en Samsung: jornada quieta 90 segundos (DET. debe avanzar), movimiento seguro (CONDUC. debe avanzar), pausar/reanudar (efectivo permanece fijo durante pausa), iniciar Uber/Cabify/particular, completar/cancelar (VIAJES cuenta solo completados), revisar visualización 4 columnas en Maroñas. No conducir manipulando pantalla.
+
+## Web de Traslados — enlace oficial comunicado por el usuario (08/10/2026)
+- Enlace de la web de reservas suministrado expresamente: https://traslados-web.marcelof-gx.workers.dev/
+- En R22.7 versionCode37, QuickActionsMenu.java cambia BOOKING_URL desde el placeholder Lovable a esta URL. Para móviles con SharedPreferences `share_links` previamente confirmados sobre el URL antiguo, migrar solamente el valor por defecto anterior, sin sobreescribir URL personalizadas. Compartir web desde ✦ → Enlaces y contacto → WEB DE RESERVAS.
+- No inferir ni compartir un enlace de descarga de APK bajo la nueva web: la ruta de descargas debe confirmarse por separado. Mantener la verificación editable de `download_url`.
+- No afirmar verificada la respuesta HTTP pública: la consulta web de esta sesión devolvió error de lectura/caché. URL procede directamente del usuario.
+- R22.7 modifica sitio de reservas y no el código de viajes, recordatorios o sonidos. Si todavía no se ejecutó y verificó la firma no declarar release terminada.
