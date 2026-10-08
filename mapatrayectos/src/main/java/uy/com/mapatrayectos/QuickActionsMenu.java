@@ -99,7 +99,7 @@ public final class QuickActionsMenu {
         row.addView(name,new LinearLayout.LayoutParams(0,-1,1));
         name.setGravity(Gravity.CENTER_VERTICAL);
         row.setContentDescription(label);
-        row.setOnClickListener(v->dismiss(popup,action));
+        row.setOnClickListener(v->{FeedbackReceiver.playUiCue(a);dismiss(popup,action);});
     }
 
     private static GradientDrawable itemBackground(){
