@@ -91,6 +91,20 @@ public final class ReminderActivity extends Activity {
         test.setGravity(Gravity.CENTER);test.setPadding(dp(8),dp(15),dp(8),dp(15));
         test.setBackground(rounded(GOLD,GOLD,13));body.addView(test,margin(0,13));
         test.setOnClickListener(v->testAlarm());
+        TextView preview=label("♫  PROBAR SONIDO DE BURBUJAS",12,GOLD,true);
+        preview.setGravity(Gravity.CENTER);preview.setPadding(dp(7),dp(13),dp(7),dp(12));
+        preview.setBackground(rounded(Color.rgb(6,55,63),GOLD,12));
+        body.addView(preview,margin(0,6));
+        preview.setOnClickListener(v->{
+            Toast.makeText(this,"Probando burbujas al volumen de notificaciones",Toast.LENGTH_SHORT).show();
+            new Thread(()->{
+                ReminderSound.Result result=ReminderSound.playBlocking(getApplicationContext());
+                runOnUiThread(()->{
+                    updateDiagnostics();
+                    Toast.makeText(this,result.ok?"Audio iniciado: comprobá si lo escuchaste":result.detail,Toast.LENGTH_LONG).show();
+                });
+            },"mapa-preview-audio").start();
+        });
         diagnostics=label("Cargando diagnóstico…",12,CREAM,false);
         diagnostics.setPadding(dp(7),dp(11),dp(7),dp(11));
         diagnostics.setBackground(rounded(Color.rgb(11,53,62),GOLD,12));
@@ -260,7 +274,8 @@ public final class ReminderActivity extends Activity {
             "Pendientes: "+pending+"\n"+
             "Próximo aviso: "+(next==Long.MAX_VALUE?"ninguno":fmt.format(new Date(next)))+"\n"+
             "Último aviso entregado: "+(last==0?"ninguno registrado":fmt.format(new Date(last)))+
-            (error==null||error.isEmpty()?"":"\nÚltimo problema: "+error));
+            (error==null||error.isEmpty()?"":"\nÚltimo problema: "+error)+
+            "\nSonido: "+ReminderSound.diagnostics(this));
     }
     /** User tapping a notification sees the same illustrated style within the app. */
     private void showReminderDialog(int id){
