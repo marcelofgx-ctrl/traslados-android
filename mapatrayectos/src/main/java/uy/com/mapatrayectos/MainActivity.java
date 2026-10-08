@@ -35,9 +35,10 @@ public class MainActivity extends Activity {
     private static final int BG=Color.rgb(7,25,31),PANEL=Color.rgb(8,42,50),GOLD=Color.rgb(224,193,111),CHAMPAGNE=Color.rgb(231,202,130),TEXT=Color.rgb(247,246,241),MUTED=Color.rgb(190,204,206),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225),RETURN_ROUTE=Color.rgb(235,166,65);
 
     private MapView mapView; private MapLibreMap map; private Style style;
-    private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron;
+    private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
     private SpeedGaugeView speedGauge; private CompassView compassView;
+    private MetricIconView thirdMetricIcon,fourthMetricIcon;
     private SlideActionView slider,endShiftSlider;
     private FrameLayout rootFrame;
     private LinearLayout bottomSheet;
@@ -53,9 +54,10 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=246,SHEET_FULL_DP=306;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=272,SHEET_FULL_DP=332;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
+    private int shiftCompletedTrips=0;
     private String shiftId="",tripId="",tripType="other",tripStage="none";
     private long shiftStarted=0,tripStarted=0,pickupAt=0,stopStarted=0,shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
     private double shiftDistance=0,tripDistance=0,tripMax=0;
@@ -111,13 +113,32 @@ public class MainActivity extends Activity {
 
         sheetMetaText=text("Preparado · GPS y recorridos",10.8f,CHAMPAGNE,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(24)));
 
+        shiftStripText=text("JORNADA   ·   EFECTIVO 00:00:00",10.7f,CHAMPAGNE,true);
+        shiftStripText.setSingleLine(true);
+        shiftStripText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        shiftStripText.setGravity(Gravity.CENTER_VERTICAL);
+        shiftStripText.setPadding(dp(11),0,dp(9),0);
+        shiftStripText.setTag("sheet_shift_strip");
+        shiftStripText.setBackground(premiumGradient(Color.rgb(7,49,55),Color.rgb(7,61,64),Color.argb(115,218,183,101),12f,0.65f));
+        LinearLayout.LayoutParams stripLp=new LinearLayout.LayoutParams(-1,dp(27));
+        stripLp.setMargins(dp(3),dp(2),dp(3),dp(3));
+        bottomSheet.addView(shiftStripText,stripLp);
+
         idleText=text("Sin viaje 00:00   ·   Vel. máx. 0 km/h",10.8f,Color.rgb(202,214,216),false);idleText.setTag("sheet_detail");idleText.setGravity(Gravity.CENTER_VERTICAL);idleText.setSingleLine(true);bottomSheet.addView(idleText,new LinearLayout.LayoutParams(-1,dp(22)));
 
         LinearLayout closeRow=new LinearLayout(this);closeRow.setTag("sheet_shift_close");closeRow.setGravity(Gravity.CENTER_VERTICAL);TextView closeLabel=text("FIN DE JORNADA",10.5f,MUTED,true);closeRow.addView(closeLabel,new LinearLayout.LayoutParams(0,-2,1));
         endShiftSlider=new SlideActionView(this);endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);endShiftSlider.setLabel("← CERRAR JORNADA");endShiftSlider.setOnCompleted(()->sendAction(TrackingService.ACTION_STOP_SHIFT,null,null,0));LinearLayout.LayoutParams closeLp=new LinearLayout.LayoutParams(dp(164),dp(40));closeRow.addView(endShiftSlider,closeLp);bottomSheet.addView(closeRow,new LinearLayout.LayoutParams(-1,dp(44)));
 
         LinearLayout metrics=new LinearLayout(this);metrics.setTag("sheet_metrics");metrics.setOrientation(LinearLayout.HORIZONTAL);metrics.setGravity(Gravity.CENTER_VERTICAL);
-        distanceText=metric(metrics,"0.0","KM",MetricIconView.DISTANCE);elapsedText=metric(metrics,"00:00","TIEMPO",MetricIconView.TIME);movingText=metric(metrics,"00:00","MOV.",MetricIconView.MOVING);stoppedText=metric(metrics,"00:00","DET.",MetricIconView.STOPPED);
+        distanceText=metric(metrics,"0.0","KM",MetricIconView.DISTANCE);
+        elapsedText=metric(metrics,"00:00:00","CONDUC.",MetricIconView.TIME);
+        movingText=metric(metrics,"00:00:00","DET.",MetricIconView.STOPPED);
+        stoppedText=metric(metrics,"0","VIAJES",MetricIconView.TRIPS);
+        secondMetricLabel=(TextView)((LinearLayout)elapsedText.getParent()).getChildAt(2);
+        thirdMetricLabel=(TextView)((LinearLayout)movingText.getParent()).getChildAt(2);
+        fourthMetricLabel=(TextView)((LinearLayout)stoppedText.getParent()).getChildAt(2);
+        thirdMetricIcon=(MetricIconView)((LinearLayout)movingText.getParent()).getChildAt(0);
+        fourthMetricIcon=(MetricIconView)((LinearLayout)stoppedText.getParent()).getChildAt(0);
         bottomSheet.addView(metrics,new LinearLayout.LayoutParams(-1,dp(66)));
 
         FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);
@@ -229,7 +250,7 @@ public class MainActivity extends Activity {
 
     private void applyState(Intent i){
         boolean oldTrip=tripActive;String oldTripId=tripId;
-        shiftActive=i.getBooleanExtra("shift_active",false);shiftPaused=i.getBooleanExtra("shift_paused",false);shiftPauseMs=i.getLongExtra("pause_ms",0);tripActive=i.getBooleanExtra("trip_active",false);stopActive=i.getBooleanExtra("stop_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");tripType=i.getStringExtra("trip_type");tripStage=i.getStringExtra("trip_stage");if(shiftId==null)shiftId="";if(tripId==null)tripId="";if(tripType==null||tripType.isEmpty())tripType="other";if(tripStage==null||tripStage.isEmpty())tripStage=tripActive?"onboard":"none";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);pickupAt=i.getLongExtra("pickup_at",0);stopStarted=i.getLongExtra("stop_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
+        shiftActive=i.getBooleanExtra("shift_active",false);shiftPaused=i.getBooleanExtra("shift_paused",false);shiftPauseMs=i.getLongExtra("pause_ms",0);shiftCompletedTrips=i.getIntExtra("shift_completed_trips",0);tripActive=i.getBooleanExtra("trip_active",false);stopActive=i.getBooleanExtra("stop_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");tripType=i.getStringExtra("trip_type");tripStage=i.getStringExtra("trip_stage");if(shiftId==null)shiftId="";if(tripId==null)tripId="";if(tripType==null||tripType.isEmpty())tripType="other";if(tripStage==null||tripStage.isEmpty())tripStage=tripActive?"onboard":"none";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);pickupAt=i.getLongExtra("pickup_at",0);stopStarted=i.getLongExtra("stop_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
         boolean justStarted=!oldTrip&&tripActive;
         if(justStarted){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
         boolean hasLoc=i.getBooleanExtra("has_location",false);
@@ -246,8 +267,37 @@ public class MainActivity extends Activity {
 
     private void updateUi(){
         if(sheetState>maxSheetState())setSheetState(maxSheetState(),true);
-        zoneText.setText(zone);if(bubbleBtn!=null)bubbleBtn.setBackground(headerButtonGradient(Settings.canDrawOverlays(this)?GREEN:GOLD,Color.argb(48,54,190,125)));long now=System.currentTimeMillis();long elapsed=shiftActive?Math.max(0,now-shiftStarted):0;long shownElapsed=tripActive?Math.max(0,now-tripStarted):elapsed;double shownDist=tripActive?tripDistance:shiftDistance;long mv=tripActive?tripMoving:shiftMoving;long st=tripActive?tripStopped:shiftStopped;long idle=shiftActive?Math.max(0,elapsed-shiftTripMs-shiftPauseMs):0;
-        distanceText.setText(String.format(Locale.getDefault(),"%.1f",shownDist/1000.0));elapsedText.setText(formatDuration(shownElapsed));movingText.setText(formatDuration(mv));stoppedText.setText(formatDuration(st));
+        zoneText.setText(zone);if(bubbleBtn!=null)bubbleBtn.setBackground(headerButtonGradient(Settings.canDrawOverlays(this)?GREEN:GOLD,Color.argb(48,54,190,125)));long now=System.currentTimeMillis();
+        long effective=shiftActive?Math.max(0,shiftMoving+shiftStopped):0;
+        long elapsed=shiftActive?Math.max(0,now-shiftStarted):0;
+        long tripElapsed=tripActive?Math.max(0,now-tripStarted):0;
+        long idle=shiftActive?Math.max(0,effective-shiftTripMs):0;
+        distanceText.setText(String.format(Locale.getDefault(),"%.1f",(tripActive?tripDistance:shiftDistance)/1000.0));
+        if(tripActive){
+            secondMetricLabel.setText("SERVICIO");
+            thirdMetricLabel.setText("MOV.");
+            fourthMetricLabel.setText("DET.");
+            thirdMetricIcon.setType(MetricIconView.MOVING);
+            fourthMetricIcon.setType(MetricIconView.STOPPED);
+            elapsedText.setText(formatClock(tripElapsed));
+            movingText.setText(formatClock(tripMoving));
+            stoppedText.setText(formatClock(tripStopped));
+            shiftStripText.setText("JORNADA  "+formatClock(effective)+"  ·  "+String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0)+"  ·  "+shiftCompletedTrips+" viajes");
+        }else{
+            secondMetricLabel.setText("CONDUC.");
+            thirdMetricLabel.setText("DET.");
+            fourthMetricLabel.setText("VIAJES");
+            thirdMetricIcon.setType(MetricIconView.STOPPED);
+            fourthMetricIcon.setType(MetricIconView.TRIPS);
+            elapsedText.setText(formatClock(shiftMoving));
+            movingText.setText(formatClock(shiftStopped));
+            stoppedText.setText(Integer.toString(shiftActive?shiftCompletedTrips:0));
+            shiftStripText.setText((shiftPaused?"JORNADA EN PAUSA":"TIEMPO EFECTIVO")+"   "+formatClock(effective)+(shiftPaused?"  ·  pausa "+formatClock(shiftPauseMs):""));
+        }
+        distanceText.setContentDescription(tripActive?"Kilómetros del servicio":"Kilómetros de la jornada");
+        elapsedText.setContentDescription(tripActive?"Duración del servicio "+formatClock(tripElapsed):"Tiempo conduciendo "+formatClock(shiftMoving));
+        movingText.setContentDescription(tripActive?"Movimiento del servicio "+formatClock(tripMoving):"Detenido de la jornada "+formatClock(shiftStopped));
+        stoppedText.setContentDescription(tripActive?"Detenido del servicio "+formatClock(tripStopped):"Viajes completados "+shiftCompletedTrips);
         if(stopActive&&stopStarted>0)idleText.setText("Parada registrada  "+formatDuration(now-stopStarted)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
         else if(tripActive&&pickupAt>0)idleText.setText("Con pasajero  "+formatDuration(now-pickupAt)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
         else idleText.setText("Sin viaje  "+formatDuration(idle)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
@@ -566,7 +616,7 @@ public class MainActivity extends Activity {
     private int maxSheetState(){return shiftActive?2:1;}
     private int maxSheetHeightDp(){return maxSheetState()>=2?SHEET_FULL_DP:SHEET_MID_DP;}
     private void setSheetHeightPx(int heightPx){if(bottomSheet==null)return;FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();lp.height=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),heightPx));bottomSheet.setLayoutParams(lp);}
-    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),detail=bottomSheet.findViewWithTag("sheet_detail"),close=bottomSheet.findViewWithTag("sheet_shift_close"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(peek?View.GONE:View.VISIBLE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(close!=null)close.setVisibility(state>=2&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
+    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),close=bottomSheet.findViewWithTag("sheet_shift_close"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(peek?View.GONE:View.VISIBLE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(close!=null)close.setVisibility(state>=2&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
     private void updateSheetContentVisibility(){applySheetVisibility(sheetState);}
     private void previewSheetVisibilityForHeight(int heightPx){int low=(dp(SHEET_PEEK_DP)+dp(SHEET_MID_DP))/2;if(maxSheetState()<2){applySheetVisibility(heightPx<low?0:1);return;}int high=(dp(SHEET_MID_DP)+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
     private void animateSheetHeight(int targetPx){if(bottomSheet==null)return;int start=bottomSheet.getLayoutParams().height;if(start==targetPx){setSheetHeightPx(targetPx);return;}android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,targetPx);a.setDuration(220);a.setInterpolator(new android.view.animation.DecelerateInterpolator());a.addUpdateListener(x->setSheetHeightPx((Integer)x.getAnimatedValue()));a.start();}
@@ -578,7 +628,7 @@ public class MainActivity extends Activity {
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(3),dp(4),dp(3),dp(3));
         box.setBackground(premiumGradient(Color.rgb(5,50,57),Color.rgb(6,61,66),Color.argb(190,218,183,101),17f,0.7f));
         MetricIconView ic=new MetricIconView(this,iconType);box.addView(ic,new LinearLayout.LayoutParams(-1,dp(17)));
-        TextView v=text(value,18.7f,TEXT,true);v.setGravity(Gravity.CENTER);v.setLetterSpacing(.006f);
+        TextView v=text(value,15.0f,TEXT,true);v.setGravity(Gravity.CENTER);v.setLetterSpacing(.006f);
         TextView l=text(label,9.1f,CHAMPAGNE,true);l.setGravity(Gravity.CENTER);l.setLetterSpacing(.035f);
         box.addView(v,new LinearLayout.LayoutParams(-1,0,1.05f));box.addView(l,new LinearLayout.LayoutParams(-1,0,.55f));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));row.addView(box,bp);return v;
@@ -645,6 +695,11 @@ public class MainActivity extends Activity {
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10.2f);b.setTextColor(TEXT);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setAllCaps(false);b.setPadding(dp(5),0,dp(5),0);b.setBackground(rounded(PANEL,16,1,Color.rgb(50,91,100)));b.setElevation(dp(2));return b;}
     private GradientDrawable rounded(int fill,int radius,int stroke,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(stroke>0)g.setStroke(dp(stroke),strokeColor);return g;}
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
+    /** Always HH:MM:SS in the dashboard, avoiding apparently frozen 1:07 hour labels. */
+    private String formatClock(long ms){
+        long seconds=Math.max(0,ms)/1000;
+        return String.format(Locale.getDefault(),"%02d:%02d:%02d",seconds/3600,(seconds/60)%60,seconds%60);
+    }
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
     @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
@@ -657,9 +712,10 @@ public class MainActivity extends Activity {
     @Override public void onBackPressed(){super.onBackPressed();}
 
     public static final class MetricIconView extends View {
-        static final int DISTANCE=0,TIME=1,MOVING=2,STOPPED=3;
-        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final int type;
+        static final int DISTANCE=0,TIME=1,MOVING=2,STOPPED=3,TRIPS=4;
+        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private int type;
         MetricIconView(Context c,int type){super(c);this.type=type;p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);}
+        void setType(int kind){if(type!=kind){type=kind;invalidate();}}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);float w=getWidth(),h=getHeight(),cx=w/2f,cy=h/2f,d=getResources().getDisplayMetrics().density;
             p.setShader(null);p.setColor(Color.rgb(231,197,105));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.45f*d);
@@ -670,6 +726,12 @@ public class MainActivity extends Activity {
                 c.drawCircle(cx,cy,5.2f*d,p);c.drawLine(cx,cy,cx,cy-3.1f*d,p);c.drawLine(cx,cy,cx+2.8f*d,cy+1.8f*d,p);
             }else if(type==MOVING){
                 p.setStyle(Paint.Style.FILL);Path tri=new Path();tri.moveTo(cx-3.5f*d,cy-5*d);tri.lineTo(cx+5*d,cy);tri.lineTo(cx-3.5f*d,cy+5*d);tri.close();c.drawPath(tri,p);
+            }else if(type==TRIPS){
+                for(int i=-1;i<=1;i++){
+                    float y=cy+i*3.8f*d;
+                    p.setStyle(Paint.Style.FILL);c.drawCircle(cx-5*d,y,.85f*d,p);
+                    p.setStyle(Paint.Style.STROKE);c.drawLine(cx-2.6f*d,y,cx+5*d,y,p);
+                }
             }else{
                 RectF r=new RectF(cx-4.7f*d,cy-4.7f*d,cx+4.7f*d,cy+4.7f*d);c.drawRoundRect(r,2.1f*d,2.1f*d,p);
             }
