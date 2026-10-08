@@ -34,7 +34,8 @@ import android.util.Base64;
 
 public final class QuickActionsMenu {
     private static final String PHONE="+598 97 228 175";
-    private static final String BOOKING_URL="https://traslados-con-reserva.lovable.app/";
+    private static final String BOOKING_URL="https://traslados-web.marcelof-gx.workers.dev/";
+    private static final String PREVIOUS_BOOKING_URL="https://traslados-con-reserva.lovable.app/";
     private static final String DOWNLOAD_URL="https://traslados-con-reserva.lovable.app/descargas";
     private static final int GOLD=Color.rgb(231,202,130),WHITE=Color.rgb(247,246,241),
             PETROL=Color.rgb(7,43,51),PETROL_LIGHT=Color.rgb(9,66,74);
@@ -284,6 +285,13 @@ public final class QuickActionsMenu {
     private static void shareEditableLink(Activity a,String key,String title,String proposed){
         android.content.SharedPreferences prefs=a.getSharedPreferences("share_links",Activity.MODE_PRIVATE);
         String current=prefs.getString(key,proposed);
+        // User supplied the authoritative booking site. Migrate only the stale default;
+        // preserve any deliberately customized URL on the phone.
+        if("booking_url".equals(key)
+            &&(!prefs.getBoolean(key+"_confirmed",false)||PREVIOUS_BOOKING_URL.equals(current))){
+            current=BOOKING_URL;
+            prefs.edit().putString(key,current).putBoolean(key+"_confirmed",true).apply();
+        }
         if(prefs.getBoolean(key+"_confirmed",false)&&validUrl(current)){
             shareLink(a,title,current);return;
         }
