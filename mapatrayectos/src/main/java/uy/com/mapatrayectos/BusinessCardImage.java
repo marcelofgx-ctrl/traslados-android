@@ -35,86 +35,69 @@ public final class BusinessCardImage {
     private static final int INK=Color.rgb(12,53,62);
     private BusinessCardImage(){}
 
+    /** Refined two-tone business card, with ample negative space and a large readable QR. */
     public static Bitmap render(Context context) throws Exception {
         Bitmap bmp=Bitmap.createBitmap(WIDTH,HEIGHT,Bitmap.Config.ARGB_8888);
         Canvas c=new Canvas(bmp);
         Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setShader(new LinearGradient(0,0,WIDTH,HEIGHT,Color.rgb(255,251,242),
-                IVORY,Shader.TileMode.CLAMP));
-        c.drawRect(0,0,WIDTH,HEIGHT,p);
+        p.setColor(IVORY);c.drawColor(IVORY);
+
+        RectF card=new RectF(21,21,WIDTH-21,HEIGHT-21);
+        Path clipping=new Path();
+        clipping.addRoundRect(card,42,42,Path.Direction.CW);
+        c.save();
+        c.clipPath(clipping);
+        p.setShader(new LinearGradient(21,21,820,645,NAVY,SEA,Shader.TileMode.CLAMP));
+        c.drawRect(21,21,1259,699,p);
         p.setShader(null);
+        p.setColor(Color.rgb(252,249,241));
+        c.drawRect(808,21,1259,699,p);
+        c.restore();
 
-        p.setShader(new LinearGradient(0,0,830,385,NAVY,SEA,Shader.TileMode.CLAMP));
-        c.drawRect(0,0,WIDTH,374,p);
-        p.setShader(null);
-
-        // A subtle architectural silhouette evokes a metropolitan skyline without
-        // presenting an unrelated city's photograph as an authentic local location.
-        final int[] top={231,208,268,196,179,239,191,252,163,222,205,246,183};
-        final int[] widths={65,48,55,77,58,53,39,66,62,51,77,44,73};
-        int x=0;
-        p.setColor(Color.argb(65,109,184,181));
-        for(int i=0;i<top.length;i++){
-            c.drawRect(x,top[i],x+widths[i],374,p);
-            if(i%3==0){
-                p.setColor(Color.argb(80,213,200,148));
-                c.drawRect(x+widths[i]/2,top[i]-22,x+widths[i]/2+3,top[i],p);
-                p.setColor(Color.argb(65,109,184,181));
-            }
-            x+=widths[i]+6;
-        }
-        p.setColor(Color.argb(55,255,255,255));
-        for(int row=0;row<3;row++){
-            for(int col=0;col<11;col++){
-                int wx=20+col*77,wy=284+row*24;
-                c.drawRoundRect(new RectF(wx,wy,wx+7,wy+4),2,2,p);
-            }
-        }
-
-        p.setColor(GOLD);c.drawRect(0,372,WIDTH,380,p);
-        p.setColor(Color.argb(18,23,94,101));
-        for(int k=0;k<26;k++){int a=k*53;c.drawLine(a,380,a+170,720,p);}
-
-        // Refined mark and business name.
-        p.setColor(GOLD);
-        c.drawCircle(82,72,20,p);
-        p.setColor(NAVY);
-        c.drawCircle(82,72,11,p);
-        p.setColor(GOLD);
-        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);
-        c.drawLine(82,47,82,97,p);c.drawLine(57,72,107,72,p);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(3);
+        p.setColor(Color.rgb(197,167,105));
+        c.drawRoundRect(card,42,42,p);
         p.setStyle(Paint.Style.FILL);
-        label(c,p,"TRASLADOS PROGRAMADOS",128,82,28,Color.rgb(255,228,166),true);
 
-        label(c,p,"Marcelo",74,199,86,Color.WHITE,true);
-        label(c,p,"Fernández",74,301,86,Color.WHITE,true);
-        // Approved Option C mark: car, navigation star and route. Contact-photo resource.
+        // The selected C emblem is the visual identity. Circular crop avoids square JPEG edges.
         Bitmap emblem=BitmapFactory.decodeResource(context.getResources(),R.drawable.logo_c);
         if(emblem!=null){
+            c.save();
+            Path emblemClip=new Path();
+            emblemClip.addCircle(197,184,105,Path.Direction.CW);
+            c.clipPath(emblemClip);
             Paint ep=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
-            c.drawBitmap(emblem,null,new RectF(600,112,831,343),ep);
+            c.drawBitmap(emblem,null,new RectF(90,77,304,291),ep);
+            c.restore();
             emblem.recycle();
+            p.setColor(GOLD);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);
+            c.drawCircle(197,184,107,p);
+            p.setStyle(Paint.Style.FILL);
         }
 
-        label(c,p,"VIAJES CON RESERVA",75,452,32,SEA,true);
-        p.setColor(GOLD);c.drawRoundRect(new RectF(75,478,327,485),4,4,p);
-        label(c,p,PHONE,74,573,61,INK,true);
-        label(c,p,"MONTEVIDEO  ·  CIUDAD DE LA COSTA  ·  CANELONES",76,636,23,INK,false);
+        // Left-hand content, aligned to emblem, with breathable hierarchy.
+        label(c,p,"TRASLADOS PROGRAMADOS",333,151,26,Color.rgb(240,207,141),true);
+        p.setColor(Color.argb(130,240,208,153));
+        c.drawRect(334,179,732,182,p);
+        label(c,p,"VIAJES CON RESERVA",334,230,23,IVORY,false);
+        label(c,p,"Marcelo",88,405,86,Color.WHITE,true);
+        label(c,p,"Fernández",88,501,86,Color.WHITE,true);
+        label(c,p,PHONE,90,599,54,Color.rgb(242,213,153),true);
+        p.setColor(Color.argb(115,237,221,174));
+        c.drawRect(90,632,730,634,p);
+        label(c,p,"MONTEVIDEO  ·  CIUDAD DE LA COSTA  ·  CANELONES",90,666,18,Color.rgb(228,233,223),false);
 
-        // Minimal road motif near lower edge.
-        p.setColor(Color.argb(50,15,117,124));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(4);
-        Path route=new Path();route.moveTo(75,675);route.cubicTo(210,652,430,701,770,664);c.drawPath(route,p);
+        // High-contrast QR: direct WhatsApp link, never an unverified website.
+        label(c,p,"GUARDÁ MI CONTACTO",852,131,25,INK,true);
+        p.setColor(Color.rgb(255,255,255));
+        c.drawRoundRect(new RectF(859,172,1206,529),28,28,p);
+        p.setColor(Color.argb(45,7,55,64));p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(2);c.drawRoundRect(new RectF(859,172,1206,529),28,28,p);
         p.setStyle(Paint.Style.FILL);
-        p.setColor(GOLD);c.drawCircle(75,675,8,p);c.drawCircle(770,664,8,p);
-
-        // Dedicated white QR card ensures contrast when delivered as an image.
-        p.setShadowLayer(18,0,9,Color.argb(55,0,0,0));p.setColor(Color.WHITE);
-        c.drawRoundRect(new RectF(856,120,1219,618),30,30,p);
-        p.clearShadowLayer();
-        label(c,p,"CONTACTO DIRECTO",901,185,24,INK,true);
-        drawQr(c,p,CONTACT_URL,900,211,270);
-        label(c,p,"ESCANEÁ EL QR",914,536,24,SEA,true);
-        label(c,p,"Y ESCRIBIME",931,574,20,INK,false);
+        drawQr(c,p,CONTACT_URL,895,201,279);
+        label(c,p,"ESCANEÁ EL QR",902,575,26,SEA,true);
+        label(c,p,"Y ESCRIBIME",934,616,22,INK,false);
         return bmp;
     }
 
