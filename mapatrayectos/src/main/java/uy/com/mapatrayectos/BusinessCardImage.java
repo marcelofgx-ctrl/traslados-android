@@ -2,6 +2,7 @@ package uy.com.mapatrayectos;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -34,7 +35,7 @@ public final class BusinessCardImage {
     private static final int INK=Color.rgb(12,53,62);
     private BusinessCardImage(){}
 
-    public static Bitmap render() throws Exception {
+    public static Bitmap render(Context context) throws Exception {
         Bitmap bmp=Bitmap.createBitmap(WIDTH,HEIGHT,Bitmap.Config.ARGB_8888);
         Canvas c=new Canvas(bmp);
         Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -87,6 +88,13 @@ public final class BusinessCardImage {
 
         label(c,p,"Marcelo",74,199,86,Color.WHITE,true);
         label(c,p,"Fernández",74,301,86,Color.WHITE,true);
+        // Approved Option C mark: car, navigation star and route. Contact-photo resource.
+        Bitmap emblem=BitmapFactory.decodeResource(context.getResources(),R.drawable.logo_c);
+        if(emblem!=null){
+            Paint ep=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
+            c.drawBitmap(emblem,null,new RectF(600,112,831,343),ep);
+            emblem.recycle();
+        }
 
         label(c,p,"VIAJES CON RESERVA",75,452,32,SEA,true);
         p.setColor(GOLD);c.drawRoundRect(new RectF(75,478,327,485),4,4,p);
@@ -132,7 +140,7 @@ public final class BusinessCardImage {
         File dir=new File(context.getCacheDir(),"shared_contacts");
         if(!dir.exists()&&!dir.mkdirs())throw new IllegalStateException("Directorio inaccesible");
         File file=new File(dir,"Marcelo_Fernandez_Traslados.png");
-        Bitmap image=render();
+        Bitmap image=render(context);
         try(FileOutputStream out=new FileOutputStream(file)){
             if(!image.compress(Bitmap.CompressFormat.PNG,100,out))
                 throw new IllegalStateException("No se pudo codificar la tarjeta");
