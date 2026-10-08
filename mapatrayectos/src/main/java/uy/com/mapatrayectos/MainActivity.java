@@ -26,7 +26,7 @@ import org.maplibre.android.style.sources.GeoJsonSource;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011;
+    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012;
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
@@ -285,7 +285,8 @@ public class MainActivity extends Activity {
         }
         Uri uri=data.getData();
         if(requestCode==REQ_EXPORT_DB){performExport(uri);return;}
-        if(requestCode==REQ_IMPORT_DB){inspectAndConfirmImport(uri);}
+        if(requestCode==REQ_IMPORT_DB){inspectAndConfirmImport(uri);return;}
+        if(requestCode==REQ_IMPORT_SOUNDS){installOriginalSounds(uri);return;}
     }
 
     private boolean maintenanceBusy(){
@@ -311,19 +312,64 @@ public class MainActivity extends Activity {
             });
         }
 
+        TextView sound=text("♫   Sonidos originales",14.5f,TEXT,true);
+        sound.setGravity(Gravity.CENTER_VERTICAL);sound.setPadding(dp(10),0,dp(10),0);
+        menu.addView(sound,new LinearLayout.LayoutParams(-1,dp(54)));
         TextView wipe=text("♻   Empezar de cero",14.5f,TEXT,true);wipe.setGravity(Gravity.CENTER_VERTICAL);wipe.setPadding(dp(10),0,dp(10),0);
         menu.addView(wipe,new LinearLayout.LayoutParams(-1,dp(54)));
 
         TrackDb db=new TrackDb(this);JSONObject cnt=db.counts();db.close();
         long last=getSharedPreferences("maintenance_prefs",MODE_PRIVATE).getLong("last_backup_ms",0);
         String lastText=last>0?new java.text.SimpleDateFormat("dd/MM HH:mm",new Locale("es","UY")).format(new Date(last)):"sin copia";
-        TextView status=text("Base OK · "+cnt.optInt("trips")+" viajes · Última copia "+lastText,10.5f,MUTED,false);status.setPadding(dp(8),dp(7),dp(8),dp(5));menu.addView(status,new LinearLayout.LayoutParams(-1,-2));
+        TextView status=text("Base OK · "+cnt.optInt("trips")+" viajes · Última copia "+lastText+
+            "\n"+SoundPack.describe(this),10.5f,MUTED,false);status.setPadding(dp(8),dp(7),dp(8),dp(5));menu.addView(status,new LinearLayout.LayoutParams(-1,-2));
 
         PopupWindow popup=new PopupWindow(menu,dp(224),-2,true);popup.setOutsideTouchable(true);popup.setElevation(dp(10));popup.setBackgroundDrawable(new TexturedDrawable(this,Color.rgb(8,55,63),Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
         export.setOnClickListener(v->{popup.dismiss();startExportBase();});
         imp.setOnClickListener(v->{popup.dismiss();startImportBase();});
+        sound.setOnClickListener(v->{popup.dismiss();showSoundPackMenu();});
         wipe.setOnClickListener(v->{popup.dismiss();promptResetDatabase();});
         popup.showAsDropDown(anchor,-dp(184),dp(5));
+    }
+
+    /** Select the file made from the five original ChatGPT uploads, once per phone. */
+    private void showSoundPackMenu(){
+        String state=SoundPack.describe(this);
+        new AlertDialog.Builder(this).setTitle("Identidad sonora")
+            .setMessage(state+"\n\nPodés instalar los cinco MP3 que elegiste originalmente en un solo paso.\n"+
+                "Sus archivos no se modifican; quedan almacenados en este teléfono y se conservan al actualizar.\n\n"+
+                "Cabify y pausa siguen con chimes diferentes hasta que elijas sus MP3.")
+            .setPositiveButton("INSTALAR ZIP",(d,w)->{
+                Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip");
+                try{startActivityForResult(i,REQ_IMPORT_SOUNDS);}
+                catch(Exception e){Toast.makeText(this,"No se pudo abrir el selector de archivos",Toast.LENGTH_LONG).show();}
+            })
+            .setNeutralButton(SoundPack.ready(this)?"PROBAR SONIDO":"VER ESTADO",(d,w)->{
+                if(SoundPack.ready(this))SoundPack.play(this,"sound_shift_start");
+                else Toast.makeText(this,"Importá primero el paquete de sonidos originales",Toast.LENGTH_LONG).show();
+            })
+            .setNegativeButton("CANCELAR",null).show();
+    }
+    private void installOriginalSounds(Uri source){
+        Toast.makeText(this,"Verificando e instalando audios originales…",Toast.LENGTH_LONG).show();
+        new Thread(()->{
+            try{
+                SoundPack.install(getApplicationContext(),source);
+                runOnUiThread(()->new AlertDialog.Builder(this)
+                    .setTitle("✓ Sonidos originales instalados")
+                    .setMessage("Quedaron instalados los cinco MP3 originales que seleccionaste: inicio de jornada, inicio de viaje, Uber, cancelación y fin de viaje.\n\n"+
+                        "Se reproducirán en los próximos eventos; los chimes siguen disponibles como respaldo.")
+                    .setPositiveButton("PROBAR",(d,w)->SoundPack.play(this,"sound_shift_start"))
+                    .setNegativeButton("CERRAR",null).show());
+            }catch(Exception e){
+                runOnUiThread(()->new AlertDialog.Builder(this)
+                    .setTitle("No se instaló el paquete")
+                    .setMessage((e.getMessage()==null?e.toString():e.getMessage())+
+                        "\n\nLos sonidos anteriores se conservaron. Seleccioná el ZIP original suministrado junto a la APK.")
+                    .setPositiveButton("ENTENDIDO",null).show());
+            }
+        },"original-mp3-import").start();
     }
 
     private void startExportBase(){
