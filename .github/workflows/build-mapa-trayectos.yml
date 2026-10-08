@@ -81,8 +81,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R21.5'" mapatrayectos/build.gradle
-          grep -q "versionCode 29" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R22'" mapatrayectos/build.gradle
+          grep -q "versionCode 30" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -116,7 +116,21 @@ jobs:
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "DB_VERSION = 4" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'DatabaseBackup.inspectBackup' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'resetAfterBackup' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'class ReminderActivity' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderActivity.java
+          grep -q 'class ReminderStore' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderStore.java
+          grep -q 'class ReminderReceiver' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
+          grep -q 'class ReminderBootReceiver' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderBootReceiver.java
+          grep -q 'AlarmManager' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderStore.java
+          grep -q 'ACTION_PAUSE_SHIFT' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'shift_paused' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'SCHEDULE_EXACT_ALARM' mapatrayectos/src/main/AndroidManifest.xml
+          grep -q 'ReminderBootReceiver' mapatrayectos/src/main/AndroidManifest.xml
+          grep -q 'Recordatorios' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q "ACTION_PICKUP_PASSENGER" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "ACTION_START_STOP" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "PARADAS REGISTRADAS" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
@@ -224,17 +238,17 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R21_5_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R21_5_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R21-5-RELEASE
+          name: Mapa-Trayectos-v0.1-R22-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R21_5_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R22_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
