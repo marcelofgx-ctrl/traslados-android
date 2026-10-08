@@ -22,7 +22,7 @@ import java.util.List;
 /** Durable personal reminders, intentionally separate from trips SQLite. */
 public final class ReminderStore {
     private static final String PREF="personal_reminders_v1",KEY="items";
-    public static final String CHANNEL="mapa_personal_reminders_v2";
+    public static final String CHANNEL="mapa_personal_reminders_v3_bubbles";
     public static final String ACTION="uy.com.mapatrayectos.PERSONAL_REMINDER";
     private ReminderStore(){}
     public static final class Item{
@@ -73,6 +73,8 @@ public final class ReminderStore {
             NotificationChannel ch=new NotificationChannel(CHANNEL,"Alertas personales · Mapa Trayectos",NotificationManager.IMPORTANCE_HIGH);
             ch.setDescription("Avisos puntuales y acciones para tus recordatorios");
             ch.enableVibration(true);
+            // R22.6: do not double-play Android's default pip alongside the bespoke bubble cue.
+            ch.setSound(null,null);
             nm.createNotificationChannel(ch);
         }
     }
