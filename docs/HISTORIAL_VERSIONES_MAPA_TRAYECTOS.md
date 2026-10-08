@@ -36,3 +36,11 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 - El APK por sí solo NO incluye los MP3 originales porque GitHub Actions no puede leer directamente la biblioteca privada de ChatGPT; se suministra audio ZIP complementario, evitando totalmente Pixabay.
 - No se duplica el audio de Uber para Cabify ni se reasigna cancelación a pausa.
 - Siguiente paso si se habilita transferencia binaria automatizada a GitHub: incluir los originales en src/main/res/raw para que el APK único no requiera la importación ZIP.
+
+## Incidencia R22.1 — alternancia de MP3 y chimes (reporte de usuario 08/10/2026)
+- El usuario instaló R22.1 e importó el ZIP; percibe unos eventos con MP3 y otros con «pip pip» sintetizados, y posible inconsistencia entre repeticiones.
+- Verificado en `FeedbackReceiver.java`: solo tienen MP3 asignados SHIFT_START, SERVICE_START (genérico/Uber), TRIP_END (completado/cancelado). PICKUP, STOP_START, STOP_END, SHIFT_END reproducen chime sintetizado por diseño. SERVICE_START con Cabify busca sound_cabify no seleccionado/no incluido, luego chime; NO se reutiliza sound_uber.
+- `playSelectedSound` cae a `playChime` si `SoundPack.play` devuelve false o si falla el MediaPlayer. Esto puede explicar el alternado en el MISMO evento, pero falta instrumentación y prueba de teléfono para confirmarlo.
+- Corregir en próxima iteración tras acuerdo: menú de diagnóstico que pruebe los cinco MP3 individualmente, estado/errores sin silencios, mapping visible evento→audio, fallback distinguible, registro y protección de recursos del reproductor.
+- No reasignar archivos elegidos a recogida, parada, Cabify ni fin de jornada sin consentimiento. MP3 de cancelación debe dispararse por trip_status=="cancelled".
+- Estado: diagnóstico de código confirmado, corrección NO IMPLEMENTADA en R22.1; verificar comportamiento real en Samsung.
