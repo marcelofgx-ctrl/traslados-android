@@ -87,7 +87,7 @@ jobs:
           grep -q "versionName '0.1-R22.4'" mapatrayectos/build.gradle
           grep -q "versionCode 34" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=272" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -121,7 +121,7 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=272" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
