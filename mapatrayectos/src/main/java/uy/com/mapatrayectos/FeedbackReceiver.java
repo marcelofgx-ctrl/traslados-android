@@ -55,7 +55,7 @@ public final class FeedbackReceiver extends BroadcastReceiver {
         else if(event==TRIP_END)name="cancelled".equalsIgnoreCase(status)?"sound_cancel":"sound_trip_end";
         if(name==null)return false;
         int id=context.getResources().getIdentifier(name,"raw",context.getPackageName());
-        if(id==0&&"sound_cabify".equals(name))id=context.getResources().getIdentifier("sound_uber","raw",context.getPackageName());
+        // Cabify must not reuse Uber's sound without an explicit separate selection.
         if(id==0)return false;
         MediaPlayer mp=MediaPlayer.create(context.getApplicationContext(),id);
         if(mp==null)return false;
