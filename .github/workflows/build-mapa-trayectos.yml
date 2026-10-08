@@ -68,7 +68,7 @@ jobs:
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=276" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 4" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q "ACTION_PICKUP_PASSENGER" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "ACTION_START_STOP" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
