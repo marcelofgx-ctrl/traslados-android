@@ -283,7 +283,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R22-4-RELEASE
+          name: Mapa-Trayectos-v0.1-R22-6-RELEASE
           path: |
             artifacts/Mapa_Trayectos_v0.1_R22_6_RELEASE.apk
             artifacts/SHA256SUMS.txt
