@@ -43,7 +43,7 @@ public final class ReminderCallout extends FrameLayout {
         avatar.setBackground(bg(petrol,gold,22));avatar.setPadding(dp(3),dp(3),dp(3),dp(3));
         head.addView(avatar,new LinearLayout.LayoutParams(dp(25),dp(25)));
         LinearLayout headings=new LinearLayout(c);headings.setOrientation(LinearLayout.VERTICAL);
-        TextView h=title("♟  TE RECUERDO ALGO",10,petrol,true);h.setSingleLine(true);
+        TextView h=title("🔔  TE RECUERDO ALGO",10,petrol,true);h.setSingleLine(true);
         headings.addView(h);
         TextView sub=title("Mapa Trayectos · Aviso personal",8,Color.rgb(85,100,99),false);sub.setSingleLine(true);
         sub.setEllipsize(android.text.TextUtils.TruncateAt.END);headings.addView(sub);
