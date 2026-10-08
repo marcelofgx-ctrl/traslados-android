@@ -21,6 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install approved Option C contact logo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi
+          base64 --decode mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          echo "a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg" | sha256sum --check
+          file mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+
       - name: Java 17
         uses: actions/setup-java@v4
         with:
@@ -72,8 +81,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R21.2'" mapatrayectos/build.gradle
-          grep -q "versionCode 26" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R21.3'" mapatrayectos/build.gradle
+          grep -q "versionCode 27" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -86,6 +95,9 @@ jobs:
           grep -q "class BusinessCardImage" mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q "QRCode\|BarcodeFormat.QR_CODE" mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q "shareBusinessImage" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q 'R.drawable.logo_c' mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
+          grep -q 'PHOTO;ENCODING=b;TYPE=JPEG' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          test -s mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
           grep -q 'com.google.zxing:core' mapatrayectos/build.gradle
 
           grep -q "FileProvider" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
@@ -203,17 +215,17 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R21_2_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R21_2_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R21-2-RELEASE
+          name: Mapa-Trayectos-v0.1-R21-3-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R21_2_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
