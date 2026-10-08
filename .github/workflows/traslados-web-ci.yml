@@ -11,9 +11,14 @@ permissions:
 
 jobs:
   compilar-web:
-    name: Compilar código rescatado
+    name: Probar Lovable exportado + Cloudflare independiente
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
+      SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: build-only-test-key
+      SUPABASE_PUBLISHABLE_KEY: build-only-test-key
     steps:
       - name: Descargar código
         uses: actions/checkout@v4
@@ -21,22 +26,21 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.3.4'
-      - name: Dependencias
+      - name: Dependencias originales
         run: bun install --frozen-lockfile
-      - name: Compilar web fuera de Lovable
-        env:
-          VITE_SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
-          SUPABASE_URL: https://xetklwcxebcpnkrdrmaa.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: build-only-test-key
-          SUPABASE_PUBLISHABLE_KEY: build-only-test-key
+      - name: Compilar código exportado
         run: bun run build
+      - name: Instalar plugin Cloudflare oficial sin créditos Lovable
+        run: bun add -d @cloudflare/vite-plugin wrangler
+      - name: Compilar con configuración Cloudflare (sin wrapper Lovable)
+        run: bunx vite build --config vite.cloudflare.config.ts
       - name: Guardar artefacto de compilación
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: traslados-web-build
+          name: traslados-web-cloudflare
           path: |
-            .output/
             dist/
+            .output/
           if-no-files-found: warn
           retention-days: 7
