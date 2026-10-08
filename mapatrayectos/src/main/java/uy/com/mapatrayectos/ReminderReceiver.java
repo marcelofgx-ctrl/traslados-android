@@ -17,6 +17,7 @@ public final class ReminderReceiver extends BroadcastReceiver {
         if(item.time>now+30000L)return;
         if(ReminderStore.alert(c,item)){
             ReminderStore.markFired(c,id);
+            ReminderSound.play(c);
             // Best-effort cartoon speech bubble only if the user granted overlay permission.
             // A standard high-priority notification remains available if Android disallows popups.
             if(Settings.canDrawOverlays(c)){

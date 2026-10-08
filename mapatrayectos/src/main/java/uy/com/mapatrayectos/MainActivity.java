@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
     private static final int BG=Color.rgb(7,25,31),PANEL=Color.rgb(8,42,50),GOLD=Color.rgb(224,193,111),CHAMPAGNE=Color.rgb(231,202,130),TEXT=Color.rgb(247,246,241),MUTED=Color.rgb(190,204,206),GREEN=Color.rgb(54,190,125),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225),RETURN_ROUTE=Color.rgb(235,166,65);
 
     private MapView mapView; private MapLibreMap map; private Style style;
-    private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
+    private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,shiftKmText,shiftTripsText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
@@ -54,7 +54,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=272,SHEET_FULL_DP=332;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=290,SHEET_FULL_DP=350;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -113,16 +113,17 @@ public class MainActivity extends Activity {
 
         sheetMetaText=text("Preparado · GPS y recorridos",10.8f,CHAMPAGNE,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(24)));
 
-        shiftStripText=text("JORNADA   ·   EFECTIVO 00:00:00",10.7f,CHAMPAGNE,true);
-        shiftStripText.setSingleLine(true);
-        shiftStripText.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        shiftStripText.setGravity(Gravity.CENTER_VERTICAL);
-        shiftStripText.setPadding(dp(11),0,dp(9),0);
-        shiftStripText.setTag("sheet_shift_strip");
-        shiftStripText.setBackground(premiumGradient(Color.rgb(7,49,55),Color.rgb(7,61,64),Color.argb(115,218,183,101),12f,0.65f));
-        LinearLayout.LayoutParams stripLp=new LinearLayout.LayoutParams(-1,dp(27));
-        stripLp.setMargins(dp(3),dp(2),dp(3),dp(3));
-        bottomSheet.addView(shiftStripText,stripLp);
+        // The three journey totals are independent premium cards, even during a service.
+        LinearLayout shiftCards=new LinearLayout(this);
+        shiftCards.setTag("sheet_shift_strip");
+        shiftCards.setOrientation(LinearLayout.HORIZONTAL);
+        shiftCards.setGravity(Gravity.CENTER_VERTICAL);
+        shiftStripText=shiftCard(shiftCards,"JORNADA","00:00:00");
+        shiftKmText=shiftCard(shiftCards,"KM","0.0 km");
+        shiftTripsText=shiftCard(shiftCards,"VIAJES","0");
+        LinearLayout.LayoutParams stripLp=new LinearLayout.LayoutParams(-1,dp(45));
+        stripLp.setMargins(0,dp(2),0,dp(3));
+        bottomSheet.addView(shiftCards,stripLp);
 
         idleText=text("Sin viaje 00:00   ·   Vel. máx. 0 km/h",10.8f,Color.rgb(202,214,216),false);idleText.setTag("sheet_detail");idleText.setGravity(Gravity.CENTER_VERTICAL);idleText.setSingleLine(true);bottomSheet.addView(idleText,new LinearLayout.LayoutParams(-1,dp(22)));
 
@@ -282,7 +283,7 @@ public class MainActivity extends Activity {
             elapsedText.setText(formatClock(tripElapsed));
             movingText.setText(formatClock(tripMoving));
             stoppedText.setText(formatClock(tripStopped));
-            shiftStripText.setText("JORNADA  "+formatClock(effective)+"  ·  "+String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0)+"  ·  "+shiftCompletedTrips+" viajes");
+            // Journey cards are updated below in all modes.
         }else{
             secondMetricLabel.setText("CONDUC.");
             thirdMetricLabel.setText("DET.");
@@ -292,8 +293,14 @@ public class MainActivity extends Activity {
             elapsedText.setText(formatClock(shiftMoving));
             movingText.setText(formatClock(shiftStopped));
             stoppedText.setText(Integer.toString(shiftActive?shiftCompletedTrips:0));
-            shiftStripText.setText((shiftPaused?"JORNADA EN PAUSA":"TIEMPO EFECTIVO")+"   "+formatClock(effective)+(shiftPaused?"  ·  pausa "+formatClock(shiftPauseMs):""));
+            // Journey cards are updated below in all modes.
         }
+        shiftStripText.setText(formatClock(effective));
+        shiftKmText.setText(String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0));
+        shiftTripsText.setText(Integer.toString(shiftActive?shiftCompletedTrips:0));
+        shiftStripText.setContentDescription("Tiempo efectivo de jornada "+formatClock(effective)+(shiftPaused?", en pausa":""));
+        shiftKmText.setContentDescription("Kilómetros de jornada "+String.format(Locale.getDefault(),"%.1f",shiftDistance/1000.0));
+        shiftTripsText.setContentDescription("Viajes completados en jornada "+shiftCompletedTrips);
         distanceText.setContentDescription(tripActive?"Kilómetros del servicio":"Kilómetros de la jornada");
         elapsedText.setContentDescription(tripActive?"Duración del servicio "+formatClock(tripElapsed):"Tiempo conduciendo "+formatClock(shiftMoving));
         movingText.setContentDescription(tripActive?"Movimiento del servicio "+formatClock(tripMoving):"Detenido de la jornada "+formatClock(shiftStopped));
@@ -624,6 +631,27 @@ public class MainActivity extends Activity {
     private void cycleSheetState(){int max=maxSheetState();setSheetState(sheetState>=max?0:sheetState+1,true);if(sheetHandle!=null)sheetHandle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);}
     private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(SHEET_MID_DP);int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
 
+    private TextView shiftCard(LinearLayout row,String label,String value){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(3),dp(4),dp(3),dp(3));
+        box.setBackground(premiumGradient(Color.rgb(6,48,56),Color.rgb(9,70,73),Color.argb(195,231,202,130),13f,0.75f));
+        TextView caption=text(label,8.4f,CHAMPAGNE,true);
+        caption.setGravity(Gravity.CENTER);
+        caption.setLetterSpacing(.065f);
+        TextView amount=text(value,14.2f,TEXT,true);
+        amount.setGravity(Gravity.CENTER);
+        amount.setSingleLine(true);
+        amount.setAutoSizeTextTypeUniformWithConfiguration(10,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        box.addView(caption,new LinearLayout.LayoutParams(-1,dp(14)));
+        box.addView(amount,new LinearLayout.LayoutParams(-1,dp(22)));
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-1,1);
+        params.setMargins(dp(3),0,dp(3),0);
+        row.addView(box,params);
+        return amount;
+    }
+
     private TextView metric(LinearLayout row,String value,String label,int iconType){
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(3),dp(4),dp(3),dp(3));
         box.setBackground(premiumGradient(Color.rgb(5,50,57),Color.rgb(6,61,66),Color.argb(190,218,183,101),17f,0.7f));
@@ -702,8 +730,8 @@ public class MainActivity extends Activity {
     }
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
-    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
-    @Override protected void onPause(){if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
+    @Override protected void onResume(){super.onResume();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
+    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
