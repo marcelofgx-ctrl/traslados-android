@@ -1,7 +1,18 @@
 # Mapa Trayectos — pendientes aprobados 08/10/2026
 
-Base Android nativo: uy.com.mapatrayectos. R21.4 compilada. Preservar estilo premium y todos los datos operativos.
+Base Android nativo: uy.com.mapatrayectos. R21.4 compilada y probada parcialmente; R21.5 implementada en código, pendiente de validación en Samsung. Preservar estilo premium y todos los datos operativos.
 Orden acordado: (1) cerrar WhatsApp y tarjeta (2) recordatorios (3) reinicio de base con backup previo (4) restantes.
+
+
+## Iteración R21.5 — compartir tarjeta y agenda de pasajeros
+- En menú ✦: «Tarjeta visual», «WhatsApp a número», «Guardar pasajero», «Enlaces y contacto».
+- «Tarjeta visual» previsualiza diseño C premium y envía **imagen real** en WhatsApp (ACTION_SEND PNG) con elección del destinatario. VCF con logo permanece como segunda acción; Cancelar último.
+- «WhatsApp a número»: chat para no agendados con un saludo breve; **no** promete adjuntar automáticamente la tarjeta visual al número.
+- «Guardar pasajero»: formulario Nombre (obligatorio), Teléfono (obligatorio), Empresa (opcional) y ACTION_INSERT de la agenda de Android; el conductor revisa/confirmar guardar. La app **no** necesita WRITE_CONTACTS ni crea contactos en silencio.
+- «Enlaces y contacto»: compartir VCF o web/descarga. URLs que figuraban en código no se han podido verificar como públicas; primero se pide revisar/corregir URL y confirmarla. Se guarda URL confirmada localmente para siguientes envíos.
+- El QR de la tarjeta enlaza directamente al propio WhatsApp +59897228175. No enlaza a una página de descargas que no haya sido verificada.
+- **Límite técnico:** WhatsApp no garantiza adjuntar una imagen a un chat identificado por un número externo; separar las dos acciones.
+- **Estado de pruebas:** implementación en GitHub; compilación y prueba en Samsung deben confirmarse aparte.
 
 ## P0 — WhatsApp / tarjeta visual (primero)
 - La acción «Enviar tarjeta» debe compartir la imagen PNG real del emprendimiento con logo opción C, teléfono y QR mediante ACTION_SEND, image/png y FileProvider.
