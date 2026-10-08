@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=228,SHEET_FULL_DP=300;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=276,SHEET_FULL_DP=306;
     private boolean shiftActive=false,tripActive=false,stopActive=false,follow=true,routeEnded=false;
     private String shiftId="",tripId="",tripType="other",tripStage="none";
     private long shiftStarted=0,tripStarted=0,pickupAt=0,stopStarted=0,shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
         gpsText=text("●  GPS buscando…",11.2f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GOLD));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(142),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(96),0,0);root.addView(gpsText,gpsLp);
         compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(58),dp(58),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(92),0,0);root.addView(compassView,compassLp);
 
-        bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(14),dp(4),dp(14),dp(8));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(9));
+        bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(14),dp(4),dp(14),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(9));
 
         FrameLayout handleBar=new FrameLayout(this);handleBar.setContentDescription("Panel de jornada. Deslizá hacia arriba o abajo para abrir y cerrar.");sheetHandle=handleBar;
         View grip=new View(this);grip.setBackground(rounded(Color.rgb(128,157,161),3,0,0));FrameLayout.LayoutParams gripLp=new FrameLayout.LayoutParams(dp(46),dp(5),Gravity.CENTER);handleBar.addView(grip,gripLp);handleBar.setOnTouchListener(this::onSheetTouch);bottomSheet.addView(handleBar,new LinearLayout.LayoutParams(-1,dp(22)));
@@ -110,9 +110,13 @@ public class MainActivity extends Activity {
         LinearLayout closeRow=new LinearLayout(this);closeRow.setTag("sheet_shift_close");closeRow.setGravity(Gravity.CENTER_VERTICAL);TextView closeLabel=text("FIN DE JORNADA",10.5f,MUTED,true);closeRow.addView(closeLabel,new LinearLayout.LayoutParams(0,-2,1));
         endShiftSlider=new SlideActionView(this);endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);endShiftSlider.setLabel("← CERRAR JORNADA");endShiftSlider.setOnCompleted(()->sendAction(TrackingService.ACTION_STOP_SHIFT,null,null,0));LinearLayout.LayoutParams closeLp=new LinearLayout.LayoutParams(dp(164),dp(40));closeRow.addView(endShiftSlider,closeLp);bottomSheet.addView(closeRow,new LinearLayout.LayoutParams(-1,dp(44)));
 
-        LinearLayout metrics=new LinearLayout(this);metrics.setTag("sheet_metrics");metrics.setOrientation(LinearLayout.HORIZONTAL);metrics.setGravity(Gravity.CENTER_VERTICAL);distanceText=metric(metrics,"0.0","KM");elapsedText=metric(metrics,"00:00","TIEMPO");movingText=metric(metrics,"00:00","MOV.");stoppedText=metric(metrics,"00:00","DET.");bottomSheet.addView(metrics,new LinearLayout.LayoutParams(-1,dp(62)));
+        LinearLayout metrics=new LinearLayout(this);metrics.setTag("sheet_metrics");metrics.setOrientation(LinearLayout.HORIZONTAL);metrics.setGravity(Gravity.CENTER_VERTICAL);
+        distanceText=metric(metrics,"0.0","KM","╱╲");elapsedText=metric(metrics,"00:00","TIEMPO","◷");movingText=metric(metrics,"00:00","MOV.","▶");stoppedText=metric(metrics,"00:00","DET.","▢");
+        bottomSheet.addView(metrics,new LinearLayout.LayoutParams(-1,dp(72)));
 
-        FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(62));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);bottomSheet.addView(actionWrap,new LinearLayout.LayoutParams(-1,dp(66)));
+        FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);
+        FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(64));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);
+        LinearLayout.LayoutParams actionWrapLp=new LinearLayout.LayoutParams(-1,dp(78));actionWrapLp.setMargins(0,dp(8),0,0);bottomSheet.addView(actionWrap,actionWrapLp);
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
@@ -250,7 +254,7 @@ public class MainActivity extends Activity {
         }else if(stopActive){
             sheetMetaText.setText("Parada registrada · "+formatDuration(Math.max(0,now-stopStarted))+" · deslizá para continuar");modeText.setText("PARADA EN CURSO · "+typeLabel(tripType));slider.setMode(SlideActionView.MODE_STOP_RESUME);slider.setLabel("DESLIZAR PARA CONTINUAR");
         }else{
-            sheetMetaText.setText(typeLabel(tripType)+" · pasajero a bordo · mitad = parada");modeText.setText("VIAJE EN CURSO · "+typeLabel(tripType));slider.setMode(SlideActionView.MODE_TRIP_STOP);slider.setLabel("½ PARADA   ·   FINALIZAR →");
+            sheetMetaText.setText(typeLabel(tripType)+" · pasajero a bordo · mitad = parada");modeText.setText("VIAJE EN CURSO · "+typeLabel(tripType));slider.setMode(SlideActionView.MODE_TRIP_STOP);slider.setLabel("FINALIZAR VIAJE");
         }
         updateSheetContentVisibility();
     }
@@ -346,7 +350,15 @@ public class MainActivity extends Activity {
     private void cycleSheetState(){int max=maxSheetState();setSheetState(sheetState>=max?0:sheetState+1,true);if(sheetHandle!=null)sheetHandle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);}
     private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(SHEET_MID_DP);int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
 
-    private TextView metric(LinearLayout row,String value,String label){LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(2),dp(2),dp(2),0);box.setBackground(premiumGradient(Color.rgb(7,58,65),Color.rgb(9,73,77),Color.argb(145,75,150,156),14f,0.8f));TextView v=text(value,20f,TEXT,true);v.setGravity(Gravity.CENTER);TextView l=text(label,9.7f,Color.rgb(225,195,112),true);l.setGravity(Gravity.CENTER);box.addView(v,new LinearLayout.LayoutParams(-1,0,1.28f));box.addView(l,new LinearLayout.LayoutParams(-1,0,.72f));LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));row.addView(box,bp);return v;}
+    private TextView metric(LinearLayout row,String value,String label,String icon){
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(2),dp(4),dp(2),dp(3));
+        box.setBackground(premiumGradient(Color.rgb(6,55,62),Color.rgb(7,68,73),Color.argb(205,224,193,111),15f,0.8f));
+        TextView ic=text(icon,12.5f,Color.rgb(236,196,92),true);ic.setGravity(Gravity.CENTER);
+        TextView v=text(value,19.5f,TEXT,true);v.setGravity(Gravity.CENTER);
+        TextView l=text(label,9.6f,Color.rgb(234,198,101),true);l.setGravity(Gravity.CENTER);
+        box.addView(ic,new LinearLayout.LayoutParams(-1,0,.58f));box.addView(v,new LinearLayout.LayoutParams(-1,0,1.05f));box.addView(l,new LinearLayout.LayoutParams(-1,0,.55f));
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));row.addView(box,bp);return v;
+    }
     private float followZoom(){if(currentSpeedKmh<12f)return 13.60f;if(currentSpeedKmh<45f)return 13.43f;if(currentSpeedKmh<80f)return 13.15f;return 12.87f;}
     private float smoothBearing(float current,float target,float factor){float delta=((target-current+540f)%360f)-180f;return normalizeBearing(current+delta*factor);}
     private float normalizeBearing(float b){float x=b%360f;return x<0?x+360f:x;}
@@ -431,7 +443,10 @@ public class MainActivity extends Activity {
 
     public static final class SlideActionView extends View {
         public static final int MODE_SHIFT_START=0,MODE_TRIP_START=1,MODE_TRIP_STOP=2,MODE_SHIFT_CLOSE=3,MODE_PICKUP=4,MODE_STOP_RESUME=5;
-        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();private Runnable completed,midpointCompleted;private String label="";private int mode=MODE_SHIFT_START;private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f;
+        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();
+        private Runnable completed,midpointCompleted;private String label="";private int mode=MODE_SHIFT_START;
+        private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f;
+
         public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");}
         public void setLabel(String s){if(Objects.equals(label,s))return;label=s;setContentDescription(s);invalidate();}
         public void setMode(int m){if(mode==m)return;mode=m;progress=isReverse()?1f:0f;invalidate();}
@@ -439,34 +454,99 @@ public class MainActivity extends Activity {
         public void setOnMidpointCompleted(Runnable r){midpointCompleted=r;}
         private boolean isReverse(){return mode==MODE_SHIFT_CLOSE;}
         private boolean isDual(){return mode==MODE_TRIP_STOP;}
-        private int dark(){if(mode==MODE_TRIP_START)return Color.rgb(7,75,52);if(mode==MODE_PICKUP)return Color.rgb(6,72,78);if(mode==MODE_STOP_RESUME)return Color.rgb(7,82,59);if(mode==MODE_TRIP_STOP)return Color.rgb(89,28,32);return Color.rgb(91,62,9);}
-        private int bright(){if(mode==MODE_TRIP_START)return Color.rgb(31,174,111);if(mode==MODE_PICKUP)return Color.rgb(22,139,145);if(mode==MODE_STOP_RESUME)return Color.rgb(42,179,116);if(mode==MODE_TRIP_STOP)return Color.rgb(207,61,68);return Color.rgb(224,178,58);}
-        private int accent(){if(mode==MODE_TRIP_START||mode==MODE_STOP_RESUME)return Color.rgb(37,190,122);if(mode==MODE_PICKUP)return Color.rgb(70,190,194);if(mode==MODE_TRIP_STOP)return Color.rgb(230,87,90);return Color.rgb(235,193,79);}
+        private int dark(){if(mode==MODE_TRIP_START)return Color.rgb(7,75,52);if(mode==MODE_PICKUP)return Color.rgb(6,72,78);if(mode==MODE_STOP_RESUME)return Color.rgb(7,82,59);if(mode==MODE_TRIP_STOP)return Color.rgb(91,24,29);return Color.rgb(91,62,9);}
+        private int bright(){if(mode==MODE_TRIP_START)return Color.rgb(31,174,111);if(mode==MODE_PICKUP)return Color.rgb(22,139,145);if(mode==MODE_STOP_RESUME)return Color.rgb(42,179,116);if(mode==MODE_TRIP_STOP)return Color.rgb(221,49,59);return Color.rgb(224,178,58);}
+        private int accent(){if(mode==MODE_TRIP_START||mode==MODE_STOP_RESUME)return Color.rgb(37,190,122);if(mode==MODE_PICKUP)return Color.rgb(70,190,194);if(mode==MODE_TRIP_STOP)return Color.rgb(229,69,75);return Color.rgb(235,193,79);}
+
         @Override protected void onDraw(Canvas c){
-            super.onDraw(c);float w=getWidth(),h=getHeight(),pad=dpv(4);track.set(pad,pad,w-pad,h-pad);
-            p.setShader(new LinearGradient(0,0,w,0,dark(),bright(),Shader.TileMode.CLAMP));p.setStyle(Paint.Style.FILL);c.drawRoundRect(track,h/2,h/2,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1));p.setColor(Color.argb(180,255,255,255));c.drawRoundRect(track,h/2,h/2,p);
-            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(28,255,255,255));c.drawRoundRect(new RectF(track.left+dpv(18),track.top+dpv(6),track.right-dpv(18),track.top+dpv(8)),dpv(2),dpv(2),p);
+            super.onDraw(c);
+            float w=getWidth(),h=getHeight(),pad=dpv(4);track.set(pad,pad,w-pad,h-pad);
+
+            p.setStyle(Paint.Style.FILL);p.setShader(new LinearGradient(0,0,w,0,dark(),bright(),Shader.TileMode.CLAMP));c.drawRoundRect(track,h/2,h/2,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1));p.setColor(Color.argb(205,255,255,255));c.drawRoundRect(track,h/2,h/2,p);
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(34,255,255,255));c.drawRoundRect(new RectF(track.left+dpv(22),track.top+dpv(6),track.right-dpv(22),track.top+dpv(8)),dpv(2),dpv(2),p);
+
             float radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=w-pad-dpv(4)-radius;
+
             if(isDual()){
-                float mid=minX+(maxX-minX)*0.53f;p.setColor(Color.argb(205,245,203,97));c.drawRoundRect(new RectF(mid-dpv(1),track.top+dpv(9),mid+dpv(1),track.bottom-dpv(9)),dpv(1),dpv(1),p);
-                p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));p.setTextSize(8.5f*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.rgb(255,224,139));c.drawText("PARADA",mid,track.top+dpv(14),p);
+                float pillCx=minX+(maxX-minX)*0.52f,pillW=dpv(92),pillH=dpv(28),pillTop=h/2f-pillH/2f;
+                RectF pill=new RectF(pillCx-pillW/2f,pillTop,pillCx+pillW/2f,pillTop+pillH);
+
+                // Fine guide lines: visual landmark, not a second button track.
+                p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.1f));p.setColor(Color.argb(210,240,184,59));
+                float lineY=h/2f;
+                c.drawLine(track.left+dpv(84),lineY,pill.left-dpv(10),lineY,p);
+                c.drawLine(pill.right+dpv(10),lineY,track.right-dpv(130),lineY,p);
+
+                // Orange horizontal "gragea" approved by user.
+                p.setStyle(Paint.Style.FILL);p.setShadowLayer(dpv(6),0,dpv(2),Color.argb(105,74,28,0));
+                p.setShader(new LinearGradient(pill.left,0,pill.right,0,Color.rgb(255,170,24),Color.rgb(246,190,59),Shader.TileMode.CLAMP));
+                c.drawRoundRect(pill,pillH/2f,pillH/2f,p);p.clearShadowLayer();p.setShader(null);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1));p.setColor(Color.argb(210,255,220,116));c.drawRoundRect(pill,pillH/2f,pillH/2f,p);
+                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));
+                p.setTextSize(9.6f*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.rgb(54,45,21));
+                Paint.FontMetrics pf=p.getFontMetrics();c.drawText("1/2 PARADA",pillCx,h/2f-(pf.ascent+pf.descent)/2f,p);
+
+                p.setTextSize(11.4f*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.WHITE);
+                Paint.FontMetrics ff=p.getFontMetrics();c.drawText("FINALIZAR  →",track.right-dpv(73),h/2f-(ff.ascent+ff.descent)/2f,p);
             }
-            float cx=minX+(maxX-minX)*progress,cy=h/2f;p.setShadowLayer(dpv(6),0,dpv(2),Color.argb(100,0,0,0));p.setColor(Color.rgb(249,248,243));c.drawCircle(cx,cy,radius,p);p.clearShadowLayer();
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(2));p.setColor(accent());c.drawCircle(cx,cy,radius-dpv(2),p);p.setStyle(Paint.Style.FILL);p.setColor(dark());
-            Path arrow=new Path();float a=dpv(6);if(isReverse()){arrow.moveTo(cx+a,cy-a);arrow.lineTo(cx-a,cy);arrow.lineTo(cx+a,cy+a);}else{arrow.moveTo(cx-a,cy-a);arrow.lineTo(cx+a,cy);arrow.lineTo(cx-a,cy+a);}arrow.close();c.drawPath(arrow,p);
-            p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));p.setTextSize((getHeight()<dpv(55)?9.4f:11.5f)*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.WHITE);Paint.FontMetrics fm=p.getFontMetrics();float offset=isReverse()?-dpv(8):dpv(10),textX=w/2f+offset,textY=h/2f-(fm.ascent+fm.descent)/2f;c.drawText(label,textX,textY,p);
+
+            float cx=minX+(maxX-minX)*progress,cy=h/2f;
+            p.setStyle(Paint.Style.FILL);p.setShadowLayer(dpv(6),0,dpv(2),Color.argb(115,0,0,0));p.setColor(Color.rgb(250,249,244));c.drawCircle(cx,cy,radius,p);p.clearShadowLayer();
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(2));p.setColor(accent());c.drawCircle(cx,cy,radius-dpv(2),p);
+            p.setStyle(Paint.Style.FILL);p.setColor(dark());Path arrow=new Path();float a=dpv(6);
+            if(isReverse()){arrow.moveTo(cx+a,cy-a);arrow.lineTo(cx-a,cy);arrow.lineTo(cx+a,cy+a);}else{arrow.moveTo(cx-a,cy-a);arrow.lineTo(cx+a,cy);arrow.lineTo(cx-a,cy+a);}arrow.close();c.drawPath(arrow,p);
+
+            if(!isDual()){
+                p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));
+                p.setTextSize((getHeight()<dpv(55)?9.4f:11.5f)*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.WHITE);
+                Paint.FontMetrics fm=p.getFontMetrics();float offset=isReverse()?-dpv(8):dpv(10),textX=w/2f+offset,textY=h/2f-(fm.ascent+fm.descent)/2f;c.drawText(label,textX,textY,p);
+            }
         }
+
         @Override public boolean onTouchEvent(MotionEvent e){
             float h=getHeight(),pad=dpv(4),radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=getWidth()-pad-dpv(4)-radius;
             switch(e.getActionMasked()){
-                case MotionEvent.ACTION_DOWN:dragging=true;thresholdBuzzed=false;midBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;
+                case MotionEvent.ACTION_DOWN:
+                    dragging=true;thresholdBuzzed=false;midBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);
+                    performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;
                 case MotionEvent.ACTION_MOVE:
-                    if(dragging){updateProgress(e.getX(),minX,maxX);if(isDual()&&progress>=.48f&&!midBuzzed){midBuzzed=true;performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);}if(progress<.43f)midBuzzed=false;boolean armed=isReverse()?progress<=.18f:progress>=.84f;if(armed&&!thresholdBuzzed){thresholdBuzzed=true;performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);}else if(!armed)thresholdBuzzed=false;return true;}break;
-                case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:
-                    if(dragging){boolean up=e.getActionMasked()==MotionEvent.ACTION_UP;boolean full=up&&(isReverse()?progress<=.16f:progress>=.86f);boolean mid=up&&isDual()&&!full&&progress>=.48f;dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();if(full){performClick();performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);if(completed!=null)completed.run();}else if(mid){performClick();performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);if(midpointCompleted!=null)midpointCompleted.run();}return true;}break;
+                    if(dragging){
+                        updateProgress(e.getX(),minX,maxX);
+                        if(isDual()&&progress>=.47f&&!midBuzzed){midBuzzed=true;vibrateDualHalfStop();}
+                        if(progress<.40f)midBuzzed=false;
+                        boolean armed=isReverse()?progress<=.18f:progress>=.86f;
+                        if(armed&&!thresholdBuzzed){thresholdBuzzed=true;if(isDual())vibrateDualFinish();else performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);}
+                        else if(!armed&&progress<.80f)thresholdBuzzed=false;
+                        return true;
+                    }break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if(dragging){
+                        boolean up=e.getActionMasked()==MotionEvent.ACTION_UP;
+                        boolean full=up&&(isReverse()?progress<=.16f:progress>=.88f);
+                        boolean mid=up&&isDual()&&!full&&progress>=.46f&&progress<.80f;
+                        dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();
+                        if(full){performClick();performHapticFeedback(HapticFeedbackConstants.CONFIRM);if(completed!=null)completed.run();}
+                        else if(mid){performClick();performHapticFeedback(HapticFeedbackConstants.CONFIRM);if(midpointCompleted!=null)midpointCompleted.run();}
+                        return true;
+                    }break;
             }
             return super.onTouchEvent(e);
+        }
+
+        private void vibrateDualHalfStop(){
+            vibrateWave(new long[]{0,55,38,65},new int[]{0,165,0,215});
+        }
+        private void vibrateDualFinish(){
+            vibrateWave(new long[]{0,90,48,140},new int[]{0,215,0,245});
+        }
+        private void vibrateWave(long[] timing,int[] amplitude){
+            try{
+                Vibrator v=(Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);if(v==null||!v.hasVibrator())return;
+                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O)v.vibrate(VibrationEffect.createWaveform(timing,amplitude,-1));
+                else v.vibrate(timing,-1);
+            }catch(Exception ignored){}
         }
         private void updateProgress(float x,float min,float max){progress=Math.max(0f,Math.min(1f,(x-min)/Math.max(1f,max-min)));invalidate();}
         @Override public boolean performClick(){super.performClick();return true;}
