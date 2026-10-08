@@ -142,6 +142,16 @@ public final class TrackDb extends SQLiteOpenHelper {
         getWritableDatabase().insertWithOnConflict("points",null,v,SQLiteDatabase.CONFLICT_IGNORE);
     }
 
+    /** Completed (not cancelled) services belonging to this shift; active services are excluded. */
+    public int completedTripsForShift(String shiftId){
+        if(shiftId==null||shiftId.isEmpty())return 0;
+        Cursor c=getReadableDatabase().rawQuery(
+            "select count(*) from trips where shift_id=? and ended_at_ms is not null and trip_status='completed'",
+            new String[]{shiftId});
+        try{return c.moveToFirst()?c.getInt(0):0;}
+        finally{c.close();}
+    }
+
     public JSONObject getShift(String id) { return one("select * from shifts where shift_id=?",new String[]{id}); }
     public JSONObject getTrip(String id) { return one("select * from trips where trip_id=?",new String[]{id}); }
     public JSONArray listTrips() { return many("select * from trips order by started_at_ms desc",null); }
