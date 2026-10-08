@@ -81,8 +81,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R21.3'" mapatrayectos/build.gradle
-          grep -q "versionCode 27" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R21.4'" mapatrayectos/build.gradle
+          grep -q "versionCode 28" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=246" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -95,6 +95,9 @@ jobs:
           grep -q "class BusinessCardImage" mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q "QRCode\|BarcodeFormat.QR_CODE" mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q "shareBusinessImage" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q "ENVIAR AL NÚMERO" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q "wrapper.addView(cancel" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q "https://api.whatsapp.com/send?phone=" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q 'R.drawable.logo_c' mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q 'PHOTO;ENCODING=b;TYPE=JPEG' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           test -s mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
@@ -215,17 +218,17 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R21_4_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R21_4_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R21-3-RELEASE
+          name: Mapa-Trayectos-v0.1-R21-4-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R21_3_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R21_4_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
