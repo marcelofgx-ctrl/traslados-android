@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
     private float previewLastSpeed=0f; private long previewLastTs=0L;
     private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
 
+    private boolean resetAfterBackup=false;
+
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{
         if(loc==null)return;float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;if(accuracy>45f)return;long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>160f)return;
@@ -268,7 +270,10 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
         if(requestCode==REQ_OVERLAY){updateUi();Toast.makeText(this,Settings.canDrawOverlays(this)?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();return;}
-        if(resultCode!=RESULT_OK||data==null||data.getData()==null)return;
+        if(resultCode!=RESULT_OK||data==null||data.getData()==null){
+            if(requestCode==REQ_EXPORT_DB)resetAfterBackup=false;
+            return;
+        }
         Uri uri=data.getData();
         if(requestCode==REQ_EXPORT_DB){performExport(uri);return;}
         if(requestCode==REQ_IMPORT_DB){inspectAndConfirmImport(uri);}
@@ -286,6 +291,10 @@ public class MainActivity extends Activity {
         View divider=new View(this);divider.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
         TextView imp=text("⇧   Importar base",15,TEXT,true);imp.setGravity(Gravity.CENTER_VERTICAL);imp.setPadding(dp(10),0,dp(10),0);menu.addView(imp,new LinearLayout.LayoutParams(-1,dp(54)));
 
+        View divider2=new View(this);divider2.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider2,new LinearLayout.LayoutParams(-1,dp(1)));
+        TextView wipe=text("♻   Empezar de cero",14.5f,TEXT,true);wipe.setGravity(Gravity.CENTER_VERTICAL);wipe.setPadding(dp(10),0,dp(10),0);
+        menu.addView(wipe,new LinearLayout.LayoutParams(-1,dp(54)));
+
         TrackDb db=new TrackDb(this);JSONObject cnt=db.counts();db.close();
         long last=getSharedPreferences("maintenance_prefs",MODE_PRIVATE).getLong("last_backup_ms",0);
         String lastText=last>0?new java.text.SimpleDateFormat("dd/MM HH:mm",new Locale("es","UY")).format(new Date(last)):"sin copia";
@@ -294,6 +303,7 @@ public class MainActivity extends Activity {
         PopupWindow popup=new PopupWindow(menu,dp(224),-2,true);popup.setOutsideTouchable(true);popup.setElevation(dp(10));popup.setBackgroundDrawable(new TexturedDrawable(this,Color.rgb(8,55,63),Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
         export.setOnClickListener(v->{popup.dismiss();startExportBase();});
         imp.setOnClickListener(v->{popup.dismiss();startImportBase();});
+        wipe.setOnClickListener(v->{popup.dismiss();promptResetDatabase();});
         popup.showAsDropDown(anchor,-dp(184),dp(5));
     }
 
@@ -308,12 +318,110 @@ public class MainActivity extends Activity {
     }
 
     private void performExport(Uri uri){
-        Toast.makeText(this,"Creando copia…",Toast.LENGTH_SHORT).show();
-        new Thread(()->{try{
-            DatabaseBackup.BackupInfo info=DatabaseBackup.exportBackup(getApplicationContext(),uri);
-            getSharedPreferences("maintenance_prefs",MODE_PRIVATE).edit().putLong("last_backup_ms",System.currentTimeMillis()).apply();
-            runOnUiThread(()->Toast.makeText(this,"✓ Copia creada · "+info.trips+" viajes",Toast.LENGTH_LONG).show());
-        }catch(Exception e){runOnUiThread(()->new AlertDialog.Builder(this).setTitle("No se pudo exportar").setMessage(e.getMessage()==null?e.toString():e.getMessage()).setPositiveButton("OK",null).show());}},"db-export").start();
+        final boolean resetAfter=resetAfterBackup;
+        resetAfterBackup=false;
+        Toast.makeText(this,"Creando y verificando copia…",Toast.LENGTH_SHORT).show();
+        new Thread(()->{
+            try{
+                DatabaseBackup.BackupInfo info=DatabaseBackup.exportBackup(getApplicationContext(),uri);
+                // Never enable destructive reset until the generated ZIP can be read and validated.
+                if(resetAfter)DatabaseBackup.inspectBackup(getApplicationContext(),uri);
+                getSharedPreferences("maintenance_prefs",MODE_PRIVATE)
+                    .edit().putLong("last_backup_ms",System.currentTimeMillis()).apply();
+                runOnUiThread(()->{
+                    Toast.makeText(this,"✓ Copia guardada · "+info.trips+" viajes",Toast.LENGTH_LONG).show();
+                    if(resetAfter)confirmResetDatabase(true);
+                });
+            }catch(Exception e){
+                runOnUiThread(()->new AlertDialog.Builder(this).setTitle("No se pudo completar la copia")
+                    .setMessage((e.getMessage()==null?e.toString():e.getMessage())+
+                        "\n\nNo se borró ningún registro.")
+                    .setPositiveButton("ENTENDIDO",null).show());
+            }
+        },"db-export").start();
+    }
+
+    /** Never reset while a shift or trip is active. Ask backup first, then explicit typed confirmation. */
+    private void promptResetDatabase(){
+        if(maintenanceBusy()){
+            new AlertDialog.Builder(this).setTitle("Reinicio bloqueado")
+                .setMessage("Terminá el viaje y cerrá la jornada antes de vaciar la base de datos.")
+                .setPositiveButton("ENTENDIDO",null).show();return;
+        }
+        new AlertDialog.Builder(this).setTitle("Comenzar con la base limpia")
+            .setMessage("Esto eliminará del teléfono jornadas, viajes, paradas y puntos GPS registrados.\n\n" +
+                "¿Querés exportar una copia ZIP antes de continuar?\n\n" +
+                "No se borran los datos existentes en Supabase ni los recordatorios personales.")
+            .setPositiveButton("HACER BACKUP",(d,w)->{
+                resetAfterBackup=true;
+                try{startExportBase();}
+                catch(Exception ex){
+                    resetAfterBackup=false;
+                    Toast.makeText(this,"No se pudo abrir el exportador de copias",Toast.LENGTH_LONG).show();
+                }
+            })
+            .setNeutralButton("SEGUIR SIN COPIA",(d,w)->confirmResetDatabase(false))
+            .setNegativeButton("CANCELAR",null).show();
+    }
+
+    private void confirmResetDatabase(boolean backedUp){
+        if(maintenanceBusy()){promptResetDatabase();return;}
+        TrackDb db=new TrackDb(this);JSONObject count;
+        try{count=db.counts();}finally{db.close();}
+        int shifts=count.optInt("shifts"),trips=count.optInt("trips"),points=count.optInt("points"),stops=count.optInt("stops");
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(22),dp(3),dp(22),dp(7));
+        TextView warning=text((backedUp?"Copia exportada y validada.":"SIN COPIA DE SEGURIDAD.")+
+            "\n\nSe borrarán SOLO registros locales:\n"+
+            shifts+" jornadas · "+trips+" viajes · "+points+" puntos GPS · "+stops+" paradas.\n\n"+
+            "Escribí BORRAR para confirmar. Esta acción no se puede deshacer sin una copia.\n"+
+            "El servidor Supabase NO se modifica.",13,Color.rgb(42,57,62),false);
+        box.addView(warning);
+        EditText code=new EditText(this);code.setSingleLine(true);code.setAllCaps(true);
+        code.setHint("Escribí BORRAR");
+        box.addView(code,new LinearLayout.LayoutParams(-1,dp(56)));
+        AlertDialog alert=new AlertDialog.Builder(this)
+            .setTitle("Confirmación definitiva")
+            .setView(box).setNegativeButton("CANCELAR",null)
+            .setPositiveButton("VACIAR BASE",null).create();
+        alert.setOnShowListener(x->alert.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            if(!"BORRAR".equalsIgnoreCase(code.getText().toString().trim())){
+                code.setError("Para borrar, escribí BORRAR");return;
+            }
+            if(maintenanceBusy()){alert.dismiss();Toast.makeText(this,"Hay una jornada activa. No se borró nada.",Toast.LENGTH_LONG).show();return;}
+            alert.dismiss();executeResetDatabase();
+        }));
+        alert.show();
+    }
+
+    private void executeResetDatabase(){
+        if(maintenanceBusy())return;
+        Toast.makeText(this,"Limpiando registros locales…",Toast.LENGTH_LONG).show();
+        new Thread(()->{
+            try{
+                if(getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false))
+                    throw new IllegalStateException("Jornada activa: operación cancelada");
+                TrackDb db=new TrackDb(getApplicationContext());
+                try{db.clearLocalTripHistory();}
+                finally{db.close();}
+                getSharedPreferences("tracking_state",MODE_PRIVATE).edit().clear().commit();
+                getSharedPreferences("mapa_feedback_state",MODE_PRIVATE).edit().clear().apply();
+                runOnUiThread(()->{
+                    shiftActive=false;tripActive=false;stopActive=false;shiftId="";tripId="";
+                    shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;
+                    route.clear();loadedTripId="";
+                    updateUi();startPreview();
+                    new AlertDialog.Builder(this).setTitle("✓ Base local limpia")
+                        .setMessage("Se vaciaron jornadas, viajes y puntos GPS del teléfono.\n\n"+
+                            "Los recordatorios y los registros del servidor no fueron borrados.")
+                        .setPositiveButton("ENTENDIDO",null).show();
+                });
+            }catch(Exception e){
+                runOnUiThread(()->new AlertDialog.Builder(this).setTitle("No se pudo vaciar la base")
+                    .setMessage((e.getMessage()==null?e.toString():e.getMessage())+"\n\nRevisá el historial antes de repetir.")
+                    .setPositiveButton("ENTENDIDO",null).show());
+            }
+        },"db-reset").start();
     }
 
     private void inspectAndConfirmImport(Uri uri){
