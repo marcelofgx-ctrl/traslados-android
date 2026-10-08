@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Bitmap;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -13,6 +14,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -127,30 +129,81 @@ public final class QuickActionsMenu {
     }
 
     private static void askPhone(Activity a){
-        EditText input=new EditText(a);
-        input.setInputType(InputType.TYPE_CLASS_PHONE);
-        input.setSingleLine(true);
-        input.setHint("099 123 456 o +598 99 123 456");
-        LinearLayout wrap=new LinearLayout(a);
-        wrap.setPadding(dp(a,22),dp(a,4),dp(a,22),0);
-        wrap.addView(input,new LinearLayout.LayoutParams(-1,dp(a,55)));
-        AlertDialog d=new AlertDialog.Builder(a)
-            .setTitle("Enviar mi tarjeta")
-            .setMessage("Ingresá el número de la persona. Se abrirá WhatsApp con tu contacto preparado; vos confirmás el envío.")
-            .setView(wrap)
+        EditText phone=new EditText(a);
+        phone.setInputType(InputType.TYPE_CLASS_PHONE);
+        phone.setSingleLine(true);
+        phone.setTextSize(14);
+        phone.setHint("Número (opcional)");
+        LinearLayout wrapper=new LinearLayout(a);
+        wrapper.setOrientation(LinearLayout.VERTICAL);
+        wrapper.setPadding(dp(a,18),dp(a,4),dp(a,18),0);
+
+        Bitmap thumbnail=null;
+        try{
+            Bitmap full=BusinessCardImage.render();
+            thumbnail=Bitmap.createScaledBitmap(full,720,405,true);
+            full.recycle();
+            ImageView image=new ImageView(a);
+            image.setImageBitmap(thumbnail);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(a,176));
+            imageLp.bottomMargin=dp(a,8);
+            wrapper.addView(image,imageLp);
+        }catch(Exception e){
+            Toast.makeText(a,"La vista previa no está disponible",Toast.LENGTH_SHORT).show();
+        }
+        wrapper.addView(phone,new LinearLayout.LayoutParams(-1,dp(a,51)));
+        final Bitmap toRecycle=thumbnail;
+        AlertDialog dialog=new AlertDialog.Builder(a)
+            .setTitle("Tarjeta de traslados")
+            .setMessage("Compartí la imagen con QR desde WhatsApp. Allí elegís el destinatario y confirmás el envío. El número sirve para abrir un chat por separado.")
+            .setView(wrapper)
             .setNegativeButton("CANCELAR",null)
-            .setNeutralButton("COMPARTIR VCF",(dialog,which)->shareVcard(a))
-            .setPositiveButton("ABRIR WHATSAPP",null)
+            .setNeutralButton("ABRIR CHAT",null)
+            .setPositiveButton("COMPARTIR IMAGEN",null)
             .create();
-        d.setOnShowListener(unused->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-            String number=normalizePhone(input.getText().toString());
-            if(number==null){
-                input.setError("Verificá el teléfono");
-                return;
+        dialog.setOnDismissListener(d->{if(toRecycle!=null&&!toRecycle.isRecycled())toRecycle.recycle();});
+        dialog.setOnShowListener(d->{
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
+                String normalized=normalizePhone(phone.getText().toString());
+                if(normalized==null){phone.setError("Ingresá un teléfono válido");return;}
+                if(openWhatsApp(a,normalized))dialog.dismiss();
+            });
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+                if(shareBusinessImage(a))dialog.dismiss();
+            });
+        });
+        dialog.show();
+    }
+
+    /** WhatsApp attachment recipient selection must happen in WhatsApp itself. */
+    private static boolean shareBusinessImage(Activity a){
+        try{
+            File image=BusinessCardImage.writeToCache(a);
+            Uri uri=FileProvider.getUriForFile(a,a.getPackageName()+".share",image);
+            Intent share=new Intent(Intent.ACTION_SEND);
+            share.setType("image/png");
+            share.putExtra(Intent.EXTRA_STREAM,uri);
+            share.putExtra(Intent.EXTRA_TEXT,
+                "Marcelo Fernández · Traslados programados\n"+PHONE+
+                "\nReservas por WhatsApp: "+BusinessCardImage.CONTACT_URL);
+            share.setClipData(ClipData.newUri(a.getContentResolver(),"Tarjeta de Traslados",uri));
+            share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            share.setPackage("com.whatsapp");
+            try{a.startActivity(share);return true;}
+            catch(Exception noPersonal){
+                share.setPackage("com.whatsapp.w4b");
+                try{a.startActivity(share);return true;}
+                catch(Exception noBusiness){
+                    share.setPackage(null);
+                    a.startActivity(Intent.createChooser(share,"Compartir tarjeta visual"));
+                    return true;
+                }
             }
-            if(openWhatsApp(a,number))d.dismiss();
-        }));
-        d.show();
+        }catch(Exception e){
+            Toast.makeText(a,"No se pudo preparar la imagen: "+e.getMessage(),Toast.LENGTH_LONG).show();
+            return false;
+        }
     }
 
     private static boolean openWhatsApp(Activity a,String number){
