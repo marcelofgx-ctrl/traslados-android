@@ -156,6 +156,12 @@ public final class SoundPack {
         try{active.release();}catch(Exception ignored){}
         active=null;
     }
+    /** Menu cues never cut off a journey alert. */
+    public static synchronized boolean playUi(Context c){
+        try{if(active!=null&&active.isPlaying())return true;}catch(Exception ignored){}
+        return play(c,"sound_ui_action");
+    }
+
     /** One strong MediaPlayer at a time; newest important sound takes precedence, never overlaps. */
     public static synchronized boolean play(Context c,String name){
         if(!isInstalled(c,name))return false;
