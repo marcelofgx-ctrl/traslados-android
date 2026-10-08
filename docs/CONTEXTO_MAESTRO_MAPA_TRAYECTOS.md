@@ -91,3 +91,13 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - REQUIERE PRUEBA EN TELÉFONO: Ajustes → notificaciones Mapa Trayectos, permiso «Alarmas y recordatorios», «Mostrar sobre otras aplicaciones» para globo. Ejecutar prueba en 1 minuto saliendo de app y bloqueando pantalla, comprobar presentación y acción +10.
 - El usuario confirmó que sonido original R22.2 quedó bien y no desea nuevos cambios en identidad sonora.
 - Intento de crear carpeta R22.3 en Google Drive fue bloqueado por seguridad de conexión, NO se ha confirmado un enlace de Drive R22.3; archivo GitHub Actions sí existente.
+
+## Tablero de doble nivel R22.4
+- Código actualizado: R22.4 (versionCode 34), sucesora R22.3; release mediante GitHub Actions run 37831735682. Hasta verificar compilación no declarar APK éxito.
+- Cuando hay jornada activa y NO viaje: indicadores principales KM jornada, CONDUC. (shiftMoving), DET. (shiftStopped), VIAJES (solo servicios completados, excluye cancelados). Tiempo EFECTIVO se muestra en una franja champagne: shiftMoving+shiftStopped. Horas siempre HH:MM:SS; las pausas voluntarias quedan fuera de tiempo efectivo.
+- Durante viaje: indicadores grandes KM servicio, duración SERVICIO (tripStarted hasta ahora), MOV. viaje, DET. viaje. Franja compacta de JORNADA permanece visible con HH:MM:SS efectivo + KM + viajes completados. Al finalizar retorna a jornada sin perder acumulados.
+- MainActivity adapta etiquetas e iconos (TRIPS para contador completados, MOVING/STOPPED según contexto); mantiene panel premium petróleo/champagne, textura, deslizador; nueva altura mid 272dp y full 332dp para franja de jornada sin superponer UI.
+- TrackDb.completedTripsForShift consulta SQLite directamente por shift_id y trip_status completed + ended_at_ms; TrackingService recalcula al finalizar cada servicio y al reiniciar; publica shift_completed_trips en ACTION_STATE. No cambia DB_VERSION=5.
+- Tiempos dibujados a HH:MM:SS; fuente adaptada a cuatro columnas, service emite cada segundo incluso sin GPS.
+- Alcance: métricas por JORNADA activa, no sumatoria de distintas jornadas de un día calendario. Consolidación por fecha queda como mejora futura de Historial; no presentarla como implementada.
+- Verificación requerida en Samsung: jornada quieta 90 segundos (DET. debe avanzar), movimiento seguro (CONDUC. debe avanzar), pausar/reanudar (efectivo permanece fijo durante pausa), iniciar Uber/Cabify/particular, completar/cancelar (VIAJES cuenta solo completados), revisar visualización 4 columnas en Maroñas. No conducir manipulando pantalla.
