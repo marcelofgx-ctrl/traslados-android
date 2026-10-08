@@ -54,6 +54,8 @@ public final class FeedbackReceiver extends BroadcastReceiver {
         else if(event==SERVICE_START)name="uber".equalsIgnoreCase(type)?"sound_uber":"cabify".equalsIgnoreCase(type)?"sound_cabify":"sound_trip_start";
         else if(event==TRIP_END)name="cancelled".equalsIgnoreCase(status)?"sound_cancel":"sound_trip_end";
         if(name==null)return false;
+        // Original files manually selected and authenticated by SHA-256 from user upload.
+        if(SoundPack.play(context,name))return true;
         int id=context.getResources().getIdentifier(name,"raw",context.getPackageName());
         // Cabify must not reuse Uber's sound without an explicit separate selection.
         if(id==0)return false;
