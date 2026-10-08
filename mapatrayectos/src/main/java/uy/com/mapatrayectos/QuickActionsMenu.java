@@ -66,6 +66,7 @@ public final class QuickActionsMenu {
         add(activity,content,"▣", "Tarjeta visual",popup,()->showCard(activity));
         add(activity,content,"↗", "WhatsApp a número",popup,()->showWhatsAppNumber(activity));
         add(activity,content,"+", "Guardar pasajero",popup,()->savePassenger(activity));
+        add(activity,content,"◷", "Recordatorios",popup,()->activity.startActivity(new Intent(activity,ReminderActivity.class)));
         add(activity,content,"⌁", "Enlaces y contacto",popup,()->showShareHub(activity));
 
         currentPopup=popup;
