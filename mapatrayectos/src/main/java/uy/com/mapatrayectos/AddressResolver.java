@@ -63,6 +63,24 @@ public final class AddressResolver {
         },"address-end").start();
     }
 
+    public static void resolveTripPickupAsync(Context context,String tripId,double lat,double lon,String zone){
+        Context app=context.getApplicationContext();
+        new Thread(()->{
+            String address=resolve(app,lat,lon,zone);
+            TrackDb db=new TrackDb(app);
+            db.setTripPickupLocation(tripId,lat,lon,address);db.close();
+        },"address-pickup").start();
+    }
+
+    public static void resolveTripStopAsync(Context context,String stopId,double lat,double lon,String zone){
+        Context app=context.getApplicationContext();
+        new Thread(()->{
+            String address=resolve(app,lat,lon,zone);
+            TrackDb db=new TrackDb(app);
+            db.setStopLocation(stopId,lat,lon,address,zone);db.close();
+        },"address-stop").start();
+    }
+
     public static int backfillMissingTripLocations(Context context){
         Context app=context.getApplicationContext();
         TrackDb db=new TrackDb(app);

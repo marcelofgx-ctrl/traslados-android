@@ -330,9 +330,17 @@ public class HistoryActivity extends Activity {
 
         double startLat=o.isNull("start_lat")?Double.NaN:o.optDouble("start_lat"),startLon=o.isNull("start_lon")?Double.NaN:o.optDouble("start_lon");
         double endLat=o.isNull("end_lat")?Double.NaN:o.optDouble("end_lat"),endLon=o.isNull("end_lon")?Double.NaN:o.optDouble("end_lon");
-        String startAddress=endpointText(o,true),endAddress=endpointText(o,false);
-        card.addView(endpointRow("ORIGEN",startAddress,startLat,startLon,GREEN),lp(5,0));
+        long pickupAt=o.optLong("pickup_at_ms",0);boolean staged=pickupAt>0;
+        double pickupLat=o.isNull("pickup_lat")?Double.NaN:o.optDouble("pickup_lat"),pickupLon=o.isNull("pickup_lon")?Double.NaN:o.optDouble("pickup_lon");
+        String startAddress=endpointText(o,true),endAddress=endpointText(o,false),pickupAddress=pickupText(o);
+        card.addView(endpointRow(staged?"SALIDA A RECOGER":"ORIGEN",startAddress,startLat,startLon,GREEN),lp(5,0));
+        if(staged)card.addView(endpointRow("RECOGIDA · "+tf.format(new Date(pickupAt)),pickupAddress,pickupLat,pickupLon,TEAL),lp(3,0));
         card.addView(endpointRow("DESTINO",endAddress,endLat,endLon,RED),lp(3,0));
+        if(staged){
+            double approachKm=o.optDouble("pickup_distance_m",0)/1000.0,passengerKm=Math.max(0,km-approachKm);long approachMs=Math.max(0,pickupAt-start),passengerMs=end>pickupAt?end-pickupAt:0;
+            TextView stages=text(String.format(locale,"A recoger %.1f km · %s    |    Con pasajero %.1f km · %s",approachKm,duration(approachMs),passengerKm,duration(passengerMs)),9.8f,TEAL_DARK,true);stages.setPadding(dp(20),dp(3),0,dp(2));card.addView(stages);
+        }
+        TrackDb stopDb=new TrackDb(this);JSONArray stops=stopDb.listTripStops(id);stopDb.close();if(stops.length()>0)card.addView(stopsBlock(stops),lp(4,1));
         long total=end>start?end-start:moving+stopped;
         TextView details=text(String.format(locale,"%.1f km · %s · prom. %.0f · máx. %.0f km/h",km,duration(total),avg,max),10.4f,INK_SOFT,true);card.addView(details,lp(5,0));
         String extra="Movimiento "+duration(moving)+" · Detenido "+duration(stopped)+(amount>0?" · $ "+String.format(locale,"%.0f",amount):"");
@@ -340,6 +348,28 @@ public class HistoryActivity extends Activity {
         TextView open=text("VER RECORRIDO  ›",10.2f,ROUTE,true);open.setGravity(Gravity.RIGHT);card.addView(open,lp(6,0));
         card.setOnClickListener(v->{Intent d=new Intent(this,TripDetailActivity.class);d.putExtra("trip_id",id);startActivity(d);});
         return card;
+    }
+
+    private View stopsBlock(JSONArray stops){
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(10),dp(7),dp(8),dp(7));box.setBackground(roundedGradient(Color.rgb(250,248,239),Color.rgb(246,250,246),Color.argb(90,164,112,15),12f,0.7f));
+        long total=0;for(int i=0;i<stops.length();i++){JSONObject s=stops.optJSONObject(i);if(s!=null)total+=Math.max(0,(s.optLong("ended_at_ms",System.currentTimeMillis())-s.optLong("started_at_ms",0)));}
+        TextView title=text("PARADAS REGISTRADAS · "+stops.length()+" · "+duration(total),9.7f,GOLD_DEEP,true);box.addView(title);
+        SimpleDateFormat tf=new SimpleDateFormat("HH:mm",locale);
+        for(int i=0;i<stops.length();i++){
+            JSONObject s=stops.optJSONObject(i);if(s==null)continue;long a=s.optLong("started_at_ms",0),b=s.optLong("ended_at_ms",0);long d=Math.max(0,(b>0?b:System.currentTimeMillis())-a);String address=s.optString("address","");if(address.isEmpty()){String z=s.optString("zone","");if(!s.isNull("lat")&&!s.isNull("lon"))address=AddressResolver.fallback(s.optDouble("lat"),s.optDouble("lon"),z);else address=z;}
+            LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(0,dp(5),0,0);
+            TextView n=text((i+1)+".",9.5f,GOLD_DEEP,true);row.addView(n,new LinearLayout.LayoutParams(dp(20),-2));
+            LinearLayout copy=new LinearLayout(this);copy.setOrientation(LinearLayout.VERTICAL);TextView line=text("Parada "+(i+1)+" · "+(a>0?tf.format(new Date(a)):"")+" · "+duration(d),9.5f,INK,true);TextView where=text(address,9.2f,INK_SOFT,false);where.setSingleLine(true);where.setEllipsize(TextUtils.TruncateAt.END);copy.addView(line);copy.addView(where);row.addView(copy,new LinearLayout.LayoutParams(0,-2,1));
+            if(!s.isNull("lat")&&!s.isNull("lon")){double lat=s.optDouble("lat"),lon=s.optDouble("lon");String label=address;TextView nav=text("↗",15,TEAL_DARK,true);nav.setGravity(Gravity.CENTER);nav.setBackground(roundedGradient(Color.rgb(255,255,251),Color.rgb(239,248,245),Color.argb(120,17,111,118),14f,0.8f));nav.setOnClickListener(v->openNavigation(lat,lon,label));row.addView(nav,new LinearLayout.LayoutParams(dp(34),dp(32)));}
+            box.addView(row);
+        }
+        return box;
+    }
+
+    private String pickupText(JSONObject o){
+        String a=o.optString("pickup_address","");if(!a.isEmpty())return a;
+        if(!o.isNull("pickup_lat")&&!o.isNull("pickup_lon"))return AddressResolver.fallback(o.optDouble("pickup_lat"),o.optDouble("pickup_lon"),o.optString("start_zone",""));
+        return "Punto de recogida";
     }
 
     private View shiftHeader(String shiftId,List<JSONObject> trips,int number){

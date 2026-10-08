@@ -7,17 +7,19 @@ import org.json.*;
 
 public final class TrackDb extends SQLiteOpenHelper {
     static final String DB_NAME = "mapa_trayectos.db";
-    static final int DB_VERSION = 3;
+    static final int DB_VERSION = 4;
 
     public TrackDb(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("create table shifts(shift_id text primary key, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, trip_ms integer not null default 0, start_zone text, end_zone text, synced integer not null default 0)");
-        db.execSQL("create table trips(trip_id text primary key, shift_id text not null, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, max_speed_kmh real not null default 0, avg_speed_kmh real not null default 0, start_zone text, end_zone text, start_lat real, start_lon real, end_lat real, end_lon real, start_address text, end_address text, trip_type text not null default 'other', trip_status text not null default 'completed', amount_uyu real, synced integer not null default 0)");
+        db.execSQL("create table trips(trip_id text primary key, shift_id text not null, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, max_speed_kmh real not null default 0, avg_speed_kmh real not null default 0, start_zone text, end_zone text, start_lat real, start_lon real, end_lat real, end_lon real, start_address text, end_address text, trip_type text not null default 'other', trip_status text not null default 'completed', amount_uyu real, trip_stage text not null default 'completed', pickup_at_ms integer, pickup_lat real, pickup_lon real, pickup_address text, pickup_distance_m real not null default 0, pickup_moving_ms integer not null default 0, pickup_stopped_ms integer not null default 0, synced integer not null default 0)");
         db.execSQL("create table points(point_id text primary key, shift_id text not null, trip_id text, recorded_at_ms integer not null, lat real not null, lon real not null, accuracy_m real, speed_kmh real, bearing_deg real, zone text, in_trip integer not null default 0, synced integer not null default 0)");
+        db.execSQL("create table trip_stops(stop_id text primary key, trip_id text not null, started_at_ms integer not null, ended_at_ms integer, lat real, lon real, address text, zone text)");
         db.execSQL("create index idx_points_trip on points(trip_id, recorded_at_ms)");
         db.execSQL("create index idx_points_shift on points(shift_id, recorded_at_ms)");
         db.execSQL("create index idx_trips_started on trips(started_at_ms desc)");
+        db.execSQL("create index idx_stops_trip on trip_stops(trip_id, started_at_ms)");
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -34,6 +36,18 @@ public final class TrackDb extends SQLiteOpenHelper {
             try{db.execSQL("alter table trips add column start_address text");}catch(Exception ignored){}
             try{db.execSQL("alter table trips add column end_address text");}catch(Exception ignored){}
         }
+        if(oldVersion<4){
+            try{db.execSQL("alter table trips add column trip_stage text not null default 'completed'");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_at_ms integer");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_lat real");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_lon real");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_address text");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_distance_m real not null default 0");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_moving_ms integer not null default 0");}catch(Exception ignored){}
+            try{db.execSQL("alter table trips add column pickup_stopped_ms integer not null default 0");}catch(Exception ignored){}
+            try{db.execSQL("create table if not exists trip_stops(stop_id text primary key, trip_id text not null, started_at_ms integer not null, ended_at_ms integer, lat real, lon real, address text, zone text)");}catch(Exception ignored){}
+            try{db.execSQL("create index if not exists idx_stops_trip on trip_stops(trip_id, started_at_ms)");}catch(Exception ignored){}
+        }
     }
 
     public void beginShift(String id, long startedAt, String zone) {
@@ -46,28 +60,50 @@ public final class TrackDb extends SQLiteOpenHelper {
         getWritableDatabase().update("shifts",v,"shift_id=?",new String[]{id});
     }
 
-    public void beginTrip(String id, String shiftId, long startedAt, String zone) {
-        beginTrip(id,shiftId,startedAt,zone,"other");
-    }
-
-    public void beginTrip(String id, String shiftId, long startedAt, String zone, String tripType) {
-        beginTrip(id,shiftId,startedAt,zone,tripType,null,null,null);
-    }
+    public void beginTrip(String id, String shiftId, long startedAt, String zone) { beginTrip(id,shiftId,startedAt,zone,"other"); }
+    public void beginTrip(String id, String shiftId, long startedAt, String zone, String tripType) { beginTrip(id,shiftId,startedAt,zone,tripType,null,null,null); }
 
     public void beginTrip(String id,String shiftId,long startedAt,String zone,String tripType,Double startLat,Double startLon,String startAddress) {
         ContentValues v=new ContentValues();v.put("trip_id",id);v.put("shift_id",shiftId);v.put("started_at_ms",startedAt);v.put("start_zone",zone);v.put("end_zone",zone);
         if(startLat!=null)v.put("start_lat",startLat);if(startLon!=null)v.put("start_lon",startLon);if(startAddress!=null&&!startAddress.isEmpty())v.put("start_address",startAddress);
-        v.put("trip_type",normalizeType(tripType));v.put("trip_status","active");v.putNull("amount_uyu");v.put("synced",0);
+        v.put("trip_type",normalizeType(tripType));v.put("trip_status","active");v.put("trip_stage","to_pickup");v.putNull("amount_uyu");v.put("synced",0);
         getWritableDatabase().insertWithOnConflict("trips",null,v,SQLiteDatabase.CONFLICT_IGNORE);
+    }
+
+    public void setTripStage(String id,String stage){
+        ContentValues v=new ContentValues();v.put("trip_stage",stage==null?"onboard":stage);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
     public void setTripStartLocation(String id,double lat,double lon,String address){
         ContentValues v=new ContentValues();v.put("start_lat",lat);v.put("start_lon",lon);if(address!=null&&!address.isEmpty())v.put("start_address",address);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
+    public void markPassengerPickedUp(String id,long at,Double lat,Double lon,String address,double distanceM,long movingMs,long stoppedMs){
+        ContentValues v=new ContentValues();v.put("pickup_at_ms",at);if(lat!=null)v.put("pickup_lat",lat);if(lon!=null)v.put("pickup_lon",lon);if(address!=null&&!address.isEmpty())v.put("pickup_address",address);v.put("pickup_distance_m",Math.max(0,distanceM));v.put("pickup_moving_ms",Math.max(0,movingMs));v.put("pickup_stopped_ms",Math.max(0,stoppedMs));v.put("trip_stage","onboard");v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
+    }
+
+    public void setTripPickupLocation(String id,double lat,double lon,String address){
+        ContentValues v=new ContentValues();v.put("pickup_lat",lat);v.put("pickup_lon",lon);if(address!=null&&!address.isEmpty())v.put("pickup_address",address);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
+    }
+
     public void setTripEndLocation(String id,double lat,double lon,String address){
         ContentValues v=new ContentValues();v.put("end_lat",lat);v.put("end_lon",lon);if(address!=null&&!address.isEmpty())v.put("end_address",address);v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
+
+    public void beginStop(String stopId,String tripId,long startedAt,Double lat,Double lon,String address,String zone){
+        ContentValues v=new ContentValues();v.put("stop_id",stopId);v.put("trip_id",tripId);v.put("started_at_ms",startedAt);if(lat!=null)v.put("lat",lat);if(lon!=null)v.put("lon",lon);if(address!=null&&!address.isEmpty())v.put("address",address);v.put("zone",zone);
+        getWritableDatabase().insertWithOnConflict("trip_stops",null,v,SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public void finishStop(String stopId,long endedAt){
+        ContentValues v=new ContentValues();v.put("ended_at_ms",endedAt);getWritableDatabase().update("trip_stops",v,"stop_id=?",new String[]{stopId});
+    }
+
+    public void setStopLocation(String stopId,double lat,double lon,String address,String zone){
+        ContentValues v=new ContentValues();v.put("lat",lat);v.put("lon",lon);if(address!=null&&!address.isEmpty())v.put("address",address);if(zone!=null)v.put("zone",zone);getWritableDatabase().update("trip_stops",v,"stop_id=?",new String[]{stopId});
+    }
+
+    public JSONArray listTripStops(String tripId){ return many("select * from trip_stops where trip_id=? order by started_at_ms",new String[]{tripId}); }
 
     public int backfillTripEndpointsFromPoints(){
         int changed=0;Cursor trips=getReadableDatabase().rawQuery("select trip_id,start_lat,start_lon,end_lat,end_lon from trips",null);
@@ -89,7 +125,7 @@ public final class TrackDb extends SQLiteOpenHelper {
     }
 
     public void finalizeTrip(String id,String status,Double amountUyu){
-        ContentValues v=new ContentValues();v.put("trip_status",normalizeStatus(status));if(amountUyu==null)v.putNull("amount_uyu");else v.put("amount_uyu",Math.max(0,amountUyu));v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
+        ContentValues v=new ContentValues();v.put("trip_status",normalizeStatus(status));v.put("trip_stage","completed");if(amountUyu==null)v.putNull("amount_uyu");else v.put("amount_uyu",Math.max(0,amountUyu));v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
     public void addPoint(String pointId,String shiftId,String tripId,long ts,double lat,double lon,float accuracy,float speed,float bearing,String zone,boolean inTrip) {
@@ -101,7 +137,7 @@ public final class TrackDb extends SQLiteOpenHelper {
     public JSONObject getTrip(String id) { return one("select * from trips where trip_id=?",new String[]{id}); }
     public JSONArray listTrips() { return many("select * from trips order by started_at_ms desc",null); }
     public JSONArray listShifts() { return many("select * from shifts order by started_at_ms desc",null); }
-    public JSONObject counts() { JSONObject o=new JSONObject();try{o.put("shifts",scalarCount("shifts"));o.put("trips",scalarCount("trips"));o.put("points",scalarCount("points"));}catch(Exception ignored){}return o; }
+    public JSONObject counts() { JSONObject o=new JSONObject();try{o.put("shifts",scalarCount("shifts"));o.put("trips",scalarCount("trips"));o.put("points",scalarCount("points"));o.put("stops",scalarCount("trip_stops"));}catch(Exception ignored){}return o; }
     public void checkpoint() { Cursor c=getWritableDatabase().rawQuery("PRAGMA wal_checkpoint(FULL)",null);try{if(c.moveToFirst()){} }finally{c.close();} }
     public JSONArray getTripPoints(String tripId) { return many("select * from points where trip_id=? order by recorded_at_ms",new String[]{tripId}); }
     public JSONArray getRoutePoints(String shiftId,String tripId) { if(tripId!=null&&!tripId.isEmpty())return getTripPoints(tripId);return many("select * from points where shift_id=? order by recorded_at_ms",new String[]{shiftId}); }
