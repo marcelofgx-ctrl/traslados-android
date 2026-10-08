@@ -7,12 +7,12 @@ import org.json.*;
 
 public final class TrackDb extends SQLiteOpenHelper {
     static final String DB_NAME = "mapa_trayectos.db";
-    static final int DB_VERSION = 4;
+    static final int DB_VERSION = 5;
 
     public TrackDb(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
     @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("create table shifts(shift_id text primary key, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, trip_ms integer not null default 0, start_zone text, end_zone text, synced integer not null default 0)");
+        db.execSQL("create table shifts(shift_id text primary key, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, trip_ms integer not null default 0, paused_ms integer not null default 0, pause_count integer not null default 0, start_zone text, end_zone text, synced integer not null default 0)");
         db.execSQL("create table trips(trip_id text primary key, shift_id text not null, started_at_ms integer not null, ended_at_ms integer, distance_m real not null default 0, moving_ms integer not null default 0, stopped_ms integer not null default 0, max_speed_kmh real not null default 0, avg_speed_kmh real not null default 0, start_zone text, end_zone text, start_lat real, start_lon real, end_lat real, end_lon real, start_address text, end_address text, trip_type text not null default 'other', trip_status text not null default 'completed', amount_uyu real, trip_stage text not null default 'completed', pickup_at_ms integer, pickup_lat real, pickup_lon real, pickup_address text, pickup_distance_m real not null default 0, pickup_moving_ms integer not null default 0, pickup_stopped_ms integer not null default 0, synced integer not null default 0)");
         db.execSQL("create table points(point_id text primary key, shift_id text not null, trip_id text, recorded_at_ms integer not null, lat real not null, lon real not null, accuracy_m real, speed_kmh real, bearing_deg real, zone text, in_trip integer not null default 0, synced integer not null default 0)");
         db.execSQL("create table trip_stops(stop_id text primary key, trip_id text not null, started_at_ms integer not null, ended_at_ms integer, lat real, lon real, address text, zone text)");
@@ -48,6 +48,15 @@ public final class TrackDb extends SQLiteOpenHelper {
             try{db.execSQL("create table if not exists trip_stops(stop_id text primary key, trip_id text not null, started_at_ms integer not null, ended_at_ms integer, lat real, lon real, address text, zone text)");}catch(Exception ignored){}
             try{db.execSQL("create index if not exists idx_stops_trip on trip_stops(trip_id, started_at_ms)");}catch(Exception ignored){}
         }
+        if(oldVersion<5){
+            try{db.execSQL("alter table shifts add column paused_ms integer not null default 0");}catch(Exception ignored){}
+            try{db.execSQL("alter table shifts add column pause_count integer not null default 0");}catch(Exception ignored){}
+        }
+    }
+
+    public void updateShiftPaused(String shiftId,long pausedMs,int pauseCount){
+        ContentValues v=new ContentValues();v.put("paused_ms",Math.max(0,pausedMs));v.put("pause_count",Math.max(0,pauseCount));
+        getWritableDatabase().update("shifts",v,"shift_id=?",new String[]{shiftId});
     }
 
     public void beginShift(String id, long startedAt, String zone) {
