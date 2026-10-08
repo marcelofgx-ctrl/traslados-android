@@ -41,6 +41,9 @@ public class MainActivity extends Activity {
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
     private SlideActionView slider,endShiftSlider;
     private FrameLayout rootFrame;
+    private TextView quickActionsAnchor;
+    private View activeReminderCallout;
+    private final Runnable dismissReminderCallout=()->hideInAppReminder(false);
     private LinearLayout bottomSheet;
     private HistoryBottomSheet historySheet;
     private View sheetHandle;
@@ -71,6 +74,15 @@ public class MainActivity extends Activity {
 
     private boolean resetAfterBackup=false;
 
+    public static final String ACTION_REMINDER_POPUP="uy.com.mapatrayectos.REMINDER_POPUP";
+    private final BroadcastReceiver reminderReceiver=new BroadcastReceiver(){
+        @Override public void onReceive(Context context,Intent intent){
+            if(ACTION_REMINDER_POPUP.equals(intent.getAction())){
+                int id=intent.getIntExtra("id",-1);
+                if(id>0)showInAppReminder(id);
+            }
+        }
+    };
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{
         if(loc==null)return;float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;if(accuracy>45f)return;long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>160f)return;
@@ -100,6 +112,8 @@ public class MainActivity extends Activity {
 
         TextView quickActions=text("✦",22,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions));
         FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
+        quickActionsAnchor=quickActions;
+        quickActions.addOnLayoutChangeListener((view,l,t,r,b,oldL,oldT,oldR,oldB)->storeReminderAnchor());
 
         bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(16),dp(5),dp(16),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
 
@@ -631,24 +645,35 @@ public class MainActivity extends Activity {
     private void cycleSheetState(){int max=maxSheetState();setSheetState(sheetState>=max?0:sheetState+1,true);if(sheetHandle!=null)sheetHandle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);}
     private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(SHEET_MID_DP);int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
 
+    /** The approved three-card composition: gold pictogram at left, small caption above large figure. */
     private TextView shiftCard(LinearLayout row,String label,String value){
-        LinearLayout box=new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER);
-        box.setPadding(dp(3),dp(4),dp(3),dp(3));
-        box.setBackground(premiumGradient(Color.rgb(6,48,56),Color.rgb(9,70,73),Color.argb(195,231,202,130),13f,0.75f));
-        TextView caption=text(label,8.4f,CHAMPAGNE,true);
-        caption.setGravity(Gravity.CENTER);
-        caption.setLetterSpacing(.065f);
-        TextView amount=text(value,14.2f,TEXT,true);
-        amount.setGravity(Gravity.CENTER);
+        LinearLayout card=new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(6),dp(4),dp(5),dp(4));
+        card.setBackground(premiumGradient(Color.rgb(6,48,56),Color.rgb(9,70,73),
+                Color.argb(230,231,202,130),13f,0.8f));
+        int iconType="JORNADA".equals(label)?ShiftSummaryIconView.SUN:
+            "KM".equals(label)?ShiftSummaryIconView.ROAD:ShiftSummaryIconView.CAR;
+        ShiftSummaryIconView icon=new ShiftSummaryIconView(this,iconType);
+        card.addView(icon,new LinearLayout.LayoutParams(dp(27),dp(31)));
+        LinearLayout numbers=new LinearLayout(this);numbers.setOrientation(LinearLayout.VERTICAL);
+        numbers.setGravity(Gravity.CENTER_VERTICAL);
+        TextView caption=text(label,8.8f,CHAMPAGNE,true);
+        caption.setLetterSpacing(.02f);
+        caption.setSingleLine(true);
+        TextView amount=text(value,14.4f,TEXT,true);
         amount.setSingleLine(true);
-        amount.setAutoSizeTextTypeUniformWithConfiguration(10,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
-        box.addView(caption,new LinearLayout.LayoutParams(-1,dp(14)));
-        box.addView(amount,new LinearLayout.LayoutParams(-1,dp(22)));
-        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-1,1);
-        params.setMargins(dp(3),0,dp(3),0);
-        row.addView(box,params);
+        amount.setIncludeFontPadding(false);
+        amount.setAutoSizeTextTypeUniformWithConfiguration(11,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        numbers.addView(caption,new LinearLayout.LayoutParams(-1,dp(16)));
+        numbers.addView(amount,new LinearLayout.LayoutParams(-1,dp(21)));
+        LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(0,dp(39),1);
+        np.leftMargin=dp(4);
+        card.addView(numbers,np);
+        LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-1,1);
+        cp.setMargins(dp(3),0,dp(3),0);
+        row.addView(card,cp);
         return amount;
     }
 
@@ -730,8 +755,58 @@ public class MainActivity extends Activity {
     }
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
-    @Override protected void onResume(){super.onResume();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
-    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
+    /** Actual location of the star in screen coordinates, for the background overlay fallback. */
+    private void storeReminderAnchor(){
+        if(quickActionsAnchor==null||!quickActionsAnchor.isAttachedToWindow())return;
+        int[] p=new int[2];quickActionsAnchor.getLocationOnScreen(p);
+        getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
+            .putInt("reminder_anchor_x",p[0]).putInt("reminder_anchor_y",p[1])
+            .putInt("reminder_anchor_size",quickActionsAnchor.getWidth()).apply();
+    }
+    /** Foreground alerts are actual child views of the map, requiring no Android overlay permission. */
+    private void showInAppReminder(int id){
+        if(rootFrame==null||quickActionsAnchor==null)return;
+        ReminderStore.Item item=ReminderStore.get(this,id);
+        if(item==null||item.done)return;
+        hideInAppReminder(false);
+        int totalWidth=dp(ReminderCallout.TOTAL_WIDTH_DP);
+        int starLeft=quickActionsAnchor.getLeft();
+        int starMid=quickActionsAnchor.getTop()+quickActionsAnchor.getHeight()/2;
+        // Tip touches the left side of the visible ✦ button with no separate floating window.
+        int x=Math.max(dp(4),starLeft-totalWidth+dp(1));
+        int y=Math.max(dp(62),starMid-dp(ReminderCallout.TAIL_CENTER_DP));
+        ReminderCallout card=new ReminderCallout(this,item.text,
+            ()->{ReminderStore.change(this,id,true,false,-1);hideInAppReminder(true);},
+            ()->{ReminderStore.change(this,id,false,false,System.currentTimeMillis()+600000L);hideInAppReminder(true);},
+            ()->hideInAppReminder(true));
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(totalWidth,-2,Gravity.TOP|Gravity.LEFT);
+        lp.leftMargin=x;lp.topMargin=y;
+        rootFrame.addView(card,lp);activeReminderCallout=card;
+        card.reveal();
+        uiHandler.removeCallbacks(dismissReminderCallout);
+        uiHandler.postDelayed(dismissReminderCallout,30000L);
+    }
+    private void hideInAppReminder(boolean animated){
+        uiHandler.removeCallbacks(dismissReminderCallout);
+        View current=activeReminderCallout;
+        if(current==null)return;
+        activeReminderCallout=null;
+        if(animated&&current instanceof ReminderCallout){
+            ((ReminderCallout)current).vanish(()->{
+                if(current.getParent() instanceof android.view.ViewGroup)
+                    ((android.view.ViewGroup)current.getParent()).removeView(current);
+            });
+        }else if(current.getParent() instanceof android.view.ViewGroup)
+            ((android.view.ViewGroup)current.getParent()).removeView(current);
+    }
+    @Override protected void onResume(){super.onResume();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
+        if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
+        if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
+    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+        try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
+        hideInAppReminder(false);
+        stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
