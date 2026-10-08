@@ -16,7 +16,7 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 
 | R22.2 | 32 | Completar 13 sonidos originales; pruebas individualizadas de cada evento; pausa/reanudación, Cabify, botones, cierre; reproductor con referencia viva y registro de fallos | Éxito, run 37812971829, APK SHA-256 ca7095fab62d3e6ccb5ec33d2b4bd68dae09e1f044688f35aae55dafd8cd232d | Prueba en Samsung pendiente |
 
-| R22.3 | 33 | Recordatorios Samsung: interpreta HH:mm sin «hoy», alarma exacta si autorizada, permisos de notificaciones, diagnóstico/último disparo, prueba 1 minuto, aviso alta prioridad con Hecho/+10 min, globo overlay opcional con cola triangular | COMPILACIÓN EN PROGRESO | PENDIENTE DE PRUEBA EN TELÉFONO |
+| R22.3 | 33 | Recordatorios Samsung: interpreta HH:mm sin «hoy», alarmas exactas con permiso, diagnósticos, prueba 1 minuto, notificación alta prioridad y globo overlay opcional con cola triangular | BUILD RELEASE EXITOSO: run 37817234425; SHA256 9edcd9c09c0f526d2149ddac6073b0b54702b3b90b4fb8d8fadfe282f7187dcb; firma v2 original | PENDIENTE DE PRUEBA EN SAMSUNG |
 
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
@@ -94,3 +94,10 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - Recordatorios persistidos en SharedPreferences siguen intactos al actualizar de R22.2 a R22.3.
 - Validar dispositivo obligatoriamente: activar notificaciones y Alarmas y recordatorios, habilitar «Mostrar sobre otras aplicaciones» para globo, hacer «PROBAR ALERTA EN 1 MINUTO», dejar la app y bloquear pantalla, comprobar globo o aviso; probar «HECHO» y «+10 MIN» y otra alerta en hora real.
 - Estado R22.3: compilación pendiente o en curso; no marcar funcionalidad verificada en Samsung hasta feedback real.
+
+## Entrega R22.3
+- GitHub Actions RELEASE firmada: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37817234425
+- Artifact Mapa-Trayectos-v0.1-R22-3-RELEASE. Archivo: Mapa_Trayectos_v0.1_R22_3_RELEASE.apk.
+- El vínculo de descarga ChatGPT de sesión se crea a partir del ZIP de GitHub; no guardar sandbox paths como persistentes en documento maestro.
+- Se intentó crear carpeta de Drive bajo Versiones para R22.3, pero el conector de Google Drive bloqueó la operación. No está verificada una subida a Drive de R22.3.
+- Requiere permisos de notificaciones, Alarmas y recordatorios (exactas) y sobre otras aplicaciones para el globo; no vender como resultado probado sin prueba de teléfono.
