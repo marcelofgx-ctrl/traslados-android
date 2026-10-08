@@ -54,7 +54,8 @@ public class MainActivity extends Activity {
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
     private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=246,SHEET_FULL_DP=306;
-    private boolean shiftActive=false,tripActive=false,stopActive=false,follow=true,routeEnded=false;
+    private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
+    private long shiftPauseMs=0;
     private String shiftId="",tripId="",tripType="other",tripStage="none";
     private long shiftStarted=0,tripStarted=0,pickupAt=0,stopStarted=0,shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
     private double shiftDistance=0,tripDistance=0,tripMax=0;
@@ -78,7 +79,7 @@ public class MainActivity extends Activity {
         float shown=previewMoving?candidate:0f;if(stationaryGeometry&&candidate<13f)shown=0f;if(shown<3f)shown=0f;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=shown;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()&&shown>=5f?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);
     };
 
-    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);tripActive=live.getBoolean("trip_active",false);stopActive=live.getBoolean("stop_active",false);tripType=live.getString("trip_type","other");tripStage=live.getString("trip_stage",tripActive?"onboard":"none");pickupAt=live.getLong("pickup_at",0);stopStarted=live.getLong("stop_started",0);Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
+    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);shiftPaused=live.getBoolean("shift_paused",false);shiftPauseMs=live.getLong("total_pause_ms",0);tripActive=live.getBoolean("trip_active",false);stopActive=live.getBoolean("stop_active",false);tripType=live.getString("trip_type","other");tripStage=live.getString("trip_stage",tripActive?"onboard":"none");pickupAt=live.getLong("pickup_at",0);stopStarted=live.getLong("stop_started",0);Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
 
     private void buildUi(Bundle b){
         FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
@@ -217,6 +218,7 @@ public class MainActivity extends Activity {
 
     private void performSliderAction(){
         if(!shiftActive){if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0))maybeOfferBubblePermission();return;}
+        if(shiftPaused){sendAction(TrackingService.ACTION_RESUME_SHIFT,null,null,0);return;}
         if(!tripActive){TripFlowDialogs.chooseTripType(this,type->sendAction(TrackingService.ACTION_START_TRIP,type,null,0));return;}
         if("to_pickup".equals(tripStage)){sendAction(TrackingService.ACTION_PICKUP_PASSENGER,null,null,0);return;}
         if(stopActive){sendAction(TrackingService.ACTION_END_STOP,null,null,0);return;}
@@ -227,7 +229,7 @@ public class MainActivity extends Activity {
 
     private void applyState(Intent i){
         boolean oldTrip=tripActive;String oldTripId=tripId;
-        shiftActive=i.getBooleanExtra("shift_active",false);tripActive=i.getBooleanExtra("trip_active",false);stopActive=i.getBooleanExtra("stop_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");tripType=i.getStringExtra("trip_type");tripStage=i.getStringExtra("trip_stage");if(shiftId==null)shiftId="";if(tripId==null)tripId="";if(tripType==null||tripType.isEmpty())tripType="other";if(tripStage==null||tripStage.isEmpty())tripStage=tripActive?"onboard":"none";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);pickupAt=i.getLongExtra("pickup_at",0);stopStarted=i.getLongExtra("stop_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
+        shiftActive=i.getBooleanExtra("shift_active",false);shiftPaused=i.getBooleanExtra("shift_paused",false);shiftPauseMs=i.getLongExtra("pause_ms",0);tripActive=i.getBooleanExtra("trip_active",false);stopActive=i.getBooleanExtra("stop_active",false);shiftId=i.getStringExtra("shift_id");tripId=i.getStringExtra("trip_id");tripType=i.getStringExtra("trip_type");tripStage=i.getStringExtra("trip_stage");if(shiftId==null)shiftId="";if(tripId==null)tripId="";if(tripType==null||tripType.isEmpty())tripType="other";if(tripStage==null||tripStage.isEmpty())tripStage=tripActive?"onboard":"none";shiftStarted=i.getLongExtra("shift_started",0);tripStarted=i.getLongExtra("trip_started",0);pickupAt=i.getLongExtra("pickup_at",0);stopStarted=i.getLongExtra("stop_started",0);shiftDistance=i.getDoubleExtra("shift_distance",0);tripDistance=i.getDoubleExtra("trip_distance",0);shiftMoving=i.getLongExtra("shift_moving",0);shiftStopped=i.getLongExtra("shift_stopped",0);shiftTripMs=i.getLongExtra("shift_trip_ms",0);tripMoving=i.getLongExtra("trip_moving",0);tripStopped=i.getLongExtra("trip_stopped",0);tripMax=i.getDoubleExtra("trip_max",0);zone=i.getStringExtra("zone");if(zone==null||zone.isEmpty())zone="Buscando zona…";
         boolean justStarted=!oldTrip&&tripActive;
         if(justStarted){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
         boolean hasLoc=i.getBooleanExtra("has_location",false);
@@ -244,7 +246,7 @@ public class MainActivity extends Activity {
 
     private void updateUi(){
         if(sheetState>maxSheetState())setSheetState(maxSheetState(),true);
-        zoneText.setText(zone);if(bubbleBtn!=null)bubbleBtn.setBackground(headerButtonGradient(Settings.canDrawOverlays(this)?GREEN:GOLD,Color.argb(48,54,190,125)));long now=System.currentTimeMillis();long elapsed=shiftActive?Math.max(0,now-shiftStarted):0;long shownElapsed=tripActive?Math.max(0,now-tripStarted):elapsed;double shownDist=tripActive?tripDistance:shiftDistance;long mv=tripActive?tripMoving:shiftMoving;long st=tripActive?tripStopped:shiftStopped;long idle=shiftActive?Math.max(0,elapsed-shiftTripMs):0;
+        zoneText.setText(zone);if(bubbleBtn!=null)bubbleBtn.setBackground(headerButtonGradient(Settings.canDrawOverlays(this)?GREEN:GOLD,Color.argb(48,54,190,125)));long now=System.currentTimeMillis();long elapsed=shiftActive?Math.max(0,now-shiftStarted):0;long shownElapsed=tripActive?Math.max(0,now-tripStarted):elapsed;double shownDist=tripActive?tripDistance:shiftDistance;long mv=tripActive?tripMoving:shiftMoving;long st=tripActive?tripStopped:shiftStopped;long idle=shiftActive?Math.max(0,elapsed-shiftTripMs-shiftPauseMs):0;
         distanceText.setText(String.format(Locale.getDefault(),"%.1f",shownDist/1000.0));elapsedText.setText(formatDuration(shownElapsed));movingText.setText(formatDuration(mv));stoppedText.setText(formatDuration(st));
         if(stopActive&&stopStarted>0)idleText.setText("Parada registrada  "+formatDuration(now-stopStarted)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
         else if(tripActive&&pickupAt>0)idleText.setText("Con pasajero  "+formatDuration(now-pickupAt)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
@@ -252,6 +254,13 @@ public class MainActivity extends Activity {
 
         if(!shiftActive){
             sheetMetaText.setText("Preparado · GPS y recorridos");modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR PARA INICIAR JORNADA");
+        }else if(shiftPaused){
+            sheetMetaText.setText("Jornada pausada · no suma km ni minutos DET. · total pausa "+formatDuration(shiftPauseMs));
+            modeText.setText("JORNADA EN PAUSA · "+zone);
+            slider.setMode(SlideActionView.MODE_TRIP_START);
+            slider.setLabel("DESLIZAR PARA REANUDAR JORNADA");
+            endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);
+            endShiftSlider.setLabel("← CERRAR JORNADA");
         }else if(!tripActive){
             sheetMetaText.setText("Jornada en curso · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA · "+zone);slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR PARA IR A RECOGER");endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);endShiftSlider.setLabel("← CERRAR JORNADA");
         }else if("to_pickup".equals(tripStage)){
@@ -292,6 +301,16 @@ public class MainActivity extends Activity {
         TextView imp=text("⇧   Importar base",15,TEXT,true);imp.setGravity(Gravity.CENTER_VERTICAL);imp.setPadding(dp(10),0,dp(10),0);menu.addView(imp,new LinearLayout.LayoutParams(-1,dp(54)));
 
         View divider2=new View(this);divider2.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider2,new LinearLayout.LayoutParams(-1,dp(1)));
+        if(shiftActive&&!tripActive){
+            TextView pause=text(shiftPaused?"▶   Reanudar jornada":"Ⅱ   Pausar jornada",14.5f,TEXT,true);
+            pause.setGravity(Gravity.CENTER_VERTICAL);pause.setPadding(dp(10),0,dp(10),0);
+            menu.addView(pause,new LinearLayout.LayoutParams(-1,dp(52)));
+            pause.setOnClickListener(v->{
+                // Pop-up is created below; resolve its dismissal after it is shown.
+                sendAction(shiftPaused?TrackingService.ACTION_RESUME_SHIFT:TrackingService.ACTION_PAUSE_SHIFT,null,null,0);
+            });
+        }
+
         TextView wipe=text("♻   Empezar de cero",14.5f,TEXT,true);wipe.setGravity(Gravity.CENTER_VERTICAL);wipe.setPadding(dp(10),0,dp(10),0);
         menu.addView(wipe,new LinearLayout.LayoutParams(-1,dp(54)));
 
@@ -407,7 +426,7 @@ public class MainActivity extends Activity {
                 getSharedPreferences("tracking_state",MODE_PRIVATE).edit().clear().commit();
                 getSharedPreferences("mapa_feedback_state",MODE_PRIVATE).edit().clear().apply();
                 runOnUiThread(()->{
-                    shiftActive=false;tripActive=false;stopActive=false;shiftId="";tripId="";
+                    shiftActive=false;tripActive=false;stopActive=false;shiftPaused=false;shiftPauseMs=0;shiftId="";tripId="";
                     shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;
                     route.clear();loadedTripId="";
                     updateUi();startPreview();
@@ -534,7 +553,7 @@ public class MainActivity extends Activity {
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
-    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
+    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else startPreview();if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
     @Override protected void onPause(){if(shiftActive)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
