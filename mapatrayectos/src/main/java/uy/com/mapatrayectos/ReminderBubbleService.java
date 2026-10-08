@@ -22,7 +22,11 @@ public final class ReminderBubbleService extends Service {
         int id=intent==null?-1:intent.getIntExtra("id",-1);
         ReminderStore.Item item=ReminderStore.get(this,id);
         if(item==null||item.done){stopSelf();return START_NOT_STICKY;}
-        createForeground();
+        try{createForeground();}
+        catch(Exception ex){
+            android.util.Log.w("MapaReminders","Overlay service restricted by Android; normal notification stays",ex);
+            stopSelf();return START_NOT_STICKY;
+        }
         if(!Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
         try{show(item);}
         catch(Exception e){android.util.Log.w("MapaReminders","Cannot show speech overlay",e);stopSelf();}
