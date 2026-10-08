@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.text.InputType;
 import android.view.Gravity;
@@ -50,7 +51,7 @@ public final class QuickActionsMenu {
         content.addView(header,new LinearLayout.LayoutParams(-1,dp(activity,28)));
 
         PopupWindow popup=new PopupWindow(content,dp(activity,207),-2,true);
-        popup.setBackgroundDrawable(new TexturedDrawable(activity,PETROL,PETROL_LIGHT,Color.argb(210,231,202,130),17f,0.8f,false));
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         popup.setElevation(dp(activity,9));
         popup.setOutsideTouchable(true);
         popup.setOnDismissListener(()->{if(currentPopup==popup)currentPopup=null;});
