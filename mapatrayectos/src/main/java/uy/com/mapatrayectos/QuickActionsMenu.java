@@ -9,6 +9,8 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.provider.ContactsContract;
+import android.text.TextUtils;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
@@ -61,10 +63,10 @@ public final class QuickActionsMenu {
         popup.setOutsideTouchable(true);
         popup.setOnDismissListener(()->{if(currentPopup==popup)currentPopup=null;});
 
-        add(activity,content,"↗", "Enviar tarjeta",popup,()->askPhone(activity));
-        add(activity,content,"▣", "Contacto .VCF",popup,()->shareVcard(activity));
-        add(activity,content,"⌁", "Link de reservas",popup,()->shareLink(activity,"Reservas de traslados",BOOKING_URL));
-        add(activity,content,"⇩", "Link de descarga",popup,()->shareLink(activity,"Descargar aplicaciones de Traslados",DOWNLOAD_URL));
+        add(activity,content,"▣", "Tarjeta visual",popup,()->showCard(activity));
+        add(activity,content,"↗", "WhatsApp a número",popup,()->showWhatsAppNumber(activity));
+        add(activity,content,"+", "Guardar pasajero",popup,()->savePassenger(activity));
+        add(activity,content,"⌁", "Enlaces y contacto",popup,()->showShareHub(activity));
 
         currentPopup=popup;
         content.setAlpha(0f);
@@ -131,71 +133,187 @@ public final class QuickActionsMenu {
                 }).start();
     }
 
-    /** Primary action is the entered number; image sharing is explicitly a separate action. */
-    private static void askPhone(Activity a){
-        LinearLayout wrapper=new LinearLayout(a);
-        wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setPadding(dp(a,18),0,dp(a,18),dp(a,12));
-
-        Bitmap thumbnail=null;
+    /** Main transfer action: a real image, not a text message advertised as a card. */
+    private static void showCard(Activity a){
+        LinearLayout content=new LinearLayout(a);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(a,16),dp(a,8),dp(a,16),dp(a,9));
+        Bitmap thumb=null;
         try{
             Bitmap full=BusinessCardImage.render(a);
-            thumbnail=Bitmap.createScaledBitmap(full,720,405,true);
+            thumb=Bitmap.createScaledBitmap(full,900,506,true);
             full.recycle();
-            ImageView image=new ImageView(a);
-            image.setImageBitmap(thumbnail);
-            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(a,150));
-            imageLp.bottomMargin=dp(a,8);
-            wrapper.addView(image,imageLp);
+            ImageView preview=new ImageView(a);
+            preview.setImageBitmap(thumb);
+            preview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(a,205));
+            imageLp.bottomMargin=dp(a,6);
+            content.addView(preview,imageLp);
         }catch(Exception e){
-            Toast.makeText(a,"La vista previa no está disponible",Toast.LENGTH_SHORT).show();
+            Toast.makeText(a,"No se pudo obtener la vista previa",Toast.LENGTH_SHORT).show();
         }
-
-        TextView description=text(a,
-            "Ingresá un teléfono para abrir su chat con tus datos, aunque no esté agendado. Para enviar la tarjeta gráfica, elegí Compartir imagen.",
-            12.3f,Color.rgb(210,218,218),false);
-        description.setPadding(dp(a,8),dp(a,6),dp(a,6),dp(a,10));
-        wrapper.addView(description,new LinearLayout.LayoutParams(-1,-2));
-
-        EditText phone=new EditText(a);
-        phone.setInputType(InputType.TYPE_CLASS_PHONE);
-        phone.setSingleLine(true);
-        phone.setTextSize(16);
-        phone.setHint("099 123 456 o +598 99 123 456");
-        LinearLayout.LayoutParams numberLp=new LinearLayout.LayoutParams(-1,dp(a,54));
-        numberLp.bottomMargin=dp(a,11);
-        wrapper.addView(phone,numberLp);
-
-        final Bitmap toRecycle=thumbnail;
-        AlertDialog dialog=new AlertDialog.Builder(a)
-            .setTitle("Enviar tarjeta")
-            .setView(wrapper)
-            .create();
-
-        TextView send=dialogAction(a,"↗  ENVIAR AL NÚMERO",true);
-        TextView image=dialogAction(a,"▣  COMPARTIR IMAGEN",false);
-        TextView cancel=dialogAction(a,"CANCELAR",false);
-
-        wrapper.addView(send,dialogButtonLp(a));
-        wrapper.addView(image,dialogButtonLp(a));
-        wrapper.addView(cancel,dialogButtonLp(a)); // Cancelar siempre al final.
-
-        send.setOnClickListener(v->{
-            String number=normalizePhone(phone.getText().toString());
-            if(number==null){
-                phone.setError("Escribí un número válido, con código de país si corresponde");
-                phone.requestFocus();
-                return;
-            }
-            if(openWhatsApp(a,number))dialog.dismiss();
+        TextView hint=text(a,
+            "Se enviará esta imagen con el logo C y el QR. WhatsApp te permitirá elegir el destinatario y confirmar.",
+            12.5f,Color.rgb(48,74,79),false);
+        hint.setPadding(dp(a,6),dp(a,4),dp(a,6),dp(a,11));
+        content.addView(hint,new LinearLayout.LayoutParams(-1,-2));
+        final Bitmap toRecycle=thumb;
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("Mi tarjeta de traslados")
+            .setView(content).create();
+        addDialogAction(a,content,"▣  COMPARTIR POR WHATSAPP",true,()->{
+            if(shareBusinessImage(a))dialog.dismiss();
         });
-        image.setOnClickListener(v->{if(shareBusinessImage(a))dialog.dismiss();});
-        cancel.setOnClickListener(v->dialog.dismiss());
+        addDialogAction(a,content,"▤  CONTACTO PARA GUARDAR (.VCF)",false,()->{
+            if(shareVcard(a))dialog.dismiss();
+        });
+        addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
         dialog.setOnDismissListener(d->{
             if(toRecycle!=null&&!toRecycle.isRecycled())toRecycle.recycle();
         });
         dialog.show();
+    }
+
+    /** Click-to-chat works for a number even when not saved to Contacts. No image attachment. */
+    private static void showWhatsAppNumber(Activity a){
+        LinearLayout content=new LinearLayout(a);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(a,18),dp(a,7),dp(a,18),dp(a,10));
+        TextView hint=text(a,"Abrí una conversación sin agendar al pasajero. Se prepara un saludo breve; confirmás el envío dentro de WhatsApp.",12.6f,Color.rgb(45,70,75),false);
+        hint.setPadding(0,0,0,dp(a,11));
+        content.addView(hint);
+        EditText number=formField(a,"Número: 099 123 456 o +598…",InputType.TYPE_CLASS_PHONE);
+        content.addView(number,new LinearLayout.LayoutParams(-1,dp(a,54)));
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("WhatsApp a un número")
+            .setView(content).create();
+        addDialogAction(a,content,"↗  ABRIR WHATSAPP",true,()->{
+            String normalized=normalizePhone(number.getText().toString());
+            if(normalized==null){
+                number.setError("Verificá el número; para otros países incluí el prefijo");
+                number.requestFocus();return;
+            }
+            if(openWhatsApp(a,normalized))dialog.dismiss();
+        });
+        addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
+        dialog.show();
+    }
+
+    /** Contacts app reviews the proposed passenger. This app never writes contacts silently. */
+    private static void savePassenger(Activity a){
+        LinearLayout content=new LinearLayout(a);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(a,18),dp(a,8),dp(a,18),dp(a,10));
+        TextView hint=text(a,"Completá los datos y confirmá el guardado en la agenda del teléfono.",12.6f,Color.rgb(49,73,76),false);
+        hint.setPadding(0,0,0,dp(a,6));content.addView(hint);
+        TextView nameLabel=text(a,"NOMBRE DEL PASAJERO",11.2f,PETROL,true);
+        content.addView(nameLabel);
+        EditText name=formField(a,"Nombre y apellido",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        content.addView(name,new LinearLayout.LayoutParams(-1,dp(a,52)));
+        TextView phoneLabel=text(a,"TELÉFONO",11.2f,PETROL,true);
+        phoneLabel.setPadding(0,dp(a,8),0,0);content.addView(phoneLabel);
+        EditText phone=formField(a,"099 123 456 o +598 99…",InputType.TYPE_CLASS_PHONE);
+        content.addView(phone,new LinearLayout.LayoutParams(-1,dp(a,52)));
+        TextView companyLabel=text(a,"EMPRESA (OPCIONAL)",11.2f,PETROL,true);
+        companyLabel.setPadding(0,dp(a,8),0,0);content.addView(companyLabel);
+        EditText company=formField(a,"Empresa",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        content.addView(company,new LinearLayout.LayoutParams(-1,dp(a,52)));
+
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("Guardar pasajero")
+            .setView(content).create();
+        addDialogAction(a,content,"+  ABRIR AGENDA Y GUARDAR",true,()->{
+            String fullName=name.getText().toString().trim();
+            if(TextUtils.isEmpty(fullName)){name.setError("Ingresá el nombre");name.requestFocus();return;}
+            String normalized=normalizePhone(phone.getText().toString());
+            if(normalized==null){phone.setError("Número inválido");phone.requestFocus();return;}
+            Intent insert=new Intent(Intent.ACTION_INSERT);
+            insert.setType(ContactsContract.Contacts.CONTENT_TYPE);
+            insert.putExtra(ContactsContract.Intents.Insert.NAME,fullName);
+            insert.putExtra(ContactsContract.Intents.Insert.PHONE,"+"+normalized);
+            String org=company.getText().toString().trim();
+            if(!org.isEmpty())insert.putExtra(ContactsContract.Intents.Insert.COMPANY,org);
+            try{a.startActivity(insert);dialog.dismiss();}
+            catch(Exception error){Toast.makeText(a,"No se pudo abrir la agenda de contactos",Toast.LENGTH_LONG).show();}
+        });
+        addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
+        dialog.getWindow();
+        dialog.show();
+        if(dialog.getWindow()!=null)dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    }
+
+    private static EditText formField(Activity a,String hint,int type){
+        EditText input=new EditText(a);
+        input.setInputType(type);
+        input.setSingleLine(true);
+        input.setTextSize(15);
+        input.setTextColor(Color.rgb(15,51,59));
+        input.setHintTextColor(Color.rgb(112,124,125));
+        input.setHint(hint);
+        return input;
+    }
+
+    private static void addDialogAction(Activity a,LinearLayout content,String label,
+                                        boolean primary,Runnable callback){
+        TextView button=dialogAction(a,label,primary);
+        content.addView(button,dialogButtonLp(a));
+        button.setOnClickListener(v->callback.run());
+    }
+
+    /** Keeps the quick menu small while preserving all previous sharing functions. */
+    private static void showShareHub(Activity a){
+        LinearLayout content=new LinearLayout(a);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(a,18),dp(a,9),dp(a,18),dp(a,12));
+        TextView hint=text(a,"Compartí tu contacto o los enlaces del emprendimiento.",12.7f,Color.rgb(43,72,78),false);
+        hint.setPadding(0,0,0,dp(a,8));content.addView(hint);
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("Enlaces y contacto")
+            .setView(content).create();
+        addDialogAction(a,content,"▤  CONTACTO .VCF",true,()->{
+            if(shareVcard(a))dialog.dismiss();
+        });
+        addDialogAction(a,content,"⌁  WEB DE RESERVAS",false,()->{
+            dialog.dismiss();shareEditableLink(a,"booking_url","Reservas de traslados",BOOKING_URL);
+        });
+        addDialogAction(a,content,"⇩  DESCARGAR LA APP",false,()->{
+            dialog.dismiss();shareEditableLink(a,"download_url","Enlace de descarga de la aplicación",DOWNLOAD_URL);
+        });
+        addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
+        dialog.show();
+    }
+
+    /** Project URL was never verified; require human confirmation before first share. */
+    private static void shareEditableLink(Activity a,String key,String title,String proposed){
+        android.content.SharedPreferences prefs=a.getSharedPreferences("share_links",Activity.MODE_PRIVATE);
+        String current=prefs.getString(key,proposed);
+        if(prefs.getBoolean(key+"_confirmed",false)&&validUrl(current)){
+            shareLink(a,title,current);return;
+        }
+        LinearLayout content=new LinearLayout(a);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(a,18),dp(a,7),dp(a,18),dp(a,9));
+        TextView notice=text(a,
+            "Este enlace todavía no está confirmado. Revisalo o reemplazalo por la dirección real antes de compartir.",
+            12.5f,Color.rgb(50,76,80),false);
+        content.addView(notice);
+        EditText url=formField(a,"https://…",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
+        url.setText(current);
+        content.addView(url,new LinearLayout.LayoutParams(-1,dp(a,60)));
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle(title)
+            .setView(content).create();
+        addDialogAction(a,content,"COMPARTIR Y RECORDAR ENLACE",true,()->{
+            String value=url.getText().toString().trim();
+            if(!validUrl(value)){url.setError("Ingresá una dirección HTTPS válida");return;}
+            prefs.edit().putString(key,value).putBoolean(key+"_confirmed",true).apply();
+            dialog.dismiss();shareLink(a,title,value);
+        });
+        addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
+        dialog.show();
+    }
+
+    private static boolean validUrl(String value){
+        try{
+            Uri uri=Uri.parse(value);
+            return "https".equalsIgnoreCase(uri.getScheme())
+                &&uri.getHost()!=null&&uri.getHost().contains(".");
+        }catch(Exception e){return false;}
     }
 
     private static LinearLayout.LayoutParams dialogButtonLp(Activity a){
@@ -250,11 +368,7 @@ public final class QuickActionsMenu {
     }
 
     private static boolean openWhatsApp(Activity a,String number){
-        String message="*Marcelo Fernández*\n"
-            +"Traslados programados\n"
-            +"Tel.: "+PHONE+"\n"
-            +"Contacto: "+BusinessCardImage.CONTACT_URL+"\n"
-            +"Guardá mis datos para tu próximo traslado.";
+        String message="Hola, soy Marcelo Fernández. Te dejo mi contacto para cuando necesites un traslado: "+PHONE+". ¡Saludos!";
         try{
             String encoded=URLEncoder.encode(message,"UTF-8");
             // Official click-to-chat link works for unlisted numbers. WhatsApp still requires
@@ -284,7 +398,7 @@ public final class QuickActionsMenu {
         return number;
     }
 
-    private static void shareVcard(Activity a){
+    private static boolean shareVcard(Activity a){
         try{
             StringBuilder vcard=new StringBuilder();
             vcard.append("BEGIN:VCARD\r\nVERSION:3.0\r\n");
@@ -327,8 +441,10 @@ public final class QuickActionsMenu {
             send.setClipData(ClipData.newUri(a.getContentResolver(),"Contacto Marcelo",uri));
             send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             a.startActivity(Intent.createChooser(send,"Enviar contacto con logo C"));
+            return true;
         }catch(Exception e){
             Toast.makeText(a,"No se pudo compartir el archivo VCF: "+e.getMessage(),Toast.LENGTH_LONG).show();
+            return false;
         }
     }
 
