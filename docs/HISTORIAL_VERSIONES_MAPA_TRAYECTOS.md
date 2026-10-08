@@ -14,6 +14,8 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 | R22 | 30 | Recordatorios locales tipo chat, alertas Android, vaciar base SQLite tras backup ZIP opcional y doble confirmación, pausar/reanudar jornada con pause_ms, burbuja premium 52dp, corregido fallback Cabify | Éxito GitHub Actions run 37795345311, APK firmada SHA-256 45384acec978cd1389a5526e26fbf454fd08765cfdc30fbd8e7690bebc543509 | Pendiente pruebas en Samsung |
 | R22.1 | 31 | Recupera los cinco MP3 originales subidos al chat, crea paquete ZIP inalterado, importación segura una vez en Mantenimiento con SHA-256 y reproducción local desde almacenamiento privado | Éxito, run 37797357725; SHA-256 APK 4d9aa3e4526ffa1fa6ffd9b349022fc88466a9151b4cf173733713bab6fa6a92; firma anterior idéntica | PENDIENTE IMPORTACIÓN EN SAMSUNG |
 
+| R22.2 | 32 | Completar 13 sonidos originales; pruebas individualizadas de cada evento; pausa/reanudación, sonidos Cabify, botones, fin jornada; reproductor con referencia viva y registro de fallos | COMPILACIÓN PENDIENTE | Prueba en Samsung pendiente |
+
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
 - R21.5 está compilada y firmada. La apertura de WhatsApp, previsualización de imagen, inserción en Agenda y confirmación de URLs siguen sin prueba confirmada en Samsung.
@@ -44,3 +46,28 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 - Corregir en próxima iteración tras acuerdo: menú de diagnóstico que pruebe los cinco MP3 individualmente, estado/errores sin silencios, mapping visible evento→audio, fallback distinguible, registro y protección de recursos del reproductor.
 - No reasignar archivos elegidos a recogida, parada, Cabify ni fin de jornada sin consentimiento. MP3 de cancelación debe dispararse por trip_status=="cancelled".
 - Estado: diagnóstico de código confirmado, corrección NO IMPLEMENTADA en R22.1; verificar comportamiento real en Samsung.
+
+
+## Identidad sonora R22.2 — asignación completa aprobada a criterio del desarrollador
+Se conservaron sin cambio los cinco audios elegidos por usuario. Se añadieron estos ocho:
+- Inicio de jornada: 607923 (anterior)
+- Iniciar viaje personal: 443093 (anterior)
+- Iniciar viaje Uber: 158193 (anterior)
+- Cancelación de viaje: 383749 (anterior)
+- Finalizar viaje: 607920 (anterior)
+- **Iniciar Cabify:** 494546
+- **Recoger pasajero:** 124467
+- **Iniciar parada:** 480571
+- **Reanudar tras parada:** 485901
+- **Finalizar jornada:** 580715
+- **Pausar jornada:** 480567
+- **Reanudar jornada:** 376885
+- **Menú acciones rápidas (toque deliberado):** 323602; no reproducir un click por cada actualización GPS.
+Los duplicados de Library no cuentan como audios diferentes. Se ignoró un MP3 ajeno al proyecto.
+
+Estado: 13 archivos íntegros en `Mapa_Trayectos_R22_2_Sonidos_13_Originales.zip`, SHA256 del ZIP `76afe5a5d0d06bbc719b4c6a2a95cd1a208449e5adda0574e72c4a91bba0df0b`.
+La APK firmada no contiene los 13 MP3: importar este ZIP desde Mantenimiento → Sonidos originales → INSTALAR ZIP después de actualizar APK. 
+El viejo paquete de 5 sonidos continúa siendo reconocible en la app (5/13). Los 13 son necesarios para eliminar los antiguos chimes en todas las transiciones.
+
+Reproductor R22.2: una instancia fuerte de MediaPlayer para todo audio, evita superposiciones y guarda último error; con 13/13 importados no debe sonar pip-pip por fallback silencioso. Se agregó panel con fila PROBAR/PENDIENTE de los 13 eventos. 
+Fuera del dispositivo no puede certificarse la reproducción real.
