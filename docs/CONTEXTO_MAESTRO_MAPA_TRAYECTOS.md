@@ -66,3 +66,18 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
   - APK R22: https://drive.google.com/file/d/1dYqEirelAKH8cczWi-ZEHjuXlt-1HEnb/view
 - Organización decidida: Mapa Trayectos / Versiones / RNN.N, con instalador APK, paquetes auxiliares y versiones anteriores separados. Conservar carpetas Actual e Histórico preexistentes; no borrarlas sin aprobación.
 - Cada futura APK: subir a Drive además de GitHub Actions y verificar nombre, tamaño y carpeta antes de entregar enlace.
+
+
+## Versión R22.2 — Identidad sonora completa (08/10/2026)
+- Compilación RELEASE verificada por GitHub run 37812971829, versionCode32, versionName 0.1-R22.2.
+- Se identificaron 13 audios de notificación distintos proporcionados por el usuario (archivos duplicados descartados, se excluyó grabación ajena).
+- Mapeo fijado por el usuario, preservado: jornada 607923, viaje personal 443093, Uber 158193, cancelación 383749, final viaje 607920.
+- Complemento definido por el asistente con permiso del usuario: Cabify 494546, recogida 124467, iniciar parada 480571, finalizar parada 485901, terminar jornada 580715, pausar jornada 480567, reanudar jornada 376885, menús/acciones deliberadas 323602.
+- SoundPack.java autentica hashes SHA-256 de los 13 MP3; ZIP ampliado puede reemplazar el paquete viejo de cinco sin perder datos de la app.
+- FeedbackReceiver distingue pausa/reanudación y todos los eventos; SoundPack usa un único MediaPlayer de referencia fuerte para minimizar fallas y solapamientos. Cuando hay 13/13 instalados, no sustituye un MP3 fallido por pip-pip en silencio.
+- Mantenimiento → Sonidos originales: lista desplegable de 13 eventos con PROBAR, diagnóstico si falla, INSTALAR ZIP.
+- La APK NO contiene los MP3 binarios; el ZIP se instala una vez. Solo hay chimes si el paquete está incompleto o no se instaló. En menú, cue breve no corta una melodía importante en curso.
+- Release Google Drive: https://drive.google.com/drive/folders/105ACyatGtj239RA3avgHFlp2cCl3_8eI
+- APK https://drive.google.com/file/d/1nwBpGxAyCwgJ8R2IT2Jx_ReNBzZz9Zw9/view
+- 13 MP3 https://drive.google.com/file/d/1bBXYtcE3UNlfFC5BXsX5_rD65AxdpQgK/view
+- Estado: Implementado en código / compilación verificada / audios reales pendientes de prueba del usuario en Samsung.
