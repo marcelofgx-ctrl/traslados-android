@@ -138,6 +138,23 @@ public final class TrackDb extends SQLiteOpenHelper {
     public JSONArray listTrips() { return many("select * from trips order by started_at_ms desc",null); }
     public JSONArray listShifts() { return many("select * from shifts order by started_at_ms desc",null); }
     public JSONObject counts() { JSONObject o=new JSONObject();try{o.put("shifts",scalarCount("shifts"));o.put("trips",scalarCount("trips"));o.put("points",scalarCount("points"));o.put("stops",scalarCount("trip_stops"));}catch(Exception ignored){}return o; }
+    /** Remove all local trip history transactionally but retain the database schema/version. */
+    public void clearLocalTripHistory(){
+        SQLiteDatabase d=getWritableDatabase();
+        d.beginTransaction();
+        try{
+            d.delete("trip_stops",null,null);
+            d.delete("points",null,null);
+            d.delete("trips",null,null);
+            d.delete("shifts",null,null);
+            d.setTransactionSuccessful();
+        }finally{d.endTransaction();}
+        checkpoint();
+        JSONObject c=counts();
+        if(c.optInt("shifts")!=0||c.optInt("trips")!=0||c.optInt("points")!=0||c.optInt("stops")!=0)
+            throw new IllegalStateException("La base local no quedó vacía");
+    }
+
     public void checkpoint() { Cursor c=getWritableDatabase().rawQuery("PRAGMA wal_checkpoint(FULL)",null);try{if(c.moveToFirst()){} }finally{c.close();} }
     public JSONArray getTripPoints(String tripId) { return many("select * from points where trip_id=? order by recorded_at_ms",new String[]{tripId}); }
     public JSONArray getRoutePoints(String shiftId,String tripId) { if(tripId!=null&&!tripId.isEmpty())return getTripPoints(tripId);return many("select * from points where shift_id=? order by recorded_at_ms",new String[]{shiftId}); }
