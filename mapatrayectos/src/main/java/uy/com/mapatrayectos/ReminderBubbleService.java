@@ -3,138 +3,75 @@ package uy.com.mapatrayectos;
 import android.app.*;
 import android.content.*;
 import android.content.pm.ServiceInfo;
-import android.graphics.*;
-import android.graphics.drawable.GradientDrawable;
+import android.graphics.PixelFormat;
 import android.os.*;
 import android.provider.Settings;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.*;
-import android.widget.*;
 
-/** Optional 60-second illustrated speech-bubble overlay; the actual reminder remains in the notification shade. */
+/** Best-effort speech balloon over other apps, sharing EXACTLY the same layout as foreground UI. */
 public final class ReminderBubbleService extends Service {
     private static final int FOREGROUND_ID=23991;
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private WindowManager manager;private View bubble;
-    private final Runnable timeout=()->stopSelf();
+    private WindowManager manager;private ReminderCallout bubble;
+    private final Runnable timeout=this::stopSelf;
     private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
-    @Override public void onCreate(){super.onCreate();}
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         int id=intent==null?-1:intent.getIntExtra("id",-1);
         ReminderStore.Item item=ReminderStore.get(this,id);
-        if(item==null||item.done){stopSelf();return START_NOT_STICKY;}
-        try{createForeground();}
-        catch(Exception ex){
-            android.util.Log.w("MapaReminders","Overlay service restricted by Android; normal notification stays",ex);
-            stopSelf();return START_NOT_STICKY;
+        if(item==null||item.done||!Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
+        try{createForeground();show(item);}
+        catch(Exception e){
+            Log.w("MapaReminders","System restricted foreground overlay; Android notification remains",e);
+            stopSelf();
         }
-        if(!Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
-        try{show(item);}
-        catch(Exception e){android.util.Log.w("MapaReminders","Cannot show speech overlay",e);stopSelf();}
         return START_NOT_STICKY;
     }
     private void createForeground(){
+        final String ch="mapa_reminder_overlay";
         NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        String ch="mapa_reminder_overlay";
         if(nm!=null&&Build.VERSION.SDK_INT>=26)
-            nm.createNotificationChannel(new NotificationChannel(ch,"Globo temporal del recordatorio",NotificationManager.IMPORTANCE_LOW));
-        Notification n=new Notification.Builder(this,ch)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("Recordatorio visual").setContentText("Mostrando aviso")
-            .setOngoing(true).build();
+            nm.createNotificationChannel(new NotificationChannel(ch,"Aviso visual temporal",NotificationManager.IMPORTANCE_LOW));
+        Notification n=new Notification.Builder(this,ch).setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle("Recordatorio visual").setContentText("Mostrando aviso").setOngoing(true).build();
         if(Build.VERSION.SDK_INT>=34)startForeground(FOREGROUND_ID,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE);
         else startForeground(FOREGROUND_ID,n);
     }
-    private GradientDrawable shape(int fill,int stroke,int rad){
-        GradientDrawable d=new GradientDrawable();d.setColor(fill);d.setCornerRadius(dp(rad));
-        if(stroke!=0)d.setStroke(dp(1),stroke);return d;
-    }
-    private TextView txt(String v,int sz,int color,boolean bold){
-        TextView t=new TextView(this);t.setText(v);t.setTextColor(color);t.setTextSize(sz);
-        if(bold)t.setTypeface(null,Typeface.BOLD);return t;
-    }
     private void show(ReminderStore.Item item){
         removeBubble();
-        final int petrol=Color.rgb(6,49,57),gold=Color.rgb(213,179,113),ivory=Color.rgb(252,249,239);
-        LinearLayout whole=new LinearLayout(this);whole.setOrientation(LinearLayout.VERTICAL);
-        whole.setPadding(dp(2),0,dp(2),dp(2));
-        whole.setElevation(dp(12));
-
-        // Arrow/callout tail, like a comics speech balloon, pointing toward the app's floating icon.
-        View tail=new View(this){
-            Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-            @Override protected void onDraw(Canvas c){
-                super.onDraw(c);
-                Path path=new Path();
-                float cx=getWidth()-dp(27),h=getHeight();
-                path.moveTo(cx-dp(8),h);
-                path.lineTo(cx+dp(8),h);
-                path.lineTo(cx,h*0.07f);
-                path.close();
-                p.setColor(gold);c.drawPath(path,p);
-                path.reset();path.moveTo(cx-dp(6),h);
-                path.lineTo(cx+dp(6),h);path.lineTo(cx,h*0.19f);path.close();
-                p.setColor(ivory);c.drawPath(path,p);
-            }
-        };
-        whole.addView(tail,new LinearLayout.LayoutParams(-1,dp(11)));
-
-        LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(11),dp(8),dp(11),dp(10));card.setBackground(shape(ivory,gold,17));
-        whole.addView(card,new LinearLayout.LayoutParams(-1,-2));
-
-        LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView avatar=new ImageView(this);avatar.setImageResource(R.drawable.app_icon);
-        avatar.setBackground(shape(petrol,gold,40));avatar.setPadding(dp(4),dp(4),dp(4),dp(4));
-        top.addView(avatar,new LinearLayout.LayoutParams(dp(28),dp(28)));
-        LinearLayout headings=new LinearLayout(this);headings.setOrientation(LinearLayout.VERTICAL);
-        TextView title=txt("✦  TE RECUERDO ALGO",10,petrol,true);
-        TextView sub=txt("Mapa Trayectos · Aviso personal",9,Color.rgb(77,96,97),false);
-        headings.addView(title);headings.addView(sub);
-        LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.leftMargin=dp(6);
-        top.addView(headings,tp);card.addView(top);
-
-        TextView message=txt(item.text,15,petrol,true);
-        message.setMaxLines(3);message.setEllipsize(android.text.TextUtils.TruncateAt.END);message.setPadding(dp(2),dp(6),dp(2),dp(8));
-        card.addView(message);
-        LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);
-        TextView later=txt("+10 MIN",12,petrol,true);later.setGravity(Gravity.CENTER);
-        later.setBackground(shape(Color.rgb(236,221,189),0,12));
-        TextView done=txt("HECHO",12,ivory,true);done.setGravity(Gravity.CENTER);
-        done.setBackground(shape(petrol,0,12));
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(34),1);p.rightMargin=dp(7);
-        buttons.addView(later,p);buttons.addView(done,new LinearLayout.LayoutParams(0,dp(34),1));
-        card.addView(buttons);
-        TextView dismiss=txt("CERRAR AVISO",11,petrol,false);dismiss.setGravity(Gravity.CENTER);
-        dismiss.setPadding(0,dp(13),0,0);card.addView(dismiss);dismiss.setVisibility(View.GONE);
-
-        later.setOnClickListener(v->{ReminderStore.change(this,item.id,false,false,System.currentTimeMillis()+10L*60L*1000L);stopSelf();});
-        done.setOnClickListener(v->{ReminderStore.change(this,item.id,true,false,-1);stopSelf();});
-        dismiss.setOnClickListener(v->stopSelf());
-
+        SharedPreferences prefs=getSharedPreferences("bubble_state",MODE_PRIVATE);
+        int[] coords=resolveAnchor(prefs);
+        int anchorX=coords[0],anchorY=coords[1],size=coords[2];
+        int width=dp(ReminderCallout.TOTAL_WIDTH_DP);
+        int desiredX=anchorX-width+dp(1);
+        DisplayMetrics display=getResources().getDisplayMetrics();
+        // When the floating shortcut is near the left edge, keep the bubble on-screen.
+        int x=Math.max(dp(5),Math.min(desiredX,display.widthPixels-width-dp(4)));
+        int y=Math.max(dp(64),Math.min(anchorY+size/2-dp(ReminderCallout.TAIL_CENTER_DP),
+            display.heightPixels-dp(170)));
         manager=(WindowManager)getSystemService(WINDOW_SERVICE);
+        bubble=new ReminderCallout(this,item.text,
+            ()->{ReminderStore.change(this,item.id,true,false,-1);stopSelf();},
+            ()->{ReminderStore.change(this,item.id,false,false,System.currentTimeMillis()+600000L);stopSelf();},
+            this::stopSelf);
         WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
-            dp(260),WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            width,WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT);
-        lp.gravity=Gravity.TOP|Gravity.RIGHT;
-        SharedPreferences bubbleState=getSharedPreferences("bubble_state",MODE_PRIVATE);
-        boolean appVisible=bubbleState.getBoolean("ui_visible",false);
-        int status=0,res=getResources().getIdentifier("status_bar_height","dimen","android");
-        if(res>0)status=getResources().getDimensionPixelSize(res);
-        int anchorY=appVisible?status+dp(232):bubbleState.getInt("y",dp(220));
-        int anchorSize=dp(appVisible?44:52);
-        lp.y=Math.max(dp(30),Math.min(anchorY+anchorSize-dp(5),getResources().getDisplayMetrics().heightPixels-dp(175)));
-        lp.x=dp(appVisible?4:8);
-        manager.addView(whole,lp);bubble=whole;
-        whole.setAlpha(0f);whole.setTranslationY(-dp(6));
-        whole.animate().alpha(1f).translationY(0f).setDuration(340)
-            .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
-        handler.removeCallbacks(timeout);handler.postDelayed(timeout,30000L);
+        lp.gravity=Gravity.TOP|Gravity.LEFT;lp.x=x;lp.y=y;
+        manager.addView(bubble,lp);bubble.reveal();
+        handler.removeCallbacks(timeout);handler.postDelayed(timeout,30000);
+    }
+    private int[] resolveAnchor(SharedPreferences p){
+        boolean visible=p.getBoolean("ui_visible",false);
+        if(visible && p.contains("reminder_anchor_x"))
+            return new int[]{p.getInt("reminder_anchor_x",dp(330)),p.getInt("reminder_anchor_y",dp(245)),p.getInt("reminder_anchor_size",dp(44))};
+        return new int[]{p.getInt("x",dp(320)),p.getInt("y",dp(235)),dp(52)};
     }
     private void removeBubble(){
         handler.removeCallbacks(timeout);
-        if(manager!=null&&bubble!=null){try{manager.removeView(bubble);}catch(Exception ignored){}}
+        if(manager!=null&&bubble!=null)try{manager.removeView(bubble);}catch(Exception ignored){}
         bubble=null;
     }
     @Override public void onDestroy(){
