@@ -24,8 +24,11 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import android.util.Base64;
 
 public final class QuickActionsMenu {
     private static final String PHONE="+598 97 228 175";
@@ -140,7 +143,7 @@ public final class QuickActionsMenu {
 
         Bitmap thumbnail=null;
         try{
-            Bitmap full=BusinessCardImage.render();
+            Bitmap full=BusinessCardImage.render(a);
             thumbnail=Bitmap.createScaledBitmap(full,720,405,true);
             full.recycle();
             ImageView image=new ImageView(a);
@@ -240,15 +243,39 @@ public final class QuickActionsMenu {
 
     private static void shareVcard(Activity a){
         try{
-            String vcard="BEGIN:VCARD\r\nVERSION:3.0\r\nN:Fernández;Marcelo;;;\r\n"
-                +"FN:Marcelo Fernández\r\nORG:Traslados programados\r\n"
-                +"TEL;TYPE=CELL:+59897228175\r\n"
-                +"NOTE:Traslados programados. Montevideo, Ciudad de la Costa y Canelones.\r\nEND:VCARD\r\n";
+            StringBuilder vcard=new StringBuilder();
+            vcard.append("BEGIN:VCARD\r\nVERSION:3.0\r\n");
+            vcard.append("N:Fernández;Marcelo;;;\r\n");
+            vcard.append("FN:Marcelo Fernández\r\n");
+            vcard.append("ORG:Traslados programados\r\n");
+            vcard.append("TEL;TYPE=CELL:+59897228175\r\n");
+            vcard.append("URL:").append(BusinessCardImage.CONTACT_URL).append("\r\n");
+            vcard.append("NOTE:Traslados programados. Montevideo, Ciudad de la Costa y Canelones.\r\n");
+            // PHOTO is embedded (not an external link), so contact importers can retain the logo.
+            byte[] photo;
+            try(InputStream in=a.getResources().openRawResource(R.drawable.logo_c);
+                ByteArrayOutputStream bytes=new ByteArrayOutputStream()){
+                byte[] buf=new byte[4096];int n;
+                while((n=in.read(buf))!=-1)bytes.write(buf,0,n);
+                photo=bytes.toByteArray();
+            }
+            if(photo.length<1024||photo.length>512000)throw new IllegalStateException("Fotografía de contacto inválida");
+            String photoData=Base64.encodeToString(photo,Base64.NO_WRAP);
+            String line="PHOTO;ENCODING=b;TYPE=JPEG:"+photoData;
+            // vCard 3.0 logical line folding; every continuation begins with one space.
+            int pos=0;while(pos<line.length()){
+                int room=pos==0?74:73;
+                int next=Math.min(pos+room,line.length());
+                if(pos>0)vcard.append(" ");
+                vcard.append(line,pos,next).append("\r\n");
+                pos=next;
+            }
+            vcard.append("END:VCARD\r\n");
             File directory=new File(a.getCacheDir(),"shared_contacts");
             if(!directory.exists()&&!directory.mkdirs())throw new IllegalStateException("No se pudo crear el directorio");
             File file=new File(directory,"Marcelo_Fernandez_Contacto.vcf");
             try(FileOutputStream out=new FileOutputStream(file)){
-                out.write(vcard.getBytes(StandardCharsets.UTF_8));
+                out.write(vcard.toString().getBytes(StandardCharsets.UTF_8));
             }
             Uri uri=FileProvider.getUriForFile(a,a.getPackageName()+".share",file);
             Intent send=new Intent(Intent.ACTION_SEND);
@@ -256,7 +283,7 @@ public final class QuickActionsMenu {
             send.putExtra(Intent.EXTRA_STREAM,uri);
             send.setClipData(ClipData.newUri(a.getContentResolver(),"Contacto Marcelo",uri));
             send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            a.startActivity(Intent.createChooser(send,"Enviar contacto por WhatsApp u otra aplicación"));
+            a.startActivity(Intent.createChooser(send,"Enviar contacto con logo C"));
         }catch(Exception e){
             Toast.makeText(a,"No se pudo compartir el archivo VCF: "+e.getMessage(),Toast.LENGTH_LONG).show();
         }
