@@ -93,6 +93,9 @@ public class MainActivity extends Activity {
         gpsText=text("●  GPS buscando…",11.2f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GOLD));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(142),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(96),0,0);root.addView(gpsText,gpsLp);
         compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(58),dp(58),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(92),0,0);root.addView(compassView,compassLp);
 
+        TextView quickActions=text("✦",22,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions));
+        FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
+
         bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(16),dp(5),dp(16),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
 
         FrameLayout handleBar=new FrameLayout(this);handleBar.setContentDescription("Panel de jornada. Deslizá hacia arriba o abajo para abrir y cerrar.");sheetHandle=handleBar;
