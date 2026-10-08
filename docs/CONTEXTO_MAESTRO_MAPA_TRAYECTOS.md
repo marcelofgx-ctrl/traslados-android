@@ -54,3 +54,15 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - Sonidos Cabify: se retira fallback a Uber, todavía sin MP3 originales disponibles.
 - Los registros ya sincronizados en Supabase NO se borran desde esta operación; la app no descarga viajes del servidor, por lo que la base local queda vacía aunque existan registros remotos. Migrar cloud requeriría autorización.
 - No declarar como probados en teléfono recordatorios, backup/borrado o pausa hasta feedback del usuario.
+
+## Entregables en Google Drive — fuente permanente (08/10/2026)
+- Cuenta principal usada: marcelof.gx@gmail.com.
+- Carpeta de la aplicación ya existente: https://drive.google.com/drive/folders/1rrEpWSYO3dt-Y5dXafP34cM6CQzzBYrK
+- Carpeta Versiones: https://drive.google.com/drive/folders/1eaXoeNaRl9Peb8a7pyrOFrTWqj-xyjd6
+- R22.1 (actual): https://drive.google.com/drive/folders/16HKGJuyCODAaPtQt0IMsQFfGvEMPy4pB
+  - APK firmada: https://drive.google.com/file/d/1HWqQADONxv3jwhKp7xj5J9JwrlHkRn5S/view
+  - ZIP cinco MP3 originales: https://drive.google.com/file/d/1UcH9TuWlFYtnRNnhvN5SCyllHSKwQgMQ/view
+- R22 (previa): https://drive.google.com/drive/folders/1vCVuAtm83vhIEaiMglfbC3N_VPLbgCyE
+  - APK R22: https://drive.google.com/file/d/1dYqEirelAKH8cczWi-ZEHjuXlt-1HEnb/view
+- Organización decidida: Mapa Trayectos / Versiones / RNN.N, con instalador APK, paquetes auxiliares y versiones anteriores separados. Conservar carpetas Actual e Histórico preexistentes; no borrarlas sin aprobación.
+- Cada futura APK: subir a Drive además de GitHub Actions y verificar nombre, tamaño y carpeta antes de entregar enlace.
