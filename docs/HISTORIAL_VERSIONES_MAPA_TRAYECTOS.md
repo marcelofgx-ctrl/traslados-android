@@ -18,6 +18,8 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 
 | R22.3 | 33 | Recordatorios Samsung: interpreta HH:mm sin «hoy», alarmas exactas con permiso, diagnósticos, prueba 1 minuto, notificación alta prioridad y globo overlay opcional con cola triangular | BUILD RELEASE EXITOSO: run 37817234425; SHA256 9edcd9c09c0f526d2149ddac6073b0b54702b3b90b4fb8d8fadfe282f7187dcb; firma v2 original | PENDIENTE DE PRUEBA EN SAMSUNG |
 
+| R22.4 | 34 | Tablero jornada/servicio independiente. Indicadores jornada KM, CONDUC., DET., VIAJES completados; franja TIEMPO EFECTIVO hh:mm:ss; durante viaje KM, SERVICIO, MOV., DET. y franja jornada continua | GitHub Actions 37831895030 SUCCESS, APK firmada SHA-256 9de9af02e64b94f84d7c813a42c63243a63957204e4fad5b66dc9a1e8a33653a | Comportamiento en Samsung pendiente |
+
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
 - R21.5 está compilada y firmada. La apertura de WhatsApp, previsualización de imagen, inserción en Agenda y confirmación de URLs siguen sin prueba confirmada en Samsung.
@@ -101,3 +103,15 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - El vínculo de descarga ChatGPT de sesión se crea a partir del ZIP de GitHub; no guardar sandbox paths como persistentes en documento maestro.
 - Se intentó crear carpeta de Drive bajo Versiones para R22.3, pero el conector de Google Drive bloqueó la operación. No está verificada una subida a Drive de R22.3.
 - Requiere permisos de notificaciones, Alarmas y recordatorios (exactas) y sobre otras aplicaciones para el globo; no vender como resultado probado sin prueba de teléfono.
+
+
+## Entrega R22.4 (08/10/2026)
+- Release compilado y firma verificada en https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37831895030
+- Artefacto GitHub Actions id 11574142808 (ZIP de build), APK 52,212,275 bytes, SHA-256 9de9af02e64b94f84d7c813a42c63243a63957204e4fad5b66dc9a1e8a33653a.
+- Carpeta Google Drive creada: https://drive.google.com/drive/folders/1W1xWEkoRasrgw7kGTkmp_npYxhRf4JHQ
+- **IMPORTANTE**: Transferencia de APK a Google Drive no completada porque la integración devolvió bloqueo; no aseverar que el archivo esté en esa carpeta. APK disponible como adjunto de conversación si el enlace sandbox es accesible y GitHub Actions ZIP como respaldo.
+- Durante jornada SIN viaje se muestran: KM jornada, CONDUC. shiftMoving, DET. shiftStopped, VIAJES shiftCompletedTrips; franja TIEMPO EFECTIVO shiftMoving+shiftStopped. Durante viaje: KM de viaje, duración desde tripStarted, movimiento y detenido del viaje; franja con jornada continua.
+- Contador de viajes se calcula en SQLite local por shift_id, ended_at_ms y trip_status completed. Cancelados excluidos.
+- FORMATO HH:MM:SS e icono especializado VIAJES; mid sheet 272dp, full 332dp.
+- Sin modificación de esquema SQL ni eliminación de datos; firma consistente con las RELEASE anteriores.
+- Pruebas en teléfono pendientes. Sumar jornadas del mismo día calendario en Historial no implementado; no confundir 'jornada' con 'día'.
