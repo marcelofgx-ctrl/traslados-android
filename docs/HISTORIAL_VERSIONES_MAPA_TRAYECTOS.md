@@ -12,7 +12,7 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 | R21.5 | 29 | Tarjeta visual premium con logo C, chat a número no agendado, guardar pasajero con empresa opcional y enlaces confirmables | Éxito, run 37789496860 (firma APK v2; SHA256 9cef77c7dc1fbfe3b7a95f835fe8a2b1c0d146c76618e49b2b91c3ba9264b3b8) | PENDIENTE DE PRUEBA EN SAMSUNG |
 
 | R22 | 30 | Recordatorios locales tipo chat, alertas Android, vaciar base SQLite tras backup ZIP opcional y doble confirmación, pausar/reanudar jornada con pause_ms, burbuja premium 52dp, corregido fallback Cabify | Éxito GitHub Actions run 37795345311, APK firmada SHA-256 45384acec978cd1389a5526e26fbf454fd08765cfdc30fbd8e7690bebc543509 | Pendiente pruebas en Samsung |
-| R22.1 | 31 | Recupera los cinco MP3 originales subidos al chat, crea paquete ZIP inalterado, importación segura una vez en Mantenimiento con SHA-256 y reproducción local desde almacenamiento privado | COMPILACIÓN EN CURSO | PENDIENTE IMPORTACIÓN EN SAMSUNG |
+| R22.1 | 31 | Recupera los cinco MP3 originales subidos al chat, crea paquete ZIP inalterado, importación segura una vez en Mantenimiento con SHA-256 y reproducción local desde almacenamiento privado | Éxito, run 37797357725; SHA-256 APK 4d9aa3e4526ffa1fa6ffd9b349022fc88466a9151b4cf173733713bab6fa6a92; firma anterior idéntica | PENDIENTE IMPORTACIÓN EN SAMSUNG |
 
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
