@@ -333,40 +333,88 @@ public class MainActivity extends Activity {
     }
 
     /** Select the file made from the five original ChatGPT uploads, once per phone. */
+    /** Clear, individually testable mapping of all thirteen user-original MP3s. */
     private void showSoundPackMenu(){
-        String state=SoundPack.describe(this);
-        new AlertDialog.Builder(this).setTitle("Identidad sonora")
-            .setMessage(state+"\n\nPodés instalar los cinco MP3 que elegiste originalmente en un solo paso.\n"+
-                "Sus archivos no se modifican; quedan almacenados en este teléfono y se conservan al actualizar.\n\n"+
-                "Cabify y pausa siguen con chimes diferentes hasta que elijas sus MP3.")
-            .setPositiveButton("INSTALAR ZIP",(d,w)->{
-                Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT)
-                    .addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip");
-                try{startActivityForResult(i,REQ_IMPORT_SOUNDS);}
-                catch(Exception e){Toast.makeText(this,"No se pudo abrir el selector de archivos",Toast.LENGTH_LONG).show();}
-            })
-            .setNeutralButton(SoundPack.ready(this)?"PROBAR SONIDO":"VER ESTADO",(d,w)->{
-                if(SoundPack.ready(this))SoundPack.play(this,"sound_shift_start");
-                else Toast.makeText(this,"Importá primero el paquete de sonidos originales",Toast.LENGTH_LONG).show();
-            })
-            .setNegativeButton("CANCELAR",null).show();
+        android.widget.ScrollView scroll=new android.widget.ScrollView(this);
+        LinearLayout content=new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(15),dp(11),dp(15),dp(12));
+        content.setBackgroundColor(Color.rgb(8,47,55));
+        scroll.addView(content);
+        TextView head=text(SoundPack.describe(this),15f,GOLD,true);
+        head.setPadding(dp(8),dp(5),dp(8),dp(10));
+        content.addView(head,new LinearLayout.LayoutParams(-1,-2));
+        TextView intro=text("Tocá cualquier fila para escucharla. Los cinco sonidos anteriores se conservaron; el paquete ampliado añade ocho.",12.2f,TEXT,false);
+        intro.setPadding(dp(8),0,dp(8),dp(13));
+        content.addView(intro,new LinearLayout.LayoutParams(-1,-2));
+
+        String[] names=SoundPack.resources(),labels=SoundPack.labels();
+        for(int i=0;i<names.length;i++){
+            final String name=names[i];
+            boolean installed=SoundPack.isInstalled(this,name);
+            LinearLayout line=new LinearLayout(this);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            line.setPadding(dp(9),dp(3),dp(8),dp(3));
+            line.setBackground(new TexturedDrawable(this,Color.rgb(8,56,64),Color.rgb(11,74,82),
+                Color.argb(90,224,193,111),12f,0.45f,false));
+            TextView item=text((i+1)+". "+labels[i],13.0f,TEXT,true);
+            line.addView(item,new LinearLayout.LayoutParams(0,dp(43),1f));
+            item.setGravity(Gravity.CENTER_VERTICAL);
+            TextView badge=text(installed?"▶ PROBAR":"PENDIENTE",10.1f,installed?GOLD:MUTED,true);
+            badge.setGravity(Gravity.CENTER_VERTICAL|Gravity.RIGHT);
+            line.addView(badge,new LinearLayout.LayoutParams(-2,dp(43)));
+            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(49));
+            p.bottomMargin=dp(5);
+            content.addView(line,p);
+            line.setOnClickListener(v->{
+                if(!SoundPack.isInstalled(this,name)){
+                    Toast.makeText(this,"Importá el ZIP de 13 sonidos para habilitar "+name,Toast.LENGTH_LONG).show();
+                    return;
+                }
+                new Thread(()->{
+                    boolean ok=SoundPack.play(getApplicationContext(),name);
+                    if(!ok)runOnUiThread(()->Toast.makeText(this,
+                        "Error al reproducir: "+SoundPack.lastError(),Toast.LENGTH_LONG).show());
+                },"sound-preview").start();
+            });
+        }
+        String last=SoundPack.lastError();
+        if(last!=null&&!last.isEmpty()){
+            TextView error=text("Último error de audio: "+last,10.5f,TEXT,false);
+            error.setPadding(dp(8),dp(5),dp(8),dp(8));
+            content.addView(error);
+        }
+        AlertDialog dialog=new AlertDialog.Builder(this)
+            .setTitle("Identidad sonora")
+            .setView(scroll)
+            .setPositiveButton("INSTALAR ZIP",null)
+            .setNegativeButton("CERRAR",null)
+            .create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE).setType("application/zip");
+            try{startActivityForResult(intent,REQ_IMPORT_SOUNDS);dialog.dismiss();}
+            catch(Exception e){Toast.makeText(this,"No se pudo abrir el selector de archivos",Toast.LENGTH_LONG).show();}
+        }));
+        dialog.show();
     }
+
     private void installOriginalSounds(Uri source){
-        Toast.makeText(this,"Verificando e instalando audios originales…",Toast.LENGTH_LONG).show();
+        Toast.makeText(this,"Comprobando la integridad del paquete…",Toast.LENGTH_LONG).show();
         new Thread(()->{
             try{
                 SoundPack.install(getApplicationContext(),source);
+                String status=SoundPack.describe(getApplicationContext());
                 runOnUiThread(()->new AlertDialog.Builder(this)
-                    .setTitle("✓ Sonidos originales instalados")
-                    .setMessage("Quedaron instalados los cinco MP3 originales que seleccionaste: inicio de jornada, inicio de viaje, Uber, cancelación y fin de viaje.\n\n"+
-                        "Se reproducirán en los próximos eventos; los chimes siguen disponibles como respaldo.")
-                    .setPositiveButton("PROBAR",(d,w)->SoundPack.play(this,"sound_shift_start"))
+                    .setTitle("✓ Identidad sonora actualizada")
+                    .setMessage(status+"\n\nLos audios se conservan al actualizar la aplicación. Podés probarlos individualmente desde Mantenimiento → Sonidos originales.")
+                    .setPositiveButton("VER Y PROBAR",(d,w)->showSoundPackMenu())
                     .setNegativeButton("CERRAR",null).show());
             }catch(Exception e){
                 runOnUiThread(()->new AlertDialog.Builder(this)
                     .setTitle("No se instaló el paquete")
                     .setMessage((e.getMessage()==null?e.toString():e.getMessage())+
-                        "\n\nLos sonidos anteriores se conservaron. Seleccioná el ZIP original suministrado junto a la APK.")
+                        "\n\nEl paquete anterior se conservó. Para activar los 13 eventos elegí el ZIP R22.2 de 13 sonidos.")
                     .setPositiveButton("ENTENDIDO",null).show());
             }
         },"original-mp3-import").start();
