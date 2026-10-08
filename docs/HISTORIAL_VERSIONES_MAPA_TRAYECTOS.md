@@ -16,6 +16,8 @@ Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositiv
 
 | R22.2 | 32 | Completar 13 sonidos originales; pruebas individualizadas de cada evento; pausa/reanudación, Cabify, botones, cierre; reproductor con referencia viva y registro de fallos | Éxito, run 37812971829, APK SHA-256 ca7095fab62d3e6ccb5ec33d2b4bd68dae09e1f044688f35aae55dafd8cd232d | Prueba en Samsung pendiente |
 
+| R22.3 | 33 | Recordatorios Samsung: interpreta HH:mm sin «hoy», alarma exacta si autorizada, permisos de notificaciones, diagnóstico/último disparo, prueba 1 minuto, aviso alta prioridad con Hecho/+10 min, globo overlay opcional con cola triangular | COMPILACIÓN EN PROGRESO | PENDIENTE DE PRUEBA EN TELÉFONO |
+
 ## Notas importantes
 - Todos los builds deben preservar el package uy.com.mapatrayectos y firma RELEASE previa para instalar encima.
 - R21.5 está compilada y firmada. La apertura de WhatsApp, previsualización de imagen, inserción en Agenda y confirmación de URLs siguen sin prueba confirmada en Samsung.
@@ -81,3 +83,14 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - GitHub Actions R22.2: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37812971829
 - Instalación: actualizar APK sobre R22.1, ir a Mantenimiento → Sonidos originales → INSTALAR ZIP, elegir el nuevo paquete de 13 (no el viejo de cinco), comprobar 13/13 y usar PROBAR en cada evento.
 - El ZIP está fuera del instalador por limitación de transferencia binaria hacia GitHub; no confundir compilación verificada con sonidos probados en Samsung.
+
+## Incidencia R22.3 — Samsung recordatorio sin aviso
+- Usuario programó alerta sobre las 14:20 en R22.2 y no vio ninguna notificación. No tenemos acceso remoto al SharedPreferences del Samsung; no inventar confirmaciones de alarma disparada.
+- Causa de código confirmada: ReminderActivity preseleccionaba «mañana a las 10:00» y solo parseaba HH:mm cuando venía acompañado de «hoy/mañana»; escribir solo «14:20» dejaba la fecha predeterminada.
+- Otra causa confirmada: ReminderReceiver llamaba markFired incluso si ReminderStore.alert retornaba sin emitir notificación porque POST_NOTIFICATIONS estaba denegado. Este evento podía quedar consumido sin mostrarse.
+- R22.3 corrige fecha y hora, añade prueba exacta de 65 segundos y un diagnóstico visual de notificaciones, alarma exacta y overlay.
+- R22.3 notificación Android nueva categoría alta con Hecho y +10 min; popup estilo globo de historieta (cola triangular/ícono, posponer y hecho) mediante ReminderBubbleService shortService si Android deja crear superposición.
+- Android 16 y Samsung pueden bloquear permisos o demorar alarmas sin SCHEDULE_EXACT_ALARM. Overlay no se promete por encima de todas las apps sin autorización. Fallback es notificación Android.
+- Recordatorios persistidos en SharedPreferences siguen intactos al actualizar de R22.2 a R22.3.
+- Validar dispositivo obligatoriamente: activar notificaciones y Alarmas y recordatorios, habilitar «Mostrar sobre otras aplicaciones» para globo, hacer «PROBAR ALERTA EN 1 MINUTO», dejar la app y bloquear pantalla, comprobar globo o aviso; probar «HECHO» y «+10 MIN» y otra alerta en hora real.
+- Estado R22.3: compilación pendiente o en curso; no marcar funcionalidad verificada en Samsung hasta feedback real.
