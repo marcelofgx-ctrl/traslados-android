@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 23
-        versionName '0.1-R20'
+        versionCode 24
+        versionName '0.1-R21'
     }
 
     signingConfigs {
@@ -50,4 +50,5 @@ android {
 dependencies {
     implementation 'org.maplibre.gl:android-sdk:13.6.1'
     implementation 'androidx.annotation:annotation:1.9.1'
+    implementation 'androidx.core:core:1.15.0'
 }
