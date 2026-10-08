@@ -2,10 +2,14 @@ package uy.com.mapatrayectos;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -45,6 +49,7 @@ public final class ReminderActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7402);
     }
+    @Override protected void onResume(){super.onResume();ReminderStore.rearm(this);}
     private void build(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(Color.rgb(8,31,37));
         body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(18),dp(22),dp(18),dp(20));
@@ -73,6 +78,24 @@ public final class ReminderActivity extends Activity {
         body.addView(save,margin(0,9));save.setOnClickListener(v->prepare());
         TextView help=label("Si escribís «hoy», «mañana» o «pasado mañana» junto a una hora, se propone esa fecha. Podés cambiarla antes de guardar.",11,Color.rgb(171,190,190),false);
         body.addView(help,margin(0,11));
+        TextView timing=label("REVISAR PRECISIÓN DE LAS ALERTAS",11,GOLD,true);
+        timing.setGravity(Gravity.CENTER);timing.setPadding(dp(3),dp(10),dp(3),dp(10));
+        body.addView(timing,margin(0,2));
+        timing.setOnClickListener(v->{
+            if(Build.VERSION.SDK_INT>=31){
+                AlarmManager alarms=(AlarmManager)getSystemService(ALARM_SERVICE);
+                if(alarms!=null&&!alarms.canScheduleExactAlarms()){
+                    new AlertDialog.Builder(this).setTitle("Alertas puntuales")
+                        .setMessage("Android puede retrasar recordatorios si no habilitás las alarmas exactas. ¿Abrir la configuración del teléfono?")
+                        .setPositiveButton("ABRIR AJUSTES",(d,w)->{
+                            try{startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));}
+                            catch(Exception e){Toast.makeText(this,"Abrí Ajustes > Alarmas y recordatorios",Toast.LENGTH_LONG).show();}
+                        }).setNegativeButton("CANCELAR",null).show();
+                    return;
+                }
+            }
+            Toast.makeText(this,"Alarmas puntuales habilitadas",Toast.LENGTH_SHORT).show();
+        });
         TextView heading=label("PRÓXIMOS Y ANTERIORES",13,GOLD,true);body.addView(heading,margin(0,23));
         history=new LinearLayout(this);history.setOrientation(LinearLayout.VERTICAL);body.addView(history);
         TextView back=label("VOLVER AL MAPA",13,CREAM,true);back.setGravity(Gravity.CENTER);
