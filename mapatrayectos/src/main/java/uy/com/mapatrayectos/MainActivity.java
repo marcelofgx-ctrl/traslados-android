@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
         TextView quickActions=text("✦",22,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions));
         FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
         quickActionsAnchor=quickActions;
-        quickActions.addOnLayoutChangeListener((view,left,top,right,bottom,oldL,oldT,oldR,oldB)->storeReminderAnchor());
+        quickActions.addOnLayoutChangeListener((changedView,xLeft,yTop,xRight,yBottom,previousLeft,previousTop,previousRight,previousBottom)->storeReminderAnchor());
 
         bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(16),dp(5),dp(16),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
 
