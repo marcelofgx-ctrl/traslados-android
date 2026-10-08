@@ -84,8 +84,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R22.5'" mapatrayectos/build.gradle
-          grep -q "versionCode 35" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R22.6'" mapatrayectos/build.gradle
+          grep -q "versionCode 36" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -153,6 +153,18 @@ jobs:
           grep -q 'shiftKmText.setText' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ReminderSound.play' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
           grep -q 'class ReminderSound' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderSound.java
+          grep -q 'class ShiftSummaryIconView' mapatrayectos/src/main/java/uy/com/mapatrayectos/ShiftSummaryIconView.java
+          grep -q 'ShiftSummaryIconView.SUN' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ShiftSummaryIconView.ROAD' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ShiftSummaryIconView.CAR' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'class ReminderCallout' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderCallout.java
+          grep -q 'ReminderCallout.TAIL_CENTER_DP' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ACTION_REMINDER_POPUP' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
+          grep -q 'goAsync()' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
+          grep -q 'ReminderSound.playBlocking' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
+          grep -q 'makeSamples' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderSound.java
+          grep -q 'PROBAR SONIDO DE BURBUJAS' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderActivity.java
+          grep -q 'mapa_personal_reminders_v3_bubbles' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderStore.java
           grep -q 'formatClock' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'MetricIconView.TRIPS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'secondMetricLabel.setText("SERVICIO")' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -263,8 +275,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_5_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_5_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_6_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_6_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
 
@@ -273,7 +285,7 @@ jobs:
         with:
           name: Mapa-Trayectos-v0.1-R22-4-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R22_5_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R22_6_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
