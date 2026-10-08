@@ -102,8 +102,7 @@ jobs:
           grep -q "showShareHub" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q "COMPARTIR POR WHATSAPP" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q "shareEditableLink" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
-          grep -q "ENVIAR AL NÚMERO" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
-          grep -q "wrapper.addView(cancel" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q 'dialog::dismiss' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q "https://api.whatsapp.com/send?phone=" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q 'R.drawable.logo_c' mapatrayectos/src/main/java/uy/com/mapatrayectos/BusinessCardImage.java
           grep -q 'PHOTO;ENCODING=b;TYPE=JPEG' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
