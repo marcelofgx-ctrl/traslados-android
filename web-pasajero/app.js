@@ -236,6 +236,113 @@ function picker(name,mount,position){
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return {state:()=>selected,chooseDept,input,persist,box};
 }
+// Shared routing engine with the premium Cloudflare calculator.
+// ORS_API_KEY stays on the server; never copy a routing secret into this PWA.
+const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+const roadCache=new Map();
+let latestRoad=null,activeRouteKey="",routeSequence=0;
+function selectedRoadPoints(){
+  return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
+}
+function routeKeyOf(points){
+  return points.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+}
+function addRoadDiagram(parent,geometry){
+  if(!Array.isArray(geometry)||geometry.length<2)return;
+  const valid=geometry.filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite));
+  if(valid.length<2)return;
+  const lat=valid.map(p=>p[0]),lng=valid.map(p=>p[1]);
+  const bounds={minLat:Math.min(...lat),maxLat:Math.max(...lat),minLng:Math.min(...lng),maxLng:Math.max(...lng)};
+  const dx=Math.max(.0001,bounds.maxLng-bounds.minLng),dy=Math.max(.0001,bounds.maxLat-bounds.minLat);
+  const w=600,h=180,pad=24;
+  const coords=valid.filter((_,i)=>i===0||i===valid.length-1||i%Math.max(1,Math.floor(valid.length/280))===0)
+    .map(([a,b])=>[pad+(b-bounds.minLng)/dx*(w-2*pad),h-pad-(a-bounds.minLat)/dy*(h-2*pad)]);
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 600 180");
+  svg.setAttribute("role","img");svg.setAttribute("aria-label","Esquema del trayecto calculado por calles");
+  svg.classList.add("route-road-svg");parent.appendChild(svg);
+  const path=document.createElementNS(NS,"polyline");
+  path.setAttribute("fill","none");path.setAttribute("stroke","#e9c982");path.setAttribute("stroke-width","4");
+  path.setAttribute("stroke-linecap","round");path.setAttribute("stroke-linejoin","round");
+  path.setAttribute("points",coords.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" "));
+  svg.appendChild(path);
+  for(const [i,label] of [[0,"O"],[coords.length-1,"D"]]){
+    const p=coords[i];
+    if(!p)continue;
+    const dot=document.createElementNS(NS,"circle");dot.setAttribute("cx",String(p[0]));
+    dot.setAttribute("cy",String(p[1]));dot.setAttribute("r","12");
+    dot.setAttribute("fill","#0e3237");dot.setAttribute("stroke","#f0cf88");
+    dot.setAttribute("stroke-width","3");svg.appendChild(dot);
+    const textNode=document.createElementNS(NS,"text");textNode.setAttribute("x",String(p[0]));
+    textNode.setAttribute("y",String(p[1]+4));textNode.setAttribute("text-anchor","middle");
+    textNode.setAttribute("fill","#fff3d6");textNode.setAttribute("font-size","11");textNode.textContent=label;
+    svg.appendChild(textNode);
+  }
+  text(parent,"p","Esquema de ruta por calles (no a escala). Abrí Maps para ver el mapa completo.","route-map-caption");
+}
+function renderRouteSummary(){
+  const host=$("route-overview");
+  if(!host)return;
+  const points=selectedRoadPoints();
+  clear(host);host.hidden=points.length<2;
+  if(points.length<2){activeRouteKey="";latestRoad=null;return;}
+  const key=routeKeyOf(points);activeRouteKey=key;
+  const title=text(host,"div","","route-head");
+  text(title,"h3","Tu viaje · de un vistazo");
+  text(title,"small",points.length>2?(points.length-2)+" parada(s) intermedia(s)":"Origen y destino elegidos");
+  const trip=text(host,"div","","route-points");
+  const from=text(trip,"div","","route-point");
+  text(from,"span","ORIGEN","route-caption");text(from,"strong",points[0].text,"route-address");
+  const to=text(trip,"div","","route-point");
+  text(to,"span","DESTINO","route-caption");text(to,"strong",points[points.length-1].text,"route-address");
+  const metrics=text(host,"div","","route-metrics");
+  const km=text(metrics,"div","","route-metric");
+  text(km,"small","KILÓMETROS POR CARRETERA");
+  const distance=text(km,"strong","Consultando…");
+  const min=text(metrics,"div","","route-metric");
+  text(min,"small","TIEMPO DE VIAJE ESTIMADO");
+  const duration=text(min,"strong","Consultando…");
+  const map=text(host,"div","","route-road-map");
+  const status=text(host,"p","Consultando el motor de rutas…","route-status");
+  const a=text(host,"a","↗ Ver ruta, kilómetros y minutos en Google Maps","route-google");
+  a.href=mapsLinkFromBooking({origin:points[0],destination:points[points.length-1],stops:points.slice(1,-1)});
+  a.target="_blank";a.rel="noopener noreferrer";
+  const seq=++routeSequence;
+  const finish=(data)=>{
+    if(seq!==routeSequence||key!==activeRouteKey)return;
+    const success=data?.available===true&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.durationMin);
+    if(success){
+      latestRoad={key,data};
+      distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+      duration.textContent=data.durationMin+" min";
+      clear(map);
+      addRoadDiagram(map,data.geometry);
+      status.textContent="Trayecto estimado por openrouteservice/OpenStreetMap, sin tráfico en vivo.";
+    }else{
+      latestRoad=null;
+      distance.textContent="Ver en Maps";duration.textContent="Ver en Maps";
+      clear(map);
+      status.textContent="Cálculo interno de ruta no disponible. Google Maps puede mostrarte el recorrido por calles y su duración.";
+    }
+  };
+  const cached=roadCache.get(key);
+  if(cached){finish(cached);return;}
+  // Hide stale results when the passenger changes the origin or destination.
+  latestRoad=null;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),7500);
+  fetch(SHARED_ROUTER+"?points="+encodeURIComponent(key),{
+    headers:{Accept:"application/json"},signal:controller.signal,cache:"no-store",
+  }).then(async r=>{
+    if(!r.ok)return null;
+    const result=await r.json();
+    return result?.available?result:null;
+  }).then(result=>{
+    if(result){roadCache.set(key,result);if(roadCache.size>65)roadCache.clear();}
+    finish(result);
+  }).catch(()=>finish(null)).finally(()=>clearTimeout(timer));
+}
+
 let originPicker,destPicker,stopPickers=[];
 function renderStops(){
   const host=$("stops");clear(host);stopPickers=[];
@@ -365,6 +472,14 @@ function showPreview(){
       for(const stop of p.stops)text(more,"p",stop.text);
     }
     previewLocation(journey,"Destino",p.destination.text);
+
+    if(latestRoad?.key===routeKeyOf([p.origin,...p.stops,p.destination])){
+      const estimate=text(target,"div","","preview-road");
+      text(estimate,"strong",latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km por carretera · "+latestRoad.data.durationMin+" min aprox.");
+      text(estimate,"small","Tiempo de conducción sin tráfico en vivo.");
+    }else{
+      const estimate=text(target,"p","Distancia y duración por carretera: consultá Google Maps.","preview-road-note");
+    }
 
     const chips=text(target,"div","","preview-chips");
     const when=text(chips,"div","","preview-chip");
