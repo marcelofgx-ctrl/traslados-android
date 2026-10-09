@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 09/10/2026 (R23.1). Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026 (R24.0). Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -165,3 +165,12 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - `FloatingShortcutPolicyTest` y `ReminderAnchorGeometryTest` PASS; RELEASE `0.1-R23.1`, versionCode 41, CI GitHub Actions `37881774310` SUCCESS. APK 52.262.243 bytes, SHA256 `3662ffc3ada0f2ae64a9b5b5bde424d907c7322ef360956bed06780013eb8332`; misma firma que R23.0; sonidos originales preservados.
 - APK Drive https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view ; carpeta https://drive.google.com/drive/folders/18QsCkg8UqirtLcaCwvy4g_SbJc0JnHmv .
 - **QA pendiente en Samsung:** instalar encima de R23.0, conceder superposición con ◎, minimizar SIN jornada, comprobar burbuja y ausencia GPS, tocar para regresar; repetir CON jornada, alarmas y cola anclada. Samsung/Android puede restringir permanencia por batería.
+
+
+## R24.0 — Traslados Conductor integrado dentro de Mapa (09/10/2026)
+- **Objetivo:** una APK principal Mapa Trayectos con módulo Conductor real embebido. Cliente sigue siendo app separada; Conductor independiente queda de respaldo sin cambios.
+- **Integración:** `prepareEmbeddedConductor` Gradle copia fuentes originales de `conductor/` al build de Mapa, importa R generado y copia WAV/íconos/texture; compilación completa de `MainActivity`, `Api`, `ReservationMonitorService`, `DemandMapActivity` y `TripTelemetryService` nativos. No son enlaces a otra APK ni WebViews.
+- **UX:** menú general ☰ premium independiente del ✦ de acciones rápidas; solicitudes nuevas sincronizan badge en ✦ y burbuja flotante única, con tarjetas de NUEVO TRASLADO ancladas y entrada al módulo. Recordatorios y sonidos preexistentes intactos.
+- **Compilación:** primera run R24 `37887559428` falló por comentario vacío como instrucción Java tras transformación del código; corregido en `9be9fd174641bd564c70e15c6ec201e592fbaf53`. Run definitiva **37887653127 SUCCESS** con tests/compilación/firma/sonidos/recursos verificados. `0.1-R24.0`, versionCode 42, APK 52.527.863 bytes SHA256 `80aa8378cf1b946e9d16f895d7b83a5827c03513ca84f7b1663a22c2af07b9e8`; certificado firma compatible con R23.1.
+- **Backup Drive ZIP** https://drive.google.com/file/d/17TlWjNWmt-KMp_eX_cNy1tIjG_neKj2C/view , carpeta https://drive.google.com/drive/folders/10S1FZRNi4m8vHOAuFIHwKa4VVyczx5tJ . APK individual entregada por enlace sandbox de sesión.
+- **Prueba pendiente Samsung:** entrar por menú ☰ a Conductor integrado, iniciar sesión PIN por primera vez, verificar datos reales Supabase y aceptación/presupuesto/agenda, probar contador y tarjeta de solicitud en abierto y minimizado, GPS/sonidos, comprobar no duplicaciones. GPS de Conductor y Mapa siguen siendo servicios distintos; consolidación y seguimiento en vivo del pasajero permanecen pendientes.
