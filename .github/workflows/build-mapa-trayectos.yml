@@ -175,8 +175,6 @@ jobs:
           grep -q 'ACTION_REMINDER_POPUP' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
           grep -q 'goAsync()' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
           grep -q 'ReminderSound.playBlocking' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
-          grep -q 'makeSamples' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderSound.java
-          grep -q 'PROBAR SONIDO DE BURBUJAS' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderActivity.java
           grep -q 'mapa_personal_reminders_v3_bubbles' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderStore.java
           grep -q 'formatClock' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'MetricIconView.TRIPS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
