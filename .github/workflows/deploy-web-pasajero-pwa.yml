@@ -49,7 +49,7 @@ jobs:
                   rows.append(bytes(row))
               def chunk(kind,blob):
                   return struct.pack(">I",len(blob))+kind+blob+struct.pack(">I",zlib.crc32(kind+blob)&0xffffffff)
-              data=b"\\x89PNG\\r\\n\\x1a\\n"+chunk(b'IHDR',struct.pack('>IIBBBBB',n,n,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),9))+chunk(b'IEND',b'')
+              data=b"\x89PNG\r\n\x1a\n"+chunk(b'IHDR',struct.pack('>IIBBBBB',n,n,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),9))+chunk(b'IEND',b'')
               (root/name).write_bytes(data)
           png("icon-192.png",192)
           png("icon-512.png",512)
