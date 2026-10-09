@@ -99,7 +99,9 @@ tasks.register('prepareEmbeddedConductor') {
             }
             if (original.name == 'MainActivity.java') {
                 java = java.replace('super.onResume();',
-                    'super.onResume();\n        uy.com.mapatrayectos.TransferAlerts.markViewed(this);')
+                    'super.onResume();\n        uy.com.mapatrayectos.TransferAlerts.markViewed(this);\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();\n        try{startService(new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(uy.com.mapatrayectos.TrackingService.ACTION_UI_VISIBLE));}catch(Exception ignored){}')
+                java = java.replace('super.onPause();',
+                    'super.onPause();\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();\n        try{Intent svc=new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(uy.com.mapatrayectos.TrackingService.ACTION_UI_HIDDEN);boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);if(active)startService(svc);else if(android.provider.Settings.canDrawOverlays(this)){if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}}catch(Exception ignored){}')
             }
             dest.setText(java,'UTF-8')
         }
