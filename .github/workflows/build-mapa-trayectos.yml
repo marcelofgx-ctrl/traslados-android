@@ -281,12 +281,13 @@ jobs:
           expected="5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0"
           apk=os.environ["APK"]
           with zipfile.ZipFile(apk) as z:
-              media=[p for p in z.namelist() if p.startswith("res/raw/")]
-              print("Packaged raw resources:", media)
-              for item in media:
-                  data=z.read(item)
+              media=[info for info in z.infolist()
+                     if info.file_size==33062 or info.filename.lower().endswith(".mp3")]
+              print("Packaged MP3 candidates:",[(x.filename,x.file_size) for x in media])
+              for info in media:
+                  data=z.read(info)
                   if hashlib.sha256(data).hexdigest()==expected:
-                      print("Verified original 33062-byte MP3 inside signed candidate APK:",item)
+                      print("Verified original 33062-byte MP3 inside signed candidate APK:",info.filename)
                       break
               else:
                   raise SystemExit("MP3 original not found with expected SHA256 in APK")
