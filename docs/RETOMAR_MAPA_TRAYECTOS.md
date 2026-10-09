@@ -1,12 +1,24 @@
 # MAPA TRAYECTOS — CONTEXTO DE REINICIO Y ENTREGA
 
-**Fecha de corte:** 08/10/2026 (compilación R22.8 verificada al cierre de la conversación).  
+**Fecha de corte:** 08/10/2026, tras compilación firmada R22.9 y entrega verificada en Drive.  
 **Documento principal para retomar otra sesión:** `docs/RETOMAR_MAPA_TRAYECTOS.md` en el repositorio.  
-**Estado de entrega:** Código y compilación R22.8 verificados; varios comportamientos requieren prueba en Samsung.
+**Estado de entrega:** R22.9 compilada y firmada; usuario confirmó alertas visuales dentro y fuera de la app en R22.8, pero NO sonido MP3. R22.9 corrige canal/volumen; reproducción audible real pendiente de probar en Samsung.
 
 > **MENSAJE LISTO PARA PEGAR EN UNA NUEVA SESIÓN:**
 >
-> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R22.8 / versionCode 38**, build `37870800270`, que incluye mi MP3 ElevenLabs de burbujas para recordatorios. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
+> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R22.9 / versionCode 39**, build `37872681083`, que reproduce el MP3 ElevenLabs por canal ALARMAS con volumen mínimo 50% temporal y restaura el valor previo. Usuario confirma alerta visual abierta/cerrada; falta verificar audio en Samsung. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
+
+## 0. NUEVA ENTREGA VERIFICADA — R22.9 (08/10/2026)
+
+- **Reporte real Samsung R22.8:** notificación de recordatorio visible correctamente con app abierta o cerrada, pero SIN audio de burbujas. Por tanto, entrega de alertas sí probada por el usuario; audio audible NO.
+- **Diagnóstico de código:** R22.8 no reproducía audio si teléfono estaba en silencio/vibración o notificaciones en volumen 0; MediaPlayer usaba `USAGE_NOTIFICATION_EVENT`. Su volumen 0.85 no elevaba el control físico del sistema.
+- **Arreglo R22.9:** `ReminderSound.playBlocking` ahora usa `AudioAttributes.USAGE_ALARM`, `MediaPlayer.setVolume(1.0f,1.0f)` y `setWakeMode(PARTIAL_WAKE_LOCK)`. Antes de sonar sube solo `AudioManager.STREAM_ALARM` a **al menos 50%** si es inferior; al finalizar intenta restaurar el nivel anterior, sin pisar cambios manuales hechos mientras suena. `synchronized` evita cruces entre alarmas solapadas. Se agregó permiso normal `MODIFY_AUDIO_SETTINGS`. No modifica música, timbre, notificaciones, modo No molestar ni sonidos operativos de viajes.
+- **Limitación:** Android puede negar subir el volumen o silenciar por No molestar/rutas Bluetooth; se registra diagnóstico sin prometer salida acústica. No hay confirmación de audio en Samsung todavía.
+- **Código:** PR #6 fusionado, commit de merge `32fe456cbe2905dc2860445b11fb8459144adaaf`. `main`: `mapatrayectos/build.gradle` `versionCode 39`, `versionName 0.1-R22.9`.
+- **Actions:** run `37872681083` COMPLETED/SUCCESS, `Mapa-Trayectos-v0.1-R22-9-RELEASE`. La firma v2 coincide con el certificado anterior (`d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d`).
+- **APK:** `Mapa_Trayectos_v0.1_R22_9_RELEASE.apk`, 52.262.035 bytes, SHA-256 `6a7ba50023ac91df11110134dd217dd946213631f1661d3e9ce37c5f53a5ec69`. Dentro de la APK el MP3 sigue intacto, SHA-256 `5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0`.
+- **Drive verificado:** APK https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view ; ZIP de artefacto con comprobantes https://drive.google.com/file/d/13Xz4HOxQTkrxX-dnEoaOLY3QcoxU1mQZ/view ; carpeta R22.9 https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA.
+- **QA al instalar:** instalar ENCIMA de versión previa sin borrar datos. Abrir ✦ > Recordatorios > PROBAR MP3 ORIGINAL DE BURBUJAS y escuchar el tono; comprobar diagnóstico y si restaura volumen de alarmas. Luego programar alerta de 1 minuto con app abierta y cerrada. Comprobar si alarma suena con modo normal y si se permite en silencio/vibración. No molestar puede restringir. No atribuir éxito acústico solo porque MediaPlayer terminó.
 
 ## 1. Fuentes de verdad y enlaces
 
@@ -18,9 +30,9 @@
 - **Historial acumulado:** `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`.
 - **Contexto maestro histórico:** `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`.
 - **Pendientes históricos:** `docs/mapa-trayectos-roadmap-2026-10-08.md`. Algunas tareas están marcadas antiguamente como no implementadas; contrastar siempre con `main` y este documento.
-- **Última RELEASE verificada:** `0.1-R22.8`, `versionCode 38`, run de GitHub Actions **37870800270**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37870800270
-- **APK en Drive (verificada):** https://drive.google.com/file/d/1px_rPZu9iSP8g9keQsHgoBYwLPKy5z7k/view
-- **Carpeta Drive R22.8:** https://drive.google.com/drive/folders/1DD3cgIArfpskQDUfFPb6Acv50BUQeuwj
+- **Última RELEASE verificada:** `0.1-R22.9`, `versionCode 39`, run de GitHub Actions **37872681083**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37872681083
+- **APK R22.9 en Drive (verificada):** https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view
+- **Carpeta Drive R22.9:** https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA
 - **Carpeta general Versiones en Drive:** https://drive.google.com/drive/folders/1eaXoeNaRl9Peb8a7pyrOFrTWqj-xyjd6
 - **Web oficial del negocio que se comparte desde la app:** https://traslados-web.marcelof-gx.workers.dev/
 - **Descarga web de la APK:** todavía NO hay ruta oficial validada. No inventar enlaces `/descargas` en la web de Cloudflare.
