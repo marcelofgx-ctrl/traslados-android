@@ -68,3 +68,70 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 @media(max-width:350px){
   .preview-chips{grid-template-columns:1fr}
 }
+
+
+/* PWA v2 · Búsqueda general Uruguay + trayecto compacto de un vistazo */
+.location-widget{min-width:0}
+.location-title{font:800 12px Manrope,"DM Sans",sans-serif;letter-spacing:.09em;color:#f1d79d;margin-bottom:11px}
+.location-controls{min-width:0}
+.location-controls .loc-search{gap:9px}
+.location-controls .loc-search input{min-width:0}
+.location-widget .results{display:grid;gap:8px;margin:10px 0}
+.location-widget .results button.result{
+  text-align:left;padding:12px 13px!important;display:flex!important;flex-direction:column!important;
+  align-items:flex-start!important;gap:4px!important;border-radius:13px!important;
+  min-height:64px;background:#0b2c36;border:1px solid rgba(235,204,140,.26);
+  white-space:normal;overflow-wrap:anywhere
+}
+.location-widget .results button.result:active,.location-widget .results button.result:hover{
+  background:#153f48;border-color:#d9b96f;
+}
+.location-widget .results .result-place{border-color:rgba(232,197,122,.52)!important}
+.location-widget .result-title{font-weight:750;font-size:14px;line-height:1.4;color:#f9f3e8;white-space:normal}
+.location-widget .result-subtitle{font-size:11.5px;line-height:1.35;color:#d5d9ce;white-space:normal}
+.location-widget .geo-feedback{margin:8px 0 2px;color:#d2d9ce;font-size:12px}
+.location-widget .geo-attribution{font-size:10px;color:#b8c9bf;line-height:1.4}
+.location-widget .location-selected{
+  min-height:76px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  border:1px solid rgba(128,216,174,.36);background:linear-gradient(110deg,#0b3538,#103a42);
+  border-radius:14px;padding:14px 12px;margin:10px 0;
+}
+.location-chosen-content{min-width:0;flex:1}
+.location-selected-label{display:block;color:#fff4dd;font-size:14px;font-weight:750;line-height:1.45;overflow-wrap:anywhere}
+.location-selected-hint{display:block;color:#c4d7ce;font-size:11px;line-height:1.5;margin-top:4px}
+.location-edit{align-self:center;flex-shrink:0;min-height:43px!important}
+.route-overview{
+  margin-top:18px;padding:17px;
+  background:radial-gradient(circle at 90% 5%,rgba(224,181,95,.1),transparent 50%),linear-gradient(142deg,#154048,#0b2d36);
+  border:1px solid rgba(237,204,132,.62);border-radius:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.2)
+}
+.route-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.route-head h3{font-size:18px;font-weight:800;letter-spacing:-.035em;color:#f8ecd6}
+.route-head small{color:#d1d8cb}
+.route-points{padding:14px 0;border-bottom:1px solid rgba(228,198,130,.20);display:grid;gap:13px}
+.route-point{display:grid;gap:4px;min-width:0}
+.route-caption{font:800 10px Manrope,sans-serif;letter-spacing:.14em;color:#e5c27f}
+.route-address{font-size:14px;font-weight:720;line-height:1.45;color:#fff3e2;overflow-wrap:anywhere}
+.route-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:13px}
+.route-metric{background:rgba(4,28,36,.52);border:1px solid rgba(220,188,120,.25);border-radius:12px;padding:12px 10px;min-width:0}
+.route-metric small{display:block;font-size:10px;line-height:1.5;letter-spacing:.06em;color:#c5d5ce}
+.route-metric strong{display:block;font:800 20px Manrope,sans-serif;letter-spacing:-.04em;color:#f7e4b9;margin-top:5px}
+.route-road-map{border-radius:13px;overflow:hidden;margin-top:10px}
+.route-road-svg{display:block;width:100%;max-height:190px;background:linear-gradient(120deg,#12343a,#113039);border:1px solid rgba(217,186,118,.28);border-radius:12px}
+.route-map-caption,.route-status{font-size:11.5px;line-height:1.6;color:#c8d5ce;margin:8px 0}
+.route-google{
+  display:flex;min-height:47px;align-items:center;justify-content:center;padding:9px 12px;
+  border:1px solid rgba(237,207,150,.6);border-radius:13px;
+  color:#f5dc9f;background:rgba(238,202,134,.09);
+  font-weight:800;font-size:13px;line-height:1.4;text-align:center
+}
+.route-google:hover{background:rgba(238,202,134,.17)}
+.preview-road{display:flex;flex-direction:column;gap:3px;padding:10px 12px;margin:10px 0;border-radius:12px;border:1px solid rgba(231,190,116,.38);background:#133d42}
+.preview-road strong{color:#f7dfa7;font-size:15px}
+.preview-road small,.preview-road-note{font-size:11.5px;color:#c6d7ca;line-height:1.5}
+@media(max-width:440px){
+  .route-overview{padding:14px 12px}
+  .route-metric strong{font-size:18px}
+  .location-widget .location-selected{padding:11px}
+}

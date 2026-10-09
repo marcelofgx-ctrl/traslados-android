@@ -9,11 +9,11 @@
   <meta name="apple-mobile-web-app-title" content="Traslados">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=3">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -76,6 +76,7 @@
           <div id="stops"></div>
         </div>
         <div id="destination-picker" class="location-pane"></div>
+        <section id="route-overview" class="route-overview" hidden aria-live="polite"></section>
         <div id="login-for-stops" class="subnote">¿Necesitás paradas intermedias? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
       </div>
 
@@ -133,6 +134,7 @@
     </footer>
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
-  <script src="./app.js" defer></script>
+  <script src="./geo-search.js?v=3" defer></script>
+  <script src="./app.js?v=3" defer></script>
 </body>
 </html>

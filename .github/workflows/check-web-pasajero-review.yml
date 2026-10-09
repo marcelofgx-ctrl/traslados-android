@@ -23,7 +23,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate JavaScript and service worker
         run: |
+          node --check web-pasajero/geo-search.js
           node --check web-pasajero/app.js
+          node web-pasajero/tests/search-smoke.cjs
           node --check web-pasajero/sw.js
       - name: Verify review flow and offline safety
         run: |
@@ -44,7 +46,7 @@ jobs:
           assert 'preview-extra' in app and '.preview-place-name' in css
           assert 'ENVIAR SOLICITUD AL CONDUCTOR' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
-          assert 'traslados-cliente-pwa-v2' in sw
+          assert 'traslados-cliente-pwa-v3' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
           assert 'gen_random_bytes' not in html

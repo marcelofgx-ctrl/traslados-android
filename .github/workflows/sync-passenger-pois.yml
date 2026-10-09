@@ -1,0 +1,52 @@
+name: Sincronizar lugares de Uruguay en PWA pasajeros
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "33 10 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-passenger-pois.yml'
+permissions:
+  contents: write
+concurrency:
+  group: sync-passenger-pois
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Descargar índice OSM nacional de la web premium
+        run: |
+          set -euo pipefail
+          mkdir -p web-pasajero/data
+          curl -fL --retry 4 --retry-delay 3 --connect-timeout 15 --max-time 90 \
+            -o /tmp/uy-pois.json \
+            https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-web/main/public/data/uy-pois.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=json.loads(Path('/tmp/uy-pois.json').read_text(encoding='utf-8'))['items']
+          assert len(rows)>5000, 'Índice incompleto'
+          found=[x for x in rows if 'punta carretas shopping' in x[1].lower()]
+          assert found,'Falta Punta Carretas Shopping'
+          print(f'Índice Uruguay: {len(rows)} puntos de interés. Punta Carretas Shopping OK')
+          PY
+      - name: Incorporar índice conservando cambios paralelos
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          mkdir -p web-pasajero/data
+          cp /tmp/uy-pois.json web-pasajero/data/uy-pois.json
+          git add web-pasajero/data/uy-pois.json
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "datos: actualizar índice uruguayo OSM para reservas PWA"
+          git push origin HEAD:main

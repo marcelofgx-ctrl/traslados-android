@@ -10,7 +10,7 @@ const DEPTS=["Montevideo","Canelones","Artigas","Cerro Largo","Colonia","Durazno
 const states={PENDIENTE:"Pendiente",PRESUPUESTO_ENVIADO:"Presupuesto enviado",ACEPTADA:"Aceptada",ACEPTADA_CLIENTE:"Aceptada por pasajero",CONFIRMADA:"Confirmada",EN_VIAJE:"En viaje",FINALIZADA:"Finalizada",CANCELADA:"Cancelada",RECHAZADA:"Rechazada",RECHAZADA_CLIENTE:"Rechazada por pasajero"};
 const $=(id)=>document.getElementById(id);
 const record={origin:null,destination:null,stops:[]};
-const depts={origin:"Canelones",destination:"Montevideo"};
+const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
 
 function jsonStorage(key,defaultValue){try{return JSON.parse(localStorage.getItem(key)||"null")??defaultValue;}catch{return defaultValue;}}
@@ -69,92 +69,281 @@ function shiftView(name){
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
 function picker(name,mount,position){
-  const box=document.createElement("div");mount.appendChild(box);
-  text(box,"strong",name==="origin"?"⌖ Origen · ¿dónde te buscamos?":name==="destination"?"⚑ Destino":"● Parada "+(position+1));
-  const dep=document.createElement("div");dep.className="departments";box.appendChild(dep);
+  const key=name==="origin"||name==="destination"?name:"stop"+position;
+  const box=document.createElement("section");box.className="location-widget";mount.appendChild(box);
+  const caption=text(box,"div",name==="origin"?"◉ ORIGEN":name==="destination"?"◆ DESTINO":"● PARADA "+(position+1),"location-title");
+  const selectedBox=text(box,"div","","location-selected");selectedBox.hidden=true;
+  const controls=text(box,"div","","location-controls");
+  const dep=text(controls,"div","","departments");
+  let dept=depts[key]||(name==="destination"?"Montevideo":"Canelones");
+  let selected=null,sequence=0,debounce=null;
+  const depButtons=[];
   for(const opt of ["Montevideo","Canelones"]){
-    const b=button(dep,opt,"",()=>chooseDept(opt));
-    b.classList.toggle("selected",(depts[name]||"Canelones")===opt);
+    const btn=button(dep,opt,"",()=>chooseDept(opt));depButtons.push(btn);
   }
   const select=document.createElement("select");select.setAttribute("aria-label","Otros departamentos de Uruguay");
   const prompt=document.createElement("option");prompt.text="Otros 17 departamentos";prompt.value="";select.appendChild(prompt);
-  for(const d of DEPTS.slice(2)){const o=document.createElement("option");o.value=d;o.textContent=d;select.appendChild(o);}
+  for(const d of DEPTS.slice(2)){
+    const item=document.createElement("option");item.value=d;item.textContent=d;select.appendChild(item);
+  }
   dep.appendChild(select);
-  const row=document.createElement("div");row.className="loc-search";box.appendChild(row);
-  const input=document.createElement("input");input.type="search";input.placeholder="Calle, número, localidad o aeropuerto…";
-  input.autocomplete="street-address";input.setAttribute("aria-label","Dirección de "+name);row.appendChild(input);
-  const search=button(row,"Buscar","tiny-btn",()=>void lookup());row.appendChild(search);
-  const geo=name==="origin"?button(box,"⌖ Usar ubicación actual","tiny-btn",()=>void useCurrent()):null;
-  const results=document.createElement("div");results.className="results";box.appendChild(results);
-  const chosen=document.createElement("div");chosen.className="location-selected";chosen.hidden=true;box.appendChild(chosen);
-  const key=name==="origin"||name==="destination"?name:"stop"+position;
-  let dept=depts[key]||(name==="destination"?"Montevideo":"Canelones");
-  let selected=null;
-  const persist=(loc)=>{
-    selected=loc;
-    if(name==="origin"||name==="destination"){record[name]=loc;depts[name]=loc.department||dept;}
-    else record.stops[position]=loc;
-    chosen.hidden=false;chosen.textContent="✓ "+loc.text+" · "+loc.lat.toFixed(5)+", "+loc.lng.toFixed(5);
-    clear(results);
-  };
-  const state=()=>selected;
-  const chooseDept=(d)=>{
-    dept=d;depts[key]=d;selected=null;chosen.hidden=true;
-    if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
-    for(const b of dep.querySelectorAll("button"))b.classList.toggle("selected",b.textContent===d);
-    select.value=DEPTS.slice(2).includes(d)?d:"";
-    clear(results);
-  };
+  function highlight(){
+    for(const btn of depButtons)btn.classList.toggle("selected",btn.textContent===dept);
+    select.value=DEPTS.slice(2).includes(dept)?dept:"";
+  }
+  highlight();
+  const row=text(controls,"div","","loc-search");
+  const input=document.createElement("input");input.type="search";
+  input.placeholder="Lugar, comercio, aeropuerto, calle o número…";
+  input.autocomplete="off";input.setAttribute("aria-label","Lugar o dirección de "+name);
+  row.appendChild(input);
+  const search=button(row,"Buscar","tiny-btn",()=>void lookup()); 
+  const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn",()=>void useCurrent()):null;
+  const results=text(controls,"div","","results");
+  const feedback=text(controls,"p","","geo-feedback");feedback.hidden=true;
+  const source=text(controls,"p","","geo-attribution");source.hidden=true;
+  function repaint(){
+    clear(selectedBox);
+    if(!selected){selectedBox.hidden=true;controls.hidden=false;return;}
+    selectedBox.hidden=false;controls.hidden=true;
+    const shown=text(selectedBox,"div","","location-chosen-content");
+    text(shown,"strong",selected.text,"location-selected-label");
+    text(shown,"small",selected.department?selected.department+" · Punto de referencia ajustable":"Punto seleccionado","location-selected-hint");
+    button(selectedBox,"Editar","tiny-btn location-edit",()=>{
+      selected=null;selectedBox.hidden=true;controls.hidden=false;
+      if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      renderRouteSummary();input.focus();
+      clear(results);feedback.hidden=true;
+    });
+  }
+  function persist(loc){
+    if(!isUruguayCoords(loc.lat,loc.lng))throw new Error("El punto no está dentro de Uruguay.");
+    selected={...loc,lat:Number(loc.lat),lng:Number(loc.lng)};
+    ++sequence;clearTimeout(debounce);
+    if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
+    else record.stops[position]=selected;
+    clear(results);repaint();renderRouteSummary();
+  }
+  function chooseDept(d){
+    dept=d;depts[key]=d;highlight();
+    if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;}
+    clear(results);feedback.hidden=true;renderRouteSummary();
+    if(input.value.trim().length>=2)void lookup();
+  }
   select.addEventListener("change",()=>{if(select.value)chooseDept(select.value);});
+  function renderEntries(places,addresses,q){
+    if(selected)return;
+    clear(results);source.hidden=true;
+    const dedup=new Set(),unique=[];
+    const all=[
+      ...places.map(p=>({type:"place",name:p.name,secondary:[p.hint,p.department].filter(Boolean).join(" · "),point:p})),
+      ...addresses.map(p=>({type:"address",name:p.address,secondary:p.departamento||"Uruguay",point:p})),
+    ];
+    for(const item of all){
+      const normalized=window.TrasladosGeo.normalize(item.name);
+      const key=normalized+"|"+item.type;
+      if(!normalized||dedup.has(key))continue;
+      dedup.add(key);unique.push(item);
+      if(unique.length>=11)break;
+    }
+    for(const item of unique){
+      const btn=button(results,"",item.type==="place"?"result result-place":"result",async()=>{
+        try{
+          const p=item.point;
+          let lat=Number(item.type==="place"?p.lat:p.lat),lng=Number(item.type==="place"?p.lng:p.lng);
+          if(!isUruguayCoords(lat,lng)&&item.type==="address"){
+            const resp=await fetch(IDE+"/direcUnica?limit=5&q="+encodeURIComponent(p.address),{cache:"no-store"});
+            const arr=resp.ok?await resp.json():[];
+            const found=Array.isArray(arr)?arr.find(t=>isUruguayCoords(Number(t.lat),Number(t.lng))):null;
+            if(!found)throw new Error("La dirección no tiene coordenadas verificables.");
+            lat=Number(found.lat);lng=Number(found.lng);
+          }
+          persist({text:item.name,lat,lng,department:item.type==="place"?p.department||dept:p.departamento||dept});
+        }catch(e){showError(e);}
+      });
+      text(btn,"span",item.name,"result-title");
+      text(btn,"small",(item.type==="place"?"◉ Lugar · ":"⌖ Dirección · ")+item.secondary,"result-subtitle");
+    }
+    if(places.some(p=>p.id?.startsWith("osm-"))){
+      source.hidden=false;
+      source.textContent="Lugares: © OpenStreetMap contributors (ODbL). Elegí en el mapa el acceso exacto si es necesario.";
+    }
+    if(!unique.length){feedback.hidden=false;feedback.textContent="No encontramos coincidencias. Probá con otro nombre o número.";}
+    else feedback.hidden=true;
+  }
   const lookup=async()=>{
-    const q=input.value.trim();if(q.length<4){tell("Escribí por lo menos cuatro caracteres de la dirección.");return;}
-    loading(search,true);clear(results);
-    text(results,"small","Buscando direcciones en IDE Uruguay…");
-    try{
-      const resp=await fetch(IDE+"/candidates?limit=15&q="+encodeURIComponent(q+", "+dept),{cache:"no-store"});
-      if(!resp.ok)throw new Error("El servicio de direcciones no respondió");
-      const arr=await resp.json();
-      if(!Array.isArray(arr))throw new Error("Respuesta de direcciones inválida");
-      clear(results);
-      const filtered=arr.filter(x=>x&&x.address).sort((a,b)=>String(b.departamento||"").toLowerCase()===dept.toLowerCase()?1:0);
-      if(!filtered.length){text(results,"small","No hubo coincidencias. Añadí localidad y numeración o usá tu ubicación.");return;}
-      for(const item of filtered.slice(0,8)){
-        const candidate=button(results,(item.address||"")+" · "+(item.departamento||""),"result",async()=>{
-          try{
-            let lat=Number(item.lat),lng=Number(item.lng);
-            if(!isUruguayCoords(lat,lng)){
-              const r=await fetch(IDE+"/direcUnica?limit=5&q="+encodeURIComponent(item.address),{cache:"no-store"});
-              const possibilities=r.ok?await r.json():[];
-              const match=Array.isArray(possibilities)?possibilities.find(x=>isUruguayCoords(Number(x.lat),Number(x.lng))):null;
-              if(!match)throw new Error("Esta dirección no tiene coordenadas verificables. Probá otro resultado.");
-              lat=Number(match.lat);lng=Number(match.lng);
-            }
-            persist({text:item.address,lat,lng,department:item.departamento||dept});
-          }catch(e){showError(e);}
-        });
-        const extra=text(candidate,"small","Elegir ubicación verificada");
+    const q=input.value.trim();
+    if(q.length<2){clear(results);feedback.hidden=true;return;}
+    const seq=++sequence;
+    const quick=window.TrasladosGeo.immediate(q,dept);
+    renderEntries(quick,[],q);
+    if(q.length<3)return;
+    let places=quick,addresses=[],done=0;
+    loading(search,true);
+    feedback.hidden=false;feedback.textContent=quick.length?"Buscando otros lugares…":"Buscando lugares y direcciones en Uruguay…";
+    const update=()=>{
+      if(seq!==sequence||selected)return;
+      renderEntries(places,addresses,q);
+      if(done<2){
+        feedback.hidden=false;feedback.textContent="Buscando más resultados…";
       }
-    }catch(e){clear(results);showError(e);}
-    finally{loading(search,false);}
+      if(done===2)loading(search,false);
+    };
+    const placesTask=(async()=>{
+      try{places=await window.TrasladosGeo.find(q,dept);}catch{/* IDE fallback still available */}
+      finally{done++;update();}
+    })();
+    const streetTask=(async()=>{
+      try{
+        // Consultar una sola vez TODO URUGUAY, sin añadir Canelones o
+        // Montevideo al texto, que antes ocultaba puntos de interés.
+        const resp=await fetch(IDE+"/candidates?limit=20&q="+encodeURIComponent(q),{cache:"no-store"});
+        if(!resp.ok)throw new Error("IDE no disponible");
+        const raw=await resp.json();
+        if(Array.isArray(raw)){
+          addresses=raw.filter(x=>x&&x.address&&
+            ((x.lat==null||x.lng==null)||isUruguayCoords(Number(x.lat),Number(x.lng))))
+            .sort((a,b)=>
+              Number(String(b.departamento||"").toLowerCase()===dept.toLowerCase())-
+              Number(String(a.departamento||"").toLowerCase()===dept.toLowerCase())
+            ).slice(0,12);
+        }
+      }catch{/* POI index still available */}
+      finally{done++;update();}
+    })();
+    await Promise.allSettled([placesTask,streetTask]);
   };
+  input.addEventListener("input",()=>{
+    ++sequence;clearTimeout(debounce);clear(results);feedback.hidden=true;
+    const q=input.value.trim();
+    if(q.length<2)return;
+    renderEntries(window.TrasladosGeo.immediate(q,dept),[],q);
+    debounce=setTimeout(()=>void lookup(),240);
+  });
   const useCurrent=async()=>{
     if(!navigator.geolocation){tell("El dispositivo no ofrece GPS.");return;}
     tell("Solicitando permiso para tu ubicación…");
-    navigator.geolocation.getCurrentPosition(async(p)=>{
+    navigator.geolocation.getCurrentPosition(async p=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
       if(!isUruguayCoords(lat,lng)){tell("La ubicación detectada no está en Uruguay.");return;}
-      let address="Ubicación actual (GPS)";
-      let selectedDept=dept;
+      let address="Ubicación actual (GPS)",selectedDept=dept;
       try{
         const r=await fetch(IDE+"/reverse?limit=1&latitud="+lat+"&longitud="+lng);
         if(r.ok){const arr=await r.json();if(Array.isArray(arr)&&arr[0]?.address){address=arr[0].address;selectedDept=arr[0].departamento||dept;}}
       }catch{}
       persist({text:address,lat,lng,department:selectedDept});
-    },()=>tell("No se pudo obtener GPS. Revisá los permisos de ubicación."),{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
+    },()=>tell("No se pudo obtener GPS. Revisá permisos."),{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   };
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
-  return{state,chooseDept,input,persist,box};
+  return {state:()=>selected,chooseDept,input,persist,box};
 }
+// Shared routing engine with the premium Cloudflare calculator.
+// ORS_API_KEY stays on the server; never copy a routing secret into this PWA.
+const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+const roadCache=new Map();
+let latestRoad=null,activeRouteKey="",routeSequence=0;
+function selectedRoadPoints(){
+  return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
+}
+function routeKeyOf(points){
+  return points.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
+}
+function addRoadDiagram(parent,geometry){
+  if(!Array.isArray(geometry)||geometry.length<2)return;
+  const valid=geometry.filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite));
+  if(valid.length<2)return;
+  const lat=valid.map(p=>p[0]),lng=valid.map(p=>p[1]);
+  const bounds={minLat:Math.min(...lat),maxLat:Math.max(...lat),minLng:Math.min(...lng),maxLng:Math.max(...lng)};
+  const dx=Math.max(.0001,bounds.maxLng-bounds.minLng),dy=Math.max(.0001,bounds.maxLat-bounds.minLat);
+  const w=600,h=180,pad=24;
+  const coords=valid.filter((_,i)=>i===0||i===valid.length-1||i%Math.max(1,Math.floor(valid.length/280))===0)
+    .map(([a,b])=>[pad+(b-bounds.minLng)/dx*(w-2*pad),h-pad-(a-bounds.minLat)/dy*(h-2*pad)]);
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 600 180");
+  svg.setAttribute("role","img");svg.setAttribute("aria-label","Esquema del trayecto calculado por calles");
+  svg.classList.add("route-road-svg");parent.appendChild(svg);
+  const path=document.createElementNS(NS,"polyline");
+  path.setAttribute("fill","none");path.setAttribute("stroke","#e9c982");path.setAttribute("stroke-width","4");
+  path.setAttribute("stroke-linecap","round");path.setAttribute("stroke-linejoin","round");
+  path.setAttribute("points",coords.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" "));
+  svg.appendChild(path);
+  for(const [i,label] of [[0,"O"],[coords.length-1,"D"]]){
+    const p=coords[i];
+    if(!p)continue;
+    const dot=document.createElementNS(NS,"circle");dot.setAttribute("cx",String(p[0]));
+    dot.setAttribute("cy",String(p[1]));dot.setAttribute("r","12");
+    dot.setAttribute("fill","#0e3237");dot.setAttribute("stroke","#f0cf88");
+    dot.setAttribute("stroke-width","3");svg.appendChild(dot);
+    const textNode=document.createElementNS(NS,"text");textNode.setAttribute("x",String(p[0]));
+    textNode.setAttribute("y",String(p[1]+4));textNode.setAttribute("text-anchor","middle");
+    textNode.setAttribute("fill","#fff3d6");textNode.setAttribute("font-size","11");textNode.textContent=label;
+    svg.appendChild(textNode);
+  }
+  text(parent,"p","Esquema de ruta por calles (no a escala). Abrí Maps para ver el mapa completo.","route-map-caption");
+}
+function renderRouteSummary(){
+  const host=$("route-overview");
+  if(!host)return;
+  const points=selectedRoadPoints();
+  clear(host);host.hidden=points.length<2;
+  if(points.length<2){activeRouteKey="";latestRoad=null;return;}
+  const key=routeKeyOf(points);activeRouteKey=key;
+  const title=text(host,"div","","route-head");
+  text(title,"h3","Tu viaje · de un vistazo");
+  text(title,"small",points.length>2?(points.length-2)+" parada(s) intermedia(s)":"Origen y destino elegidos");
+  const trip=text(host,"div","","route-points");
+  const from=text(trip,"div","","route-point");
+  text(from,"span","ORIGEN","route-caption");text(from,"strong",points[0].text,"route-address");
+  const to=text(trip,"div","","route-point");
+  text(to,"span","DESTINO","route-caption");text(to,"strong",points[points.length-1].text,"route-address");
+  const metrics=text(host,"div","","route-metrics");
+  const km=text(metrics,"div","","route-metric");
+  text(km,"small","KILÓMETROS POR CARRETERA");
+  const distance=text(km,"strong","Consultando…");
+  const min=text(metrics,"div","","route-metric");
+  text(min,"small","TIEMPO DE VIAJE ESTIMADO");
+  const duration=text(min,"strong","Consultando…");
+  const map=text(host,"div","","route-road-map");
+  const status=text(host,"p","Consultando el motor de rutas…","route-status");
+  const a=text(host,"a","↗ Ver ruta, kilómetros y minutos en Google Maps","route-google");
+  a.href=mapsLinkFromBooking({origin:points[0],destination:points[points.length-1],stops:points.slice(1,-1)});
+  a.target="_blank";a.rel="noopener noreferrer";
+  const seq=++routeSequence;
+  const finish=(data)=>{
+    if(seq!==routeSequence||key!==activeRouteKey)return;
+    const success=data?.available===true&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.durationMin);
+    if(success){
+      latestRoad={key,data};
+      distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+      duration.textContent=data.durationMin+" min";
+      clear(map);
+      addRoadDiagram(map,data.geometry);
+      status.textContent="Trayecto estimado por openrouteservice/OpenStreetMap, sin tráfico en vivo.";
+    }else{
+      latestRoad=null;
+      distance.textContent="Ver en Maps";duration.textContent="Ver en Maps";
+      clear(map);
+      status.textContent="Cálculo interno de ruta no disponible. Google Maps puede mostrarte el recorrido por calles y su duración.";
+    }
+  };
+  const cached=roadCache.get(key);
+  if(cached){finish(cached);return;}
+  // Hide stale results when the passenger changes the origin or destination.
+  latestRoad=null;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),7500);
+  fetch(SHARED_ROUTER+"?points="+encodeURIComponent(key),{
+    headers:{Accept:"application/json"},signal:controller.signal,cache:"no-store",
+  }).then(async r=>{
+    if(!r.ok)return null;
+    const result=await r.json();
+    return result?.available?result:null;
+  }).then(result=>{
+    if(result){roadCache.set(key,result);if(roadCache.size>65)roadCache.clear();}
+    finish(result);
+  }).catch(()=>finish(null)).finally(()=>clearTimeout(timer));
+}
+
 let originPicker,destPicker,stopPickers=[];
 function renderStops(){
   const host=$("stops");clear(host);stopPickers=[];
@@ -284,6 +473,14 @@ function showPreview(){
       for(const stop of p.stops)text(more,"p",stop.text);
     }
     previewLocation(journey,"Destino",p.destination.text);
+
+    if(latestRoad?.key===routeKeyOf([p.origin,...p.stops,p.destination])){
+      const estimate=text(target,"div","","preview-road");
+      text(estimate,"strong",latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km por carretera · "+latestRoad.data.durationMin+" min aprox.");
+      text(estimate,"small","Tiempo de conducción sin tráfico en vivo.");
+    }else{
+      const estimate=text(target,"p","Distancia y duración por carretera: consultá Google Maps.","preview-road-note");
+    }
 
     const chips=text(target,"div","","preview-chips");
     const when=text(chips,"div","","preview-chip");
