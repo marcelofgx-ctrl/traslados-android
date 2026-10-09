@@ -463,7 +463,22 @@ public class HistoryActivity extends Activity {
     private float dpF(float v){return v*getResources().getDisplayMetrics().density;}
     private String periodLabel(){return periodDays==1?"Hoy":periodDays==7?"Últimos 7 días":periodDays==30?"Últimos 30 días":"Todo el historial";}
     private void savePrefs(){getSharedPreferences("history_prefs",MODE_PRIVATE).edit().putInt("period_days",periodDays).putString("type_filter",typeFilter).putString("status_filter",statusFilter).apply();}
-    private void signalTrackingUi(boolean visible){SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);if(!s.getBoolean("shift_active",false))return;try{startService(new Intent(this,TrackingService.class).setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN));}catch(Exception ignored){}}
+    private void signalTrackingUi(boolean visible){
+        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",visible).apply();
+        boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);
+        android.content.Intent svc=new android.content.Intent(this,TrackingService.class)
+            .setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN);
+        if(visible&&!active){
+            stopService(new android.content.Intent(this,TrackingService.class));
+            return;
+        }
+        if(!active&&!android.provider.Settings.canDrawOverlays(this))return;
+        try{
+            if(!active&&!visible&&android.os.Build.VERSION.SDK_INT>=26)
+                startForegroundService(svc);
+            else startService(svc);
+        }catch(Exception e){android.util.Log.w("MapaBubble","Secondary screen transition",e);}
+    }
     private long startOfToday(long now){Calendar c=Calendar.getInstance();c.setTimeInMillis(now);c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);return c.getTimeInMillis();}
     private String cap(String s){if(s==null||s.isEmpty())return s;return Character.toUpperCase(s.charAt(0))+s.substring(1);}
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
