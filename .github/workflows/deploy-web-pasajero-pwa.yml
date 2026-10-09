@@ -7,6 +7,11 @@ on:
       - 'web-pasajero/**'
       - 'index.html'
       - '.github/workflows/deploy-web-pasajero-pwa.yml'
+  pull_request:
+    paths:
+      - 'web-pasajero/**'
+      - 'index.html'
+      - '.github/workflows/deploy-web-pasajero-pwa.yml'
 permissions:
   contents: read
 jobs:
@@ -14,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify app icons are committed for GitHub Pages branch deployment
+        run: |
+          test -s web-pasajero/icons/icon-192.png
+          test -s web-pasajero/icons/icon-512.png
+          test -s web-pasajero/icons/icon-maskable.png
       - name: Generate original PNG app icons without external paid services
         shell: bash
         run: |
