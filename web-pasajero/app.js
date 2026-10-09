@@ -108,10 +108,11 @@ function picker(name,mount,position){
     selectedBox.hidden=false;controls.hidden=true;
     const shown=text(selectedBox,"div","","location-chosen-content");
     text(shown,"strong",selected.text,"location-selected-label");
-    text(shown,"small",selected.department?selected.department+" · Punto seleccionando en mapa":"Punto seleccionado","location-selected-hint");
+    text(shown,"small",selected.department?selected.department+" · Punto de referencia ajustable":"Punto seleccionado","location-selected-hint");
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;selectedBox.hidden=true;controls.hidden=false;
-      input.focus();
+      if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      renderRouteSummary();input.focus();
       clear(results);feedback.hidden=true;
     });
   }
@@ -201,7 +202,7 @@ function picker(name,mount,position){
         const raw=await resp.json();
         if(Array.isArray(raw)){
           addresses=raw.filter(x=>x&&x.address&&
-            true)
+            ((x.lat==null||x.lng==null)||isUruguayCoords(Number(x.lat),Number(x.lng))))
             .sort((a,b)=>
               Number(String(b.departamento||"").toLowerCase()===dept.toLowerCase())-
               Number(String(a.departamento||"").toLowerCase()===dept.toLowerCase())
