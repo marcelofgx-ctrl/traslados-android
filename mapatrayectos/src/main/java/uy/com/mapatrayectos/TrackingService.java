@@ -448,8 +448,9 @@ public class TrackingService extends Service implements LocationListener {
     private void closeMapFromFloatingBubble(){
         // Check durable state as well as service state before allowing a close.
         SharedPreferences persisted=getSharedPreferences("tracking_state",MODE_PRIVATE);
-        if(shiftActive||tripActive||persisted.getBoolean("shift_active",false)
-                ||persisted.getBoolean("trip_active",false)){
+        if(!BubbleClosePolicy.mayClose(shiftActive,tripActive,
+                persisted.getBoolean("shift_active",false),
+                persisted.getBoolean("trip_active",false))){
             android.widget.Toast.makeText(this,
                 "Hay una jornada abierta. Cerrala antes de salir de Mapa Trayectos.",
                 android.widget.Toast.LENGTH_LONG).show();
