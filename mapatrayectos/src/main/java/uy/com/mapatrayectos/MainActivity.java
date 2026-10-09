@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
     private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
 
     private boolean resetAfterBackup=false;
+    private boolean mapCloseRequested=false;
 
     public static final String ACTION_REMINDER_POPUP="uy.com.mapatrayectos.REMINDER_POPUP";
     private final BroadcastReceiver reminderReceiver=new BroadcastReceiver(){
@@ -119,6 +120,25 @@ public class MainActivity extends Activity {
         FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(8),dp(6),dp(8),dp(6));top.setBackground(headerGradient());top.setElevation(dp(7));
         TextView brand=text("⌖",17,BG,true);brand.setGravity(Gravity.CENTER);brand.setContentDescription("Mapa Trayectos");brand.setBackground(rounded(Color.rgb(238,198,88),16,0,0));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(30),dp(30));brandLp.setMargins(0,0,dp(5),0);top.addView(brand,brandLp);
+        brand.setContentDescription("Mapa Trayectos. Mantené pulsado para cerrar el mapa si no hay jornada.");
+        brand.setOnLongClickListener(v->{
+            SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
+            if(!BubbleClosePolicy.mayClose(shiftActive,tripActive,
+                    state.getBoolean("shift_active",false),state.getBoolean("trip_active",false))){
+                Toast.makeText(this,"La jornada está abierta. Cerrala antes de salir.",Toast.LENGTH_LONG).show();
+                return true;
+            }
+            new AlertDialog.Builder(this).setTitle("Cerrar Mapa Trayectos")
+                .setMessage("Se cerrarán el mapa y su burbuja. Los avisos de reservas seguirán disponibles mientras el monitor de Traslados continúe funcionando.")
+                .setNegativeButton("CANCELAR",null)
+                .setPositiveButton("CERRAR",(d,w)->{
+                    mapCloseRequested=true;
+                    TransferAlerts.ensureMonitor(this);
+                    stopService(new Intent(this,TrackingService.class));
+                    finishAndRemoveTask();
+                }).show();
+            return true;
+        });
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);zoneText=text(zone,10.8f,Color.rgb(236,195,92),true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(58),dp(42)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
@@ -402,13 +422,13 @@ public class MainActivity extends Activity {
 
     private void showMainMenu(View anchor){
         LinearLayout menu=new LinearLayout(this);menu.setOrientation(LinearLayout.VERTICAL);
-        menu.setPadding(dp(11),dp(10),dp(11),dp(12));
+        menu.setPadding(dp(8),dp(7),dp(8),dp(8));
         menu.setBackground(new TexturedDrawable(this,Color.rgb(6,45,53),
             Color.rgb(9,72,80),Color.argb(220,231,202,130),18f,1f,false));
-        TextView heading=text("MAPA TRAYECTOS · CENTRO DE CONTROL",10,CHAMPAGNE,true);
+        TextView heading=text("MAPA TRAYECTOS · CENTRO DE CONTROL",9.3f,CHAMPAGNE,true);
         heading.setGravity(Gravity.CENTER_VERTICAL);
-        menu.addView(heading,new LinearLayout.LayoutParams(-1,dp(33)));
-        PopupWindow popup=new PopupWindow(menu,dp(262),-2,true);
+        menu.addView(heading,new LinearLayout.LayoutParams(-1,dp(29)));
+        PopupWindow popup=new PopupWindow(menu,dp(232),-2,true);
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);popup.setElevation(dp(13));
         addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
@@ -422,22 +442,22 @@ public class MainActivity extends Activity {
             ()->startActivity(new Intent(this,HistoryActivity.class)));
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
-        try{popup.showAsDropDown(anchor,-dp(211),dp(7));}
+        try{popup.showAsDropDown(anchor,-dp(181),dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
     private void addMainMenuRow(LinearLayout menu,String icon,String title,String sub,
                                 PopupWindow popup,Runnable action){
         LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(9),dp(8),dp(8),dp(8));
-        TextView symbol=text(icon,21,CHAMPAGNE,true);symbol.setGravity(Gravity.CENTER);
-        row.addView(symbol,new LinearLayout.LayoutParams(dp(38),dp(39)));
+        row.setPadding(dp(7),dp(3),dp(5),dp(3));
+        TextView symbol=text(icon,18,CHAMPAGNE,true);symbol.setGravity(Gravity.CENTER);
+        row.addView(symbol,new LinearLayout.LayoutParams(dp(33),dp(34)));
         LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);
-        TextView name=text(title,12.5f,TEXT,true);name.setSingleLine(true);
-        TextView desc=text(sub,9.6f,MUTED,false);desc.setSingleLine(true);
+        TextView name=text(title,11.8f,TEXT,true);name.setSingleLine(true);
+        TextView desc=text(sub,9.1f,MUTED,false);desc.setSingleLine(true);
         col.addView(name);col.addView(desc);
         LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);
-        cp.leftMargin=dp(7);row.addView(col,cp);
-        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(57)));
+        cp.leftMargin=dp(6);row.addView(col,cp);
+        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(49)));
         View line=new View(this);line.setBackgroundColor(Color.argb(70,231,202,130));
         menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
         row.setOnClickListener(v->{popup.dismiss();action.run();});
@@ -975,7 +995,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{stopService(new Intent(this,TrackingService.class));startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
-    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);

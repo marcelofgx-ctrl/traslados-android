@@ -10,13 +10,13 @@ import android.graphics.PixelFormat;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Color;
-import android.util.Log;
 import android.graphics.drawable.GradientDrawable;
 import android.location.*;
 import android.os.*;
 import android.provider.Settings;
 import android.view.*;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import androidx.annotation.Nullable;
 import java.util.*;
 
@@ -314,30 +314,159 @@ public class TrackingService extends Service implements LocationListener {
         }
     }
 
-    private void showBubbleIfAllowed(){if(!FloatingShortcutPolicy.canDisplay(appVisible,Settings.canDrawOverlays(this),bubbleView!=null))return;try{bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);if(bubbleWm==null)return;ImageView bubble=new ImageView(this){
-            private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-            @Override protected void onDraw(Canvas canvas){
-                super.onDraw(canvas);
-                int count=TransferAlerts.pendingCount(TrackingService.this);
-                if(count<=0)return;
-                float cx=getWidth()-dp(11),cy=dp(11),radius=dp(10);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(180,51,57));
-                canvas.drawCircle(cx,cy,radius,p);
-                p.setColor(Color.rgb(236,203,133));p.setStyle(Paint.Style.STROKE);
-                p.setStrokeWidth(dp(1));canvas.drawCircle(cx,cy,radius,p);
-                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);
-                p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                p.setTextSize(dp(11));p.setColor(Color.WHITE);
-                canvas.drawText(count>9?"9+":Integer.toString(count),cx,cy+dp(4),p);
+    /**
+     * R24.1: 64dp touch surface with a slightly larger (56dp) visible logo.
+     * Paint the request badge OUTSIDE the clipped round logo on the parent,
+     * leaving a 2dp safe area so numbers (including 9+) cannot be cropped.
+     */
+    private void showBubbleIfAllowed(){
+        if(!FloatingShortcutPolicy.canDisplay(appVisible,Settings.canDrawOverlays(this),bubbleView!=null))return;
+        try{
+            bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);
+            if(bubbleWm==null)return;
+            final int size=dp(64),iconSize=dp(56),iconInset=dp(4);
+            FrameLayout bubble=new FrameLayout(this){
+                private final Paint badgePaint=new Paint(Paint.ANTI_ALIAS_FLAG);
+                @Override protected void dispatchDraw(Canvas canvas){
+                    super.dispatchDraw(canvas);
+                    int count=TransferAlerts.pendingCount(TrackingService.this);
+                    if(count<=0)return;
+                    final float cx=getWidth()-dp(12),cy=dp(12),radius=dp(10);
+                    badgePaint.setStyle(Paint.Style.FILL);
+                    badgePaint.setColor(Color.rgb(182,53,58));
+                    canvas.drawCircle(cx,cy,radius,badgePaint);
+                    badgePaint.setStyle(Paint.Style.STROKE);
+                    badgePaint.setStrokeWidth(dp(1));
+                    badgePaint.setColor(Color.rgb(231,202,130));
+                    canvas.drawCircle(cx,cy,radius,badgePaint);
+                    badgePaint.setStyle(Paint.Style.FILL);
+                    badgePaint.setColor(Color.WHITE);
+                    badgePaint.setTextAlign(Paint.Align.CENTER);
+                    badgePaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    badgePaint.setTextSize(dp(count>9?9:11));
+                    canvas.drawText(count>9?"9+":Integer.toString(count),cx,cy+dp(4),badgePaint);
+                }
+            };
+            bubble.setClipChildren(false);
+            bubble.setClipToPadding(false);
+            bubble.setContentDescription("Mapa Trayectos. Tocá para abrir. Mantené pulsado para cerrar el mapa sin jornada.");
+            ImageView icon=new ImageView(this);
+            icon.setImageResource(R.drawable.app_icon);
+            GradientDrawable chrome=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(5,49,58),Color.rgb(8,85,91)});
+            chrome.setCornerRadius(dp(28));
+            chrome.setStroke(dp(1),Color.rgb(222,190,112));
+            icon.setBackground(chrome);icon.setClipToOutline(true);
+            icon.setPadding(dp(6),dp(6),dp(6),dp(6));
+            FrameLayout.LayoutParams logoLp=new FrameLayout.LayoutParams(iconSize,iconSize,Gravity.TOP|Gravity.LEFT);
+            logoLp.leftMargin=iconInset;logoLp.topMargin=iconInset;
+            bubble.addView(icon,logoLp);
+            bubble.setElevation(dp(7));
+
+            bubbleLp=new WindowManager.LayoutParams(size,size,
+                Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT);
+            bubbleLp.gravity=Gravity.TOP|Gravity.START;
+            SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);
+            bubbleLp.x=bp.getInt("window_x",bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12)));
+            bubbleLp.y=bp.getInt("window_y",bp.getInt("y",dp(220)));
+            bubble.setOnTouchListener(new View.OnTouchListener(){
+                float downX,downY;
+                int startX,startY;
+                long downAt;
+                boolean moved=false,longHandled=false;
+                final Runnable longPress=()->{
+                    if(moved)return;
+                    longHandled=true;
+                    bubble.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    closeMapFromFloatingBubble();
+                };
+                @Override public boolean onTouch(View v,MotionEvent e){
+                    switch(e.getActionMasked()){
+                        case MotionEvent.ACTION_DOWN:
+                            downX=e.getRawX();downY=e.getRawY();
+                            startX=bubbleLp.x;startY=bubbleLp.y;
+                            downAt=System.currentTimeMillis();moved=false;longHandled=false;
+                            clockHandler.removeCallbacks(longPress);
+                            clockHandler.postDelayed(longPress,800L);
+                            return true;
+                        case MotionEvent.ACTION_MOVE:
+                            if(longHandled)return true;
+                            float dxMove=Math.abs(e.getRawX()-downX),dyMove=Math.abs(e.getRawY()-downY);
+                            if(dxMove>dp(8)||dyMove>dp(8)){
+                                moved=true;clockHandler.removeCallbacks(longPress);
+                            }
+                            if(!moved)return true;
+                            int nx=startX+(int)(e.getRawX()-downX);
+                            int ny=startY+(int)(e.getRawY()-downY);
+                            int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);
+                            int maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));
+                            bubbleLp.x=Math.max(0,Math.min(maxX,nx));
+                            bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));
+                            try{
+                                bubbleWm.updateViewLayout(bubble,bubbleLp);
+                                signalFloatingBubblePosition(true);
+                                realignTransferCallout();
+                            }catch(Exception ignored){}
+                            return true;
+                        case MotionEvent.ACTION_UP:
+                            clockHandler.removeCallbacks(longPress);
+                            if(longHandled)return true;
+                            float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);
+                            if(!moved&&dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<800){
+                                Intent open=new Intent(TrackingService.this,MainActivity.class)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                startActivity(open);
+                            }else{
+                                int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);
+                                bubbleLp.x=bubbleLp.x<edge/2?0:edge;
+                                try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}
+                                saveFloatingBubbleState(true);
+                                signalFloatingBubblePosition(true);
+                                realignTransferCallout();
+                            }
+                            return true;
+                        case MotionEvent.ACTION_CANCEL:
+                            clockHandler.removeCallbacks(longPress);
+                            return true;
+                    }
+                    return false;
+                }
+            });
+            bubbleWm.addView(bubble,bubbleLp);
+            bubbleView=bubble;saveFloatingBubbleState(true);
+            if(clockHandler!=null){
+                clockHandler.removeCallbacks(bubbleHeartbeat);
+                clockHandler.postDelayed(bubbleHeartbeat,IDLE_BUBBLE_HEARTBEAT_MS);
             }
-        };bubble.setImageResource(R.drawable.app_icon);
-        GradientDrawable chrome=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-            new int[]{Color.rgb(5,49,58),Color.rgb(8,85,91)});
-        chrome.setCornerRadius(dp(27));chrome.setStroke(dp(1),Color.rgb(222,190,112));
-        bubble.setBackground(chrome);bubble.setClipToOutline(true);
-        bubble.setPadding(dp(6),dp(6),dp(6),dp(6));bubble.setElevation(dp(7));int size=dp(52);bubbleLp=new WindowManager.LayoutParams(size,size,Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);bubbleLp.gravity=Gravity.TOP|Gravity.START;SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));bubbleLp.y=bp.getInt("y",dp(220));bubble.setOnTouchListener(new View.OnTouchListener(){float downX,downY;int startX,startY;long downAt;@Override public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:downX=e.getRawX();downY=e.getRawY();startX=bubbleLp.x;startY=bubbleLp.y;downAt=System.currentTimeMillis();return true;case MotionEvent.ACTION_MOVE:int nx=startX+(int)(e.getRawX()-downX),ny=startY+(int)(e.getRawY()-downY);int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size),maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));bubbleLp.x=Math.max(0,Math.min(maxX,nx));bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));try{bubbleWm.updateViewLayout(bubble,bubbleLp);signalFloatingBubblePosition(true);realignTransferCallout();}catch(Exception ignored){}return true;case MotionEvent.ACTION_UP:float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);if(dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<500){Intent open=new Intent(TrackingService.this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(open);}else{int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);bubbleLp.x=bubbleLp.x<edge/2?0:edge;try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}saveFloatingBubbleState(true);signalFloatingBubblePosition(true);realignTransferCallout();}return true;}return false;}});bubbleWm.addView(bubble,bubbleLp);bubbleView=bubble;saveFloatingBubbleState(true);
-        if(clockHandler!=null){clockHandler.removeCallbacks(bubbleHeartbeat);clockHandler.postDelayed(bubbleHeartbeat,IDLE_BUBBLE_HEARTBEAT_MS);}
-        signalFloatingBubblePosition(true);}catch(Exception ignored){hideBubble();}}
+            signalFloatingBubblePosition(true);
+        }catch(Exception ex){Log.w("MapaBubble","Unable to show shortcut",ex);hideBubble();}
+    }
+
+    /** Closing the map shortcut must NEVER disable authenticated transfer alerts. */
+    private void closeMapFromFloatingBubble(){
+        // Check durable state as well as service state before allowing a close.
+        SharedPreferences persisted=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        if(!BubbleClosePolicy.mayClose(shiftActive,tripActive,
+                persisted.getBoolean("shift_active",false),
+                persisted.getBoolean("trip_active",false))){
+            android.widget.Toast.makeText(this,
+                "Hay una jornada abierta. Cerrala antes de salir de Mapa Trayectos.",
+                android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
+        // Without PIN the monitor does not run; with PIN leave the reservation
+        // monitor untouched and ask it to remain available while Mapa disappears.
+        TransferAlerts.ensureMonitor(this);
+        boolean watching=!getSharedPreferences("driver_session",MODE_PRIVATE)
+            .getString("pin","").isEmpty();
+        android.widget.Toast.makeText(this,
+            watching?"Mapa cerrado · avisos mientras siga activo el monitor":"Mapa Trayectos cerrado",
+            android.widget.Toast.LENGTH_SHORT).show();
+        stopForeground(STOP_FOREGROUND_REMOVE);
+        stopSelf(); // onDestroy removes overlays, location listeners and bubble.
+    }
     /**
      * The reminder overlay follows the REAL 52dp floating shortcut, not the old
      * in-map ✦ coordinates. Notify it on every drag and when the bubble vanishes.
@@ -346,16 +475,17 @@ public class TrackingService extends Service implements LocationListener {
         Intent moved=new Intent(ACTION_FLOATING_BUBBLE_POSITION).setPackage(getPackageName());
         moved.putExtra("visible",visible);
         if(visible&&bubbleLp!=null){
-            moved.putExtra("x",bubbleLp.x).putExtra("y",bubbleLp.y)
-                .putExtra("size",bubbleLp.width);
+            moved.putExtra("x",bubbleLp.x+dp(4)).putExtra("y",bubbleLp.y+dp(4))
+                .putExtra("size",dp(56));
         }
         sendBroadcast(moved);
     }
     private void saveFloatingBubbleState(boolean visible){
         SharedPreferences.Editor e=getSharedPreferences("bubble_state",MODE_PRIVATE).edit();
         e.putBoolean("floating_visible",visible).putLong("floating_seen_ms",System.currentTimeMillis());
-        if(visible&&bubbleLp!=null)e.putInt("x",bubbleLp.x).putInt("y",bubbleLp.y)
-            .putInt("floating_size",bubbleLp.width);
+        if(visible&&bubbleLp!=null)e.putInt("window_x",bubbleLp.x).putInt("window_y",bubbleLp.y)
+            .putInt("x",bubbleLp.x+dp(4)).putInt("y",bubbleLp.y+dp(4))
+            .putInt("floating_size",dp(56));
         e.apply();
     }
     private void showTransferCallout(){
@@ -392,7 +522,7 @@ public class TrackingService extends Service implements LocationListener {
         int width=dp(ReminderCallout.TOTAL_WIDTH_DP),screenHeight=getResources().getDisplayMetrics().heightPixels;
         callout.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(screenHeight,View.MeasureSpec.AT_MOST));
-        return ReminderAnchorGeometry.place(bubbleLp.x,bubbleLp.y,bubbleLp.width,
+        return ReminderAnchorGeometry.place(bubbleLp.x+dp(4),bubbleLp.y+dp(4),dp(56),
             getResources().getDisplayMetrics().widthPixels,screenHeight,
             width,callout.getMeasuredHeight(),
             dp(ReminderCallout.TAIL_CENTER_DP),dp(ReminderCallout.TAIL_HEIGHT_DP)/2,dp(4));

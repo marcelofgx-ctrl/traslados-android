@@ -94,9 +94,19 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R24.0'" mapatrayectos/build.gradle
-          grep -q "versionCode 42" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R24.1'" mapatrayectos/build.gradle
+          grep -q "versionCode 43" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'PopupWindow(menu,dp(232)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'dp(49)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'FrameLayout bubble=new FrameLayout' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'new WindowManager.LayoutParams(size,size' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'postDelayed(longPress,800L)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'BubbleClosePolicy.mayClose' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'TransferAlerts.ensureMonitor(this)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'window_x' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "prepareEmbeddedConductor" mapatrayectos/build.gradle
           grep -q "new Intent(this,uy.com.traslados.conductor.MainActivity.class)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "showMainMenu" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -304,6 +314,10 @@ jobs:
             mapatrayectos/src/main/java/uy/com/mapatrayectos/FloatingShortcutPolicy.java \
             mapatrayectos/tests/FloatingShortcutPolicyTest.java
           java -cp /tmp/mapa-anchor-check FloatingShortcutPolicyTest
+          javac -d /tmp/mapa-anchor-check \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleClosePolicy.java \
+            mapatrayectos/tests/BubbleClosePolicyTest.java
+          java -cp /tmp/mapa-anchor-check BubbleClosePolicyTest
 
       - name: Build signed release
         shell: bash
@@ -368,8 +382,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R24_0_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R24_0_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R24_1_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R24_1_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -377,9 +391,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R24-0-RELEASE
+          name: Mapa-Trayectos-v0.1-R24-1-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R24_0_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R24_1_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
