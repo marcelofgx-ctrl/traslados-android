@@ -43,44 +43,65 @@ public final class QuickActionsMenu {
 
     private QuickActionsMenu(){}
 
-    public static void show(Activity activity, View anchor){
+    public static void show(Activity activity,View anchor){
+        show(activity,anchor,0f);
+    }
+    /** R24.2: compact by default; real-time reservations and actions expand on demand. */
+    public static void show(Activity activity,View anchor,float speedKmh){
         if(currentPopup!=null&&currentPopup.isShowing()){
-            dismiss(currentPopup,null);
-            return;
+            dismiss(currentPopup,null);return;
         }
+        final LinearLayout shell=new LinearLayout(activity);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setPadding(dp(activity,8),dp(activity,6),dp(activity,8),dp(activity,8));
+        shell.setBackground(new TexturedDrawable(activity,PETROL,PETROL_LIGHT,
+            Color.argb(210,231,202,130),17f,0.8f,false));
+        TextView header=text(activity,"✦  CENTRO RÁPIDO",10,GOLD,true);
+        header.setLetterSpacing(.12f);header.setPadding(dp(activity,9),0,0,0);
+        shell.addView(header,new LinearLayout.LayoutParams(-1,dp(activity,30)));
         final LinearLayout content=new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(activity,8),dp(activity,7),dp(activity,8),dp(activity,8));
-        content.setBackground(new TexturedDrawable(activity,PETROL,PETROL_LIGHT,Color.argb(210,231,202,130),17f,0.8f,false));
+        android.widget.ScrollView scroll=new android.widget.ScrollView(activity){
+            @Override protected void onMeasure(int w,int h){
+                int height=Math.max(dp(activity,230),Math.min(dp(activity,545),
+                    getResources().getDisplayMetrics().heightPixels-dp(activity,270)));
+                super.onMeasure(w,View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.AT_MOST));
+            }
+        };
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setFillViewport(false);
+        scroll.addView(content,new android.widget.ScrollView.LayoutParams(-1,-2));
+        shell.addView(scroll,new LinearLayout.LayoutParams(-1,-2));
 
-        TextView header=text(activity,"ACCIONES",10,GOLD,true);
-        header.setLetterSpacing(0.12f);
-        header.setPadding(dp(activity,11),0,0,0);
-        content.addView(header,new LinearLayout.LayoutParams(-1,dp(activity,28)));
-
-        PopupWindow popup=new PopupWindow(content,dp(activity,207),-2,true);
+        final int width=dp(activity,258);
+        PopupWindow popup=new PopupWindow(shell,width,-2,true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popup.setElevation(dp(activity,9));
-        popup.setOutsideTouchable(true);
-        popup.setOnDismissListener(()->{if(currentPopup==popup)currentPopup=null;});
-
-        add(activity,content,"▣", "Tarjeta visual",popup,()->showCard(activity));
-        add(activity,content,"↗", "WhatsApp a número",popup,()->showWhatsAppNumber(activity));
-        add(activity,content,"+", "Guardar pasajero",popup,()->savePassenger(activity));
-        add(activity,content,"◷", "Recordatorios",popup,()->activity.startActivity(new Intent(activity,ReminderActivity.class)));
-        add(activity,content,"⌁", "Enlaces y contacto",popup,()->showShareHub(activity));
-
+        popup.setElevation(dp(activity,10));popup.setOutsideTouchable(true);
+        TransferQuickPanel transfers=new TransferQuickPanel(activity,popup,speedKmh);
+        content.addView(transfers.view(),new LinearLayout.LayoutParams(-1,-2));
+        LinearLayout other=new LinearLayout(activity);
+        other.setOrientation(LinearLayout.VERTICAL);
+        transfers.installOtherActions(other);
+        add(activity,other,"▣","Tarjeta visual",popup,()->showCard(activity));
+        add(activity,other,"↗","WhatsApp a número",popup,()->showWhatsAppNumber(activity));
+        add(activity,other,"+","Guardar pasajero",popup,()->savePassenger(activity));
+        add(activity,other,"◷","Recordatorios",popup,()->
+            activity.startActivity(new Intent(activity,ReminderActivity.class)));
+        add(activity,other,"⌁","Enlaces y contacto",popup,()->showShareHub(activity));
+        popup.setOnDismissListener(()->{
+            transfers.dispose();
+            if(currentPopup==popup)currentPopup=null;
+        });
         currentPopup=popup;
-        content.setAlpha(0f);
-        content.setTranslationY(-dp(activity,11));
-        try {
-            // Align to the right edge of the small floating control; never anchor at screen center.
-            popup.showAsDropDown(anchor,-dp(activity,163),dp(activity,8));
-            content.animate().alpha(1f).translationY(0f).setDuration(200L)
-                    .setInterpolator(new DecelerateInterpolator()).start();
-        } catch(Exception e){
-            currentPopup=null;
-            Toast.makeText(activity,"No se pudo abrir el menú",Toast.LENGTH_SHORT).show();
+        shell.setAlpha(0f);shell.setTranslationY(-dp(activity,7));
+        try{
+            popup.showAsDropDown(anchor,-dp(activity,214),dp(activity,5));
+            transfers.start();
+            shell.animate().alpha(1f).translationY(0f).setDuration(175L)
+                .setInterpolator(new DecelerateInterpolator()).start();
+        }catch(Exception e){
+            transfers.dispose();currentPopup=null;
+            Toast.makeText(activity,"No se pudo abrir el centro rápido",Toast.LENGTH_SHORT).show();
         }
     }
 
