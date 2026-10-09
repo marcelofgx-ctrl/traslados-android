@@ -145,6 +145,7 @@ function picker(name,mount,position){
       persist({text:address,lat,lng,department:selectedDept});
     },()=>tell("No se pudo obtener GPS. Revisá los permisos de ubicación."),{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   };
+  if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return{state,chooseDept,input,persist,box};
 }
 let originPicker,destPicker,stopPickers=[];
@@ -204,6 +205,16 @@ async function accountSubmit(){
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
+    // Claim existing guest bookings in this browser so they become visible
+    // in the new account, just like the native Cliente app does.
+    const guestTrips=jsonStorage(GUEST_KEY,[]);
+    const unclaimed=[];
+    for(const prior of guestTrips){
+      try{await rpc("customer_claim_reservation",{
+        p_session_token:session.token,p_public_token:prior.token
+      });}catch{unclaimed.push(prior);}
+    }
+    saveStorage(GUEST_KEY,unclaimed);
     syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView("reservar");
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
