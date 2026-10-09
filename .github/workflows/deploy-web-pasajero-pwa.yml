@@ -1,4 +1,4 @@
-name: Build and deploy passenger PWA (free GitHub Pages)
+name: Verify and package passenger PWA (GitHub Pages via branch)
 on:
   workflow_dispatch:
   push:
@@ -8,15 +8,11 @@ on:
       - '.github/workflows/deploy-web-pasajero-pwa.yml'
 permissions:
   contents: read
-  pages: write
-  id-token: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Configure GitHub Pages source and deployment metadata
-        uses: actions/configure-pages@v5
       - name: Generate original PNG app icons without external paid services
         shell: bash
         run: |
@@ -90,17 +86,7 @@ jobs:
           name: Traslados-Web-PWA-Instalable
           path: artifacts/
           if-no-files-found: error
-      - name: Upload site for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: web-pasajero
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publish over HTTPS
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # Public website is deployed ONLY by GitHub Pages from branch main/root.
+      # The repo root remains a project index, and the passenger app is hosted
+      # at /traslados-android/web-pasajero/. Competing Actions deploys used to
+      # overwrite each other, making the public URL inconsistent.
