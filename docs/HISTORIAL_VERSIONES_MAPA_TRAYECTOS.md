@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 09/10/2026 (R24.0). Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026 (R24.1). Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -174,3 +174,10 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - **Compilación:** primera run R24 `37887559428` falló por comentario vacío como instrucción Java tras transformación del código; corregido en `9be9fd174641bd564c70e15c6ec201e592fbaf53`. Run definitiva **37887653127 SUCCESS** con tests/compilación/firma/sonidos/recursos verificados. `0.1-R24.0`, versionCode 42, APK 52.527.863 bytes SHA256 `80aa8378cf1b946e9d16f895d7b83a5827c03513ca84f7b1663a22c2af07b9e8`; certificado firma compatible con R23.1.
 - **Backup Drive ZIP** https://drive.google.com/file/d/17TlWjNWmt-KMp_eX_cNy1tIjG_neKj2C/view , carpeta https://drive.google.com/drive/folders/10S1FZRNi4m8vHOAuFIHwKa4VVyczx5tJ . APK individual entregada por enlace sandbox de sesión.
 - **Prueba pendiente Samsung:** entrar por menú ☰ a Conductor integrado, iniciar sesión PIN por primera vez, verificar datos reales Supabase y aceptación/presupuesto/agenda, probar contador y tarjeta de solicitud en abierto y minimizado, GPS/sonidos, comprobar no duplicaciones. GPS de Conductor y Mapa siguen siendo servicios distintos; consolidación y seguimiento en vivo del pasajero permanecen pendientes.
+
+
+## R24.1 — Menú compacto, badge visible y cierre seguro (09/10/2026)
+- Menú ☰ de 262dp/filas57dp pasa a 232dp/filas49dp; sin alterar estética petróleo/champagne. Bubble de 52dp pasa a logo56dp dentro FrameLayout64dp; contador rojo (2 y 9+) dibujado sobre frame no recortado, manteniendo flecha alineada con logo real.
+- Pulsación prolongada 800ms sobre burbuja flotante cierra solo mapa si no hay jornada ni viaje activo; icono amarillo de cabecera permite cerrar con confirmación. Si jornada abierta, cierre rechazado. `BubbleClosePolicyTest` añadido al workflow.
+- **Importantísimo:** monitor de reservas Conductor NO se detiene expresamente al cerrar mapa si hay PIN; mantiene polling Supabase 15s mientras Android lo conserve. **No hay FCM/push auténticos aún**, Android podría matar monitor o impedir notificaciones en cierre forzado, por lo que FCM + backend se considera fase posterior.
+- Build firmado v0.1-R24.1, versionCode 43, Actions 37918720480 SUCCESS, APK SHA-256 59b72fb820c22fb4112a35b460f0c77c8976c05c5075fb972012855384033971, 52.527.863 bytes, certificado compatible R24.0; tests y MP3 original confirmados CI. Google Drive APK https://drive.google.com/file/d/1spEV5CniaJIm16xCIAjH6M8oDctae53w/view y ZIP https://drive.google.com/file/d/1FA_ovCJMrNkR5mKcHMq42j8Svc4I3Bi3/view . Prueba física Samsung pendiente.
