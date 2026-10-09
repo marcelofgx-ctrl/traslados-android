@@ -24,3 +24,17 @@ El workflow de GitHub Actions `deploy-web-pasajero-pwa.yml` genera PNG 192/512/m
 ## Fuente
 
 `index.html`, `styles.css`, `app.js`, `sw.js`, `manifest.webmanifest`, `offline.html`. Sin React, npm, dependencias externas ni suscripción de terceros.
+
+
+## Corrección urgente del formulario (09/10/2026)
+
+- La captura de error `function gen_random_bytes(integer) does not exist` corresponde a **esta web de GitHub Pages**, no a la web principal del repositorio `traslados-web` publicada en Cloudflare.
+- Se aplicó directamente en Supabase `zetaudvvutlouiqxopvg` la migración `fix_public_reservation_crypto_schema_20261009`. **No altera reservas ni datos existentes**: `public.generate_reservation_code()` ahora ejecuta `extensions.gen_random_bytes(3)` y `public.create_reservation(...)` ejecuta `extensions.gen_random_bytes(32)`. Ambas funciones tienen un `search_path` explícito a `public, extensions`. El generador fue probado con el rol `anon`; la reserva completa debe verificarse desde el teléfono.
+- Se rediseñó la pantalla **Revisá antes de enviar**: recorrido destacado, fecha/hora y pasajeros compactos, presupuesto pendiente, enlace a Google Maps y datos del pasajero opcionales desplegables.
+- El botón pasó a **Enviar solicitud al conductor**: la solicitud no confirma automáticamente la recogida ni cobra al cliente.
+- Se cambió el service worker a `traslados-cliente-pwa-v2` y consulta la red antes que la caché cuando está conectado. Si el dispositivo continúa mostrando la interfaz anterior, cerrar/reabrir y actualizar el sitio.
+- GitHub Actions `check-web-pasajero-review.yml` valida JS, interfaz, seguridad y caché en PR, mientras `deploy-web-pasajero-pwa.yml` publica al fusionar en `main`.
+
+**Advertencia de arquitectura:** el proyecto mantiene dos frontends de pasajeros distintos que escriben en el mismo Supabase: esta PWA estática `https://marcelofgx-ctrl.github.io/traslados-android/` y la web premium `https://traslados-web.marcelof-gx.workers.dev`. Cambiar el diseño de uno no modifica automáticamente el otro. Debe decidirse cuál será el enlace público único, sin romper accesos a reservas anteriores.
+
+Las burbujas flotantes de Uber/Mapa que pueden cubrir los botones en capturas Android son superposiciones de otras aplicaciones, **no elementos HTML de la PWA**.
