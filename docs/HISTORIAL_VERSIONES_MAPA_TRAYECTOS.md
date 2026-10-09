@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 08/10/2026. Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026. Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -148,3 +148,12 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - **Verificación de instalador:** APK 52.262.035 bytes, SHA-256 6a7ba50023ac91df11110134dd217dd946213631f1661d3e9ce37c5f53a5ec69; apksigner verificó firma. GitHub artifact Mapa-Trayectos-v0.1-R22-9-RELEASE.
 - **Google Drive:** APK https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view ; ZIP con comprobantes https://drive.google.com/file/d/13Xz4HOxQTkrxX-dnEoaOLY3QcoxU1mQZ/view ; carpeta https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA (archivo y tamaño leídos nuevamente).
 - **Falta probar en Samsung:** que se oiga el MP3 al pulsar PROBAR y en alarma de 1 minuto, incluso con app cerrada; que el volumen vuelva a su nivel previo. Reproducción en el equipo todavía NO confirmada.
+
+
+## R23.0 — Recordatorios unidos al icono ✦ o burbuja flotante (09/10/2026)
+- **Reporte del usuario en Samsung R22.9:** globo de notificación quedaba huérfano y apartado del botón ✦ cuando app abierta. Requerimiento: flecha físicamente unida al botón ✦ en primer plano y a la burbuja flotante real si app minimizada, sin tarjetas huérfanas.
+- **Código R23.0:** `ReminderAnchorGeometry`, `ReminderCallout.setAnchorPlacement`, MainActivity coordenadas en pantalla y realineación al cambiar de layout; TrackingService transmite posiciones cuando bubble flota/se arrastra/desaparece; ReminderBubbleService orienta flecha a izquierda/derecha, sigue el movimiento, rechaza posición vieja y elimina overlay si se pierde ancla. Notificación de Android queda como fallback.
+- **Prueba técnica:** `ReminderAnchorGeometryTest` ejecutada por GitHub Actions, resultado PASS. Compilación Android RELEASE run `37880538141` SUCCESS, SHA256 APK `cad0847510e40799db13d162ebe605e22cc2d76387e733ba1584c6abf0cb7703`, 52.262.039 bytes; firma anterior igual verificada; MP3 de burbujas original SHA `5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0` incluido.
+- **Versiones:** `0.1-R23.0`, versionCode 40. Primeros intentos R23.0 `37880347098` y `37880443648` fallaron por variables Java en la lambda del listener; arregladas en commit `24e60a5e2cbd63c9fb639a04998efa6ed08cba75` antes de build final verde.
+- **Google Drive verificado:** APK https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view , ZIP de build https://drive.google.com/file/d/1M3q2VB5DbgnaoOBao7RQHxwphqZVpauX/view , carpeta R23.0 https://drive.google.com/drive/folders/1LK_CGnXSNuotOFKRIGwimnpCDFgy6yrB .
+- **PENDIENTE REAL SAMSUNG:** inspección visual del anclaje abierto y minimizado, mover burbuja a ambos bordes y disparar recordatorio, fallback notificación sin burbuja; audio audible R22.9/R23.0 y restauración de volumen. Actualizar sin desinstalar para no borrar SQLite ni MP3 de viajes.
