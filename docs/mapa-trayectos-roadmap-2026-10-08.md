@@ -1,4 +1,6 @@
-# Mapa Trayectos — pendientes aprobados 08/10/2026
+# Mapa Trayectos — ROADMAP HISTÓRICO (08/10/2026)
+
+**ATENCIÓN:** Esta lista fue escrita al comienzo del proyecto; contiene tareas que ya se implementaron entre R22 y R22.8. Leer [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md) y el último commit de `main` antes de decidir qué sigue pendiente.
 
 Base Android nativo: uy.com.mapatrayectos. R21.4 compilada y probada parcialmente; R21.5 implementada en código, pendiente de validación en Samsung. Preservar estilo premium y todos los datos operativos.
 Orden acordado: (1) cerrar WhatsApp y tarjeta (2) recordatorios (3) reinicio de base con backup previo (4) restantes.
