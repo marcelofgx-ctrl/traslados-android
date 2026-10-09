@@ -10,14 +10,14 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
-**Corte documentado:** `0.1-R23.1`, `versionCode 41`, [build firmado exitoso 37881774310](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37881774310). Este número no sustituye verificar `main` ni las compilaciones posteriores.
+**Corte documentado:** `0.1-R24.0`, `versionCode 42`, [build firmado exitoso 37887653127](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37887653127). Este número no sustituye verificar `main` ni las compilaciones posteriores.
 
-**Enlace de APK R23.1 (Drive verificado):** https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view
+**Respaldo Drive R24.0 (ZIP contiene APK firmada):** https://drive.google.com/file/d/17TlWjNWmt-KMp_eX_cNy1tIjG_neKj2C/view
 
-**Importante:** R23.1 muestra la burbuja al minimizar aun sin jornada, SIN activar GPS, mantiene la flecha anclada de R23.0 y el MP3 de ElevenLabs. Build y pruebas automatizadas OK; faltan pruebas reales en Samsung. No borrar datos. No borrar bases locales ni tocar Supabase sin autorización.
+**Importante:** R24.0 integra código nativo completo de Traslados Conductor en Mapa Trayectos (desde carpeta fuente `conductor/` al generar APK), nuevo menú ☰ y avisos pedidos en globito ✦. Mapa y Cliente conservan sus funciones propias. CI y firma OK; pruebas reales Samsung, consolidación de motores GPS y ubicación en vivo del cliente pendientes. No borrar datos ni tocar Supabase sin autorización.
 
 ## Otros módulos
-- `conductor/` es otra aplicación. **No confundir Traslados Conductor con Mapa Trayectos**.
+- `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
 
 ## Instrucción mínima para otra sesión
 > Retomá Mapa Trayectos en `marcelofgx-ctrl/traslados-android`, rama `main`. Primero leé `docs/RETOMAR_MAPA_TRAYECTOS.md`, verificá el último commit y los GitHub Actions. No cambies el diseño aprobado, los sonidos de viajes ni datos existentes sin consultarme.
