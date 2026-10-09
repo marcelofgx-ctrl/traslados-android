@@ -114,8 +114,8 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
         quickActionsAnchor=quickActions;
         quickActions.addOnLayoutChangeListener((changedView,xLeft,yTop,xRight,yBottom,previousLeft,previousTop,previousRight,previousBottom)->storeReminderAnchor());
-        root.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-            if(activeReminderCallout!=null && (r-l!=or-ol||b-t!=ob-ot))
+        root.addOnLayoutChangeListener((view,left,top,right,bottom,oldLeft,oldTop,oldRight,oldBottom)->{
+            if(activeReminderCallout!=null && (right-left!=oldRight-oldLeft||bottom-top!=oldBottom-oldTop))
                 root.post(this::realignInAppReminder);
         });
 
