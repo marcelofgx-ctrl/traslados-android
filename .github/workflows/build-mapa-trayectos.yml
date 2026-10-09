@@ -181,7 +181,9 @@ jobs:
           grep -q 'location|specialUse' mapatrayectos/src/main/AndroidManifest.xml
           grep -q 'promoteIdleBubble' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'bubbleHeartbeat' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
-          grep -q 'ACTION_UI_HIDDEN)&&!shiftActive' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ACTION_UI_HIDDEN.equals(action)&&!shiftActive' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'Secondary screen transition' mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+          grep -q 'Secondary screen transition' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripDetailActivity.java
           grep -q 'inAppPlacement' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ACTION_FLOATING_BUBBLE_POSITION' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'floating_visible' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderBubbleService.java
