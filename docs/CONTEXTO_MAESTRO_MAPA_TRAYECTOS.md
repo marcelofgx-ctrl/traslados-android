@@ -1,6 +1,6 @@
 # MAPA TRAYECTOS — CONTEXTO MAESTRO HISTÓRICO
 
-**IMPORTANTE (corte R22.8):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada a este corte: R22.8 / versionCode 38 / Actions 37870800270.
+**IMPORTANTE (corte R22.9):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada: R22.9 / versionCode 39 / Actions 37872681083. Usuario confirmó alertas visuales dentro/fuera en R22.8, pero MP3 silencioso; corrección de volumen/canal en R22.9 pendiente de prueba audible en Samsung.
 
 ## Proyecto y fuente principal
 - Android nativo, package uy.com.mapatrayectos; módulo mapatrayectos.
@@ -118,3 +118,11 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - Versión Android `0.1-R22.8` versionCode38, compilación firmada. No afirmar probado auditivamente en dispositivo hasta prueba en Samsung. Previas R22.6 y R22.7 no tienen este MP3 embebido.
 - R22.7 incluyó la URL web oficial entregada por usuario; R22.8 se basa en código main anterior, no elimina esa URL. Usuario había pedido no distribuir como última la R22.7; entregar R22.8 solamente tras firma y revisión.
 - Enlaces de Drive de releases deben comprobarse con Google Drive, no suponer subidas. Carpeta creada R22.8 https://drive.google.com/drive/folders/1DD3cgIArfpskQDUfFPb6Acv50BUQeuwj
+
+
+## ACTUALIZACIÓN R22.9 — 08/10/2026
+- Se corrigió la ruta del tono de recordatorios: ahora usa el canal ALARMAS con nivel mínimo temporal 50% y restauración del valor original tras MP3; se conserva el archivo ElevenLabs auténtico y los 13 sonidos de viajes.
+- La alerta visual fue confirmada por el usuario con aplicación abierta o cerrada en R22.8. En R22.9 el MP3 aún requiere prueba acústica en Samsung, incluyendo No molestar y batería.
+- Compilación firmada GitHub Actions run 37872681083, commit principal 32fe456cbe2905dc2860445b11fb8459144adaaf. APK verificada SHA256 6a7ba50023ac91df11110134dd217dd946213631f1661d3e9ce37c5f53a5ec69.
+- APK Google Drive: https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view. Carpeta: https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA.
+- Fuente de verdad para retomar: docs/RETOMAR_MAPA_TRAYECTOS.md.
