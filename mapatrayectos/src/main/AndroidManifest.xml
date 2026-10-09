@@ -29,7 +29,10 @@
         <activity android:name="uy.com.traslados.conductor.DemandMapActivity"
             android:exported="false" android:screenOrientation="portrait" />
         <service android:name="uy.com.traslados.conductor.ReservationMonitorService"
-            android:exported="false" android:foregroundServiceType="dataSync" />
+            android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Private driver reservation monitor for immediate passenger requests and trip alerts; customer bookings must be received while navigating in other apps." />
+        </service>
         <service android:name="uy.com.traslados.conductor.TripTelemetryService"
             android:exported="false" android:foregroundServiceType="location" />
 
