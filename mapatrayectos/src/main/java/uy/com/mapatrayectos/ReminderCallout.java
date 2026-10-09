@@ -32,6 +32,11 @@ public final class ReminderCallout extends FrameLayout {
         return t;
     }
     public ReminderCallout(Context c,String message,Runnable done,Runnable postpone,Runnable close){
+        this(c,message,done,postpone,close,
+            "🔔  TE RECUERDO ALGO","Mapa Trayectos · Aviso personal","+10 MIN","HECHO");
+    }
+    public ReminderCallout(Context c,String message,Runnable done,Runnable postpone,Runnable close,
+                           String heading,String subtitle,String leftLabel,String rightLabel){
         super(c);doneAction=done;postponeAction=postpone;dismissAction=close;
         setClipChildren(false);setClipToPadding(false);
         setElevation(dp(12));
@@ -46,9 +51,9 @@ public final class ReminderCallout extends FrameLayout {
         avatar.setBackground(bg(petrol,gold,22));avatar.setPadding(dp(3),dp(3),dp(3),dp(3));
         head.addView(avatar,new LinearLayout.LayoutParams(dp(25),dp(25)));
         LinearLayout headings=new LinearLayout(c);headings.setOrientation(LinearLayout.VERTICAL);
-        TextView h=title("🔔  TE RECUERDO ALGO",10,petrol,true);h.setSingleLine(true);
+        TextView h=title(heading,10,petrol,true);h.setSingleLine(true);
         headings.addView(h);
-        TextView sub=title("Mapa Trayectos · Aviso personal",8,Color.rgb(85,100,99),false);sub.setSingleLine(true);
+        TextView sub=title(subtitle,8,Color.rgb(85,100,99),false);sub.setSingleLine(true);
         sub.setEllipsize(android.text.TextUtils.TruncateAt.END);headings.addView(sub);
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(0,LayoutParams.WRAP_CONTENT,1);
         hp.leftMargin=dp(5);head.addView(headings,hp);
@@ -58,9 +63,9 @@ public final class ReminderCallout extends FrameLayout {
         msg.setPadding(dp(2),dp(8),dp(2),dp(8));card.addView(msg);
         LinearLayout actions=new LinearLayout(c);
         actions.setOrientation(LinearLayout.HORIZONTAL);
-        TextView later=title("+10 MIN",11,petrol,true);later.setGravity(Gravity.CENTER);
+        TextView later=title(leftLabel,11,petrol,true);later.setGravity(Gravity.CENTER);
         later.setBackground(bg(Color.rgb(237,222,191),0,10));
-        TextView finish=title("HECHO",11,ivory,true);finish.setGravity(Gravity.CENTER);
+        TextView finish=title(rightLabel,11,ivory,true);finish.setGravity(Gravity.CENTER);
         finish.setBackground(bg(petrol,0,10));
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(0,dp(33),1);ap.rightMargin=dp(7);
         actions.addView(later,ap);actions.addView(finish,new LinearLayout.LayoutParams(0,dp(33),1));
@@ -96,7 +101,7 @@ public final class ReminderCallout extends FrameLayout {
         LayoutParams pp=new LayoutParams(dp(TAIL_WIDTH_DP+1),dp(TAIL_HEIGHT_DP),Gravity.LEFT|Gravity.TOP);
         pp.leftMargin=dp(CARD_WIDTH_DP-1);pp.topMargin=dp(TAIL_TOP_DP);
         addView(pointer,pp);pointerView=pointer;
-        setContentDescription("Recordatorio de Mapa Trayectos: "+message+". Posponer diez minutos o marcar hecho.");
+        setContentDescription(heading+": "+message+". "+leftLabel+" o "+rightLabel+".");
     }
     /**
      * R23.0: slide the tail to the actual anchor center, and flip its direction
