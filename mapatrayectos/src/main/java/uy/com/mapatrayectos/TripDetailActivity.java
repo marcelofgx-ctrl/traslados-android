@@ -145,7 +145,22 @@ public class TripDetailActivity extends Activity {
     private GradientDrawable rounded(int fill,int radius,int stroke,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(stroke>0)g.setStroke(dp(stroke),strokeColor);return g;}
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     private String duration(long ms){long x=Math.max(0,ms)/1000,h=x/3600,m=(x%3600)/60,s=x%60;return h>0?String.format(Locale.getDefault(),"%d:%02d:%02d",h,m,s):String.format(Locale.getDefault(),"%02d:%02d",m,s);}
-    private void signalTrackingUi(boolean visible){android.content.SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);if(!s.getBoolean("shift_active",false))return;try{startService(new android.content.Intent(this,TrackingService.class).setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN));}catch(Exception ignored){}}
+    private void signalTrackingUi(boolean visible){
+        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",visible).apply();
+        boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);
+        android.content.Intent svc=new android.content.Intent(this,TrackingService.class)
+            .setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN);
+        if(visible&&!active){
+            stopService(new android.content.Intent(this,TrackingService.class));
+            return;
+        }
+        if(!active&&!android.provider.Settings.canDrawOverlays(this))return;
+        try{
+            if(!active&&!visible&&android.os.Build.VERSION.SDK_INT>=26)
+                startForegroundService(svc);
+            else startService(svc);
+        }catch(Exception e){android.util.Log.w("MapaBubble","Secondary screen transition",e);}
+    }
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();signalTrackingUi(true);}
     @Override protected void onPause(){signalTrackingUi(false);if(mapView!=null)mapView.onPause();super.onPause();}
