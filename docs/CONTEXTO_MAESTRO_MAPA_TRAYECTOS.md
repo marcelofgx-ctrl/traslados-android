@@ -108,3 +108,12 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - No inferir ni compartir un enlace de descarga de APK bajo la nueva web: la ruta de descargas debe confirmarse por separado. Mantener la verificación editable de `download_url`.
 - No afirmar verificada la respuesta HTTP pública: la consulta web de esta sesión devolvió error de lectura/caché. URL procede directamente del usuario.
 - R22.7 modifica sitio de reservas y no el código de viajes, recordatorios o sonidos. Si todavía no se ejecutó y verificó la firma no declarar release terminada.
+
+## Sonido original de recordatorios — R22.8
+- El usuario subió el MP3 de ElevenLabs con burbujas delicadas para los recordatorios. Nombre recibido: ElevenLabs_Pequeñas_burbujas_de_jabón_explotando_en_un_suave_brillo,_delicadas,_como_de_juguete.mp3, 33062 bytes, duración 2.037551 s, SHA-256 `5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0`.
+- Original exacto codificado en `mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64` (texto). El workflow `.github/workflows/build-mapa-trayectos.yml` lo decodifica en `src/main/res/raw/reminder_bubbles_elevenlabs.mp3` y verifica SHA y tamaño antes de compilar, y también verifica el SHA extraído desde la APK final. NO requiere importar otro ZIP.
+- `ReminderSound.playBlocking` reproduce el `R.raw.reminder_bubbles_elevenlabs` real por `MediaPlayer` con AudioAttributes de notificación, verifica inicio y completion, espera como máximo 4.5 segundos desde un hilo dedicado (ReminderReceiver.goAsync), respeta silencio/vibración y volumen de notificaciones. Guarda diagnóstico local para probar en Samsung.
+- `ReminderActivity` botón «PROBAR MP3 ORIGINAL DE BURBUJAS» y diagnóstico. El canal Android de notificación v3 permanece silencioso para evitar pitido doble; los sonidos previos de Uber/Cabify/viajes no se modifican.
+- Versión Android `0.1-R22.8` versionCode38, compilación firmada. No afirmar probado auditivamente en dispositivo hasta prueba en Samsung. Previas R22.6 y R22.7 no tienen este MP3 embebido.
+- R22.7 incluyó la URL web oficial entregada por usuario; R22.8 se basa en código main anterior, no elimina esa URL. Usuario había pedido no distribuir como última la R22.7; entregar R22.8 solamente tras firma y revisión.
+- Enlaces de Drive de releases deben comprobarse con Google Drive, no suponer subidas. Carpeta creada R22.8 https://drive.google.com/drive/folders/1DD3cgIArfpskQDUfFPb6Acv50BUQeuwj
