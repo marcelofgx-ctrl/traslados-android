@@ -587,8 +587,15 @@ public class MainActivity extends Activity {
     }
 
     private void showQuoteDialogReady(JSONObject r,double defaultTollUnit){
-        ScrollView sc=new ScrollView(this);sc.setFillViewport(false);sc.setClipToPadding(false);
-        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(18),dp(10),dp(18),dp(26));sc.addView(box);
+        ScrollView sc=new ScrollView(this);
+        sc.setFillViewport(false);sc.setClipToPadding(false);
+        sc.setSmoothScrollingEnabled(true);
+        sc.setVerticalScrollBarEnabled(true);
+        sc.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        // Extra space below the final price ensures the keyboard never hides the last fields.
+        box.setPadding(dp(18),dp(10),dp(18),dp(106));
+        sc.addView(box,new ScrollView.LayoutParams(-1,-2));
         double km=r.optDouble("route_distance_km",0),oldRate=r.optDouble("quote_price_per_km",0);
         android.content.SharedPreferences pref=getSharedPreferences("pricing",MODE_PRIVATE);
         if(oldRate<=0)oldRate=Double.longBitsToDouble(pref.getLong("price_per_km_bits",Double.doubleToLongBits(0)));
@@ -626,7 +633,94 @@ public class MainActivity extends Activity {
         refresh.run();
 
         final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("PREPARAR PRESUPUESTO · "+r.optString("code"),"El cálculo es interno. El cliente recibe únicamente el precio final que decidas.");shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
-        LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),send=primaryButton("ENVIAR PRESUPUESTO");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(54),1));spacerH(actions,7);actions.addView(send,new LinearLayout.LayoutParams(0,dp(54),2));shell.addView(actions,lpMatch(dp(58),8,0));cancel.setOnClickListener(v->d.dismiss());send.setOnClickListener(v->{double qkm=num(kmF),rate=num(rateF),minimum=num(minF),unit=Math.max(0,num(tollUnitF)),waiting=num(waitF),pickup=num(pickupF),other=num(otherF);int count=Math.max(0,(int)Math.round(num(tollCountF)));double tolls=count*unit;double reference=quoteReference(qkm,rate,minimum,tolls,waiting,pickup,other);double total=num(totalF);if(total<=0){toast("Definí el precio final que verá el cliente");return;}send.setEnabled(false);d.dismiss();sendQuote(r,qkm,r.optInt("route_duration_min",0),rate,minimum,count,unit,waiting,num(pickupKmF),pickup,other,reference,total,includes.getText().toString().trim());});showDriverDialog(d,shell,.96f,.92f);
+        LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),send=primaryButton("ENVIAR PRESUPUESTO");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(54),1));spacerH(actions,7);actions.addView(send,new LinearLayout.LayoutParams(0,dp(54),2));shell.addView(actions,lpMatch(dp(58),8,0));cancel.setOnClickListener(v->d.dismiss());send.setOnClickListener(v->{double qkm=num(kmF),rate=num(rateF),minimum=num(minF),unit=Math.max(0,num(tollUnitF)),waiting=num(waitF),pickup=num(pickupF),other=num(otherF);int count=Math.max(0,(int)Math.round(num(tollCountF)));double tolls=count*unit;double reference=quoteReference(qkm,rate,minimum,tolls,waiting,pickup,other);double total=num(totalF);if(total<=0){toast("Definí el precio final que verá el cliente");return;}send.setEnabled(false);d.dismiss();sendQuote(r,qkm,r.optInt("route_duration_min",0),rate,minimum,count,unit,waiting,num(pickupKmF),pickup,other,reference,total,includes.getText().toString().trim());});showKeyboardSafeQuoteDialog(d,shell,sc,new EditText[]{
+            kmF,rateF,minF,tollCountF,tollUnitF,waitF,pickupKmF,pickupF,otherF,totalF,includes
+        });
+    }
+
+    /**
+     * R24.3: resize the actual Dialog window when the IME appears.
+     * ADJUST_RESIZE alone cannot shrink a Dialog with a fixed 92% screen height.
+     * Keep header and primary actions outside the scrollable content.
+     */
+    private void showKeyboardSafeQuoteDialog(Dialog dialog,LinearLayout shell,
+                                              ScrollView scroll,EditText[] fields){
+        showDriverDialog(dialog,shell,.96f,.92f);
+        Window window=dialog.getWindow();
+        if(window==null)return;
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            |WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+        final int width=(int)(getResources().getDisplayMetrics().widthPixels*.96f);
+        final int screenHeight=getResources().getDisplayMetrics().heightPixels;
+        final int normalHeight=(int)(screenHeight*.92f);
+        final int[] applied={normalHeight};
+        final View[] previousFocus={null};
+        final View decor=window.getDecorView();
+        final android.view.ViewTreeObserver.OnGlobalLayoutListener observer=()->{
+            if(!dialog.isShowing()||!decor.isAttachedToWindow())return;
+            Rect visible=new Rect();decor.getWindowVisibleDisplayFrame(visible);
+            int available=Math.max(dp(240),visible.height()-dp(18));
+            if(Build.VERSION.SDK_INT>=30){
+                WindowInsets wi=decor.getRootWindowInsets();
+                if(wi!=null&&wi.isVisible(WindowInsets.Type.ime())){
+                    android.graphics.Insets keyboard=wi.getInsets(WindowInsets.Type.ime());
+                    android.graphics.Insets bars=wi.getInsets(WindowInsets.Type.systemBars());
+                    int total=screenHeight-keyboard.bottom-bars.top-dp(22);
+                    available=Math.min(available,Math.max(dp(240),total));
+                }
+            }
+            int desired=Math.min(normalHeight,available);
+            boolean resized=Math.abs(applied[0]-desired)>=dp(6);
+            if(resized){
+                applied[0]=desired;
+                window.setLayout(width,desired);
+            }
+            View focused=dialog.getCurrentFocus();
+            if(focused instanceof EditText&&
+               (resized||focused!=previousFocus[0])){
+                previousFocus[0]=focused;
+                scheduleQuoteFieldVisibility(scroll,focused);
+            }
+        };
+        decor.getViewTreeObserver().addOnGlobalLayoutListener(observer);
+        dialog.setOnDismissListener(d->{
+            if(decor.getViewTreeObserver().isAlive())
+                decor.getViewTreeObserver().removeOnGlobalLayoutListener(observer);
+        });
+        for(EditText field:fields){
+            if(field==null)continue;
+            field.setImeOptions((field==fields[fields.length-1]?
+                android.view.inputmethod.EditorInfo.IME_ACTION_DONE:
+                android.view.inputmethod.EditorInfo.IME_ACTION_NEXT)
+                |android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+            field.setOnFocusChangeListener((v,focused)->{
+                if(focused)scheduleQuoteFieldVisibility(scroll,field);
+            });
+            field.setOnClickListener(v->scheduleQuoteFieldVisibility(scroll,field));
+        }
+        scroll.setFocusableInTouchMode(true);
+        scroll.requestFocus(); // Opening a quote must not summon the keyboard automatically.
+        decor.post(()->{
+            if(dialog.isShowing())decor.requestApplyInsets();
+        });
+    }
+    private void scheduleQuoteFieldVisibility(ScrollView scroll,View field){
+        if(scroll==null||field==null)return;
+        for(long delay:new long[]{100L,300L,550L}){
+            field.postDelayed(()->ensureQuoteFieldVisible(scroll,field),delay);
+        }
+    }
+    private void ensureQuoteFieldVisible(ScrollView scroll,View field){
+        if(!field.isShown()||!scroll.isShown()||field.getWindowToken()==null)return;
+        int[] f=new int[2],s=new int[2];field.getLocationOnScreen(f);
+        scroll.getLocationOnScreen(s);
+        int fieldTop=f[1],fieldBottom=fieldTop+field.getHeight();
+        int top=s[1]+dp(12),bottom=s[1]+scroll.getHeight()-dp(18);
+        if(fieldBottom>bottom){
+            scroll.smoothScrollBy(0,fieldBottom-bottom+dp(12));
+        }else if(fieldTop<top){
+            scroll.smoothScrollBy(0,fieldTop-top-dp(8));
+        }
     }
 
     private EditText quoteNumberField(LinearLayout box,String label,String value){EditText e=addField(box,"ticket",label,"0");e.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);if(value!=null&&!value.isEmpty()&&!"0".equals(value))e.setText(value);return e;}
