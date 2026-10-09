@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 09/10/2026 (R24.2). Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026 (R24.3). Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -189,3 +189,10 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - **CI:** test determinístico `QuickReservationLogicTest.java`, verificación fuente, compilación, MP3 y firma SUCCESS, GitHub Actions **37922498198**, versionCode **44**, release `0.1-R24.2`; APK SHA256 `f6a98e079221ce59756a3dd7a7196351b71ee7687848f09f22a29295065f0ed3`, 52.544.243 bytes, certificado original d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d.
 - **Drive APK:** https://drive.google.com/file/d/1XwaSF9jkxDJKmjhNh5ltD9B8g-IXf1le/view ; ZIP verificadores https://drive.google.com/file/d/1OYlNGfp3sRTqxGsiBITNoebJNzRHGOk6/view ; carpeta https://drive.google.com/drive/folders/11HfbohdfuVdOZIKPhKIVai45jz1KrFma .
 - **Pendiente:** prueba funcional en Samsung; FCM/push remotos no implementados y GPS conductor/mapa sigue separado de localización del pasajero; el monitor actual usa polling ~15s. No se realizaron cambios en Supabase ni Cliente.
+
+
+## R24.3 — Teclado seguro y scroll en presupuestos (09/10/2026)
+- Captura del Samsung: teclado numérico cubría `PRECIO FINAL AL CLIENTE` al escribir «Otros extras». Existía ScrollView, pero diálogo seguía fijo al 92% de pantalla al abrir IME.
+- Solución `conductor/MainActivity.java`: `showKeyboardSafeQuoteDialog` ajusta altura según Android IME WindowInsets o frame legacy, `ensureQuoteFieldVisible` desplaza automáticamente EditText activo después del foco y apertura del teclado; relleno inferior extendido y acciones Enviar/Cancelar fuera de scroll. Mantiene cálculos, colores premium y backend sin cambios.
+- R24.3 v0.1, versionCode 45. PR #16; GitHub Actions 37924921923 SUCCESS, APK 52.544.247 bytes, SHA256 `191d63c9a9128b89720dead71bbaa36f3ed9126d02d3533a8a3a01d53f448ddb`. Firma v2 cert `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d` compatible anterior. ZIP en Drive https://drive.google.com/file/d/1aoPV7gQIAebhz57ZdpAdBcj9bqYmh-VP/view y carpeta https://drive.google.com/drive/folders/1QRUGzFwq9F9LVeRVWFqT7dncxrYNXQKZ .
+- **Pendiente QA Samsung:** que con teclado abierto se vea el precio final y el botón Enviar, se pueda desplazar el resto del formulario, mantener datos sin borrarlos y cerrar teclado normalmente. No tocar esquema Supabase. FCM y GPS Cliente continúan pendientes.
