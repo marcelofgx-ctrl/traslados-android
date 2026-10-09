@@ -1,6 +1,6 @@
 # MAPA TRAYECTOS — CONTEXTO MAESTRO HISTÓRICO
 
-**IMPORTANTE (corte R23.0):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada: R23.0 / versionCode 40 / Actions 37880538141. Usuario confirmó alertas visuales dentro/fuera en R22.8, pero MP3 silencioso; corrección de volumen/canal en R22.9 pendiente de prueba audible en Samsung.
+**IMPORTANTE (corte R24.0):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada: R24.0 / versionCode 42 / Actions 37887653127. Usuario confirmó alertas visuales dentro/fuera en R22.8, pero MP3 silencioso; corrección de volumen/canal en R22.9 pendiente de prueba audible en Samsung.
 
 ## Proyecto y fuente principal
 - Android nativo, package uy.com.mapatrayectos; módulo mapatrayectos.
@@ -133,3 +133,9 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - Helpers y archivos: ReminderAnchorGeometry, ReminderCallout, MainActivity, TrackingService, ReminderBubbleService. Test de geometría Java sin Android integrado en CI. No tocó diseño aprobado, sonidos MP3 viajes, estado SQLite ni Supabase.
 - Build GitHub 37880538141 SUCCESS, SHA256 APK cad0847510e40799db13d162ebe605e22cc2d76387e733ba1584c6abf0cb7703; mismo certificado de firma. APK en Drive: https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view .
 - Requiere probar realmente en Samsung con app abierta, minimizada y burbuja arrastrada. Sonido de burbujas y volumen mínimo 50% de R22.9 se mantienen; audición aún pendiente.
+
+
+## R24.0 — Incorporación real del módulo Traslados Conductor (09/10/2026)
+- Mapa Trayectos es APK principal; Conductor se compila dentro mediante Gradle usando el código fuente de conductor/ y assets. Cliente permanece APK independiente. Menú ☰ general separado de globito ✦; R24.0 incorpora aviso y badge de solicitudes reales de Supabase, tarjeta premium anclada, enlaces a pantalla Conductor con PIN, agenda, presupuestos e historial, sin lanzar APK externa. No se cambia esquema Supabase.
+- GitHub Actions 37887653127 SUCCESS, versionCode 42, R24.0. SHA APK 80aa8378cf1b946e9d16f895d7b83a5827c03513ca84f7b1663a22c2af07b9e8, compatible firma R23.1; ZIP Drive https://drive.google.com/file/d/17TlWjNWmt-KMp_eX_cNy1tIjG_neKj2C/view .
+- A validar: reingreso de PIN Conductor en Mapa por sandbox Android; instalaciones sin borrar para conservar datos; pruebas funcionales Samsung y Supabase, sonido/globito en segundo plano. R24 NO consolidó servicios GPS independientes ni habilitó seguimiento en tiempo real para Cliente.
