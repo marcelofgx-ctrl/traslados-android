@@ -10,11 +10,11 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
-**Corte documentado:** `0.1-R24.0`, `versionCode 42`, [build firmado exitoso 37887653127](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37887653127). Este número no sustituye verificar `main` ni las compilaciones posteriores.
+**Corte documentado:** `0.1-R24.1`, `versionCode 43`, [build firmado exitoso 37918720480](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37918720480). Este número no sustituye verificar `main` ni las compilaciones posteriores.
 
-**Respaldo Drive R24.0 (ZIP contiene APK firmada):** https://drive.google.com/file/d/17TlWjNWmt-KMp_eX_cNy1tIjG_neKj2C/view
+**APK R24.1 (Drive verificado):** https://drive.google.com/file/d/1spEV5CniaJIm16xCIAjH6M8oDctae53w/view
 
-**Importante:** R24.0 integra código nativo completo de Traslados Conductor en Mapa Trayectos (desde carpeta fuente `conductor/` al generar APK), nuevo menú ☰ y avisos pedidos en globito ✦. Mapa y Cliente conservan sus funciones propias. CI y firma OK; pruebas reales Samsung, consolidación de motores GPS y ubicación en vivo del cliente pendientes. No borrar datos ni tocar Supabase sin autorización.
+**Importante:** R24.1 conserva la integración Conductor R24.0, reduce menú ☰ y corrige badge del globito, permite cerrar mapa con pulsación larga solamente sin jornada abierta, preservando monitor de reservas mientras Android lo permita. **No hay push FCM remotos todavía**, solo monitor de Supabase por polling. CI y firma OK; faltan QA real Samsung, consolidación GPS y ubicación en vivo del cliente. No borrar datos.
 
 ## Otros módulos
 - `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
