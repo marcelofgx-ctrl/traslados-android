@@ -10,11 +10,11 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
-**Corte documentado:** `0.1-R24.1`, `versionCode 43`, [build firmado exitoso 37918720480](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37918720480). Este número no sustituye verificar `main` ni las compilaciones posteriores.
+**Corte documentado:** `0.1-R24.2`, `versionCode 44`, [build firmado exitoso 37922498198](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37922498198). Este número no sustituye verificar `main` ni las compilaciones posteriores.
 
-**APK R24.1 (Drive verificado):** https://drive.google.com/file/d/1spEV5CniaJIm16xCIAjH6M8oDctae53w/view
+**APK R24.2 (Drive verificado):** https://drive.google.com/file/d/1XwaSF9jkxDJKmjhNh5ltD9B8g-IXf1le/view
 
-**Importante:** R24.1 conserva la integración Conductor R24.0, reduce menú ☰ y corrige badge del globito, permite cerrar mapa con pulsación larga solamente sin jornada abierta, preservando monitor de reservas mientras Android lo permita. **No hay push FCM remotos todavía**, solo monitor de Supabase por polling. CI y firma OK; faltan QA real Samsung, consolidación GPS y ubicación en vivo del cliente. No borrar datos.
+**Importante:** R24.2 integra Centro rápido plegable en ✦ con reservas auténticas de Supabase, próxima salida, agenda agrupada, detalles, navegación Waze/Maps, WhatsApp y alertas de datos obsoletos y posibles superposiciones; conserva R24.1 y Conductor interno. CI/firma APK OK; aún falta QA real Samsung. **No hay push FCM auténticos, ni GPS live en app Cliente, ni unificación de servicios GPS**. No borrar datos.
 
 ## Otros módulos
 - `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
