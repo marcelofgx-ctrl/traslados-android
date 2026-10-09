@@ -97,6 +97,8 @@ jobs:
           grep -q "versionName '0.1-R24.1'" mapatrayectos/build.gradle
           grep -q "versionCode 43" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'PopupWindow(menu,dp(232)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'dp(49)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'FrameLayout bubble=new FrameLayout' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
