@@ -1,6 +1,12 @@
 name: Comprobar web pública de Traslados Pasajero
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'web-pasajero/**'
+      - '.github/workflows/smoke-public-passenger.yml'
   workflow_run:
     workflows: ["pages build and deployment"]
     types: [completed]
@@ -11,10 +17,24 @@ permissions:
 
 jobs:
   smoke:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      - name: Revisar índice y acceso independiente del pasajero
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://marcelofgx-ctrl.github.io/traslados-android/"
+          for i in 1 2 3 4 5 6; do
+            curl -fsSL --max-time 25 "$url?ci=$GITHUB_RUN_ID" -o /tmp/traslados-index.html || true
+            if grep -q 'href="./web-pasajero/"' /tmp/traslados-index.html 2>/dev/null; then break; fi
+            echo "Esperando índice estable ($i/6)"
+            sleep 12
+          done
+          grep -q 'href="./web-pasajero/"' /tmp/traslados-index.html
+          grep -q 'índice estable del proyecto' /tmp/traslados-index.html
+          echo "Índice estable publicado con acceso a la PWA de pasajeros."
       - name: Revisar HTML y motor publicado
         shell: bash
         run: |
@@ -29,11 +49,14 @@ jobs:
           done
           grep -q 'geo-search.js?v=3' /tmp/traslados.html
           grep -q 'id="route-overview"' /tmp/traslados.html
+          grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
           curl -fsSL --max-time 25 "$base/app.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/app.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/app.js
+          grep -q 'function showPreview()' /tmp/app.js
+          grep -q 'function mapsLinkFromBooking(' /tmp/app.js
           echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
       - name: Revisar datos nacionales publicados
         shell: bash
