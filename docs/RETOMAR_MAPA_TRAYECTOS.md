@@ -1,14 +1,24 @@
 # MAPA TRAYECTOS — CONTEXTO DE REINICIO Y ENTREGA
 
-**Fecha de corte:** 09/10/2026, tras compilación firmada y subida verificada de R23.0 a Drive.  
+**Fecha de corte:** 09/10/2026, versión R23.1 firmada y verificada en Drive.  
 **Documento principal para retomar otra sesión:** `docs/RETOMAR_MAPA_TRAYECTOS.md` en el repositorio.  
-**Estado de entrega:** R23.0 compilada/firmada; usuario reportó en R22.9 globo de recordatorio separado de la burbuja ✦ (captura). R23.0 corrige anclaje en primer plano y superposición externa, con prueba automatizada de geometría; falta confirmación visual real en Samsung. Audio MP3 R22.9/R23.0 aún no certificado auditivamente.
+**Estado de entrega:** R23.1 compilada/firmada; acceso flotante aun sin jornada y sin GPS. Anclaje R23.0 preservado; prueba real Samsung pendiente.
 
 > **MENSAJE LISTO PARA PEGAR EN UNA NUEVA SESIÓN:**
 >
-> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R23.0 / versionCode 40**, build `37880538141`, con globo de recordatorios unido geométricamente al botón ✦ o a la burbuja flotante. R22.9 aportó MP3 por canal ALARMAS con volumen mínimo 50% temporal; el audio y el nuevo anclaje necesitan QA real en Samsung. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
+> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R23.1 / versionCode 41**, build `37881774310`, con burbuja también sin jornada, sin GPS. Conserva anclaje R23.0 y MP3 de R22.9. Validación Samsung pendiente. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
 
-## 0. NUEVA ENTREGA VERIFICADA — R23.0 (09/10/2026)
+## 0. ÚLTIMA ENTREGA R23.1 — 09/10/2026
+
+- **Nuevo comportamiento:** al minimizar la aplicación sin jornada, aparece la burbuja de acceso flotante si Android concede permiso de superposición. No arranca GPS, no cuenta kilómetros ni inicia viajes. Con jornada activa mantiene el seguimiento. Al reabrir el mapa, historial o detalle, desaparece la burbuja. Su posición se actualiza cada 5 segundos para mantener anclados los recordatorios.
+- **Implementación:** TrackingService usa `specialUse` en el servicio en primer plano cuando está inactivo, y `location` durante la jornada; permiso FOREGROUND_SERVICE_SPECIAL_USE y propiedad explicativa en AndroidManifest. Nuevo FloatingShortcutPolicy y prueba de 11 escenarios; ReminderAnchorGeometryTest continúa activo.
+- **RELEASE:** `0.1-R23.1`, versionCode 41, commit `781e260e1dffbc8c61fdfd7615247945d8477c39`, CI GitHub Actions https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37881774310 — SUCCESS (pruebas, compilación, firma, MP3).
+- **APK verificada:** 52.262.243 bytes; SHA-256 `3662ffc3ada0f2ae64a9b5b5bde424d907c7322ef360956bed06780013eb8332`; certificado de firma igual a R23.0. MP3 original intacto. No se modificaron datos, Supabase ni otros módulos.
+- **Descarga Drive:** https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view ; ZIP https://drive.google.com/file/d/1Sczr1m1weZAKb0jMJZ1j4g6St0alxP-2/view ; carpeta https://drive.google.com/drive/folders/18QsCkg8UqirtLcaCwvy4g_SbJc0JnHmv .
+- **PENDIENTE DE PRUEBA SAMSUNG:** instalar R23.1 encima de R23.0 sin desinstalar; abrir mapa con LISTO PARA JORNADA, verificar permiso ◎, minimizar con Inicio, comprobar burbuja y notificación permanente de acceso rápido, sin GPS activo; tocarla y volver al mapa. Repetir durante una jornada. Probar recordatorio en segundo plano y comprobar anclaje y MP3.
+- **Límites:** Android puede detener el servicio por restricciones de batería o si se fuerza la detención; la disponibilidad real aún no fue probada en el teléfono.
+
+## 0B. ANTERIOR ENTREGA VERIFICADA — R23.0 (09/10/2026)
 
 - **Problema real observado:** el usuario adjuntó captura de Samsung donde el globo de recordatorio estaba separado del icono ✦ (tarjeta aparentemente huérfana sobre el mapa). Solicitó que la cola permanezca pegada al icono ✦ con la app abierta o a la burbuja flotante cuando está minimizada; si no hay ancla, dejar solo la notificación de Android.
 - **Arreglo implementado en main:** nuevo `ReminderAnchorGeometry.java` ubica la tarjeta mediante la geometría real del icono, orienta cola a derecha o izquierda según espacio, ajusta altura de la punta y **no** acepta posiciones que dejarían la cola huérfana. `ReminderCallout.setAnchorPlacement` reubica/flipea el triángulo dentro de la misma vista. `MainActivity.inAppPlacement` usa `getLocationOnScreen` de raíz e icono para eliminar errores de sistema de coordenadas y realinea al cambiar layout.
@@ -42,9 +52,9 @@
 - **Historial acumulado:** `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`.
 - **Contexto maestro histórico:** `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`.
 - **Pendientes históricos:** `docs/mapa-trayectos-roadmap-2026-10-08.md`. Algunas tareas están marcadas antiguamente como no implementadas; contrastar siempre con `main` y este documento.
-- **Última RELEASE verificada:** `0.1-R23.0`, `versionCode 40`, run de GitHub Actions **37880538141**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37880538141
-- **APK R23.0 en Drive (verificada):** https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view
-- **Carpeta Drive R23.0:** https://drive.google.com/drive/folders/1LK_CGnXSNuotOFKRIGwimnpCDFgy6yrB
+- **Última RELEASE verificada:** `0.1-R23.1`, `versionCode 41`, run de GitHub Actions **37881774310**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37881774310
+- **APK R23.1 en Drive (verificada):** https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view
+- **Carpeta Drive R23.1:** https://drive.google.com/drive/folders/18QsCkg8UqirtLcaCwvy4g_SbJc0JnHmv
 - **Carpeta general Versiones en Drive:** https://drive.google.com/drive/folders/1eaXoeNaRl9Peb8a7pyrOFrTWqj-xyjd6
 - **Web oficial del negocio que se comparte desde la app:** https://traslados-web.marcelof-gx.workers.dev/
 - **Descarga web de la APK:** todavía NO hay ruta oficial validada. No inventar enlaces `/descargas` en la web de Cloudflare.
