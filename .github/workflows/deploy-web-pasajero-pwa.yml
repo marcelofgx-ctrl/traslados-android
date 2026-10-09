@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - 'web-pasajero/**'
+      - 'index.html'
+      - '.github/workflows/deploy-web-pasajero-pwa.yml'
+  pull_request:
+    paths:
+      - 'web-pasajero/**'
+      - 'index.html'
       - '.github/workflows/deploy-web-pasajero-pwa.yml'
 permissions:
   contents: read
@@ -13,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify app icons are committed for GitHub Pages branch deployment
+        run: |
+          test -s web-pasajero/icons/icon-192.png
+          test -s web-pasajero/icons/icon-512.png
+          test -s web-pasajero/icons/icon-maskable.png
       - name: Generate original PNG app icons without external paid services
         shell: bash
         run: |
@@ -53,6 +64,11 @@ jobs:
           png("icon-512.png",512)
           png("icon-maskable.png",512,True)
           PYICON
+      - name: Validate index and passenger page coexist
+        run: |
+          test -f index.html && test -f web-pasajero/index.html
+          grep -q 'href="./web-pasajero/"' index.html
+          test -f web-pasajero/app.js && test -f web-pasajero/styles.css
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
