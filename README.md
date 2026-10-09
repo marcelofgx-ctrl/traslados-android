@@ -10,11 +10,11 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
-**Corte documentado:** `0.1-R24.2`, `versionCode 44`, [build firmado exitoso 37922498198](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37922498198). Este número no sustituye verificar `main` ni las compilaciones posteriores.
+**Corte documentado:** `0.1-R24.3`, `versionCode 45`, [build firmado exitoso 37924921923](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37924921923). Este número no sustituye verificar `main` ni las compilaciones posteriores.
 
-**APK R24.2 (Drive verificado):** https://drive.google.com/file/d/1XwaSF9jkxDJKmjhNh5ltD9B8g-IXf1le/view
+**R24.3 backup ZIP (Drive verificado, contiene APK):** https://drive.google.com/file/d/1aoPV7gQIAebhz57ZdpAdBcj9bqYmh-VP/view
 
-**Importante:** R24.2 integra Centro rápido plegable en ✦ con reservas auténticas de Supabase, próxima salida, agenda agrupada, detalles, navegación Waze/Maps, WhatsApp y alertas de datos obsoletos y posibles superposiciones; conserva R24.1 y Conductor interno. CI/firma APK OK; aún falta QA real Samsung. **No hay push FCM auténticos, ni GPS live en app Cliente, ni unificación de servicios GPS**. No borrar datos.
+**Importante:** R24.3 conserva R24.2 y corrige la ventana de presupuestos de Conductor integrado para desplazar campos por encima del teclado numérico: ajuste dinámico de altura según IME y scroll automático al foco. CI y firma APK OK; falta QA real en Samsung. **No hay push FCM auténticos, ni GPS live en Cliente, ni unificación de GPS.** No borrar datos.
 
 ## Otros módulos
 - `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
