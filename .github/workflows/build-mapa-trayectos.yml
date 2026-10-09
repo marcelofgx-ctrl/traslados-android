@@ -94,8 +94,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R22.9'" mapatrayectos/build.gradle
-          grep -q "versionCode 39" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R23.0'" mapatrayectos/build.gradle
+          grep -q "versionCode 40" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -174,6 +174,11 @@ jobs:
           grep -q 'ShiftSummaryIconView.ROAD' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ShiftSummaryIconView.CAR' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'class ReminderCallout' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderCallout.java
+          grep -q 'setAnchorPlacement' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderCallout.java
+          grep -q 'class ReminderAnchorGeometry' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderAnchorGeometry.java
+          grep -q 'inAppPlacement' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ACTION_FLOATING_BUBBLE_POSITION' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'floating_visible' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderBubbleService.java
           grep -q 'ReminderCallout.TAIL_CENTER_DP' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ACTION_REMINDER_POPUP' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
           grep -q 'goAsync()' mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderReceiver.java
@@ -264,6 +269,16 @@ jobs:
           grep -q "MIN_IMPORT_DB_VERSION=2" mapatrayectos/src/main/java/uy/com/mapatrayectos/DatabaseBackup.java
           grep -q "org.maplibre.gl:android-sdk" mapatrayectos/build.gradle
 
+      - name: Test live reminder anchor geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-anchor-check
+          javac -d /tmp/mapa-anchor-check \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/ReminderAnchorGeometry.java \
+            mapatrayectos/tests/ReminderAnchorGeometryTest.java
+          java -cp /tmp/mapa-anchor-check ReminderAnchorGeometryTest
+
       - name: Build signed release
         shell: bash
         env:
@@ -312,18 +327,18 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R22_9_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R22_9_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R23_0_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R23_0_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
-          printf '\nR22.9: alarm >=50% temporarily; ElevenLabs 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
+          printf '\nR23.0: anchored in-app/overlay callout, original ElevenLabs 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R22-9-RELEASE
+          name: Mapa-Trayectos-v0.1-R23-0-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R22_9_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R23_0_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
