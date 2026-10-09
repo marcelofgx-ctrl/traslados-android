@@ -96,12 +96,12 @@ public final class ReminderActivity extends Activity {
         preview.setBackground(rounded(Color.rgb(6,55,63),GOLD,12));
         body.addView(preview,margin(0,6));
         preview.setOnClickListener(v->{
-            Toast.makeText(this,"Probando tu MP3 original al volumen de notificaciones",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,"Probando tu MP3 original: alarmas al 50% mínimo (temporal)",Toast.LENGTH_SHORT).show();
             new Thread(()->{
                 ReminderSound.Result result=ReminderSound.playBlocking(getApplicationContext());
                 runOnUiThread(()->{
                     updateDiagnostics();
-                    Toast.makeText(this,result.ok?"Audio iniciado: comprobá si lo escuchaste":result.detail,Toast.LENGTH_LONG).show();
+                    Toast.makeText(this,result.ok?"MP3 completo: confirmá si se escuchó":result.detail,Toast.LENGTH_LONG).show();
                 });
             },"mapa-preview-audio").start();
         });
