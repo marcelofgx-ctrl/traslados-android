@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b272e">
+  <meta name="description" content="Accesos a Traslados Cliente, Mapa Trayectos y documentación del proyecto.">
+  <title>Traslados — Acceso a aplicaciones y proyecto</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    *{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 70% 0%,#194449,#091f29 60%);color:#f4eee1}
+    .wrap{max-width:800px;margin:auto;padding:38px 20px 64px}header{display:flex;gap:12px;align-items:center;border-bottom:1px solid #bf9e6240;padding-bottom:24px}
+    .mark{display:grid;place-items:center;width:46px;height:46px;border:1px solid #d7b877;border-radius:14px;color:#e6c583;font-size:24px}
+    .eyebrow{color:#ddb970;letter-spacing:.19em;font-size:11px;font-weight:800;text-transform:uppercase}
+    h1{font-size:clamp(29px,7vw,47px);letter-spacing:-.045em;line-height:1.14;margin:29px 0 12px}
+    .lead{color:#c2d3cd;line-height:1.75;font-size:15px;max-width:610px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:15px;margin-top:28px}
+    .card{border:1px solid #d4b5745a;background:linear-gradient(145deg,#1c4247,#0e2a33);border-radius:20px;padding:22px;box-shadow:0 20px 45px #0003}
+    .card h2{font-size:19px;margin:10px 0}.card p{line-height:1.65;font-size:14px;color:#c5d8cf;margin:0 0 19px}
+    a.action{display:flex;align-items:center;justify-content:center;min-height:50px;text-align:center;padding:10px 15px;background:#e8c77f;color:#102831;font-size:14px;font-weight:800;border-radius:12px;text-decoration:none}
+    a.action.secondary{background:transparent;color:#f1d69b;border:1px solid #c8aa70}
+    a:focus-visible{outline:3px solid #f7d89b;outline-offset:4px}
+    h3{font-size:17px;margin:34px 0 12px}.docs{margin:0;padding:0;display:grid;gap:8px;list-style:none}
+    .docs a{display:flex;align-items:center;min-height:42px;color:#e9d7b0;text-decoration:none;border-bottom:1px solid #8db2ae25;padding:7px 2px}
+    .docs a:hover{text-decoration:underline}
+    footer{margin-top:32px;color:#9db5ad;font-size:12px;line-height:1.7}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header><span class="mark" aria-hidden="true">➤</span><div><span class="eyebrow">Uruguay · Proyecto de movilidad</span><div style="font-size:20px;font-weight:800;letter-spacing:.15em">TRASLADOS</div></div></header>
+    <h1>Elegí dónde querés entrar.</h1>
+    <p class="lead">Este es el <strong>índice estable del proyecto</strong>, para retomar el trabajo desde cualquier sesión. La web de reservas y el desarrollo de Mapa Trayectos tienen accesos separados.</p>
+    <section class="cards" aria-label="Aplicaciones">
+      <article class="card"><span class="eyebrow">Pasajeros · Web instalable</span><h2>Traslados con Reserva</h2><p>Reservar recorridos, consultar solicitudes, presupuestos y datos del viaje desde el celular.</p><a class="action" href="./web-pasajero/">Abrir web del pasajero ↗</a></article>
+      <article class="card"><span class="eyebrow">Desarrollo Android</span><h2>Mapa Trayectos</h2><p>Documentación técnica, compilaciones nativas y contexto maestro para continuar el proyecto.</p><a class="action secondary" href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/RETOMAR_MAPA_TRAYECTOS.md">Retomar proyecto Mapa →</a></article>
+    </section>
+    <h3>Documentos y recursos del proyecto</h3>
+    <ul class="docs">
+      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md">Historial de versiones de Mapa Trayectos ↗</a></li>
+      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md">Contexto maestro ampliado ↗</a></li>
+      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/actions">Compilaciones y pruebas GitHub Actions ↗</a></li>
+      <li><a href="https://traslados-web.marcelof-gx.workers.dev/">Traslados Premium (web Cloudflare separada) ↗</a></li>
+    </ul>
+    <footer>El índice y la web del pasajero se publican juntos para evitar reemplazos accidentales. Nunca ingreses secretos o claves de servicio en esta página.</footer>
+  </main>
+</body></html>
