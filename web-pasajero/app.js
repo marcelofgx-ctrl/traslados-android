@@ -19,7 +19,14 @@ function text(parent,tag,contents,cls){const e=document.createElement(tag);if(cl
 function button(parent,contents,cls,fn){const b=text(parent,"button",contents,cls);b.type="button";if(fn)b.addEventListener("click",fn);return b;}
 function clear(n){n.replaceChildren();}
 function tell(message){const el=$("toast");clearTimeout(toastHandle);el.textContent=message;el.hidden=false;toastHandle=setTimeout(()=>el.hidden=true,5500);}
-function showError(e,fallback="No se pudo completar la acción"){tell(e instanceof Error?e.message:fallback);}
+function showError(e,fallback="No se pudo completar la acción"){
+  let msg=e instanceof Error?e.message:fallback;
+  if(/gen_random_bytes|function .*does not exist|SQLSTATE|permission denied for schema/i.test(msg))
+    msg="No pudimos registrar la solicitud por un problema técnico. Revisá Mis traslados antes de volver a enviarla.";
+  else if(/HORARIO_NO_DISPONIBLE/i.test(msg))
+    msg="Ese horario dejó de estar disponible. Elegí otra hora para tu traslado.";
+  tell(msg);
+}
 function loading(el,value){if(!el)return;el.disabled=value;el.dataset.original??=el.textContent;if(value)el.textContent="Procesando…";else{el.textContent=el.dataset.original;}}
 function guardConnection(){if(!navigator.onLine)throw new Error("Estás sin Internet; no enviamos reservas offline.");}
 async function rpc(name,payload={}){
@@ -233,20 +240,77 @@ function bookingData(){
   if(record.stops.length&&!authReady())throw new Error("Para agregar paradas intermedias, ingresá a tu cuenta.");
   return{date,time,passengers,origin,destination,name,phone,comments:$("comments").value.trim(),stops:[...record.stops]};
 }
+function reviewDate(date,time){
+  const [year,month,day]=String(date).split("-").map(Number);
+  const utc=new Date(Date.UTC(year,month-1,day));
+  const label=Number.isNaN(utc.getTime())?String(date):new Intl.DateTimeFormat("es-UY",{
+    weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"
+  }).format(utc);
+  return label+" · "+String(time).slice(0,5)+" h";
+}
+function mapsLinkFromBooking(p){
+  const origin=p.origin.lat+","+p.origin.lng;
+  const destination=p.destination.lat+","+p.destination.lng;
+  const qs=new URLSearchParams({api:"1",origin,destination,travelmode:"driving"});
+  if(p.stops.length)qs.set("waypoints",p.stops.map(x=>x.lat+","+x.lng).join("|"));
+  return "https://www.google.com/maps/dir/?"+qs.toString();
+}
+function previewLocation(parent,kind,address){
+  const item=text(parent,"div","","preview-place");
+  const mark=text(item,"span",kind==="Origen"?"●":"◆","preview-place-icon");
+  mark.setAttribute("aria-hidden","true");
+  const contents=text(item,"div","","preview-place-text");
+  text(contents,"span",kind,"preview-label");
+  text(contents,"strong",address,"preview-place-name");
+}
 function showPreview(){
   try{
-    pendingReview=bookingData();const p=pendingReview;
+    pendingReview=bookingData();
+    const p=pendingReview;
     const target=$("booking-preview");clear(target);target.hidden=false;
-    text(target,"h3","Revisá antes de enviar");
+
+    const title=text(target,"div","","preview-title");
+    text(title,"span","PASO FINAL · REVISÁ TU TRASLADO","preview-eyebrow");
+    text(title,"h3","Antes de enviar");
+    text(title,"p","Comprobá el recorrido y el horario. El conductor confirmará tu solicitud.");
+
+    const journey=text(target,"div","","preview-journey");
+    previewLocation(journey,"Origen",p.origin.text);
+    if(p.stops.length){
+      const stops=text(journey,"div","","preview-stops");
+      text(stops,"span",p.stops.length+" parada"+(p.stops.length===1?"":"s")+" intermedia"+(p.stops.length===1?"":"s"),"preview-stop-count");
+      const more=document.createElement("details");more.className="preview-stops-detail";stops.appendChild(more);
+      text(more,"summary","Ver paradas");
+      for(const stop of p.stops)text(more,"p",stop.text);
+    }
+    previewLocation(journey,"Destino",p.destination.text);
+
+    const chips=text(target,"div","","preview-chips");
+    const when=text(chips,"div","","preview-chip");
+    text(when,"span","FECHA Y HORA","preview-label");
+    text(when,"strong",reviewDate(p.date,p.time));
+    const passengers=text(chips,"div","","preview-chip");
+    text(passengers,"span","PASAJEROS","preview-label");
+    text(passengers,"strong",p.passengers===1?"1 persona":p.passengers+" personas");
+
+    const budget=text(target,"div","","preview-budget");
+    text(budget,"span","PRESUPUESTO","preview-label");
+    text(budget,"strong","A confirmar por el conductor");
+    text(budget,"p","No se cobra ni se confirma el traslado al enviar.");
+
+    const tools=text(target,"div","","preview-tools");
+    const link=text(tools,"a","↗ Ver recorrido en Google Maps","preview-maps");
+    link.href=mapsLinkFromBooking(p);link.target="_blank";link.rel="noopener noreferrer";
+
+    const extra=document.createElement("details");
+    extra.className="preview-extra";target.appendChild(extra);
+    text(extra,"summary","Datos del pasajero e indicaciones");
+    const details=text(extra,"div","","preview-extra-body");
     for(const [label,value] of [
-      ["Pasajero",p.name],["Teléfono",p.phone],["Fecha",p.date+" · "+p.time],["Personas",p.passengers],
-      ["Origen",p.origin.text+" ("+p.origin.department+")"],
-      ["Paradas",p.stops.length?p.stops.map(x=>x.text).join(" → "):"Sin paradas"],
-      ["Destino",p.destination.text+" ("+p.destination.department+")"],
-      ["Precio","A definir por el conductor; todavía no cobrás ni confirmás viaje"]
+      ["Pasajero",p.name],["Teléfono",p.phone],["Indicaciones",p.comments||"Sin indicaciones"]
     ]){
-      const row=document.createElement("div");row.className="preview-row";
-      text(row,"span",label);text(row,"span",value);target.appendChild(row);
+      const row=text(details,"div","","preview-row");
+      text(row,"span",label);text(row,"span",value);
     }
     $("review-booking").hidden=true;$("submit-actions").hidden=false;
     target.scrollIntoView({behavior:"smooth",block:"start"});
