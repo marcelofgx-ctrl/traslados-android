@@ -94,8 +94,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R24.2'" mapatrayectos/build.gradle
-          grep -q "versionCode 44" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R24.3'" mapatrayectos/build.gradle
+          grep -q "versionCode 45" mapatrayectos/build.gradle
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -115,6 +115,10 @@ jobs:
           grep -q "reportNew(this,r)" mapatrayectos/build.gradle
           grep -q "uy.com.traslados.conductor.ReservationMonitorService" mapatrayectos/src/main/AndroidManifest.xml
           test -s conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'showKeyboardSafeQuoteDialog' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'WindowInsets.Type.ime()' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'ensureQuoteFieldVisible' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'SOFT_INPUT_ADJUST_RESIZE' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
           test -s conductor/src/main/java/uy/com/traslados/conductor/Api.java
           test -s conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
           test -s conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java
@@ -394,8 +398,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R24_2_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R24_2_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R24_3_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R24_3_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -403,9 +407,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R24-2-RELEASE
+          name: Mapa-Trayectos-v0.1-R24-3-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R24_2_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R24_3_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
