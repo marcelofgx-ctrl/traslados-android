@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 09/10/2026 (R24.1). Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026 (R24.2). Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -181,3 +181,11 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - Pulsación prolongada 800ms sobre burbuja flotante cierra solo mapa si no hay jornada ni viaje activo; icono amarillo de cabecera permite cerrar con confirmación. Si jornada abierta, cierre rechazado. `BubbleClosePolicyTest` añadido al workflow.
 - **Importantísimo:** monitor de reservas Conductor NO se detiene expresamente al cerrar mapa si hay PIN; mantiene polling Supabase 15s mientras Android lo conserve. **No hay FCM/push auténticos aún**, Android podría matar monitor o impedir notificaciones en cierre forzado, por lo que FCM + backend se considera fase posterior.
 - Build firmado v0.1-R24.1, versionCode 43, Actions 37918720480 SUCCESS, APK SHA-256 59b72fb820c22fb4112a35b460f0c77c8976c05c5075fb972012855384033971, 52.527.863 bytes, certificado compatible R24.0; tests y MP3 original confirmados CI. Google Drive APK https://drive.google.com/file/d/1spEV5CniaJIm16xCIAjH6M8oDctae53w/view y ZIP https://drive.google.com/file/d/1FA_ovCJMrNkR5mKcHMq42j8Svc4I3Bi3/view . Prueba física Samsung pendiente.
+
+
+## R24.2 — Centro rápido de reservas, navegación, agenda y sincronización (09/10/2026)
+- Módulo **Conductor interno** sigue siendo parte de la APK Mapa. El globito ✦ ahora abre un Centro rápido **plegable y compacto**, muestra resumen real desde Supabase vía monitor conductor, contador Nuevas/Cotizadas/Aceptadas, próximo viaje, tarjetas por Hoy/Mañana/Próximas (máx. tres), detalles de pasajero, origen, destino, kilometraje, presupuesto y horarios, y navegación Waze / Google Maps, llamadas, WhatsApp y mensajes editables. Otras acciones actuales se conservan bajo apartado plegable.
+- Nuevo `TransferQuickPanel.java`; `TransferAlerts.java` guarda snapshot privado de la RPC autenticada, hora y errores de sincronización, y notifica cancelaciones cuando el estado cambia y sigue presente en respuesta. `QuickReservationLogic.java` calcula fechas, estados, superposiciones orientativas y frescura. Durante movimiento bloquea gestión (no navegación). Para aceptar/rechazar/presupuestar se abre Conductor interno y se siguen utilizando sus validaciones backend.
+- **CI:** test determinístico `QuickReservationLogicTest.java`, verificación fuente, compilación, MP3 y firma SUCCESS, GitHub Actions **37922498198**, versionCode **44**, release `0.1-R24.2`; APK SHA256 `f6a98e079221ce59756a3dd7a7196351b71ee7687848f09f22a29295065f0ed3`, 52.544.243 bytes, certificado original d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d.
+- **Drive APK:** https://drive.google.com/file/d/1XwaSF9jkxDJKmjhNh5ltD9B8g-IXf1le/view ; ZIP verificadores https://drive.google.com/file/d/1OYlNGfp3sRTqxGsiBITNoebJNzRHGOk6/view ; carpeta https://drive.google.com/drive/folders/11HfbohdfuVdOZIKPhKIVai45jz1KrFma .
+- **Pendiente:** prueba funcional en Samsung; FCM/push remotos no implementados y GPS conductor/mapa sigue separado de localización del pasajero; el monitor actual usa polling ~15s. No se realizaron cambios en Supabase ni Cliente.
