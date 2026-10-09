@@ -6,7 +6,7 @@ Este directorio contiene una aplicación web estática, premium y gratuita: **la
 
 - Solicitudes inmediatas o para dentro de 10 minutos (sujetas a validación/aceptación) y viajes programados.
 - Reserva como invitado y cuenta con teléfono/PIN de seis dígitos.
-- Geobúsqueda IDE Uruguay oficial por botón explícito; Montevideo y Canelones destacados + otros 17 departamentos. GPS de origen con permiso.
+- Búsqueda general por nombre de lugares (índice OSM de Uruguay con más de 22.000 puntos de interés) y por dirección con IDE Uruguay. Autocompletado 240 ms. Aeropuerto de Carrasco y Laguna del Sauce con resultados inmediatos. El departamento ordena resultados, nunca excluye el resto del país. GPS de origen con permiso.
 - Usuarios autenticados: hasta ocho paradas con lat/lng reales vía `customer_create_reservation_v12`; validación de disponibilidad vía RPC. Invitados: `create_reservation` básico sin paradas.
 - Historial y presupuesto según estados Supabase, respuesta aceptar/rechazar, cancelación con confirmación. No expone tokens, no inventa precio ni tiempos.
 - PWA con manifest, iconos 192/512/maskable y service worker que solamente cachea shell. Sin conexión **nunca intenta crear reservas**.
@@ -38,3 +38,20 @@ El workflow de GitHub Actions `deploy-web-pasajero-pwa.yml` genera PNG 192/512/m
 **Advertencia de arquitectura:** el proyecto mantiene dos frontends de pasajeros distintos que escriben en el mismo Supabase: esta PWA estática `https://marcelofgx-ctrl.github.io/traslados-android/` y la web premium `https://traslados-web.marcelof-gx.workers.dev`. Cambiar el diseño de uno no modifica automáticamente el otro. Debe decidirse cuál será el enlace público único, sin romper accesos a reservas anteriores.
 
 Las burbujas flotantes de Uber/Mapa que pueden cubrir los botones en capturas Android son superposiciones de otras aplicaciones, **no elementos HTML de la PWA**.
+
+
+## Arquitectura de búsqueda y rutas — corrección 09/10/2026
+
+**Problema resuelto en código:** la PWA de GitHub Pages `/traslados-android/web-pasajero/` era distinta a la web premium Cloudflare y todavía consultaba únicamente `direcciones.ide.uy/api/v1/geocode/candidates?q=<texto>, <departamento>`. Escribir «Aeropuerto» con Canelones producía nombres de calles, no el aeropuerto. Tampoco había consulta de km/min de carretera en el formulario.
+
+- `geo-search.js`: lugares por nombre, coincidencia por prefijo de palabra (por ejemplo, «Punta Carreta Shopping» encuentra «Punta Carretas Shopping»), índice `data/uy-pois.json` derivado de © OpenStreetMap contributors, ODbL. Carrasco aparece inmediatamente aunque falle IDE.
+- `app.js`: buscador IDE **sin concatenar departamentos**, autocompletado, resultados de lugares y direcciones, tarjetas que se contraen al seleccionar, origen/destino priorizados.
+- `app.js`: resumen de ruta km/min y esquema del trazado, utilizando el mismo motor del Worker de Cloudflare `/api/public/route-estimate`. Si `ORS_API_KEY` está ausente o la ruta falla, **no se inventan kilómetros**: se ofrece enlace a Google Maps con origen/destino/paradas para consultar la ruta real.
+- `.github/workflows/sync-passenger-pois.yml`: mantiene el índice de lugares en la PWA, actualizado automáticamente cada lunes desde el repo `traslados-web`. No es necesario agregar lugares manualmente.
+- `sw.js`: caché v3 y estrategia red-primero para JavaScript/CSS, sin enviar reservas sin conexión.
+- `.github/workflows/smoke-public-passenger.yml`: prueba pública opcional de HTML, motor de búsqueda, trazado y presencia de los lugares en GitHub Pages.
+- **Enlace directo a la PWA:** https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/
+- **Índice estable del proyecto (no es la web de reservas):** https://marcelofgx-ctrl.github.io/traslados-android/
+- **Web premium separada:** https://traslados-web.marcelof-gx.workers.dev/
+
+**Pendiente de completar:** la clave gratuita de openrouteservice `ORS_API_KEY` en los secretos de Cloudflare para presentar km/min directamente en ambas webs; el GPS en vivo del conductor es otro componente todavía no activo. No modificar el backend de reservas para suplir rutas. Verificar con un teléfono real antes de anunciar una función de recogida inmediata.
