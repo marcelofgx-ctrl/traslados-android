@@ -2,6 +2,14 @@
 
 Este repositorio contiene **más de una aplicación Android**. Antes de programar, elegí el módulo correcto.
 
+## Abrir la web para los pasajeros
+
+**[ABRIR TRASLADOS CLIENTE — Reservar y probar la web](web-pasajero/)**
+
+Acceso directo público: **https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/**
+
+En esta página se realizan las solicitudes de viaje, se consultan reservas y se instala la PWA en Android. **Esta portada es el índice del proyecto, no el formulario de reserva.**
+
 ## Mapa Trayectos — empezar aquí
 - **[RETOMAR MAPA TRAYECTOS (contexto maestro actualizado)](docs/RETOMAR_MAPA_TRAYECTOS.md)**. Documento de referencia para continuar desde una nueva sesión de ChatGPT.
 - [Historial de versiones](docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md).
