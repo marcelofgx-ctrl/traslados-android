@@ -1,5 +1,6 @@
-# MAPA TRAYECTOS — CONTEXTO MAESTRO VIVO
-Actualizado 08/10/2026. Usar este archivo al iniciar una nueva sesión, junto a PENDIENTES y HISTORIAL_VERSIONES.
+# MAPA TRAYECTOS — CONTEXTO MAESTRO HISTÓRICO
+
+**IMPORTANTE (corte R22.8):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada a este corte: R22.8 / versionCode 38 / Actions 37870800270.
 
 ## Proyecto y fuente principal
 - Android nativo, package uy.com.mapatrayectos; módulo mapatrayectos.
