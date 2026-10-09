@@ -1,14 +1,26 @@
 # MAPA TRAYECTOS — CONTEXTO DE REINICIO Y ENTREGA
 
-**Fecha de corte:** 08/10/2026, tras compilación firmada R22.9 y entrega verificada en Drive.  
+**Fecha de corte:** 09/10/2026, tras compilación firmada y subida verificada de R23.0 a Drive.  
 **Documento principal para retomar otra sesión:** `docs/RETOMAR_MAPA_TRAYECTOS.md` en el repositorio.  
-**Estado de entrega:** R22.9 compilada y firmada; usuario confirmó alertas visuales dentro y fuera de la app en R22.8, pero NO sonido MP3. R22.9 corrige canal/volumen; reproducción audible real pendiente de probar en Samsung.
+**Estado de entrega:** R23.0 compilada/firmada; usuario reportó en R22.9 globo de recordatorio separado de la burbuja ✦ (captura). R23.0 corrige anclaje en primer plano y superposición externa, con prueba automatizada de geometría; falta confirmación visual real en Samsung. Audio MP3 R22.9/R23.0 aún no certificado auditivamente.
 
 > **MENSAJE LISTO PARA PEGAR EN UNA NUEVA SESIÓN:**
 >
-> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R22.9 / versionCode 39**, build `37872681083`, que reproduce el MP3 ElevenLabs por canal ALARMAS con volumen mínimo 50% temporal y restaura el valor previo. Usuario confirma alerta visual abierta/cerrada; falta verificar audio en Samsung. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
+> Quiero retomar mi proyecto **Mapa Trayectos**, aplicación Android nativa del repositorio GitHub `marcelofgx-ctrl/traslados-android`, rama `main`, módulo `mapatrayectos`. Antes de modificar nada, consultá `docs/RETOMAR_MAPA_TRAYECTOS.md`, `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`, `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`, `docs/mapa-trayectos-roadmap-2026-10-08.md`, los commits recientes y los runs de GitHub Actions. La última RELEASE verificada es **R23.0 / versionCode 40**, build `37880538141`, con globo de recordatorios unido geométricamente al botón ✦ o a la burbuja flotante. R22.9 aportó MP3 por canal ALARMAS con volumen mínimo 50% temporal; el audio y el nuevo anclaje necesitan QA real en Samsung. Conservá el diseño aprobado, las funciones de viajes, mis datos locales y las demás melodías. No confundas 'código implementado', 'compilación firmada' y 'probado en Samsung'. Continuá desde el último estado real de `main` y decime qué falta validar o corregir.
 
-## 0. NUEVA ENTREGA VERIFICADA — R22.9 (08/10/2026)
+## 0. NUEVA ENTREGA VERIFICADA — R23.0 (09/10/2026)
+
+- **Problema real observado:** el usuario adjuntó captura de Samsung donde el globo de recordatorio estaba separado del icono ✦ (tarjeta aparentemente huérfana sobre el mapa). Solicitó que la cola permanezca pegada al icono ✦ con la app abierta o a la burbuja flotante cuando está minimizada; si no hay ancla, dejar solo la notificación de Android.
+- **Arreglo implementado en main:** nuevo `ReminderAnchorGeometry.java` ubica la tarjeta mediante la geometría real del icono, orienta cola a derecha o izquierda según espacio, ajusta altura de la punta y **no** acepta posiciones que dejarían la cola huérfana. `ReminderCallout.setAnchorPlacement` reubica/flipea el triángulo dentro de la misma vista. `MainActivity.inAppPlacement` usa `getLocationOnScreen` de raíz e icono para eliminar errores de sistema de coordenadas y realinea al cambiar layout.
+- **Burbuja exterior:** `TrackingService` publica coordenadas actuales y eventos de arrastre/ocultamiento; `ReminderBubbleService` escucha, sigue el icono en movimiento, cambia orientación si está a la izquierda, detecta ancla obsoleta/no visible y omite/elimina la tarjeta. La notificación Android sigue disponible. Sin jornada activa (y por tanto sin burbuja flotante), no aparece una tarjeta huérfana.
+- **Pruebas:** `mapatrayectos/tests/ReminderAnchorGeometryTest.java`, compilación Javac separada en Actions, PASS: primer plano derecha; overlay izquierda/derecha, movimiento de burbuja, ajuste de altura y ausencia de visual cuando no se puede unir la cola. Esto **NO** es una prueba de pixeles reales del Samsung.
+- **APK RELEASE firmada:** `0.1-R23.0`, versionCode **40**, workflow `.github/workflows/build-mapa-trayectos.yml`, run **37880538141** SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37880538141 . Los intentos `37880347098` y `37880443648` fallaron por nombres de parámetros Java en lambda; fueron corregidos en commit `24e60a5e2cbd63c9fb639a04998efa6ed08cba75` y la build final pasó.
+- **Archivo verificado:** `Mapa_Trayectos_v0.1_R23_0_RELEASE.apk` de **52.262.039 bytes**, SHA-256 `cad0847510e40799db13d162ebe605e22cc2d76387e733ba1584c6abf0cb7703`. Comprobación de firma Android esquema v2, certificado SHA-256 `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d` (idéntico a versión anterior). MP3 original ElevenLabs dentro de APK intacto: SHA-256 `5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0`.
+- **Google Drive verificado:** APK https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view ; ZIP con firma, checksum y sonidos https://drive.google.com/file/d/1M3q2VB5DbgnaoOBao7RQHxwphqZVpauX/view ; carpeta https://drive.google.com/drive/folders/1LK_CGnXSNuotOFKRIGwimnpCDFgy6yrB .
+- **QA de próxima conversación:** instalar encima de R22.9 **sin desinstalar** para conservar SQLite/MP3 privados. Probar recordatorio con app abierta, flecha tocando icono ✦ sin separación, botón HECHO y +10 min; salir con jornada activa para mostrar bubble externa, moverla a ambos lados, disparar alarma de prueba y comprobar cola unida. Al cerrar flotante o sin permiso overlay debe quedar solo notificación. Comprobar audio ElevenLabs y restauración de volumen de alarmas; todavía no hay confirmación del usuario.
+- **Alcance:** solo módulo `mapatrayectos` y su workflow. No se tocó `conductor/`, `cliente/`, SQLite, Supabase, datos o estética de controles.
+
+## 0B. ANTERIOR ENTREGA VERIFICADA — R22.9 (08/10/2026)
 
 - **Reporte real Samsung R22.8:** notificación de recordatorio visible correctamente con app abierta o cerrada, pero SIN audio de burbujas. Por tanto, entrega de alertas sí probada por el usuario; audio audible NO.
 - **Diagnóstico de código:** R22.8 no reproducía audio si teléfono estaba en silencio/vibración o notificaciones en volumen 0; MediaPlayer usaba `USAGE_NOTIFICATION_EVENT`. Su volumen 0.85 no elevaba el control físico del sistema.
@@ -30,9 +42,9 @@
 - **Historial acumulado:** `docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md`.
 - **Contexto maestro histórico:** `docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md`.
 - **Pendientes históricos:** `docs/mapa-trayectos-roadmap-2026-10-08.md`. Algunas tareas están marcadas antiguamente como no implementadas; contrastar siempre con `main` y este documento.
-- **Última RELEASE verificada:** `0.1-R22.9`, `versionCode 39`, run de GitHub Actions **37872681083**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37872681083
-- **APK R22.9 en Drive (verificada):** https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view
-- **Carpeta Drive R22.9:** https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA
+- **Última RELEASE verificada:** `0.1-R23.0`, `versionCode 40`, run de GitHub Actions **37880538141**, resultado `success`: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37880538141
+- **APK R23.0 en Drive (verificada):** https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view
+- **Carpeta Drive R23.0:** https://drive.google.com/drive/folders/1LK_CGnXSNuotOFKRIGwimnpCDFgy6yrB
 - **Carpeta general Versiones en Drive:** https://drive.google.com/drive/folders/1eaXoeNaRl9Peb8a7pyrOFrTWqj-xyjd6
 - **Web oficial del negocio que se comparte desde la app:** https://traslados-web.marcelof-gx.workers.dev/
 - **Descarga web de la APK:** todavía NO hay ruta oficial validada. No inventar enlaces `/descargas` en la web de Cloudflare.
