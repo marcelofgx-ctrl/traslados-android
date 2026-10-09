@@ -89,9 +89,9 @@ tasks.register('prepareEmbeddedConductor') {
                 java = java.replace('driverBubbleStartLoop();',
                     '/* R24: Shared Mapa Trayectos bubble owns all floating shortcuts. */')
                 java = java.replace('driverBubbleShowIfNeeded();',
-                    '/* R24: Conductor duplicate overlay disabled. */')
+                    '{ /* R24: Conductor duplicate overlay disabled. */ }')
                 java = java.replace('driverBubbleShowTripCard();',
-                    '/* R24: Mapa manages floating notifications. */')
+                    '{ /* R24: Mapa manages floating notifications. */ }')
                 java = java.replace('driverBubbleMarkNew(r);',
                     'uy.com.mapatrayectos.TransferAlerts.reportNew(this,r);')
                 java = java.replace('JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();',
