@@ -1,5 +1,5 @@
 # Mapa Trayectos — historial de versiones verificable
-Estado a 09/10/2026. Mantener actualizado tras cada build y prueba de dispositivo.
+Estado a 09/10/2026 (R23.1). Mantener actualizado tras cada build y prueba de dispositivo.
 
 | Versión | versionCode | Objetivo | Compilación | Prueba real |
 |---|---:|---|---|---|
@@ -157,3 +157,11 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - **Versiones:** `0.1-R23.0`, versionCode 40. Primeros intentos R23.0 `37880347098` y `37880443648` fallaron por variables Java en la lambda del listener; arregladas en commit `24e60a5e2cbd63c9fb639a04998efa6ed08cba75` antes de build final verde.
 - **Google Drive verificado:** APK https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view , ZIP de build https://drive.google.com/file/d/1M3q2VB5DbgnaoOBao7RQHxwphqZVpauX/view , carpeta R23.0 https://drive.google.com/drive/folders/1LK_CGnXSNuotOFKRIGwimnpCDFgy6yrB .
 - **PENDIENTE REAL SAMSUNG:** inspección visual del anclaje abierto y minimizado, mover burbuja a ambos bordes y disparar recordatorio, fallback notificación sin burbuja; audio audible R22.9/R23.0 y restauración de volumen. Actualizar sin desinstalar para no borrar SQLite ni MP3 de viajes.
+
+
+## R23.1 — Burbuja flotante aun sin jornada, sin GPS (09/10/2026)
+- Usuario confirmó minimizar en «LISTO PARA JORNADA», aprobó burbuja disponible siempre al minimizar con o sin jornada.
+- TrackingService con FGS `specialUse` inactivo y `location` activo, overlay con autorización Android y posición actualizada cada 5 s; no GPS ni kilometraje sin jornada. Al volver al mapa/historial/detalle, se cierra la burbuja inactiva.
+- `FloatingShortcutPolicyTest` y `ReminderAnchorGeometryTest` PASS; RELEASE `0.1-R23.1`, versionCode 41, CI GitHub Actions `37881774310` SUCCESS. APK 52.262.243 bytes, SHA256 `3662ffc3ada0f2ae64a9b5b5bde424d907c7322ef360956bed06780013eb8332`; misma firma que R23.0; sonidos originales preservados.
+- APK Drive https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view ; carpeta https://drive.google.com/drive/folders/18QsCkg8UqirtLcaCwvy4g_SbJc0JnHmv .
+- **QA pendiente en Samsung:** instalar encima de R23.0, conceder superposición con ◎, minimizar SIN jornada, comprobar burbuja y ausencia GPS, tocar para regresar; repetir CON jornada, alarmas y cola anclada. Samsung/Android puede restringir permanencia por batería.
