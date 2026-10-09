@@ -6,6 +6,7 @@ import android.content.res.AssetFileDescriptor;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.PowerManager;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +29,7 @@ public final class ReminderSound {
         SharedPreferences p=c.getSharedPreferences(PREF,0);
         long last=p.getLong("last_checked_at",0);
         return (last==0?"MP3 original sin probar":p.getBoolean("last_ok",false)?
-            "MP3 original: reproducción iniciada":"MP3 original: no se reprodujo")
+            "MP3 original: reproducción completada":"MP3 original: no se reprodujo")
             +" · "+p.getString("last_detail","sin datos");
     }
     private static void status(Context c,boolean ok,String detail){
@@ -42,30 +43,42 @@ public final class ReminderSound {
      * Runs ONLY in a background worker. ReminderReceiver uses goAsync() to keep the
      * process alive until this short MP3 completes; the in-app "Probar" uses a worker too.
      */
-    public static Result playBlocking(Context c){
+    public static synchronized Result playBlocking(Context c){
         MediaPlayer player=null;
+        AudioManager am=null;
+        int oldAlarm=-1, raisedAlarm=-1;
+        boolean changedVolume=false;
         try{
-            AudioManager am=(AudioManager)c.getSystemService(Context.AUDIO_SERVICE);
+            am=(AudioManager)c.getSystemService(Context.AUDIO_SERVICE);
             if(am==null){
                 status(c,false,"AudioManager no disponible");
                 return new Result(false,"AudioManager no disponible");
             }
-            if(am.getRingerMode()!=AudioManager.RINGER_MODE_NORMAL){
-                String why="Teléfono en silencio/vibración: no se reproduce el MP3";
+            // Alarm reminders use the alarm stream (not notifications) on Samsung.
+            // Temporarily reach at least half of the system alarm-volume range.
+            int maxAlarm=am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+            if(maxAlarm<=0)throw new IllegalStateException("Volumen de alarmas inválido");
+            int minAlarm=Math.max(1,(maxAlarm+1)/2);
+            oldAlarm=am.getStreamVolume(AudioManager.STREAM_ALARM);
+            if(oldAlarm<minAlarm && !am.isVolumeFixed()){
+                try{am.setStreamVolume(AudioManager.STREAM_ALARM,minAlarm,0);}
+                catch(Exception e){Log.w(LOG,"Android no permitió subir el volumen de alarmas",e);}
+            }
+            raisedAlarm=am.getStreamVolume(AudioManager.STREAM_ALARM);
+            changedVolume=raisedAlarm>oldAlarm;
+            if(raisedAlarm<minAlarm){
+                String why="Alarmas al "+Math.round(raisedAlarm*100f/maxAlarm)
+                    +"%; Android no permitió subirlas al 50%. Revisá Ajustes > Volumen > Alarmas.";
                 status(c,false,why);
                 return new Result(false,why);
-            }
-            int volume=am.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
-            if(volume<=0){
-                status(c,false,"Volumen de notificaciones en cero");
-                return new Result(false,"Volumen de notificaciones en cero");
             }
             final CountDownLatch finished=new CountDownLatch(1);
             final AtomicBoolean completed=new AtomicBoolean(false);
             final AtomicBoolean error=new AtomicBoolean(false);
             player=new MediaPlayer();
+            player.setWakeMode(c,PowerManager.PARTIAL_WAKE_LOCK);
             player.setAudioAttributes(new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
             try(AssetFileDescriptor fd=c.getResources().openRawResourceFd(R.raw.reminder_bubbles_elevenlabs)){
                 if(fd==null)throw new IllegalStateException("MP3 original no incorporado a la APK");
@@ -77,13 +90,13 @@ public final class ReminderSound {
                 finished.countDown();return true;
             });
             player.prepare();
-            player.setVolume(.85f,.85f);
+            player.setVolume(1.0f,1.0f);
             player.start();
             if(!player.isPlaying())throw new IllegalStateException("Android no inició MediaPlayer");
             boolean signaled=finished.await(4500L,TimeUnit.MILLISECONDS);
             if(error.get())throw new IllegalStateException("MediaPlayer informó error");
             if(!signaled||!completed.get())throw new IllegalStateException("Tiempo de espera agotado en reproducción");
-            String result="ElevenLabs burbujas MP3 (2,04 s): reproducción completada";
+            String result="ElevenLabs burbujas MP3 (2,04 s): reproducción completada; canal ALARMAS al "+Math.round(raisedAlarm*100f/am.getStreamMaxVolume(AudioManager.STREAM_ALARM))+"%; ajuste temporal; No molestar puede bloquear la salida.";
             status(c,true,result);
             return new Result(true,result);
         }catch(Exception e){
@@ -92,6 +105,15 @@ public final class ReminderSound {
             return new Result(false,message);
         }finally{
             if(player!=null){try{player.release();}catch(Exception ignored){}}
+            if(changedVolume && am!=null && oldAlarm>=0){
+                try{
+                    // Do not override changes the user made during the two-second cue.
+                    if(am.getStreamVolume(AudioManager.STREAM_ALARM)==raisedAlarm){
+                        am.setStreamVolume(AudioManager.STREAM_ALARM,oldAlarm,0);
+                        Log.i(LOG,"Volumen anterior de alarmas restaurado");
+                    }
+                }catch(Exception e){Log.w(LOG,"No se pudo restaurar el volumen anterior de alarmas",e);}
+            }
         }
     }
     public static void preview(Context c){
