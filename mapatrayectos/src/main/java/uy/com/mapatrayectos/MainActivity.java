@@ -114,6 +114,10 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
         quickActionsAnchor=quickActions;
         quickActions.addOnLayoutChangeListener((changedView,xLeft,yTop,xRight,yBottom,previousLeft,previousTop,previousRight,previousBottom)->storeReminderAnchor());
+        root.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+            if(activeReminderCallout!=null && (r-l!=or-ol||b-t!=ob-ot))
+                root.post(this::realignInAppReminder);
+        });
 
         bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(16),dp(5),dp(16),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
 
@@ -755,32 +759,63 @@ public class MainActivity extends Activity {
     }
     private String formatDuration(long ms){long total=Math.max(0,ms)/1000,h=total/3600,m=(total%3600)/60;if(h>0)return String.format(Locale.getDefault(),"%d:%02d",h,m);return String.format(Locale.getDefault(),"%02d:%02d",m,total%60);}
 
-    /** Actual location of the star in screen coordinates, for the background overlay fallback. */
+    /** The star's actual screen location, not its parent-relative position. */
     private void storeReminderAnchor(){
         if(quickActionsAnchor==null||!quickActionsAnchor.isAttachedToWindow())return;
         int[] p=new int[2];quickActionsAnchor.getLocationOnScreen(p);
         getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
             .putInt("reminder_anchor_x",p[0]).putInt("reminder_anchor_y",p[1])
             .putInt("reminder_anchor_size",quickActionsAnchor.getWidth()).apply();
+        if(activeReminderCallout!=null && rootFrame!=null)
+            rootFrame.post(this::realignInAppReminder);
     }
-    /** Foreground alerts are actual child views of the map, requiring no Android overlay permission. */
+
+    /** R23.0: both coordinates use the root map's frame of reference. */
+    private ReminderAnchorGeometry.Placement inAppPlacement(ReminderCallout card){
+        if(rootFrame==null||quickActionsAnchor==null
+                ||!quickActionsAnchor.isAttachedToWindow()
+                ||quickActionsAnchor.getVisibility()!=View.VISIBLE
+                ||rootFrame.getWidth()<=0||rootFrame.getHeight()<=0)return null;
+        int[] star=new int[2],root=new int[2];
+        quickActionsAnchor.getLocationOnScreen(star);
+        rootFrame.getLocationOnScreen(root);
+        int w=dp(ReminderCallout.TOTAL_WIDTH_DP);
+        card.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(rootFrame.getHeight(),View.MeasureSpec.AT_MOST));
+        int h=card.getMeasuredHeight();
+        return ReminderAnchorGeometry.place(star[0]-root[0],star[1]-root[1],
+            quickActionsAnchor.getWidth(),rootFrame.getWidth(),rootFrame.getHeight(),
+            w,h,dp(ReminderCallout.TAIL_CENTER_DP),dp(ReminderCallout.TAIL_HEIGHT_DP)/2,dp(4));
+    }
+
+    private void realignInAppReminder(){
+        if(!(activeReminderCallout instanceof ReminderCallout))return;
+        ReminderCallout card=(ReminderCallout)activeReminderCallout;
+        ReminderAnchorGeometry.Placement p=inAppPlacement(card);
+        if(p==null){hideInAppReminder(false);return;} // Existing Android notification stays.
+        card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
+        FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)card.getLayoutParams();
+        if(lp.leftMargin!=p.x||lp.topMargin!=p.y){
+            lp.leftMargin=p.x;lp.topMargin=p.y;card.setLayoutParams(lp);
+        }
+    }
+
+    /** Never display a speech card without a tip physically joined to the ✦ button. */
     private void showInAppReminder(int id){
         if(rootFrame==null||quickActionsAnchor==null)return;
         ReminderStore.Item item=ReminderStore.get(this,id);
         if(item==null||item.done)return;
         hideInAppReminder(false);
-        int totalWidth=dp(ReminderCallout.TOTAL_WIDTH_DP);
-        int starLeft=quickActionsAnchor.getLeft();
-        int starMid=quickActionsAnchor.getTop()+quickActionsAnchor.getHeight()/2;
-        // Tip touches the left side of the visible ✦ button with no separate floating window.
-        int x=Math.max(dp(4),starLeft-totalWidth+dp(1));
-        int y=Math.max(dp(62),starMid-dp(ReminderCallout.TAIL_CENTER_DP));
         ReminderCallout card=new ReminderCallout(this,item.text,
             ()->{ReminderStore.change(this,id,true,false,-1);hideInAppReminder(true);},
             ()->{ReminderStore.change(this,id,false,false,System.currentTimeMillis()+600000L);hideInAppReminder(true);},
             ()->hideInAppReminder(true));
-        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(totalWidth,-2,Gravity.TOP|Gravity.LEFT);
-        lp.leftMargin=x;lp.topMargin=y;
+        ReminderAnchorGeometry.Placement p=inAppPlacement(card);
+        if(p==null)return; // Notification remains; no orphaned fallback at screen center.
+        card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(
+            dp(ReminderCallout.TOTAL_WIDTH_DP),-2,Gravity.TOP|Gravity.LEFT);
+        lp.leftMargin=p.x;lp.topMargin=p.y;
         rootFrame.addView(card,lp);activeReminderCallout=card;
         card.reveal();
         uiHandler.removeCallbacks(dismissReminderCallout);
