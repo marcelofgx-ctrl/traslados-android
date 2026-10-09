@@ -369,8 +369,8 @@ public class TrackingService extends Service implements LocationListener {
                 PixelFormat.TRANSLUCENT);
             bubbleLp.gravity=Gravity.TOP|Gravity.START;
             SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);
-            bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));
-            bubbleLp.y=bp.getInt("y",dp(220));
+            bubbleLp.x=bp.getInt("window_x",bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12)));
+            bubbleLp.y=bp.getInt("window_y",bp.getInt("y",dp(220)));
             bubble.setOnTouchListener(new View.OnTouchListener(){
                 float downX,downY;
                 int startX,startY;
@@ -461,7 +461,7 @@ public class TrackingService extends Service implements LocationListener {
         boolean watching=!getSharedPreferences("driver_session",MODE_PRIVATE)
             .getString("pin","").isEmpty();
         android.widget.Toast.makeText(this,
-            watching?"Mapa cerrado · monitor de reservas activo":"Mapa Trayectos cerrado",
+            watching?"Mapa cerrado · avisos mientras siga activo el monitor":"Mapa Trayectos cerrado",
             android.widget.Toast.LENGTH_SHORT).show();
         stopForeground(STOP_FOREGROUND_REMOVE);
         stopSelf(); // onDestroy removes overlays, location listeners and bubble.
@@ -482,7 +482,8 @@ public class TrackingService extends Service implements LocationListener {
     private void saveFloatingBubbleState(boolean visible){
         SharedPreferences.Editor e=getSharedPreferences("bubble_state",MODE_PRIVATE).edit();
         e.putBoolean("floating_visible",visible).putLong("floating_seen_ms",System.currentTimeMillis());
-        if(visible&&bubbleLp!=null)e.putInt("x",bubbleLp.x+dp(4)).putInt("y",bubbleLp.y+dp(4))
+        if(visible&&bubbleLp!=null)e.putInt("window_x",bubbleLp.x).putInt("window_y",bubbleLp.y)
+            .putInt("x",bubbleLp.x+dp(4)).putInt("y",bubbleLp.y+dp(4))
             .putInt("floating_size",dp(56));
         e.apply();
     }
