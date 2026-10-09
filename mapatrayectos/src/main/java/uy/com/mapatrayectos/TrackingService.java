@@ -81,7 +81,7 @@ public class TrackingService extends Service implements LocationListener {
             if(clockHandler==null||bubbleView==null)return;
             if(appVisible||!Settings.canDrawOverlays(TrackingService.this)){
                 hideBubble();
-                if(!shiftActive){stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
+                if(!FloatingShortcutPolicy.maintainIdleService(appVisible,Settings.canDrawOverlays(TrackingService.this),shiftActive)){stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
                 return;
             }
             // Keep the R23.0 reminder anchor fresh even if the journey timer is off.
@@ -164,7 +164,7 @@ public class TrackingService extends Service implements LocationListener {
             // START_STICKY service restart when the app was previously minimized.
             promoteIdleBubble();showBubbleIfAllowed();
         }else stopSelf();
-        return shiftActive||(!appVisible&&Settings.canDrawOverlays(this))?START_STICKY:START_NOT_STICKY;
+        return FloatingShortcutPolicy.maintainIdleService(appVisible,Settings.canDrawOverlays(this),shiftActive)?START_STICKY:START_NOT_STICKY;
     }
 
     private void startShift(Intent source){
@@ -250,7 +250,7 @@ public class TrackingService extends Service implements LocationListener {
     private void stopLocation(){if(lm!=null)try{lm.removeUpdates(this);}catch(Exception ignored){} }
 
     @Override public void onLocationChanged(Location loc){
-        if(loc==null||!shiftActive||shiftPaused)return;final long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();final float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;final boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());final boolean isNetwork=LocationManager.NETWORK_PROVIDER.equals(loc.getProvider());
+        if(loc==null||!FloatingShortcutPolicy.collectLocation(shiftActive,shiftPaused))return;final long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();final float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;final boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());final boolean isNetwork=LocationManager.NETWORK_PROVIDER.equals(loc.getProvider());
         if(isGps&&accuracy<=60f)lastGoodGpsTs=ts;if(isNetwork&&lastGoodGpsTs>0&&Math.abs(ts-lastGoodGpsTs)<NETWORK_FALLBACK_AFTER_MS){broadcastState();return;}if(accuracy>MAX_ACCEPTED_ACCURACY_M){broadcastState();return;}if(lastAccepted==null){acceptBaseline(loc,ts,accuracy,isGps);return;}
         long dt=ts-lastAcceptedTs;if(dt<=0){broadcastState();return;}double dist=lastAccepted.distanceTo(loc);double dtSec=dt/1000.0;float derived=(float)((dist/dtSec)*3.6);if(derived>MAX_PLAUSIBLE_KMH||(dt<800L&&derived>60f)){broadcastState();return;}
         float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):derived;float candidate=raw<=MAX_PLAUSIBLE_KMH?raw:derived;if(filteredSpeedTs>0&&candidate>filteredSpeed&&dt<=5000L){float accel=(float)(((candidate-filteredSpeed)/3.6)/Math.max(0.25,dtSec));if(accel>MAX_ACCEL_MPS2)candidate=derived;}if(candidate>MAX_PLAUSIBLE_KMH)candidate=filteredSpeed;if(loc.hasSpeed()&&accuracy>12f){float diff=Math.abs(candidate-derived);float tolerance=Math.max(18f,Math.max(candidate,derived)*0.45f);if(diff>tolerance)candidate=derived;}
@@ -294,7 +294,7 @@ public class TrackingService extends Service implements LocationListener {
         }
     }
 
-    private void showBubbleIfAllowed(){if(appVisible||!Settings.canDrawOverlays(this)||bubbleView!=null)return;try{bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);if(bubbleWm==null)return;ImageView bubble=new ImageView(this);bubble.setImageResource(R.drawable.app_icon);
+    private void showBubbleIfAllowed(){if(!FloatingShortcutPolicy.canDisplay(appVisible,Settings.canDrawOverlays(this),bubbleView!=null))return;try{bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);if(bubbleWm==null)return;ImageView bubble=new ImageView(this);bubble.setImageResource(R.drawable.app_icon);
         GradientDrawable chrome=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
             new int[]{Color.rgb(5,49,58),Color.rgb(8,85,91)});
         chrome.setCornerRadius(dp(27));chrome.setStroke(dp(1),Color.rgb(222,190,112));
