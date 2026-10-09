@@ -658,15 +658,22 @@ public class MainActivity extends Activity {
         final View decor=window.getDecorView();
         final android.view.ViewTreeObserver.OnGlobalLayoutListener observer=()->{
             if(!dialog.isShowing()||!decor.isAttachedToWindow())return;
-            Rect visible=new Rect();decor.getWindowVisibleDisplayFrame(visible);
-            int available=Math.max(dp(240),visible.height()-dp(18));
+            int available=normalHeight;
             if(Build.VERSION.SDK_INT>=30){
                 WindowInsets wi=decor.getRootWindowInsets();
                 if(wi!=null&&wi.isVisible(WindowInsets.Type.ime())){
                     android.graphics.Insets keyboard=wi.getInsets(WindowInsets.Type.ime());
                     android.graphics.Insets bars=wi.getInsets(WindowInsets.Type.systemBars());
-                    int total=screenHeight-keyboard.bottom-bars.top-dp(22);
-                    available=Math.min(available,Math.max(dp(240),total));
+                    available=Math.max(dp(240),
+                        screenHeight-keyboard.bottom-bars.top-dp(22));
+                }
+            }else{
+                // Legacy fallback only: on Android 11+ the decor-visible rect may
+                // shrink with the dialog itself and would progressively collapse it.
+                Rect visible=new Rect();decor.getWindowVisibleDisplayFrame(visible);
+                int full=getResources().getDisplayMetrics().heightPixels;
+                if(visible.height()<full-dp(180)){
+                    available=Math.max(dp(240),visible.height()-dp(18));
                 }
             }
             int desired=Math.min(normalHeight,available);
