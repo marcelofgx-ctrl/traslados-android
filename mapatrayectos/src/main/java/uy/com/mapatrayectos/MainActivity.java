@@ -41,8 +41,9 @@ public class MainActivity extends Activity {
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
     private SlideActionView slider,endShiftSlider;
     private FrameLayout rootFrame;
-    private TextView quickActionsAnchor;
-    private View activeReminderCallout;
+    private TextView quickActionsAnchor, transferBadge;
+    private View activeReminderCallout, activeTransferCallout;
+    private final Runnable dismissTransferCallout=()->hideInAppTransfer(false);
     private final Runnable dismissReminderCallout=()->hideInAppReminder(false);
     private LinearLayout bottomSheet;
     private HistoryBottomSheet historySheet;
@@ -83,6 +84,25 @@ public class MainActivity extends Activity {
             }
         }
     };
+    private final BroadcastReceiver transferReceiver=new BroadcastReceiver(){
+        @Override public void onReceive(Context c,Intent i){
+            if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
+                updateTransferBadge();
+                showInAppTransfer();
+            }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction()))updateTransferBadge();
+        }
+    };
+    private void openIntegratedConductor(){
+        hideInAppTransfer(false);
+        TransferAlerts.markViewed(this);
+        startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class));
+    }
+    private void updateTransferBadge(){
+        if(transferBadge==null)return;
+        int pending=TransferAlerts.pendingCount(this);
+        transferBadge.setText(pending>9?"9+":Integer.toString(pending));
+        transferBadge.setVisibility(pending>0?View.VISIBLE:View.GONE);
+    }
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{
         if(loc==null)return;float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;if(accuracy>45f)return;long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>160f)return;
@@ -103,7 +123,7 @@ public class MainActivity extends Activity {
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(58),dp(42)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->openBubblePermission());LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
-        maintenanceBtn=button("⚒");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMaintenanceMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
+        maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
 
         speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(100),dp(100),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(94),dp(12),0);root.addView(speedGauge,spdLp);
@@ -113,10 +133,21 @@ public class MainActivity extends Activity {
         TextView quickActions=text("✦",22,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions));
         FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
         quickActionsAnchor=quickActions;
+        transferBadge=text("0",10,Color.WHITE,true);
+        transferBadge.setGravity(Gravity.CENTER);
+        transferBadge.setBackground(rounded(Color.rgb(178,53,58),15,1,Color.rgb(231,202,130)));
+        transferBadge.setElevation(dp(10));
+        transferBadge.setVisibility(View.GONE);
+        FrameLayout.LayoutParams tbLp=new FrameLayout.LayoutParams(dp(20),dp(20),Gravity.TOP|Gravity.RIGHT);
+        tbLp.setMargins(0,dp(227),dp(6),0);
+        root.addView(transferBadge,tbLp);
+        updateTransferBadge();
         quickActions.addOnLayoutChangeListener((changedView,xLeft,yTop,xRight,yBottom,previousLeft,previousTop,previousRight,previousBottom)->storeReminderAnchor());
         root.addOnLayoutChangeListener((changedRoot,mapLeftEdge,mapTopEdge,mapRightEdge,mapBottomEdge,oldMapLeftEdge,oldMapTopEdge,oldMapRightEdge,oldMapBottomEdge)->{
-            if(activeReminderCallout!=null && (mapRightEdge-mapLeftEdge!=oldMapRightEdge-oldMapLeftEdge||mapBottomEdge-mapTopEdge!=oldMapBottomEdge-oldMapTopEdge))
-                root.post(this::realignInAppReminder);
+            if(mapRightEdge-mapLeftEdge!=oldMapRightEdge-oldMapLeftEdge||mapBottomEdge-mapTopEdge!=oldMapBottomEdge-oldMapTopEdge){
+                if(activeReminderCallout!=null)root.post(this::realignInAppReminder);
+                if(activeTransferCallout!=null)root.post(this::realignInAppTransfer);
+            }
         });
 
         bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(16),dp(5),dp(16),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
@@ -367,6 +398,49 @@ public class MainActivity extends Activity {
     private boolean maintenanceBusy(){
         SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);
         return shiftActive||tripActive||s.getBoolean("shift_active",false)||s.getBoolean("trip_active",false);
+    }
+
+    private void showMainMenu(View anchor){
+        LinearLayout menu=new LinearLayout(this);menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setPadding(dp(11),dp(10),dp(11),dp(12));
+        menu.setBackground(new TexturedDrawable(this,Color.rgb(6,45,53),
+            Color.rgb(9,72,80),Color.argb(220,231,202,130),18f,1f,false));
+        TextView heading=text("MAPA TRAYECTOS · CENTRO DE CONTROL",10,CHAMPAGNE,true);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        menu.addView(heading,new LinearLayout.LayoutParams(-1,dp(33)));
+        PopupWindow popup=new PopupWindow(menu,dp(262),-2,true);
+        popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);popup.setElevation(dp(13));
+        addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
+        int pending=TransferAlerts.pendingCount(this);
+        addMainMenuRow(menu,"🚘","TRASLADOS CONDUCTOR",
+            pending>0?pending+" solicitud(es) pendiente(s)":"Solicitudes · Agenda · Presupuestos",
+            popup,this::openIntegratedConductor);
+        addMainMenuRow(menu,"◷","Recordatorios","Avisos y tareas programadas",popup,
+            ()->startActivity(new Intent(this,ReminderActivity.class)));
+        addMainMenuRow(menu,"▤","Historial y estadísticas","Viajes, kilómetros y jornadas",popup,
+            ()->startActivity(new Intent(this,HistoryActivity.class)));
+        addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
+            ()->anchor.post(()->showMaintenanceMenu(anchor)));
+        try{popup.showAsDropDown(anchor,-dp(211),dp(7));}
+        catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
+    }
+    private void addMainMenuRow(LinearLayout menu,String icon,String title,String sub,
+                                PopupWindow popup,Runnable action){
+        LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(9),dp(8),dp(8),dp(8));
+        TextView symbol=text(icon,21,CHAMPAGNE,true);symbol.setGravity(Gravity.CENTER);
+        row.addView(symbol,new LinearLayout.LayoutParams(dp(38),dp(39)));
+        LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);
+        TextView name=text(title,12.5f,TEXT,true);name.setSingleLine(true);
+        TextView desc=text(sub,9.6f,MUTED,false);desc.setSingleLine(true);
+        col.addView(name);col.addView(desc);
+        LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);
+        cp.leftMargin=dp(7);row.addView(col,cp);
+        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(57)));
+        View line=new View(this);line.setBackgroundColor(Color.argb(70,231,202,130));
+        menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
+        row.setOnClickListener(v->{popup.dismiss();action.run();});
     }
 
     private void showMaintenanceMenu(View anchor){
@@ -775,8 +849,10 @@ public class MainActivity extends Activity {
         getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
             .putInt("reminder_anchor_x",p[0]).putInt("reminder_anchor_y",p[1])
             .putInt("reminder_anchor_size",quickActionsAnchor.getWidth()).apply();
-        if(activeReminderCallout!=null && rootFrame!=null)
-            rootFrame.post(this::realignInAppReminder);
+        if(rootFrame!=null){
+            if(activeReminderCallout!=null)rootFrame.post(this::realignInAppReminder);
+            if(activeTransferCallout!=null)rootFrame.post(this::realignInAppTransfer);
+        }
     }
 
     /** R23.0: both coordinates use the root map's frame of reference. */
@@ -814,7 +890,7 @@ public class MainActivity extends Activity {
         if(rootFrame==null||quickActionsAnchor==null)return;
         ReminderStore.Item item=ReminderStore.get(this,id);
         if(item==null||item.done)return;
-        hideInAppReminder(false);
+        hideInAppReminder(false);hideInAppTransfer(false);
         ReminderCallout card=new ReminderCallout(this,item.text,
             ()->{ReminderStore.change(this,id,true,false,-1);hideInAppReminder(true);},
             ()->{ReminderStore.change(this,id,false,false,System.currentTimeMillis()+600000L);hideInAppReminder(true);},
@@ -830,6 +906,47 @@ public class MainActivity extends Activity {
         uiHandler.removeCallbacks(dismissReminderCallout);
         uiHandler.postDelayed(dismissReminderCallout,30000L);
     }
+    private void showInAppTransfer(){
+        if(rootFrame==null||quickActionsAnchor==null)return;
+        hideInAppReminder(false);hideInAppTransfer(false);
+        ReminderCallout card=new ReminderCallout(this,TransferAlerts.lastText(this),
+            this::openIntegratedConductor,
+            ()->hideInAppTransfer(true),
+            ()->hideInAppTransfer(true),
+            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
+        ReminderAnchorGeometry.Placement p=inAppPlacement(card);
+        if(p==null)return; // The regular Android notification remains.
+        card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(
+            dp(ReminderCallout.TOTAL_WIDTH_DP),-2,Gravity.TOP|Gravity.LEFT);
+        lp.leftMargin=p.x;lp.topMargin=p.y;
+        rootFrame.addView(card,lp);activeTransferCallout=card;
+        card.reveal();uiHandler.removeCallbacks(dismissTransferCallout);
+        uiHandler.postDelayed(dismissTransferCallout,30000L);
+    }
+    private void realignInAppTransfer(){
+        if(!(activeTransferCallout instanceof ReminderCallout))return;
+        ReminderCallout card=(ReminderCallout)activeTransferCallout;
+        ReminderAnchorGeometry.Placement p=inAppPlacement(card);
+        if(p==null){hideInAppTransfer(false);return;}
+        card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
+        FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)card.getLayoutParams();
+        if(lp.leftMargin!=p.x||lp.topMargin!=p.y){
+            lp.leftMargin=p.x;lp.topMargin=p.y;card.setLayoutParams(lp);
+        }
+    }
+    private void hideInAppTransfer(boolean animated){
+        uiHandler.removeCallbacks(dismissTransferCallout);
+        View current=activeTransferCallout;
+        if(current==null)return;
+        activeTransferCallout=null;
+        if(animated&&current instanceof ReminderCallout){
+            ((ReminderCallout)current).vanish(()->{
+                if(current.getParent() instanceof ViewGroup)((ViewGroup)current.getParent()).removeView(current);
+            });
+        }else if(current.getParent() instanceof ViewGroup)
+            ((ViewGroup)current.getParent()).removeView(current);
+    }
     private void hideInAppReminder(boolean animated){
         uiHandler.removeCallbacks(dismissReminderCallout);
         View current=activeReminderCallout;
@@ -844,12 +961,24 @@ public class MainActivity extends Activity {
             ((android.view.ViewGroup)current.getParent()).removeView(current);
     }
     @Override protected void onResume(){super.onResume();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
+        if(Build.VERSION.SDK_INT>=33){
+            IntentFilter transfers=new IntentFilter();transfers.addAction(TransferAlerts.ACTION_NEW);
+            transfers.addAction(TransferAlerts.ACTION_COUNT);
+            registerReceiver(transferReceiver,transfers,Context.RECEIVER_NOT_EXPORTED);
+        }else{
+            IntentFilter transfers=new IntentFilter();transfers.addAction(TransferAlerts.ACTION_NEW);
+            transfers.addAction(TransferAlerts.ACTION_COUNT);
+            registerReceiver(transferReceiver,transfers);
+        }
+        updateTransferBadge();
+        TransferAlerts.ensureMonitor(this);
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{stopService(new Intent(this,TrackingService.class));startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
     @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
-        hideInAppReminder(false);
+        try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
+        hideInAppReminder(false);hideInAppTransfer(false);
         stopPreview();if(mapView!=null)mapView.onPause();super.onPause();}
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}

@@ -7,7 +7,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.util.Log;
 import android.graphics.PixelFormat;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Color;
+import android.util.Log;
 import android.graphics.drawable.GradientDrawable;
 import android.location.*;
 import android.os.*;
@@ -74,6 +77,18 @@ public class TrackingService extends Service implements LocationListener {
     private long shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
 
     private WindowManager bubbleWm;private View bubbleView;private WindowManager.LayoutParams bubbleLp;
+    private ReminderCallout activeTransferCallout;
+    private WindowManager.LayoutParams activeTransferLp;
+    private final Runnable transferTimeout=this::hideTransferCallout;
+    private final BroadcastReceiver transferEvents=new BroadcastReceiver(){
+        @Override public void onReceive(Context c,Intent i){
+            if(bubbleView!=null)bubbleView.invalidate();
+            if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
+                if(bubbleView!=null)showTransferCallout();
+            }else if(TransferAlerts.pendingCount(TrackingService.this)==0)
+                hideTransferCallout();
+        }
+    };
 
     private final Runnable bubbleShow=()->showBubbleIfAllowed();
     private final Runnable bubbleHeartbeat=new Runnable(){
@@ -122,7 +137,12 @@ public class TrackingService extends Service implements LocationListener {
     };
 
     @Override public void onCreate(){
-        super.onCreate();appVisible=getSharedPreferences("bubble_state",MODE_PRIVATE).getBoolean("ui_visible",true);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("floating_visible",false).apply();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);clockHandler=new Handler(Looper.getMainLooper());loadState();shiftCompletedTrips=db.completedTripsForShift(shiftId);Api.init(this);createChannel();
+        super.onCreate();
+        IntentFilter tf=new IntentFilter();tf.addAction(TransferAlerts.ACTION_NEW);
+        tf.addAction(TransferAlerts.ACTION_COUNT);
+        if(Build.VERSION.SDK_INT>=33)registerReceiver(transferEvents,tf,Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(transferEvents,tf);
+        appVisible=getSharedPreferences("bubble_state",MODE_PRIVATE).getBoolean("ui_visible",true);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("floating_visible",false).apply();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);clockHandler=new Handler(Looper.getMainLooper());loadState();shiftCompletedTrips=db.completedTripsForShift(shiftId);Api.init(this);createChannel();
         if(tripActive){JSONObjectStub t=readTripStartState();tripOriginCaptured=t.hasStart;}
         if(shiftActive){lastClockAccountedAt=System.currentTimeMillis();promoteActiveTracking();if(!shiftPaused)startLocation();startClock();showBubbleIfAllowed();}
     }
@@ -294,12 +314,28 @@ public class TrackingService extends Service implements LocationListener {
         }
     }
 
-    private void showBubbleIfAllowed(){if(!FloatingShortcutPolicy.canDisplay(appVisible,Settings.canDrawOverlays(this),bubbleView!=null))return;try{bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);if(bubbleWm==null)return;ImageView bubble=new ImageView(this);bubble.setImageResource(R.drawable.app_icon);
+    private void showBubbleIfAllowed(){if(!FloatingShortcutPolicy.canDisplay(appVisible,Settings.canDrawOverlays(this),bubbleView!=null))return;try{bubbleWm=(WindowManager)getSystemService(WINDOW_SERVICE);if(bubbleWm==null)return;ImageView bubble=new ImageView(this){
+            private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override protected void onDraw(Canvas canvas){
+                super.onDraw(canvas);
+                int count=TransferAlerts.pendingCount(TrackingService.this);
+                if(count<=0)return;
+                float cx=getWidth()-dp(11),cy=dp(11),radius=dp(10);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(180,51,57));
+                canvas.drawCircle(cx,cy,radius,p);
+                p.setColor(Color.rgb(236,203,133));p.setStyle(Paint.Style.STROKE);
+                p.setStrokeWidth(dp(1));canvas.drawCircle(cx,cy,radius,p);
+                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);
+                p.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                p.setTextSize(dp(11));p.setColor(Color.WHITE);
+                canvas.drawText(count>9?"9+":Integer.toString(count),cx,cy+dp(4),p);
+            }
+        };bubble.setImageResource(R.drawable.app_icon);
         GradientDrawable chrome=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
             new int[]{Color.rgb(5,49,58),Color.rgb(8,85,91)});
         chrome.setCornerRadius(dp(27));chrome.setStroke(dp(1),Color.rgb(222,190,112));
         bubble.setBackground(chrome);bubble.setClipToOutline(true);
-        bubble.setPadding(dp(6),dp(6),dp(6),dp(6));bubble.setElevation(dp(7));int size=dp(52);bubbleLp=new WindowManager.LayoutParams(size,size,Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);bubbleLp.gravity=Gravity.TOP|Gravity.START;SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));bubbleLp.y=bp.getInt("y",dp(220));bubble.setOnTouchListener(new View.OnTouchListener(){float downX,downY;int startX,startY;long downAt;@Override public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:downX=e.getRawX();downY=e.getRawY();startX=bubbleLp.x;startY=bubbleLp.y;downAt=System.currentTimeMillis();return true;case MotionEvent.ACTION_MOVE:int nx=startX+(int)(e.getRawX()-downX),ny=startY+(int)(e.getRawY()-downY);int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size),maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));bubbleLp.x=Math.max(0,Math.min(maxX,nx));bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));try{bubbleWm.updateViewLayout(bubble,bubbleLp);signalFloatingBubblePosition(true);}catch(Exception ignored){}return true;case MotionEvent.ACTION_UP:float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);if(dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<500){Intent open=new Intent(TrackingService.this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(open);}else{int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);bubbleLp.x=bubbleLp.x<edge/2?0:edge;try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}saveFloatingBubbleState(true);signalFloatingBubblePosition(true);}return true;}return false;}});bubbleWm.addView(bubble,bubbleLp);bubbleView=bubble;saveFloatingBubbleState(true);
+        bubble.setPadding(dp(6),dp(6),dp(6),dp(6));bubble.setElevation(dp(7));int size=dp(52);bubbleLp=new WindowManager.LayoutParams(size,size,Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);bubbleLp.gravity=Gravity.TOP|Gravity.START;SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));bubbleLp.y=bp.getInt("y",dp(220));bubble.setOnTouchListener(new View.OnTouchListener(){float downX,downY;int startX,startY;long downAt;@Override public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:downX=e.getRawX();downY=e.getRawY();startX=bubbleLp.x;startY=bubbleLp.y;downAt=System.currentTimeMillis();return true;case MotionEvent.ACTION_MOVE:int nx=startX+(int)(e.getRawX()-downX),ny=startY+(int)(e.getRawY()-downY);int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size),maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));bubbleLp.x=Math.max(0,Math.min(maxX,nx));bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));try{bubbleWm.updateViewLayout(bubble,bubbleLp);signalFloatingBubblePosition(true);realignTransferCallout();}catch(Exception ignored){}return true;case MotionEvent.ACTION_UP:float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);if(dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<500){Intent open=new Intent(TrackingService.this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(open);}else{int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);bubbleLp.x=bubbleLp.x<edge/2?0:edge;try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}saveFloatingBubbleState(true);signalFloatingBubblePosition(true);realignTransferCallout();}return true;}return false;}});bubbleWm.addView(bubble,bubbleLp);bubbleView=bubble;saveFloatingBubbleState(true);
         if(clockHandler!=null){clockHandler.removeCallbacks(bubbleHeartbeat);clockHandler.postDelayed(bubbleHeartbeat,IDLE_BUBBLE_HEARTBEAT_MS);}
         signalFloatingBubblePosition(true);}catch(Exception ignored){hideBubble();}}
     /**
@@ -322,7 +358,64 @@ public class TrackingService extends Service implements LocationListener {
             .putInt("floating_size",bubbleLp.width);
         e.apply();
     }
+    private void showTransferCallout(){
+        hideTransferCallout();
+        if(bubbleWm==null||bubbleView==null||bubbleLp==null)return;
+        activeTransferCallout=new ReminderCallout(this,TransferAlerts.lastText(this),
+            ()->{
+                hideTransferCallout();TransferAlerts.markViewed(this);
+                Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
+                open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(open);
+            },this::hideTransferCallout,this::hideTransferCallout,
+            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
+        int width=dp(ReminderCallout.TOTAL_WIDTH_DP);
+        WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
+            width,WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                |WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);
+        lp.gravity=Gravity.TOP|Gravity.LEFT;
+        activeTransferLp=lp;
+        ReminderAnchorGeometry.Placement placement=transferPlacement(activeTransferCallout);
+        if(placement==null){hideTransferCallout();return;}
+        activeTransferCallout.setAnchorPlacement(placement.tailOnLeft,placement.tailCenterY);
+        lp.x=placement.x;lp.y=placement.y;
+        try{
+            bubbleWm.addView(activeTransferCallout,lp);
+            activeTransferCallout.reveal();
+            clockHandler.postDelayed(transferTimeout,30000L);
+        }catch(Exception ex){Log.w("MapaTransfers","Speech callout unavailable, Android notification remains",ex);hideTransferCallout();}
+    }
+    private ReminderAnchorGeometry.Placement transferPlacement(ReminderCallout callout){
+        if(bubbleLp==null||callout==null)return null;
+        int width=dp(ReminderCallout.TOTAL_WIDTH_DP),screenHeight=getResources().getDisplayMetrics().heightPixels;
+        callout.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(screenHeight,View.MeasureSpec.AT_MOST));
+        return ReminderAnchorGeometry.place(bubbleLp.x,bubbleLp.y,bubbleLp.width,
+            getResources().getDisplayMetrics().widthPixels,screenHeight,
+            width,callout.getMeasuredHeight(),
+            dp(ReminderCallout.TAIL_CENTER_DP),dp(ReminderCallout.TAIL_HEIGHT_DP)/2,dp(4));
+    }
+    private void realignTransferCallout(){
+        if(activeTransferCallout==null||activeTransferLp==null||bubbleWm==null)return;
+        ReminderAnchorGeometry.Placement p=transferPlacement(activeTransferCallout);
+        if(p==null){hideTransferCallout();return;}
+        activeTransferCallout.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
+        if(activeTransferLp.x!=p.x||activeTransferLp.y!=p.y){
+            activeTransferLp.x=p.x;activeTransferLp.y=p.y;
+            try{bubbleWm.updateViewLayout(activeTransferCallout,activeTransferLp);}
+            catch(Exception e){hideTransferCallout();}
+        }
+    }
+    private void hideTransferCallout(){
+        if(clockHandler!=null)clockHandler.removeCallbacks(transferTimeout);
+        if(activeTransferCallout!=null&&bubbleWm!=null)
+            try{bubbleWm.removeView(activeTransferCallout);}catch(Exception ignored){}
+        activeTransferCallout=null;activeTransferLp=null;
+    }
     private void hideBubble(){
+        hideTransferCallout();
         if(clockHandler!=null)clockHandler.removeCallbacks(bubbleHeartbeat);
         boolean wasVisible=bubbleView!=null;
         if(bubbleView!=null&&bubbleWm!=null)try{bubbleWm.removeView(bubbleView);}catch(Exception ignored){}
@@ -335,6 +428,6 @@ public class TrackingService extends Service implements LocationListener {
     @Override public void onProviderEnabled(String provider){}
     @Override public void onProviderDisabled(String provider){}
     @Override public void onStatusChanged(String provider,int status,Bundle extras){}
-    @Override public void onDestroy(){if(clockHandler!=null){clockHandler.removeCallbacks(bubbleShow);clockHandler.removeCallbacks(bubbleHeartbeat);}stopClock();hideBubble();stopLocation();if(db!=null)db.close();super.onDestroy();}
+    @Override public void onDestroy(){if(clockHandler!=null){clockHandler.removeCallbacks(bubbleShow);clockHandler.removeCallbacks(bubbleHeartbeat);}stopClock();hideBubble();stopLocation();try{unregisterReceiver(transferEvents);}catch(Exception ignored){}if(db!=null)db.close();super.onDestroy();}
     @Nullable @Override public IBinder onBind(Intent intent){return null;}
 }
