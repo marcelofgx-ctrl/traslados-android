@@ -1,0 +1,104 @@
+name: Build and deploy passenger PWA (free GitHub Pages)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web-pasajero/**'
+      - '.github/workflows/deploy-web-pasajero-pwa.yml'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate original PNG app icons without external paid services
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web-pasajero/icons
+          python3 - <<'PYICON'
+          import math,struct,zlib
+          from pathlib import Path
+          root=Path("web-pasajero/icons")
+          def png(name,n,maskable=False):
+              rows=[]
+              for y in range(n):
+                  row=bytearray([0])
+                  for x in range(n):
+                      u=(x+.5-n/2)/(n/2); v=(y+.5-n/2)/(n/2)
+                      r=math.hypot(u,v)
+                      color=(6,46,54,255)
+                      if r<.88:color=(7,61,70,255)
+                      if .77<r<.84:color=(231,203,133,255)
+                      if r<.68:color=(6,45,53,255)
+                      if .44<r<.49:color=(72,149,144,255)
+                      # Upper and lower stylized compass needles.
+                      if abs(u)<.20 and -.55<v<.49:
+                          left=-.20*(v+.55)/1.04
+                          right=.20*(v+.55)/1.04
+                          if -left>u and u<right and v<.15 and v>-0.52:
+                              color=(238,209,135,255)
+                          elif v>.05 and abs(u)<.10*(.5-v)/.45:
+                              color=(238,209,135,255)
+                      if r<.065:color=(255,247,224,255)
+                      row+=bytes(color)
+                  rows.append(bytes(row))
+              def chunk(kind,blob):
+                  return struct.pack(">I",len(blob))+kind+blob+struct.pack(">I",zlib.crc32(kind+blob)&0xffffffff)
+              data=b"\x89PNG\r\n\x1a\n"+chunk(b'IHDR',struct.pack('>IIBBBBB',n,n,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),9))+chunk(b'IEND',b'')
+              (root/name).write_bytes(data)
+          png("icon-192.png",192)
+          png("icon-512.png",512)
+          png("icon-maskable.png",512,True)
+          PYICON
+      - name: Validate client scripts, PWA manifest and real backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/sw.js
+          python3 - <<'PYCHECK'
+          import json,pathlib
+          r=pathlib.Path('web-pasajero')
+          manifest=json.loads((r/'manifest.webmanifest').read_text())
+          assert manifest['display']=='standalone'
+          assert len(manifest['icons'])>=3
+          for x in manifest['icons']:assert (r/x['src'].removeprefix('./')).stat().st_size>500
+          js=(r/'app.js').read_text()
+          assert 'https://zetaudvvutlouiqxopvg.supabase.co' in js
+          assert 'customer_create_reservation_v12' in js and 'create_reservation' in js
+          assert 'customer_check_availability_v11_4' in js
+          assert 'customer_quote_decision_v11_4' in js
+          assert 'direcciones.ide.uy' in js and 'nominatim.openstreetmap.org' not in js
+          assert 'beforeinstallprompt' in js and 'serviceWorker.register' in js
+          assert not any(t in js for t in ['service_role','sb_secret_'])
+          assert 'No se envían reservas offline' in (r/'offline.html').read_text()
+          print('Web/PWA checks PASS: syntax, icons, shared real Supabase, geocoding, login and install')
+          PYCHECK
+          mkdir -p artifacts
+          (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
+          (cd web-pasajero && sha256sum index.html app.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+      - name: Export entire PWA even without GitHub Pages activated
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Web-PWA-Instalable
+          path: artifacts/
+          if-no-files-found: error
+      - name: Upload site for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-pasajero
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish over HTTPS
+        id: deployment
+        uses: actions/deploy-pages@v4

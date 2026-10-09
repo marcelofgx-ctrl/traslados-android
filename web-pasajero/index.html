@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#062e36">
+  <meta name="description" content="Traslados en Uruguay: reservá viajes al aeropuerto, programados y puerta a puerta. Gestión directa con el conductor.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Traslados">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Traslados con Reserva · Uruguay</title>
+</head>
+<body>
+  <div id="offline-band" class="offline-band" hidden>Sin conexión. Ninguna reserva será enviada hasta recuperar Internet.</div>
+  <header class="header">
+    <div class="header-inner">
+      <a class="identity" href="./" aria-label="Traslados con Reserva · inicio">
+        <img src="./icons/icon-192.png" alt="" width="48" height="48">
+        <span><strong>TRASLADOS <em>con Reserva</em></strong><small>Uruguay · Atención personal</small></span>
+      </a>
+      <a class="tel" href="tel:+59897228175" aria-label="Llamar al conductor">☎ <span>097 228 175</span></a>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow"><span class="star">✦</span> VIAJES PRIVADOS · URUGUAY</p>
+      <h1>Tu viaje,<br><em>bien organizado.</em></h1>
+      <p>Traslados al aeropuerto, servicios programados y viajes puerta a puerta, coordinados directamente con tu conductor.</p>
+      <div class="hero-tags"><span>◈ Aeropuerto</span><span>◷ Reservas programadas</span><span>⌖ Puerta a puerta</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="Secciones principales">
+      <button class="tab active" data-view="reservar" type="button" aria-current="page">Reservar</button>
+      <button class="tab" data-view="viajes" type="button">Mis traslados</button>
+      <button class="tab" data-view="cuenta" type="button">Mi cuenta</button>
+      <button class="tab" data-view="instalar" type="button">Instalar</button>
+    </nav>
+
+    <section id="view-reservar" class="view active" aria-labelledby="reserva-title">
+      <div class="section-heading">
+        <p class="eyebrow">SOLICITAR UN SERVICIO</p>
+        <h2 id="reserva-title">Reservá tu traslado</h2>
+        <p>Elegí origen, destino y horario. Recibirás el precio final que prepare el conductor; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
+      </div>
+      <div class="card">
+        <div class="section-mini"><span>01</span><h3>¿Cuándo viajás?</h3></div>
+        <div class="quick-times" role="group" aria-label="Modalidad de reserva">
+          <button type="button" class="choice active" data-when="now">Ahora</button>
+          <button type="button" class="choice" data-when="10">En 10 min</button>
+          <button type="button" class="choice" data-when="schedule">Programar</button>
+        </div>
+        <div class="two-cols">
+          <label>Fecha<input id="pickup-date" type="date" required></label>
+          <label>Hora (24 h)<input id="pickup-time" type="time" required></label>
+        </div>
+        <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
+        <label>Pasajeros
+          <select id="passengers">
+            <option value="1">1 pasajero</option><option value="2">2 pasajeros</option><option value="3">3 pasajeros</option><option value="4">4 pasajeros</option><option value="5">5 pasajeros</option><option value="6">6 pasajeros</option><option value="7">7 pasajeros</option><option value="8">8 pasajeros</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <div class="section-mini"><span>02</span><h3>Tu recorrido</h3></div>
+        <div id="origin-picker" class="location-pane"></div>
+        <div class="wayline"><span>↓</span></div>
+        <div id="stop-wrap" class="stops-wrapper" hidden>
+          <div class="between"><span class="caption">PARADAS INTERMEDIAS · HASTA 8</span><button id="add-stop" class="tiny-btn" type="button">+ Agregar</button></div>
+          <div id="stops"></div>
+        </div>
+        <div id="destination-picker" class="location-pane"></div>
+        <div id="login-for-stops" class="subnote">¿Necesitás paradas intermedias? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-mini"><span>03</span><h3>Datos del pasajero</h3></div>
+        <div id="passenger-identification" class="two-cols">
+          <label>Nombre y apellido<input id="person-name" autocomplete="name" placeholder="Ej.: Ana Rodríguez" maxlength="120"></label>
+          <label>Teléfono<input id="person-phone" autocomplete="tel" inputmode="tel" placeholder="Ej.: 099 123 456"></label>
+        </div>
+        <label>Indicaciones (opcional)<textarea id="comments" rows="2" placeholder="N° de vuelo, equipaje, punto de encuentro o indicaciones…" maxlength="500"></textarea></label>
+        <div class="subnote">Precio estimado: <strong>a confirmar por el conductor</strong>. No mostramos valores inventados.</div>
+      </div>
+      <div id="booking-preview" class="card preview" hidden></div>
+      <button id="review-booking" type="button" class="primary full">REVISAR SOLICITUD <span>→</span></button>
+      <div id="submit-actions" hidden><button id="confirm-booking" type="button" class="primary full">CONFIRMAR Y ENVIAR RESERVA</button><button id="edit-booking" type="button" class="secondary full">Editar datos</button></div>
+      <div id="booking-success" class="card success" hidden></div>
+    </section>
+
+    <section id="view-viajes" class="view" aria-labelledby="mis-title">
+      <div class="section-heading"><p class="eyebrow">SEGUIMIENTO REAL</p><h2 id="mis-title">Mis traslados</h2><p>Consultá el estado y presupuesto de tus solicitudes, sin perder el contacto directo con el conductor.</p></div>
+      <div class="card">
+        <div class="between"><h3>Reservas vinculadas</h3><button id="refresh-trips" type="button" class="tiny-btn">↻ Actualizar</button></div>
+        <p id="trips-status" class="hint"></p>
+        <div id="trips-list"></div>
+      </div>
+    </section>
+
+    <section id="view-cuenta" class="view" aria-labelledby="cuenta-title">
+      <div class="section-heading"><p class="eyebrow">DATOS PROTEGIDOS</p><h2 id="cuenta-title">Tu cuenta</h2><p>Iniciá sesión con tu teléfono y PIN de seis dígitos para gestionar reservas y agregar paradas.</p></div>
+      <div id="account-session" class="card" hidden></div>
+      <div id="account-form" class="card">
+        <div class="quick-times" role="group"><button id="mode-login" class="choice active" type="button">Ingresar</button><button id="mode-register" class="choice" type="button">Crear cuenta</button></div>
+        <label id="register-name-wrap" hidden>Nombre y apellido<input id="register-name" autocomplete="name" placeholder="Nombre completo"></label>
+        <label>Teléfono<input id="login-phone" autocomplete="tel" inputmode="tel" placeholder="+598 99 123 456"></label>
+        <label>PIN de 6 dígitos<input id="login-pin" inputmode="numeric" type="password" maxlength="6" pattern="[0-9]{6}" autocomplete="off" placeholder="••••••"></label>
+        <button id="account-submit" class="primary full" type="button">INGRESAR</button>
+        <p class="hint">Tus datos y reservas se guardan en el servidor operativo de Traslados. Nunca compartas tu PIN.</p>
+      </div>
+    </section>
+
+    <section id="view-instalar" class="view" aria-labelledby="install-title">
+      <div class="section-heading"><p class="eyebrow">TU APLICACIÓN WEB</p><h2 id="install-title">Instalá Traslados en el celular</h2><p>Accedé como si fuera una app, directamente desde la pantalla de inicio. Es gratuita y no requiere Play Store.</p></div>
+      <div class="card">
+        <div class="install-logo"><img src="./icons/icon-192.png" alt="" width="78" height="78"><div><strong>Traslados con Reserva</strong><span>Aplicación web instalable · PWA</span></div></div>
+        <button id="install-action" class="primary full" type="button">INSTALAR APLICACIÓN WEB</button>
+        <div id="install-info" class="subnote">En Chrome para Android: menú ⋮ → «Instalar aplicación» o «Agregar a pantalla principal». En iPhone: Compartir → «Agregar a pantalla de inicio».</div>
+      </div>
+      <div class="card"><h3>¿Qué diferencia hay con la APK?</h3><p class="hint">Esta PWA comparte funciones y datos con la web. La <strong>APK nativa Traslados Cliente</strong> es una app Android distinta, con funcionalidades del sistema como su propio aviso flotante. Ambas trabajan sobre la misma base Supabase.</p><p class="hint">Sin conexión podés abrir el acceso, pero <strong>no se crean ni envían reservas offline</strong>.</p><div class="action-row"><a class="secondary link-action" href="https://github.com/marcelofgx-ctrl/traslados-android/actions/workflows/build-cliente-v11-5-R10.yml" target="_blank" rel="noopener noreferrer">APK nativa: compilación y archivos ↗</a></div></div>
+    </section>
+
+    <footer class="footer">
+      <strong>TRASLADOS <em>con Reserva</em></strong><p>Atención personal · Aeropuerto · Programados · Larga distancia</p>
+      <div><a href="tel:+59897228175">☎ +598 97 228 175</a><a href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">WhatsApp ↗</a></div>
+      <small>© 2026 · Uruguay · Servicio privado de traslados</small>
+    </footer>
+  </main>
+  <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
