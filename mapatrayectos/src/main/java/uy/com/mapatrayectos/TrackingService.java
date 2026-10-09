@@ -29,6 +29,7 @@ public class TrackingService extends Service implements LocationListener {
     public static final String ACTION_UI_VISIBLE="uy.com.mapatrayectos.UI_VISIBLE";
     public static final String ACTION_UI_HIDDEN="uy.com.mapatrayectos.UI_HIDDEN";
     public static final String ACTION_STATE="uy.com.mapatrayectos.STATE";
+    public static final String ACTION_FLOATING_BUBBLE_POSITION="uy.com.mapatrayectos.FLOATING_BUBBLE_POSITION";
 
     private static final String CHANNEL="mapa_trayectos_tracking";
     private static final int NOTIFICATION_ID=9115;
@@ -76,13 +77,13 @@ public class TrackingService extends Service implements LocationListener {
         @Override public void run(){
             if(!shiftActive||clockHandler==null)return;
             long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);broadcastState();clockPersistTick++;
-            if(clockPersistTick>=5){clockPersistTick=0;persist();persistLiveStats(now);updateNotification();}
+            if(clockPersistTick>=5){clockPersistTick=0;persist();persistLiveStats(now);updateNotification();if(bubbleView!=null)saveFloatingBubbleState(true);}
             clockHandler.postDelayed(this,CLOCK_TICK_MS);
         }
     };
 
     @Override public void onCreate(){
-        super.onCreate();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);clockHandler=new Handler(Looper.getMainLooper());loadState();shiftCompletedTrips=db.completedTripsForShift(shiftId);Api.init(this);createChannel();
+        super.onCreate();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("floating_visible",false).apply();db=new TrackDb(this);sp=getSharedPreferences("tracking_state",MODE_PRIVATE);clockHandler=new Handler(Looper.getMainLooper());loadState();shiftCompletedTrips=db.completedTripsForShift(shiftId);Api.init(this);createChannel();
         if(tripActive){JSONObjectStub t=readTripStartState();tripOriginCaptured=t.hasStart;}
         if(shiftActive){lastClockAccountedAt=System.currentTimeMillis();startForeground(NOTIFICATION_ID,notification());if(!shiftPaused)startLocation();startClock();showBubbleIfAllowed();}
     }
@@ -221,8 +222,34 @@ public class TrackingService extends Service implements LocationListener {
             new int[]{Color.rgb(5,49,58),Color.rgb(8,85,91)});
         chrome.setCornerRadius(dp(27));chrome.setStroke(dp(1),Color.rgb(222,190,112));
         bubble.setBackground(chrome);bubble.setClipToOutline(true);
-        bubble.setPadding(dp(6),dp(6),dp(6),dp(6));bubble.setElevation(dp(7));int size=dp(52);bubbleLp=new WindowManager.LayoutParams(size,size,Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);bubbleLp.gravity=Gravity.TOP|Gravity.START;SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));bubbleLp.y=bp.getInt("y",dp(220));bubble.setOnTouchListener(new View.OnTouchListener(){float downX,downY;int startX,startY;long downAt;@Override public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:downX=e.getRawX();downY=e.getRawY();startX=bubbleLp.x;startY=bubbleLp.y;downAt=System.currentTimeMillis();return true;case MotionEvent.ACTION_MOVE:int nx=startX+(int)(e.getRawX()-downX),ny=startY+(int)(e.getRawY()-downY);int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size),maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));bubbleLp.x=Math.max(0,Math.min(maxX,nx));bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}return true;case MotionEvent.ACTION_UP:float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);if(dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<500){Intent open=new Intent(TrackingService.this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(open);}else{int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);bubbleLp.x=bubbleLp.x<edge/2?0:edge;try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putInt("x",bubbleLp.x).putInt("y",bubbleLp.y).apply();}return true;}return false;}});bubbleWm.addView(bubble,bubbleLp);bubbleView=bubble;}catch(Exception ignored){hideBubble();}}
-    private void hideBubble(){if(bubbleView!=null&&bubbleWm!=null)try{bubbleWm.removeView(bubbleView);}catch(Exception ignored){}bubbleView=null;bubbleLp=null;}
+        bubble.setPadding(dp(6),dp(6),dp(6),dp(6));bubble.setElevation(dp(7));int size=dp(52);bubbleLp=new WindowManager.LayoutParams(size,size,Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_PHONE,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);bubbleLp.gravity=Gravity.TOP|Gravity.START;SharedPreferences bp=getSharedPreferences("bubble_state",MODE_PRIVATE);bubbleLp.x=bp.getInt("x",getResources().getDisplayMetrics().widthPixels-size-dp(12));bubbleLp.y=bp.getInt("y",dp(220));bubble.setOnTouchListener(new View.OnTouchListener(){float downX,downY;int startX,startY;long downAt;@Override public boolean onTouch(View v,MotionEvent e){switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:downX=e.getRawX();downY=e.getRawY();startX=bubbleLp.x;startY=bubbleLp.y;downAt=System.currentTimeMillis();return true;case MotionEvent.ACTION_MOVE:int nx=startX+(int)(e.getRawX()-downX),ny=startY+(int)(e.getRawY()-downY);int maxX=Math.max(0,getResources().getDisplayMetrics().widthPixels-size),maxY=Math.max(dp(70),getResources().getDisplayMetrics().heightPixels-size-dp(90));bubbleLp.x=Math.max(0,Math.min(maxX,nx));bubbleLp.y=Math.max(dp(45),Math.min(maxY,ny));try{bubbleWm.updateViewLayout(bubble,bubbleLp);signalFloatingBubblePosition(true);}catch(Exception ignored){}return true;case MotionEvent.ACTION_UP:float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);if(dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<500){Intent open=new Intent(TrackingService.this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(open);}else{int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);bubbleLp.x=bubbleLp.x<edge/2?0:edge;try{bubbleWm.updateViewLayout(bubble,bubbleLp);}catch(Exception ignored){}saveFloatingBubbleState(true);signalFloatingBubblePosition(true);}return true;}return false;}});bubbleWm.addView(bubble,bubbleLp);bubbleView=bubble;saveFloatingBubbleState(true);signalFloatingBubblePosition(true);}catch(Exception ignored){hideBubble();}}
+    /**
+     * The reminder overlay follows the REAL 52dp floating shortcut, not the old
+     * in-map ✦ coordinates. Notify it on every drag and when the bubble vanishes.
+     */
+    private void signalFloatingBubblePosition(boolean visible){
+        Intent moved=new Intent(ACTION_FLOATING_BUBBLE_POSITION).setPackage(getPackageName());
+        moved.putExtra("visible",visible);
+        if(visible&&bubbleLp!=null){
+            moved.putExtra("x",bubbleLp.x).putExtra("y",bubbleLp.y)
+                .putExtra("size",bubbleLp.width);
+        }
+        sendBroadcast(moved);
+    }
+    private void saveFloatingBubbleState(boolean visible){
+        SharedPreferences.Editor e=getSharedPreferences("bubble_state",MODE_PRIVATE).edit();
+        e.putBoolean("floating_visible",visible).putLong("floating_seen_ms",System.currentTimeMillis());
+        if(visible&&bubbleLp!=null)e.putInt("x",bubbleLp.x).putInt("y",bubbleLp.y)
+            .putInt("floating_size",bubbleLp.width);
+        e.apply();
+    }
+    private void hideBubble(){
+        boolean wasVisible=bubbleView!=null;
+        if(bubbleView!=null&&bubbleWm!=null)try{bubbleWm.removeView(bubbleView);}catch(Exception ignored){}
+        bubbleView=null;bubbleLp=null;
+        saveFloatingBubbleState(false);
+        if(wasVisible)signalFloatingBubblePosition(false);
+    }
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
 
     @Override public void onProviderEnabled(String provider){}
