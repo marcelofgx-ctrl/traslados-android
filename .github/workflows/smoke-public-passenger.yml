@@ -1,0 +1,55 @@
+name: Comprobar web pública de Traslados Pasajero
+
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Revisar HTML y motor publicado
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL --max-time 25 -o /tmp/traslados.html "$base/?ci=$GITHUB_RUN_ID"; then
+              if grep -q 'geo-search.js?v=3' /tmp/traslados.html; then break; fi
+            fi
+            echo "Esperando versión publicada ($i/6)"
+            sleep 12
+          done
+          grep -q 'geo-search.js?v=3' /tmp/traslados.html
+          grep -q 'id="route-overview"' /tmp/traslados.html
+          curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
+          curl -fsSL --max-time 25 "$base/app.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/app.js
+          grep -q 'uy-airport-carrasco' /tmp/geo.js
+          grep -q 'function renderRouteSummary()' /tmp/app.js
+          grep -q 'route-estimate' /tmp/app.js
+          echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
+      - name: Revisar datos nacionales publicados
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 --retry-delay 3 --max-time 45 \
+            "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/data/uy-pois.json" \
+            -o /tmp/uy-pois.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/uy-pois.json',encoding='utf8') as f:
+              index=json.load(f)
+          assert index.get('version')==1
+          names=[x[1].lower() for x in index['items']]
+          assert len(names)>5000, 'No hay índice completo'
+          assert any('punta carretas shopping' in x for x in names), 'Falta Punta Carretas'
+          assert any('plaza italia shopping' in x for x in names), 'Falta Plaza Italia'
+          print(f"Web publicada OK: {len(names)} comercios/lugares OSM de Uruguay")
+          PY
