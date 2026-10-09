@@ -16,6 +16,13 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 
 **Importante:** R24.3 conserva R24.2 y corrige la ventana de presupuestos de Conductor integrado para desplazar campos por encima del teclado numérico: ajuste dinámico de altura según IME y scroll automático al foco. CI y firma APK OK; falta QA real en Samsung. **No hay push FCM auténticos, ni GPS live en Cliente, ni unificación de GPS.** No borrar datos.
 
+## Web de pasajeros (reservas)
+
+- **[ABRIR TRASLADOS — WEB DE PASAJEROS](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/)** — formulario de reservas y PWA para probar en el celular.
+- [Código fuente de la web](web-pasajero/) y [guía de la PWA](web-pasajero/README.md).
+- Este índice del repositorio permanece en `https://marcelofgx-ctrl.github.io/traslados-android/` para recuperar contexto, builds e instrucciones; **no es el formulario de pasajeros**.
+- Solo GitHub Pages desde la rama `main` publica el sitio. El workflow `deploy-web-pasajero-pwa.yml` valida y empaqueta, pero no compite con una segunda publicación de Pages.
+
 ## Otros módulos
 - `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
 
