@@ -10,11 +10,11 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
-**Corte documentado:** `0.1-R23.0`, `versionCode 40`, [build firmado exitoso 37880538141](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37880538141). Este número no sustituye verificar `main` ni las compilaciones posteriores.
+**Corte documentado:** `0.1-R23.1`, `versionCode 41`, [build firmado exitoso 37881774310](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37881774310). Este número no sustituye verificar `main` ni las compilaciones posteriores.
 
-**Enlace de la APK R23.0 (Drive verificado):** https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view
+**Enlace de APK R23.1 (Drive verificado):** https://drive.google.com/file/d/1WLYfqWfyt-VDvdij_WSUc1MpR_0xTrsm/view
 
-**Importante:** R23.0 incorpora el arreglo de anclaje geométrico del globo de recordatorio a ✦ o la burbuja flotante, mantiene el MP3 original ElevenLabs y el diseño premium. Build y pruebas automatizadas OK; faltan pruebas visuales y auditivas reales en Samsung. No borrar bases locales ni tocar Supabase sin autorización. No borrar bases locales ni tocar Supabase sin autorización.
+**Importante:** R23.1 muestra la burbuja al minimizar aun sin jornada, SIN activar GPS, mantiene la flecha anclada de R23.0 y el MP3 de ElevenLabs. Build y pruebas automatizadas OK; faltan pruebas reales en Samsung. No borrar datos. No borrar bases locales ni tocar Supabase sin autorización.
 
 ## Otros módulos
 - `conductor/` es otra aplicación. **No confundir Traslados Conductor con Mapa Trayectos**.
