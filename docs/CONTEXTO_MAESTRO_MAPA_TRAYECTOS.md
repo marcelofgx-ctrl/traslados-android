@@ -1,6 +1,6 @@
 # MAPA TRAYECTOS — CONTEXTO MAESTRO HISTÓRICO
 
-**IMPORTANTE (corte R22.9):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada: R22.9 / versionCode 39 / Actions 37872681083. Usuario confirmó alertas visuales dentro/fuera en R22.8, pero MP3 silencioso; corrección de volumen/canal en R22.9 pendiente de prueba audible en Samsung.
+**IMPORTANTE (corte R23.0):** Este archivo conserva información de varias versiones y algunos párrafos antiguos siguen diciendo "pendiente" para funciones ya implementadas. Para empezar una NUEVA SESIÓN, leer **primero** [RETOMAR_MAPA_TRAYECTOS.md](RETOMAR_MAPA_TRAYECTOS.md), después el historial y por último este contexto histórico. El código actualizado está en `main`. Última RELEASE verificada: R23.0 / versionCode 40 / Actions 37880538141. Usuario confirmó alertas visuales dentro/fuera en R22.8, pero MP3 silencioso; corrección de volumen/canal en R22.9 pendiente de prueba audible en Samsung.
 
 ## Proyecto y fuente principal
 - Android nativo, package uy.com.mapatrayectos; módulo mapatrayectos.
@@ -126,3 +126,10 @@ Consultar docs/mapa-trayectos-roadmap-2026-10-08.md:
 - Compilación firmada GitHub Actions run 37872681083, commit principal 32fe456cbe2905dc2860445b11fb8459144adaaf. APK verificada SHA256 6a7ba50023ac91df11110134dd217dd946213631f1661d3e9ce37c5f53a5ec69.
 - APK Google Drive: https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view. Carpeta: https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA.
 - Fuente de verdad para retomar: docs/RETOMAR_MAPA_TRAYECTOS.md.
+
+
+## R23.0 — Corrección de globo huérfano (09/10/2026)
+- Usuario envió captura del globo apartado del ✦. R23.0 une la cola a coordenadas físicas reales del icono y reorienta la tarjeta si la burbuja externa está a la izquierda. Al mover la burbuja externa, el aviso la sigue; si desaparece, el overlay se suprime y sobrevive la notificación Android.
+- Helpers y archivos: ReminderAnchorGeometry, ReminderCallout, MainActivity, TrackingService, ReminderBubbleService. Test de geometría Java sin Android integrado en CI. No tocó diseño aprobado, sonidos MP3 viajes, estado SQLite ni Supabase.
+- Build GitHub 37880538141 SUCCESS, SHA256 APK cad0847510e40799db13d162ebe605e22cc2d76387e733ba1584c6abf0cb7703; mismo certificado de firma. APK en Drive: https://drive.google.com/file/d/1HFX76Ldit7hKNRMrTbcLyE_8WgmI2V0C/view .
+- Requiere probar realmente en Samsung con app abierta, minimizada y burbuja arrastrada. Sonido de burbujas y volumen mínimo 50% de R22.9 se mantienen; audición aún pendiente.
