@@ -128,3 +128,13 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - No se borró SQLite, no se cambió DB_VERSION5 ni se intervinieron audios MP3 de viajes/WhatsApp, alarmas, Historial, ruta, Supabase o controles de viaje.
 - Se descargó artefacto GitHub y se verificó SHA256 APK y firma. Carpeta Drive R22.6 creada: https://drive.google.com/drive/folders/173p-eE8f-YjJStuH25_klDkCQhU6FFon . ZIP de respaldo en Drive con APK y comprobantes: https://drive.google.com/file/d/1EqXJZV2keziBGVYGE1y94tvWZAmB2Xxt/view . La subida directa del archivo APK a Drive falló por sesión de archivos expirada; entregar enlace sandbox APK de forma principal y Drive ZIP como alternativa.
 - PENDIENTE prueba real: apariencia de tarjetas en Samsung, piquito tocando el icono ✦ en primer plano, alerta cuando la app no está visible, volumen audible y permiso de alertas, accionar botones; no confundir compilación firmada con QA en teléfono.
+
+
+## R22.8 — sonido original de recordatorios
+- VersionCode 38 / versionName 0.1-R22.8; compilación firmada exitosa GitHub Actions run 37870800270, revisión 29dac4b5a1f990dc071fb87aae63e4e74836598e.
+- MP3 exacto aportado por el usuario: 33062 bytes, ~2.04 segundos, SHA-256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0. Texto Base64 en mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64; Android lo empaqueta bajo el nombre optimizado res/YZ.mp3. Validación de bytes dentro del APK por hash exitosa.
+- ReminderSound utiliza MediaPlayer y archivo raw real; respeta volumen y modo de timbre, registra errores y espera finalización bajo Receiver.goAsync. Android NotificationChannel v3 sin sonido propio para evitar doble sonido.
+- APK SHA-256 validada con SHA256SUMS de GitHub; firma Android verificada.
+- Google Drive cuenta marcelof.gx@gmail.com: https://drive.google.com/file/d/1px_rPZu9iSP8g9keQsHgoBYwLPKy5z7k/view; carpeta: https://drive.google.com/drive/folders/1DD3cgIArfpskQDUfFPb6Acv50BUQeuwj. Tamaño 52262003 bytes.
+- Instalación sobre R22.6/R22.7 conserva datos, sonidos y recordatorios. Sin nuevo ZIP.
+- Pendiente prueba Samsung: entrar en ✦ > Recordatorios > Probar MP3 original de burbujas, habilitar volumen de notificaciones, después alerta en 1 minuto. Confirmar audio audible real; compilación no demuestra la salida acústica en el equipo.
