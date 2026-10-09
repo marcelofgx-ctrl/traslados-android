@@ -138,3 +138,13 @@ Fuera del dispositivo no puede certificarse la reproducción real.
 - Google Drive cuenta marcelof.gx@gmail.com: https://drive.google.com/file/d/1px_rPZu9iSP8g9keQsHgoBYwLPKy5z7k/view; carpeta: https://drive.google.com/drive/folders/1DD3cgIArfpskQDUfFPb6Acv50BUQeuwj. Tamaño 52262003 bytes.
 - Instalación sobre R22.6/R22.7 conserva datos, sonidos y recordatorios. Sin nuevo ZIP.
 - Pendiente prueba Samsung: entrar en ✦ > Recordatorios > Probar MP3 original de burbujas, habilitar volumen de notificaciones, después alerta en 1 minuto. Confirmar audio audible real; compilación no demuestra la salida acústica en el equipo.
+
+
+## R22.9 — burbujas audibles con volumen de alarmas temporal al menos 50% (08/10/2026)
+- **RELEASE verificada:** versionCode 39, versionName 0.1-R22.9; GitHub Actions [37872681083](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37872681083) SUCCESS; paquete firmado v2, certificado igual a versiones anteriores.
+- **Incidente real anterior:** el usuario confirmó que las alertas sí aparecían con app abierta y cerrada, pero el sonido de burbujas de R22.8 NO se escuchaba.
+- **Código nuevo:** USAGE_ALARM en lugar de NOTIFICATION_EVENT. STREAM_ALARM se eleva temporalmente a >=50% si estaba más bajo; se restaura al acabar si el usuario no cambió el nivel entretanto. El reproductor usa ganancia interna 1.0, bloqueo de CPU MediaPlayer.setWakeMode con WAKE_LOCK ya existente, más permiso MODIFY_AUDIO_SETTINGS. El modo No molestar y las políticas de Android pueden restringir el sonido; se registra diagnóstico.
+- **Integridad:** MP3 ElevenLabs exacto preservado sin edición (SHA-256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0); no se modifican 13 sonidos originales de viajes, rutas, UI aprobada, SQLite ni Supabase.
+- **Verificación de instalador:** APK 52.262.035 bytes, SHA-256 6a7ba50023ac91df11110134dd217dd946213631f1661d3e9ce37c5f53a5ec69; apksigner verificó firma. GitHub artifact Mapa-Trayectos-v0.1-R22-9-RELEASE.
+- **Google Drive:** APK https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view ; ZIP con comprobantes https://drive.google.com/file/d/13Xz4HOxQTkrxX-dnEoaOLY3QcoxU1mQZ/view ; carpeta https://drive.google.com/drive/folders/1e4_g4I0m4xFENE1sfa-tUrZaZ3f5OMoA (archivo y tamaño leídos nuevamente).
+- **Falta probar en Samsung:** que se oiga el MP3 al pulsar PROBAR y en alarma de 1 minuto, incluso con app cerrada; que el volumen vuelva a su nivel previo. Reproducción en el equipo todavía NO confirmada.
