@@ -39,7 +39,7 @@
 - R22.9 https://drive.google.com/file/d/1_OKMbJM5qNKVSjnocq4Et-5Lgzjvgy7q/view
 
 **Cliente Android**:
-- **R10** ZIP con APK original firmada y fuente: https://drive.google.com/file/d/1mZFu2Xl21v0HhHvPJQ4IpbHzqL3MVP0D/view . Extraer `Traslados_Cliente_v11.5_R10_RELEASE.apk`; su SHA-256 es `59c24c33c83f9a19648ca1cf280d64b5167995751cc663965d2b4a1fb1d5e5f4` (verificado con `SHA256SUMS.txt`).
+- **R10 — APK directa para Android (recomendado):** https://drive.google.com/file/d/1zmINKO6Xcjc6muVpRgwBHZ5uC2s2NFUV/view . **R10 ZIP** con APK original firmada y fuente: https://drive.google.com/file/d/1mZFu2Xl21v0HhHvPJQ4IpbHzqL3MVP0D/view . APK `Traslados_Cliente_v11.5_R10_RELEASE.apk`; su SHA-256 es `59c24c33c83f9a19648ca1cf280d64b5167995751cc663965d2b4a1fb1d5e5f4` (verificado con `SHA256SUMS.txt`).
 - R9.1 DEBUG anterior ZIP https://drive.google.com/file/d/1ZLB9m6-tEL6-HEBlxjJMZ_p6n25ECOSR/view . Firma debug R9.1 puede no ser compatible con R10 RELEASE; antes de desinstalar, verificar datos privados locales.
 - **Carpeta Cliente/PWA:** https://drive.google.com/drive/folders/14gneZ3OjDIxXjH211moSdu7Vr9hbDBiZ
 
