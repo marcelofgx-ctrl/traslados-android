@@ -1,22 +1,18 @@
-name: Build and deploy passenger PWA (free GitHub Pages)
+name: Validate and package passenger PWA (Pages via repository index)
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, fix/pages-stable-index-and-passenger-path-20261009]
     paths:
       - 'web-pasajero/**'
       - '.github/workflows/deploy-web-pasajero-pwa.yml'
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Configure GitHub Pages source and deployment metadata
-        uses: actions/configure-pages@v5
       - name: Generate original PNG app icons without external paid services
         shell: bash
         run: |
@@ -84,23 +80,21 @@ jobs:
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
           (cd web-pasajero && sha256sum index.html app.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
-      - name: Export entire PWA even without GitHub Pages activated
+      - name: Preserve generated icons in repository for stable Pages subpath
+        if: github.ref == 'refs/heads/fix/pages-stable-index-and-passenger-path-20261009'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f web-pasajero/icons/icon-192.png web-pasajero/icons/icon-512.png web-pasajero/icons/icon-maskable.png
+          if ! git diff --cached --quiet; then
+            git commit -m "PWA: conservar iconos reales para sitio de pasajeros en subcarpeta"
+            git push origin HEAD:fix/pages-stable-index-and-passenger-path-20261009
+          fi
+      - name: Export entire PWA for testing
         uses: actions/upload-artifact@v4
         with:
           name: Traslados-Web-PWA-Instalable
           path: artifacts/
           if-no-files-found: error
-      - name: Upload site for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: web-pasajero
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publish over HTTPS
-        id: deployment
-        uses: actions/deploy-pages@v4
