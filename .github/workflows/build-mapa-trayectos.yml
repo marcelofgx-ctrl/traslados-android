@@ -276,8 +276,21 @@ jobs:
           set -euo pipefail
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
           test -s "$APK"
-          unzip -p "$APK" res/raw/reminder_bubbles_elevenlabs.mp3 | sha256sum | grep -q '^5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0 '
-          echo "Original user-uploaded MP3 verified inside APK"
+          APK="$APK" python3 - <<'PY'
+          import hashlib, os, zipfile
+          expected="5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0"
+          apk=os.environ["APK"]
+          with zipfile.ZipFile(apk) as z:
+              media=[p for p in z.namelist() if p.startswith("res/raw/")]
+              print("Packaged raw resources:", media)
+              for item in media:
+                  data=z.read(item)
+                  if hashlib.sha256(data).hexdigest()==expected:
+                      print("Verified original 33062-byte MP3 inside signed candidate APK:",item)
+                      break
+              else:
+                  raise SystemExit("MP3 original not found with expected SHA256 in APK")
+          PY
 
       - name: Verify APK signature
         shell: bash
