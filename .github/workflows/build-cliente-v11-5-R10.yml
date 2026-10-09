@@ -47,11 +47,11 @@ jobs:
           import base64,io,re,tarfile
           from pathlib import Path
           base=Path("/tmp/base.yml").read_text()
-          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \\| base64 -d \\| tar -xz",base)
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
           if not m: raise SystemExit("Android base payload not found")
           with tarfile.open(fileobj=io.BytesIO(base64.b64decode(m.group(1))),mode="r:gz") as t:t.extractall(".")
           old=Path("/tmp/cliente-v9.yml").read_text()
-          m=re.search(r"payload\\s*=\\s*\\(([\\s\\S]*?)\\n\\s*\\)",old)
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",old)
           if not m:raise SystemExit("Cliente base package not found")
           pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
           if not pieces:raise SystemExit("Cliente assets empty")
