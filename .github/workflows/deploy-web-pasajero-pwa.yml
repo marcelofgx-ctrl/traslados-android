@@ -68,12 +68,14 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/app.js && test -f web-pasajero/styles.css
+          test -f web-pasajero/app.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
           set -euo pipefail
+          node --check web-pasajero/geo-search.js
           node --check web-pasajero/app.js
+          node web-pasajero/tests/search-smoke.cjs
           node --check web-pasajero/sw.js
           python3 - <<'PYCHECK'
           import json,pathlib
@@ -95,7 +97,7 @@ jobs:
           PYCHECK
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
-          (cd web-pasajero && sha256sum index.html app.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+          (cd web-pasajero && sha256sum index.html app.js geo-search.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
       - name: Export entire PWA even without GitHub Pages activated
         uses: actions/upload-artifact@v4
         with:
