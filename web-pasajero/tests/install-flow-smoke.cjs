@@ -13,8 +13,8 @@ const end=js.indexOf("\nfunction init(){",start);
 assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
-assert(html.includes("./app.js?v=25")&&html.includes("./styles.css?v=25"));
-assert(sw.includes("traslados-cliente-pwa-v25"));
+assert(html.includes("./app.js?v=26")&&html.includes("./styles.css?v=26"));
+assert(sw.includes("traslados-cliente-pwa-v26"));
 assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v14.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
