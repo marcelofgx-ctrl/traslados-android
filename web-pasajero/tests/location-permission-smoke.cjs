@@ -34,8 +34,8 @@ assert(js.includes('button(actions,"Escribir dirección"'),"Passenger needs manu
 assert(js.includes('if(geo?.disabled)return'),"Repeated taps must not stack permission prompts");
 assert(!js.includes('()=>tell("No se pudo obtener GPS. Revisá permisos.")'),"Do not regress to generic error");
 assert(css.includes(".gps-permission-help[hidden]"),"Help must stay hidden until needed");
-assert(html.includes('./app.js?v=17')&&html.includes('./styles.css?v=17'));
-assert(sw.includes('traslados-cliente-pwa-v17'));
+assert(html.includes('./app.js?v=18')&&html.includes('./styles.css?v=17'));
+assert(sw.includes('traslados-cliente-pwa-v18'));
 const {createContext,runInContext}=require("node:vm");
 const handlerStart=js.indexOf("  function showGpsPermissionHelp(errorCode){");
 const handlerEnd=js.indexOf("\n  if(name===\"stop\"&&record.stops[position])",handlerStart);
