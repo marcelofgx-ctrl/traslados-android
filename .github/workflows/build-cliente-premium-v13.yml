@@ -1,15 +1,7 @@
 name: Build Traslados Cliente Premium v13 RELEASE
 
+# Histórica v13. Las publicaciones activas de Cliente van por v14.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'cliente-premium/app/**'
-      - 'cliente-premium/tests/**'
-      - 'cliente-premium/build.gradle'
-      - 'cliente-premium/settings.gradle'
-      - 'cliente-premium/gradle.properties'
-      - '.github/workflows/build-cliente-premium-v13.yml'
   workflow_dispatch:
 
 permissions:
