@@ -942,8 +942,8 @@ function installHelpContent(){
   };
   if(android)return {
     title:"Instalación desde Chrome",
-    steps:["Abrí Traslados directamente en Chrome (no dentro de otra aplicación).","Tocá el menú ⋮ de Chrome.","Elegí «Instalar aplicación» o «Agregar a pantalla principal» y confirmá."],
-    note:"Si la opción no aparece, probablemente ya tengas Traslados instalado o el navegador todavía no permita instalarlo."
+    steps:["Abrí Traslados directamente en Chrome (no dentro de WhatsApp, Facebook u otra aplicación).","Tocá el menú ⋮ de Chrome con la página de Traslados abierta.","Elegí «Instalar y crear acceso directo» → «Instalar». En Chrome antiguo puede decir «Instalar aplicación» o «Agregar a pantalla principal»."],
+    note:"Elegí «Instalar» si querés que Traslados se abra como aplicación independiente. «Crear acceso directo» solo agrega un ícono para abrir Chrome. Si no aparece «Instalar», revisá el navegador y si ya está instalada: no se puede forzar desde esta página."
   };
   return {
     title:"Agregar Traslados a tu dispositivo",
