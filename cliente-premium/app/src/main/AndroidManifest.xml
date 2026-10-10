@@ -9,7 +9,7 @@
         android:label="Traslados"
         android:theme="@style/Theme.Traslados"
         android:icon="@drawable/traslados_brand"
-        android:roundIcon="@drawable/traslados_icon"
+        android:roundIcon="@drawable/traslados_brand"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"
