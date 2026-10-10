@@ -34,6 +34,8 @@
 
 **Cambios efectuados en esta tanda (sin tocar producción):** `6c3421f` (workflow DEBUG fuente actual), `1ca663d` (retirar Conductor v9.2 legado), `3fe7ad0` (retirar Cliente v9.0 legado), `a66a746` y `24a0c15` (documento especializado Conductor y evidencia de SUCCESS), `686ac86` (documento especializado Cliente). **Al modificar solamente CI/documentación no se generó nueva RELEASE ni nueva funcionalidad de pasajero.**
 
+**Verificación posterior de publicación del contexto:** [Pages 38009930301](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38009930301) finalizó **SUCCESS** sobre el commit [0ff5e8c](https://github.com/marcelofgx-ctrl/traslados-android/commit/0ff5e8cb20917e5a743c85cd57796751b4d1077f) que actualiza este contexto. Corrobora ejecución de despliegue de GitHub Pages, no prueba visual ni envío real. En esta comprobación adicional las URLs públicas no pudieron inspeccionarse mediante el navegador de consulta; **no** inferir indisponibilidad del servicio a partir de ese límite de herramienta. Usar el smoke público y pruebas en Chrome/Samsung.
+
 **Pendiente P0:** ensayo consentido de **una sola** reserva real PWA/Cliente → Mapa Conductor → presupuesto → respuesta → historial; QA de IME Samsung en Mapa R24.3; verificar motor rutas/ORS y presencia comercial antes de ofrecer «Ahora / En 10 min» como disponibilidad garantizada. El API Cloudflare y la web pública no fueron probados de punta a punta durante esta auditoría, aunque sus CI más recientes revisados estaban verdes.
 
 ---
