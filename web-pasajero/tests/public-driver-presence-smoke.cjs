@@ -9,8 +9,9 @@ const end=js.indexOf("\nfunction setWhen(kind){",begin);
 assert(begin>=0&&end>begin,"Public live availability routine must exist");
 const fragment=js.slice(begin,end);
 assert(fragment.includes('public_driver_availability_v1'),"Must read the Mapa status without login");
-assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.indexOf('if(!authReady())'),
+assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.indexOf('const signedIn=authReady()'),
   "Public status must be checked BEFORE customer login");
+assert(fragment.includes('estimateType==="coarse"'),"Anonymous ETA must be labeled coarse");
 assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
   "No raw driver coordinates may be used by the passenger");
 assert(fragment.includes('sessionToken:session.token'),"Private ETA still requires a real customer session");
@@ -20,7 +21,7 @@ const els={
   "pickup-presence":host,"pickup-presence-whatsapp":{},
   "urgent-whatsapp":{},"pickup-presence-status":{textContent:""}
 };
-let published=true,publicCalls=0,privateCalls=0;
+let published=true,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
 const ctx={
   $:id=>els[id],API:"https://example.invalid",KEY:"publishable-test-key",
   session:null,record:{origin:{lat:-34.83,lng:-56.02,text:"Origen verificado"},
@@ -28,15 +29,17 @@ const ctx={
   authReady:()=>Boolean(ctx.session?.token),
   encodeURIComponent,Date,Number,Map,AbortController,
   setTimeout,clearTimeout,
-  fetch:async(url)=>{
+  fetch:async(url,opts)=>{
     if(url.includes("public_driver_availability_v1")){
       publicCalls++;
       return{ok:true,json:async()=>({available:published,
         status:published?"available_for_requests":"not_available",confirmationRequired:true})};
     }
     if(url.includes("pickup-eta")){
-      privateCalls++;
-      return{ok:true,json:async()=>({available:true,distanceKm:3.5,etaMin:10})};
+      const payload=JSON.parse(opts.body);
+      if(payload.sessionToken)customerEtaCalls++;else guestEtaCalls++;
+      return{ok:true,json:async()=>({available:true,distanceKm:3.5,etaMin:10,
+        ...(payload.sessionToken?{}:{estimateType:"coarse"})})};
     }
     throw Error("Unexpected API");
   }
@@ -48,7 +51,10 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
 (async()=>{
   await ctx.refreshPickupPresence(true);await settled();
   assert(host.hidden===false);
-  assert.equal(privateCalls,0,"No private ETA for anonymous visitor");
+  assert.equal(guestEtaCalls,1,"Guest should get a privacy-coarsened ETA without login");
+  assert.equal(customerEtaCalls,0,"No customer session required for guest");
+  assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
+  assert.match(els["pickup-presence-status"].textContent,/ubicación por zona/);
   assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para consultas/);
   assert(!/Iniciá sesión en Mi cuenta para consultar la llegada aproximada/.test(
     els["pickup-presence-status"].textContent));
@@ -59,17 +65,19 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(host.dataset.presence,"offline");
   assert.match(els["pickup-presence-status"].textContent,/no disponible/i);
-  assert.equal(privateCalls,0);
+  assert.equal(guestEtaCalls,1);
+  assert.equal(customerEtaCalls,0);
 
   published=true;
   ctx.session={token:"signed-in-customer-session-example"};
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(privateCalls,1,"Only signed-in customers may request origin-based ETA");
+  assert.equal(customerEtaCalls,1,"Signed-in customer uses private ETA");
+  assert.equal(guestEtaCalls,1,"Guest public request never borrows a customer session");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/10 min/);
 
   runInContext('selectedPickupMode="schedule";',ctx);
   await ctx.refreshPickupPresence();await settled();
   assert.equal(host.hidden,true,"No current-location claim for future bookings");
-  console.log("PASS public availability from Mapa without login; secure ETA remains session-gated");
+  console.log("PASS Mapa consent/agenda state, anonymous coarse ETA, authenticated ETA, no GPS leakage");
 })().catch(e=>{console.error(e);process.exitCode=1;});
