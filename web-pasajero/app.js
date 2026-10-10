@@ -63,18 +63,34 @@ function refreshPickupPresence(){
     record.destination?"Destino: "+record.destination.text:"",
     "¿Estás libre y cuánto tardarías en llegar?"
   ].filter(Boolean).join("\n");
-  $("pickup-presence-whatsapp").href="https://wa.me/59897228175?text="+encodeURIComponent(message);
+  const contact="https://wa.me/59897228175?text="+encodeURIComponent(message);
+  $("pickup-presence-whatsapp").href=contact;
+  $("urgent-whatsapp").href=contact;
 }
 function setWhen(kind){
   selectedPickupMode=kind;
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
-  if(kind==="schedule"){
-    $("availability").textContent="Horario sujeto a agenda y confirmación del conductor.";
+  const urgent=kind!=="schedule";
+  // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
+  // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
+  $("urgent-whatsapp").hidden=!urgent;
+  $("review-booking").hidden=urgent;
+  $("booking-preview").hidden=true;
+  $("submit-actions").hidden=true;
+  pendingReview=null;
+  if(!urgent){
+    const existingDate=$("pickup-date").value,existingTime=$("pickup-time").value;
+    const chosen=existingDate&&existingTime?Date.parse(existingDate+"T"+existingTime+":00-03:00"):0;
+    if(!chosen||chosen<Date.now()+45*60000){
+      const later=currentUY(60);
+      $("pickup-date").value=later.day;$("pickup-time").value=later.time;
+    }
+    $("availability").textContent="Reserva programada: los horarios disponibles se comprueban antes de enviar.";
     refreshPickupPresence();return;
   }
   const when=currentUY(kind==="10"?10:2);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
-  $("availability").textContent=kind==="now"?"Solicitás recogida lo antes posible; no equivale a disponibilidad confirmada.":"Solicitás recogida en 10 min; no se garantiza el horario hasta la confirmación.";
+  $("availability").textContent="Recogida urgente sujeta a confirmación personal: consultá directamente por WhatsApp. No se crea una reserva hasta que el conductor la acepte.";
   refreshPickupPresence();
 }
 function shiftView(name){
@@ -493,6 +509,7 @@ function previewLocation(parent,kind,address){
   text(contents,"strong",address,"preview-place-name");
 }
 function showPreview(){
+  if(selectedPickupMode!=="schedule"){tell("Para recogidas inmediatas, consultá por WhatsApp. No enviamos una reserva automática.");return;}
   try{
     pendingReview=bookingData();
     const p=pendingReview;
@@ -562,6 +579,7 @@ function saveGuest(result){
   saveStorage(GUEST_KEY,old.slice(0,18));
 }
 async function submitBooking(){
+  if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
   if(busy||!pendingReview)return;
   const btn=$("confirm-booking");busy=true;loading(btn,true);
   try{
