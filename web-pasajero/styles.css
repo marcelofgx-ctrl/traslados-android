@@ -138,3 +138,38 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   .route-metric strong{font-size:18px}
   .location-widget .location-selected{padding:11px}
 }
+
+
+/* Reserva compacta v6 — lectura mobile-first: A/B protagonistas, una estimación,
+   un solo enlace Maps y detalle opcional. Evita tarjetas anidadas gigantes. */
+.route-overview{margin-top:12px;padding:14px;background:linear-gradient(145deg,#163d43,#102f37);border:1px solid rgba(225,194,132,.46);border-radius:17px;box-shadow:0 9px 22px rgba(0,0,0,.14)}
+.route-head{align-items:center;gap:7px;margin-bottom:9px}
+.route-headline{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.route-head h3{font-size:16px;letter-spacing:-.02em;margin:0}
+.route-head small{font-size:11px;color:#c8d6ce}
+.route-compact-path{display:grid;grid-template-columns:1fr;gap:7px;padding:10px 12px;background:rgba(5,34,40,.35);border-radius:12px;border:1px solid rgba(219,189,130,.15)}
+.route-compact-point{display:flex;align-items:baseline;gap:9px;min-width:0}
+.route-compact-point .route-caption{font-size:9px;letter-spacing:.11em;min-width:38px}
+.route-compact-point .route-address{font-size:12.5px;font-weight:720;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.route-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:9px}
+.route-metric{padding:8px 11px;border-radius:11px;background:rgba(4,31,36,.48)}
+.route-metric small{font-size:10px;letter-spacing:.045em;line-height:1.4}
+.route-metric strong{font-size:20px;line-height:1.12;margin-top:4px}
+.route-metric-fare{grid-column:1/-1;padding:10px 12px;background:linear-gradient(100deg,rgba(201,165,96,.13),rgba(4,28,36,.48));border-color:rgba(221,185,109,.42)}
+.route-fare-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.route-metric-fare .route-fare-heading strong{font-size:21px;color:#ffe3a6;margin:0}
+.route-disclaimer{font-size:10.5px;line-height:1.5;color:#ccd9ce;margin:8px 0 0}
+.route-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 9px;margin-top:8px}
+.route-footer .route-status{font-size:10px;line-height:1.4;color:#c2d1c8;margin:0;flex:1 1 150px}
+.route-footer .route-google{min-height:38px;padding:6px 10px;width:auto;display:inline-flex;font-size:11px;letter-spacing:0;border-radius:10px;text-decoration:none;line-height:1.35}
+.route-extra{margin-top:7px;border-top:1px solid rgba(229,196,132,.16);padding-top:7px}
+.route-extra summary{color:#e3cb99;font-size:11px;cursor:pointer;list-style-position:inside;min-height:34px;display:list-item;padding-top:8px}
+.route-extra:not([open]) .route-road-map{display:none}
+.route-extra .route-map-caption{font-size:10px}
+.route-extra .route-road-map{margin-top:6px}
+.route-extra .route-road-svg{max-height:128px}
+@media(max-width:440px){
+  .route-overview{padding:12px}
+  .route-metric strong{font-size:19px}
+  .route-metric-fare .route-fare-heading strong{font-size:21px}
+}
