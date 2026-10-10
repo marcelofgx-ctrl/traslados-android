@@ -85,21 +85,18 @@ public final class ClienteTripEnhancements {
     /** Native Android client uses the SAME authenticated, privacy-safe ETA service.
      * Immediate requests are consultations, not reservations (30-min booking lead time).
      */
+    /** Public yes/no is produced by Mapa's consented heartbeat, NOT by
+     * the passenger account. Exact pickup ETA remains session protected.
+     */
     public void showPickupEta(String sessionToken,boolean originSet,double lat,double lng,
         int withinMinutes,String originText,String destinationText){
-        if(sessionToken==null||sessionToken.length()<24){
-            toast("Iniciá sesión para consultar la llegada del conductor.");return;
-        }
-        if(!originSet||!Double.isFinite(lat)||!Double.isFinite(lng)){
-            toast("Seleccioná primero el punto exacto donde te pasamos a buscar.");return;
-        }
         LinearLayout panel=new LinearLayout(activity);
         panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(12),dp(18),dp(10));
-        TextView heading=caption("◈ LLEGADA ESTIMADA · TU PUNTO DE RECOGIDA");
+        TextView heading=caption("◈ DISPONIBILIDAD DEL CONDUCTOR");
         heading.setTextSize(15);heading.setTextColor(gold);panel.addView(heading);
-        TextView status=caption("Consultando jornada, GPS y agenda del conductor…");
+        TextView status=caption("Consultando el estado actual de Mapa Trayectos…");
         status.setTextColor(white);status.setTextSize(13);panel.addView(status);
-        TextView privacy=caption("La distancia es aproximada. No muestra la ubicación exacta del vehículo. El conductor debe aceptar la solicitud.");
+        TextView privacy=caption("La disponibilidad se actualiza desde la jornada y GPS autorizados en Mapa. No mostramos la posición exacta del vehículo y todo traslado requiere confirmación.");
         privacy.setTextColor(0xffc2d5cc);panel.addView(privacy);
         Button whatsapp=button("CONSULTAR POR WHATSAPP");
         addBox(panel,whatsapp,10);
@@ -119,45 +116,62 @@ public final class ClienteTripEnhancements {
             .setNegativeButton("CERRAR",null).create();
         dialog.show();
         worker.execute(()->{
-            HttpURLConnection c=null;
+            final String display;
             try{
-                c=(HttpURLConnection)new java.net.URL(
-                    Api.BASE+"/functions/v1/pickup-eta").openConnection();
-                c.setRequestMethod("POST");c.setDoOutput(true);
-                c.setConnectTimeout(9000);c.setReadTimeout(12000);
-                c.setRequestProperty("apikey",Api.KEY);
-                c.setRequestProperty("Content-Type","application/json");
-                JSONObject body=new JSONObject();body.put("sessionToken",sessionToken);
-                body.put("originLat",lat);body.put("originLng",lng);
-                try(java.io.OutputStream output=c.getOutputStream()){
-                    output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                }
-                int code=c.getResponseCode();
-                java.io.InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
-                java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();
-                byte[] buf=new byte[2048];int n;while((n=stream.read(buf))>0)bytes.write(buf,0,n);
-                JSONObject result=new JSONObject(bytes.toString("UTF-8"));
-                boolean available=result.optBoolean("available",false);
-                double km=result.optDouble("distanceKm",Double.NaN);
-                int eta=result.optInt("etaMin",-1);
-                final String display;
-                if(available&&Double.isFinite(km)&&km>0&&eta>0){
-                    display=String.format(Locale.forLanguageTag("es-UY"),
-                        "Conductor en actividad · %.1f km · %d min para llegar (aprox.).\\nDisponibilidad sujeta a confirmación.",km,eta);
+                JSONObject live=postPickupRpc(Api.BASE+
+                    "/rest/v1/rpc/public_driver_availability_v1",new JSONObject());
+                if(!live.optBoolean("available",false)){
+                    display="Conductor no disponible para recogidas inmediatas en este momento.";
+                }else if(!originSet||!Double.isFinite(lat)||!Double.isFinite(lng)){
+                    display="Conductor disponible para consultas. Seleccioná tu origen para calcular la llegada.";
+                }else if(sessionToken==null||sessionToken.length()<24){
+                    display="Conductor disponible para consultas. Para conocer km y minutos hasta tu origen, iniciá sesión.";
                 }else{
-                    String reason=result.optString("reason","");
-                    if("occupied".equals(reason))display="Conductor con una reserva programada próxima. Consultá otro horario.";
-                    else if("rate_limited".equals(reason))display="Podés volver a consultar dentro de unos minutos.";
-                    else if("route_unavailable".equals(reason))display="No fue posible calcular el recorrido por carretera.";
-                    else display="No tenemos disponibilidad y GPS recientes para confirmar la recogida.";
+                    JSONObject body=new JSONObject();body.put("sessionToken",sessionToken);
+                    body.put("originLat",lat);body.put("originLng",lng);
+                    JSONObject arrival=postPickupRpc(Api.BASE+"/functions/v1/pickup-eta",body);
+                    boolean available=arrival.optBoolean("available",false);
+                    double km=arrival.optDouble("distanceKm",Double.NaN);
+                    int eta=arrival.optInt("etaMin",-1);
+                    if(available&&Double.isFinite(km)&&km>0&&eta>0){
+                        display=String.format(Locale.forLanguageTag("es-UY"),
+                            "Conductor disponible para consultas · %.1f km · %d min de llegada aprox. El viaje requiere confirmación.",km,eta);
+                    }else{
+                        String reason=arrival.optString("reason","");
+                        if("occupied".equals(reason))display="Conductor ocupado por una reserva próxima.";
+                        else if("rate_limited".equals(reason))display="Podés actualizar los km en unos minutos.";
+                        else if("route_unavailable".equals(reason))display="Conductor en actividad; no se pudo calcular la llegada por carretera.";
+                        else display="Conductor en actividad, pero sin llegada confirmada. Consultá por WhatsApp.";
+                    }
                 }
-                activity.runOnUiThread(()->{if(dialog.isShowing())status.setText(display);});
             }catch(Exception ex){
-                activity.runOnUiThread(()->{
-                    if(dialog.isShowing())status.setText("Llegada no disponible por conexión. Consultá por WhatsApp.");
-                });
-            }finally{if(c!=null)c.disconnect();}
+                display="No pudimos consultar el estado en este momento. Consultá por WhatsApp.";
+            }
+            activity.runOnUiThread(()->{if(dialog.isShowing())status.setText(display);});
         });
+    }
+
+    private JSONObject postPickupRpc(String url,JSONObject body)throws Exception{
+        HttpURLConnection c=null;
+        try{
+            c=(HttpURLConnection)new java.net.URL(url).openConnection();
+            c.setRequestMethod("POST");c.setDoOutput(true);
+            c.setConnectTimeout(8000);c.setReadTimeout(10000);
+            c.setRequestProperty("apikey",Api.KEY);
+            c.setRequestProperty("Content-Type","application/json");
+            try(java.io.OutputStream output=c.getOutputStream()){
+                output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            int code=c.getResponseCode();
+            java.io.InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
+            if(stream==null)throw new java.io.IOException("Response missing");
+            try(java.io.InputStream in=stream;
+                java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream()){
+                byte[] buf=new byte[2048];int n;
+                while((n=in.read(buf))>0)bytes.write(buf,0,n);
+                return new JSONObject(bytes.toString("UTF-8"));
+            }
+        }finally{if(c!=null)c.disconnect();}
     }
 
     private void selectDepartment(boolean from){
