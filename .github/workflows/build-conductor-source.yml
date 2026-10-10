@@ -67,12 +67,12 @@ jobs:
           test -s conductor/src/main/res/raw/viaje_proximo.wav
           test -s conductor/src/main/res/drawable-nodpi/app_icon.png
           grep -q "applicationId 'uy.com.traslados.conductor'" conductor/build.gradle
-          grep -q "versionName '11.5-R1'" conductor/build.gradle
-          grep -q 'versionCode 123' conductor/build.gradle
+          grep -q "versionName '11.5-R2'" conductor/build.gradle
+          grep -q 'versionCode 124' conductor/build.gradle
           grep -q 'org.maplibre.gl:android-sdk:13.6.1' conductor/build.gradle
           grep -q 'DemandMapActivity' conductor/src/main/AndroidManifest.xml
           grep -q 'showKeyboardSafeQuoteDialog' "$D/MainActivity.java"
-          echo 'Código fuente Conductor 11.5-R1 comprobado (incluye corrección de teclado R24.3)'
+          echo 'Código fuente Conductor 11.5-R2 comprobado (incluye corrección de teclado R24.3)'
 
       - name: Build Traslados Conductor DEBUG from repository source
         run: gradle :conductor:assembleDebug --stacktrace --no-daemon
@@ -82,14 +82,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.5_R1_DEBUG.apk
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.5_R2_DEBUG.apk
           sha256sum artifacts/*.apk | tee artifacts/SHA256SUMS.txt
-          printf 'Source commit: %s\nBuild type: DEBUG (NO reemplaza una APK RELEASE)\nModule: conductor/\nVersion: 11.5-R1 / code 123\n' "$GITHUB_SHA" > artifacts/BUILD_INFO.txt
+          printf 'Source commit: %s\nBuild type: DEBUG (NO reemplaza una APK RELEASE)\nModule: conductor/\nVersion: 11.5-R2 / code 124\n' "$GITHUB_SHA" > artifacts/BUILD_INFO.txt
           ls -lh artifacts/
 
       - name: Upload DEBUG APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.5-R1-DEBUG-SOURCE
+          name: Traslados-Conductor-v11.5-R2-DEBUG-SOURCE
           path: artifacts/
           if-no-files-found: error
