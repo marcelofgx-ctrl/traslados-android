@@ -1,0 +1,142 @@
+name: Build Traslados Cliente Premium v12 RELEASE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cliente-premium/**'
+      - '.github/workflows/build-cliente-premium-v12.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: build-cliente-premium-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Compilar, firmar y publicar Cliente Premium
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Security checks and premium parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 cliente-premium/tests/check_premium_shell.py
+      - name: Recover permanent release signing key
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Build release APK signed with existing Cliente key
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd cliente-premium
+          gradle :app:assembleRelease --stacktrace --no-daemon
+      - name: Verify signature, version and package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='cliente-premium/app/build/outputs/apk/release/app-release.apk'
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/cliente-premium-signing.txt
+          grep -Eiq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/cliente-premium-signing.txt
+          "$AAPT" dump badging "$APK" | head -n 8 | tee /tmp/cliente-premium-package.txt
+          grep -q "package: name='uy.com.traslados.cliente'" /tmp/cliente-premium-package.txt
+          grep -q "versionCode='200'" /tmp/cliente-premium-package.txt
+          mkdir -p artifacts
+          cp "$APK" artifacts/Traslados_Cliente_Premium_v12_RELEASE.apk
+          cp /tmp/cliente-premium-signing.txt artifacts/SIGNING.txt
+          cp /tmp/cliente-premium-package.txt artifacts/APK_INFO.txt
+          (cd artifacts && sha256sum Traslados_Cliente_Premium_v12_RELEASE.apk > SHA256SUMS.txt)
+      - name: Compare original Cliente signing certificate
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.5-R12-RELEASE
+          run-id: 38021100002
+          repository: marcelofgx-ctrl/traslados-android
+          github-token: ${{ github.token }}
+          path: /tmp/cliente-r12-original
+      - name: Require the SAME signing certificate as original Cliente
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          def cert(path):
+              data=Path(path).read_text()
+              match=re.search(r'certificate SHA-256 digest:\s*([a-fA-F0-9]{64})',data)
+              if not match:raise SystemExit('Missing signing certificate SHA-256 in '+path)
+              return match.group(1).lower()
+          old=cert('/tmp/cliente-r12-original/SIGNING.txt')
+          new=cert('artifacts/SIGNING.txt')
+          assert old==new,'CRITICAL: APK uses different signing certificate; cannot update existing Cliente'
+          print('PASS: identical Cliente release signing certificate')
+          PY
+      - name: Archive signed native release
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Cliente-Premium-v12-RELEASE
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish versioned APK to same-origin passenger downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web-pasajero/downloads
+          cp artifacts/Traslados_Cliente_Premium_v12_RELEASE.apk \
+             web-pasajero/downloads/traslados-cliente-premium-v12.apk
+          (cd web-pasajero/downloads && sha256sum traslados-cliente-premium-v12.apk > PREMIUM-SHA256SUMS.txt)
+          git config user.name "Traslados Release CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add web-pasajero/downloads/traslados-cliente-premium-v12.apk web-pasajero/downloads/PREMIUM-SHA256SUMS.txt
+          if git diff --cached --quiet; then
+            echo 'La APK premium ya esta publicada'
+            exit 0
+          fi
+          git commit -m 'Publicar Traslados Cliente Premium v12 RELEASE firmada'
+          git push origin HEAD:main
