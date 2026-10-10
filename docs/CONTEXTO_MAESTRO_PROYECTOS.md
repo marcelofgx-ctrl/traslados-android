@@ -14,6 +14,17 @@
 
 ---
 
+## 0.0.a PERMISOS GPS GUIADOS — 10/10/2026 (corrección UX cross-web)
+
+**Incidente Samsung real:** captura de la PWA `/web-pasajero/` con bloqueo Android/Chrome «Este sitio no puede solicitarte permiso. Cierra las burbujas o superposiciones». Ocultar una burbuja y volver a intentar no siempre resuelve el permiso, que es controlado por Android.
+
+- **GitHub Pages / PWA auxiliar:** `web-pasajero/app.js` reemplaza el `toast` genérico por tarjeta premium de ayuda persistente cuando falla `getCurrentPosition`, con causas diferenciadas (denegado/no disponible/timeout), ruta Android/Chrome para conceder ubicación, **Volver a intentar** y **Escribir dirección**. `styles.css`, `index.html` versión de recursos `v14`, `sw.js` caché `traslados-cliente-pwa-v14`; test `web-pasajero/tests/location-permission-smoke.cjs` incluido en CI. [Empaquetado 38026118498](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38026118498) SUCCESS y [GitHub Pages 38026121606](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38026121606) SUCCESS. **Publicado según Actions**, **no validado aún en Samsung**.
+- **Cloudflare Workers principal (URL inmutable):** `src/components/UyLocationPicker.tsx` también muestra instrucciones GPS y permite reintentar/introducir dirección. `tests/location-permission.test.ts` añadido al CI y al workflow manual de deploy. [CI 38026179460](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38026179460) SUCCESS doble para la primera revisión; commit posterior corrige indicador GPS fuera de Uruguay. **IMPLEMENTADO/COMPILADO, pero NO PUBLICADO aún en Workers** hasta `workflow_dispatch` manual y verificación HTTP.
+- **Regla técnica:** ninguna PWA puede conceder automáticamente permisos Android, abrir de forma universal y fiable la pantalla de ajustes nativos ni eludir protección por overlays. La web solicita acceso solo al tocar GPS, muestra guía para Chrome y ofrece entrada manual; sin quitar permisos de apps ajenas ni alterar el backend, las reservas, Mapa/Conductor o las APK.
+- **Comprobación física pendiente:** reabrir/actualizar la PWA Pages en Chrome y probar que aparece la guía y el reintento; después de desplegar Workers, repetir con esa web principal. No llamar probada a una autorización solo por CI verde.
+
+---
+
 ## 0.0 REANUDACIÓN COMPROBADA — 10/10/2026 — WORKERS R3 (estado real)
 
 **Prioridad y URL inmutables:** la web definitiva del pasajero es **https://traslados-web.marcelof-gx.workers.dev/**, código en `marcelofgx-ctrl/traslados-web`. GitHub Pages es auxiliar; **NO** sustituir ni redirigir la web principal. Mantener estética petróleo, champagne, dorado y texturas aprobadas. No alterar secretos ni `keep_vars:true`. Para detalle, consultar [WEB_PRINCIPAL_WORKERS.md](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/WEB_PRINCIPAL_WORKERS.md).
