@@ -15,7 +15,7 @@ assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link
 assert(css.includes(".install-guide[hidden]"));
 assert(html.includes("./app.js?v=19")&&html.includes("./styles.css?v=19"));
 assert(sw.includes("traslados-cliente-pwa-v19"));
-assert(html.includes('id="install-apk-option" hidden')&&html.includes("traslados-cliente-v11.5-r12.apk"));
+assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-v11.5-r12.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140",apkAvailable=false}={}){
