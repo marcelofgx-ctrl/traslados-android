@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=17">
+  <link rel="stylesheet" href="./styles.css?v=19">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -127,7 +127,15 @@
       <div class="card">
         <div class="install-logo"><img src="./icons/icon-192.png" alt="" width="78" height="78"><div><strong>Traslados con Reserva</strong><span>Acceso directo a tus traslados</span></div></div>
         <button id="install-action" class="primary full" type="button">VER CÓMO INSTALAR</button>
-        <div id="install-info" class="subnote" role="status" aria-live="polite">El navegador te permite instalar Traslados o agregar un acceso a tu pantalla de inicio.</div>
+        <div id="install-info" class="subnote" role="status" aria-live="polite">Comprobando qué instalación permite tu navegador…</div>
+        <div id="install-apk-option" class="install-apk-option" hidden>
+          <span class="install-apk-label">ALTERNATIVA PARA ANDROID</span>
+          <h3>Traslados Cliente · Aplicación Android</h3>
+          <p>Si Chrome no ofrece instalar la versión web, podés descargar nuestra aplicación nativa de reservas.</p>
+          <a id="install-apk-link" class="primary full" href="./downloads/traslados-cliente-v11.5-r12.apk" download="Traslados_Cliente_v11.5_R12_RELEASE.apk">DESCARGAR APK PARA ANDROID</a>
+          <p class="install-apk-hint">Versión nativa Cliente 11.5-R12, firmada. Su interfaz y funciones pueden diferir de esta web. Android puede pedir autorización para instalar aplicaciones descargadas.</p>
+          <button id="install-apk-web-guide" type="button" class="text-button">Prefiero instalar la versión web</button>
+        </div>
         <div id="install-guide" class="install-guide" hidden>
           <h3 id="install-guide-title">Instalá Traslados</h3>
           <ol id="install-guide-steps"></ol>
@@ -146,6 +154,6 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
-  <script src="./app.js?v=18" defer></script>
+  <script src="./app.js?v=19" defer></script>
 </body>
 </html>
