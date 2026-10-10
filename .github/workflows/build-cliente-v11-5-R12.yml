@@ -1,6 +1,11 @@
-name: Build Traslados Cliente v11.5 R11 RELEASE
+name: Build Traslados Cliente v11.5 R12 RELEASE
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-cliente-v11-5-R12.yml'
+      - 'cliente-pasajero/**'
 permissions:
   contents: read
   actions: read
@@ -69,9 +74,11 @@ jobs:
           test -s /tmp/clientr91/src/main/java/uy/com/traslados/cliente/Api.java
           cp -a /tmp/clientr91/. cliente/
           cp cliente-pasajero/src-extra/uy/com/traslados/cliente/ClienteTripEnhancements.java cliente/src/main/java/uy/com/traslados/cliente/
-          python3 cliente-pasajero/scripts/build_cliente_r11.py
-          grep -q "versionCode 121" cliente/build.gradle
-          grep -q "versionName '11.5-R11'" cliente/build.gradle
+          python3 cliente-pasajero/scripts/build_cliente_r12.py
+          grep -q "versionCode 122" cliente/build.gradle
+          grep -q "versionName '11.5-R12'" cliente/build.gradle
+          grep -q "public_driver_availability_v1" cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
+          grep -q "showPickupEta" cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
           grep -q "customer_create_reservation_v12" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
           grep -q "p_stops" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
           grep -q "showPickupEta" cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
@@ -107,14 +114,14 @@ jobs:
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/cliente-signing.txt
           grep -qi 'Verified using v2 scheme.*true' /tmp/cliente-signing.txt
           mkdir -p artifacts
-          cp "$APK" artifacts/Traslados_Cliente_v11.5_R11_RELEASE.apk
+          cp "$APK" artifacts/Traslados_Cliente_v11.5_R12_RELEASE.apk
           cp /tmp/cliente-signing.txt artifacts/SIGNING.txt
           sha256sum artifacts/*.apk | tee artifacts/SHA256SUMS.txt
-          tar -czf artifacts/Traslados_Cliente_R11_SOURCE.tar.gz cliente
+          tar -czf artifacts/Traslados_Cliente_R12_SOURCE.tar.gz cliente
           ls -lh artifacts/
       - name: Publish Cliente signed APK and full source snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Cliente-v11.5-R11-RELEASE
+          name: Traslados-Cliente-v11.5-R12-RELEASE
           path: artifacts/
           if-no-files-found: error
