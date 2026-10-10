@@ -16,6 +16,11 @@ assert(html.includes('id="route-overview"'),"Missing view target");
 assert(html.includes('id="pickup-presence-whatsapp"'),"Missing urgent consultation");
 assert(css.includes(".route-compact-path"),"Missing compact styling");
 assert(css.includes(".route-extra:not([open])"),"Route details must remain folded");
+assert(html.includes('id="urgent-whatsapp"'),"Urgent pickup CTA missing");
+assert(js.includes('selectedPickupMode!=="schedule"'),"Immediate booking must not use normal reservation RPC");
+assert(js.includes('La recogida urgente')||js.includes('Las recogidas urgentes'),"Urgent bookings need explicit human confirmation");
+assert(js.includes("const contact=\"https://wa.me/59897228175?text=\""),"WhatsApp must include origin and destination");
+
 
 class E{
  constructor(tag="div"){this.tag=tag;this.nodes=[];this.textContent="";this.hidden=false;this.attributes={};}
