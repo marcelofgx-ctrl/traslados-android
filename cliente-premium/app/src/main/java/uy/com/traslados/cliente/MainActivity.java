@@ -90,6 +90,9 @@ public final class MainActivity extends Activity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setVerticalScrollBarEnabled(false);
         WebSettings cfg=web.getSettings();
+        // Identidad local de la APK firmada: la web evita ofrecer otro instalador
+        // dentro de la aplicación nativa (sin bridge JavaScript ni privilegios extra).
+        cfg.setUserAgentString(cfg.getUserAgentString() + " TrasladosClienteNative/14");
         cfg.setJavaScriptEnabled(true);
         cfg.setDomStorageEnabled(true);
         cfg.setDatabaseEnabled(true);
