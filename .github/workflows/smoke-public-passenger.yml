@@ -38,16 +38,16 @@ jobs:
           base="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero"
           for i in 1 2 3 4 5 6; do
             if curl -fsSL --max-time 25 -o /tmp/traslados.html "$base/?ci=$GITHUB_RUN_ID"; then
-              if grep -q 'app.js?v=6' /tmp/traslados.html; then break; fi
+              if grep -q 'app.js?v=7' /tmp/traslados.html; then break; fi
             fi
             echo "Esperando versión publicada ($i/6)"
             sleep 12
           done
-          grep -q 'app.js?v=6' /tmp/traslados.html
+          grep -q 'app.js?v=7' /tmp/traslados.html
           grep -q 'id="route-overview"' /tmp/traslados.html
           grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
-          curl -fsSL --max-time 25 "$base/app.js?v=6&ci=$GITHUB_RUN_ID" -o /tmp/app.js
+          curl -fsSL --max-time 25 "$base/app.js?v=7&ci=$GITHUB_RUN_ID" -o /tmp/app.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/app.js
