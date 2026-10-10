@@ -60,6 +60,28 @@ jobs:
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
           echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
+      - name: Verificar motor de rutas internas por RPC pública segura (solo lectura)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc'
+          KEY='sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9'
+          curl -fsSL --retry 2 --max-time 20 -X POST "$BASE/public_cached_route_preview_v1" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            --data '{"p_points":[{"lat":-34.8,"lng":-56.1},{"lat":-34.85,"lng":-56.05}]}' -o /tmp/public-road-cache.json
+          curl -fsSL --retry 2 --max-time 20 -X POST "$BASE/public_reference_quote_v1" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            --data '{"p_distance_km":8}' -o /tmp/public-price.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/public-road-cache.json') as f: road=json.load(f)
+          with open('/tmp/public-price.json') as f: fare=json.load(f)
+          assert isinstance(road,dict) and isinstance(road.get('available'),bool)
+          assert fare.get('available') and isinstance(fare.get('referenceFareUyu'),(int,float))
+          assert fare['referenceFareUyu']>0
+          assert fare.get('finalQuoteRequired') is True
+          print('RPC accesible para PWA: consulta segura de cache y tarifa orientativa privada. No se mostró ningún PIN.')
+          PY
       - name: Diagnosticar motor de ruta compartido y tarifa sin inventar resultados
         shell: bash
         run: |
