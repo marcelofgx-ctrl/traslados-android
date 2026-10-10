@@ -1,15 +1,8 @@
 name: Build Traslados Cliente Premium v12 RELEASE
 
+# v12 conservada solo para reconstrucciones manuales históricas.
+# Para publicaciones definitivas usar build-cliente-premium-v13.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'cliente-premium/app/**'
-      - 'cliente-premium/tests/**'
-      - 'cliente-premium/build.gradle'
-      - 'cliente-premium/settings.gradle'
-      - 'cliente-premium/gradle.properties'
-      - '.github/workflows/build-cliente-premium-v12.yml'
   workflow_dispatch:
 
 permissions:
