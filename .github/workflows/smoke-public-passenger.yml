@@ -1,12 +1,8 @@
 name: Comprobar web pública de Traslados Pasajero
 
 # Se comprueba DESPUÉS de terminar Pages, no en un push antes de publicarse.
+# Comprobar únicamente cuando Pages completó; evita 'rojo' por propagación.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'web-pasajero/**'
-      - '.github/workflows/smoke-public-passenger.yml'
   workflow_run:
     workflows: ["pages build and deployment"]
     types: [completed]
