@@ -139,7 +139,7 @@ El usuario configuró el proveedor de rutas desde Cloudflare. GitHub Actions [38
 
 La configuración aparece como variable de texto visible en la captura. Recomendación de seguridad: utilizar un Secret en Cloudflare y renovar la credencial en el proveedor, sin introducir sus valores en documentos, chats o repositorios.
 
-El segundo control CI agregado en el repositorio web ([aa2a5aa](https://github.com/marcelofgx-ctrl/traslados-web/commit/aa2a5aa89f02db1e51c2fa9a94bfe8c1664ee838)) verifica también que el origen de la PWA tenga permiso CORS y muestra métricas de control sin exponer credenciales. Verificar ese run por separado.
+Segundo control CI [38016164113](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38016164113) **SUCCESS**: prueba HTTP 200 con encabezado Origin de GitHub Pages, **CORS permitido**, fuente **openrouteservice**, 19,5 km, 28 minutos, valor referencial $780 en una ruta técnica de prueba. No son los valores del viaje Roque Sáenz Peña → Aeropuerto: siguen pendientes de comprobación con los puntos seleccionados en el Samsung. Se consultó una ruta pública, sin leer, guardar ni imprimir secretos.
 
 PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y botón Maps; solo por comprobar en Chrome Android. La oferta final sigue perteneciendo al Conductor. No se habilitó ETA de conductor hasta pasajero.
 
