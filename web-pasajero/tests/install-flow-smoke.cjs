@@ -93,6 +93,12 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   assert.equal(promptCalls,1,"Native installer must run on user click");
   assert.match(installable.elements["install-info"].textContent,/Confirmaste/);
   assert.equal(installable.apkClicks(),0,"Prefer PWA when Chrome offers installation");
+  const nativeApk=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/14",apkAvailable:true});
+  await settled();
+  assert.equal(nativeApk.elements["install-apk-option"].hidden,true,"Native Cliente must not offer re-installing itself");
+  assert.equal(nativeApk.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
+  await nativeApk.click();
+  assert.equal(nativeApk.view(),"viajes","Native Cliente must open real trip history");
   const installed=setup({standalone:true,apkAvailable:true});
   await settled();
   assert.equal(installed.elements["install-apk-option"].hidden,true,"No APK offered inside already installed PWA");
