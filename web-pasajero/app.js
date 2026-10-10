@@ -955,7 +955,23 @@ function installUI(){
   const action=$("install-action"),info=$("install-info"),guide=$("install-guide");
   const guideTitle=$("install-guide-title"),guideSteps=$("install-guide-steps"),guideNote=$("install-guide-note");
   const copyButton=$("install-copy-link");
+  const apkOption=$("install-apk-option"),apkLink=$("install-apk-link");
+  const apkGuideButton=$("install-apk-web-guide");
+  const android=/Android/i.test(navigator.userAgent||"");
+  let apkReady=false;
   const isReady=()=>Boolean(installEvent);
+  // No suponer que una URL existe: comprobar HEAD y tipo binario antes de
+  // mostrar el botón de descarga; nunca dar un enlace al workflow de GitHub.
+  async function checkVerifiedApk(){
+    if(!android||isStandaloneTraslados())return;
+    try{
+      const response=await fetch(apkLink.href,{method:"HEAD",cache:"no-store"});
+      const type=(response.headers.get("content-type")||"").toLowerCase();
+      const length=Number(response.headers.get("content-length")||"0");
+      apkReady=response.ok&&length>100000&&!/text\/html|application\/json|text\/plain/.test(type);
+    }catch{apkReady=false;}
+    updateUI();
+  }
   function showGuide(){
     if(!guide)return;
     const content=installHelpContent();
@@ -966,17 +982,22 @@ function installUI(){
     guideNote.textContent=content.note;
   }
   function updateUI(){
+    apkOption.hidden=true;
     if(isStandaloneTraslados()){
       action.textContent="ABRIR MIS TRASLADOS";
       info.textContent="Traslados ya está abierto como aplicación. No necesitás instalarlo otra vez.";
       guide.hidden=true;
     }else if(isReady()){
       action.textContent="INSTALAR TRASLADOS";
-      info.textContent="Tu navegador permite instalar Traslados directamente. Tocá el botón para confirmar.";
+      info.textContent="Chrome permite instalar Traslados como aplicación web. Tocá para confirmar.";
       guide.hidden=true;
+    }else if(android&&apkReady){
+      action.textContent="DESCARGAR TRASLADOS PARA ANDROID";
+      info.textContent="Chrome no ofreció instalación web automática. Podés instalar nuestra app nativa Cliente o consultar cómo agregar la web al inicio.";
+      apkOption.hidden=false;
     }else{
       action.textContent="VER CÓMO INSTALAR";
-      info.textContent="La instalación se realiza desde el navegador. Te mostramos cómo hacerlo sin perder tus reservas.";
+      info.textContent="Si el navegador no ofrece instalar automáticamente, podés agregar Traslados desde su menú.";
     }
   }
   window.addEventListener("beforeinstallprompt",e=>{
@@ -992,7 +1013,16 @@ function installUI(){
   });
   action.addEventListener("click",async()=>{
     if(isStandaloneTraslados()){shiftView("viajes");return;}
-    if(!installEvent){showGuide();return;}
+    if(!installEvent){
+      if(android&&apkReady){
+        // El enlace real es el de esta misma web, a una APK cuya presencia
+        // y tamaño ya fueron comprobados. El usuario inicia la descarga.
+        apkLink.click();
+        info.textContent="Descarga solicitada. Android puede pedir autorización para instalar la aplicación.";
+        return;
+      }
+      showGuide();return;
+    }
     const pending=installEvent;
     installEvent=null; // Un evento de instalación no se reutiliza.
     action.disabled=true;
@@ -1011,7 +1041,7 @@ function installUI(){
       showGuide();
     }finally{
       action.disabled=false;
-      if(!isStandaloneTraslados()&&!isReady())action.textContent="VER CÓMO INSTALAR";
+      if(!isStandaloneTraslados()&&!isReady())updateUI();
     }
   });
   copyButton.addEventListener("click",async()=>{
@@ -1023,7 +1053,9 @@ function installUI(){
       info.textContent="Abrí esta misma dirección directamente en Chrome para instalar Traslados.";
     }
   });
+  apkGuideButton.addEventListener("click",showGuide);
   updateUI();
+  void checkVerifiedApk();
   if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self){
     const register=()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});
     if(document.readyState==="complete")void register();
