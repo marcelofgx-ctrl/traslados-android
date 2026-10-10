@@ -21,7 +21,7 @@ assert(!app.includes('"Ruta por calles calculada por openrouteservice/HeiGIT'),
 assert(!app.includes('"Ruta por calles calculada anteriormente y conservada en nuestro sistema (OSRM)'),
   "Do not display routing engine names in the itinerary");
 assert(html.includes("TRASLADOS"),"Branded customer page must remain present");
-assert(html.includes("INSTALAR TRASLADOS"),"Install action must stay available");
+assert(html.includes("VER CÓMO INSTALAR")&&html.includes("install-guide"),"Installation must have persistent branded guidance");
 assert(html.includes("© 2026"),"Customer footer must be retained");
 assert(/OpenStreetMap contributors/.test(app),
   "The map data copyright attribution must be retained");
