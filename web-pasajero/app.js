@@ -920,17 +920,114 @@ async function loadTrips(){
     }
   }catch(e){status.textContent="No se pudieron actualizar las reservas.";showError(e);}
 }
+// La instalación automática depende del navegador: no hay API para abrir su menú
+// cuando beforeinstallprompt no se emitió. La alternativa siempre debe ser visible.
+function isStandaloneTraslados(){
+  return Boolean(window.matchMedia?.("(display-mode: standalone)")?.matches||navigator.standalone===true);
+}
+function installHelpContent(){
+  const agent=navigator.userAgent||"";
+  const ios=/iPad|iPhone|iPod/i.test(agent);
+  const samsung=/SamsungBrowser/i.test(agent);
+  const android=/Android/i.test(agent);
+  if(ios)return {
+    title:"Instalación desde Safari",
+    steps:["Abrí esta web en Safari.","Tocá Compartir (cuadrado con flecha).","Elegí «Agregar a pantalla de inicio» y confirmá."],
+    note:"El instalador no puede abrirse automáticamente desde esta pantalla."
+  };
+  if(samsung)return {
+    title:"Instalación desde Samsung Internet",
+    steps:["Abrí el menú ☰ de Samsung Internet.","Buscá «Agregar página a» o «Añadir a pantalla de inicio».","Seleccioná Pantalla de inicio y confirmá."],
+    note:"La opción depende de la versión del navegador."
+  };
+  if(android)return {
+    title:"Instalación desde Chrome",
+    steps:["Abrí Traslados directamente en Chrome (no dentro de otra aplicación).","Tocá el menú ⋮ de Chrome.","Elegí «Instalar aplicación» o «Agregar a pantalla principal» y confirmá."],
+    note:"Si la opción no aparece, probablemente ya tengas Traslados instalado o el navegador todavía no permita instalarlo."
+  };
+  return {
+    title:"Agregar Traslados a tu dispositivo",
+    steps:["Abrí este enlace en Chrome, Edge o Safari.","Buscá «Instalar aplicación» en el menú del navegador.","Confirmá para crear tu acceso directo."],
+    note:"La opción de instalación depende del navegador y del dispositivo."
+  };
+}
 function installUI(){
-  window.addEventListener("beforeinstallprompt",(e)=>{e.preventDefault();installEvent=e;$("install-action").disabled=false;$("install-info").textContent="Listo para instalar. Tocá el botón superior para agregar Traslados al inicio.";});
-  window.addEventListener("appinstalled",()=>{installEvent=null;$("install-action").textContent="YA INSTALADA";tell("Traslados se instaló correctamente.");});
-  $("install-action").addEventListener("click",async()=>{
-    if(window.matchMedia("(display-mode: standalone)").matches){tell("Ya estás usando la app web instalada.");return;}
-    if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null;return;}
-    tell("En Chrome: menú ⋮ → Instalar aplicación. En iPhone: Compartir → Agregar a inicio.");
+  const action=$("install-action"),info=$("install-info"),guide=$("install-guide");
+  const guideTitle=$("install-guide-title"),guideSteps=$("install-guide-steps"),guideNote=$("install-guide-note");
+  const copyButton=$("install-copy-link");
+  const isReady=()=>Boolean(installEvent);
+  function showGuide(){
+    if(!guide)return;
+    const content=installHelpContent();
+    guide.hidden=false;
+    guideTitle.textContent=content.title;
+    guideSteps.replaceChildren();
+    for(const step of content.steps)text(guideSteps,"li",step);
+    guideNote.textContent=content.note;
+  }
+  function updateUI(){
+    if(isStandaloneTraslados()){
+      action.textContent="ABRIR MIS TRASLADOS";
+      info.textContent="Traslados ya está abierto como aplicación. No necesitás instalarlo otra vez.";
+      guide.hidden=true;
+    }else if(isReady()){
+      action.textContent="INSTALAR TRASLADOS";
+      info.textContent="Tu navegador permite instalar Traslados directamente. Tocá el botón para confirmar.";
+      guide.hidden=true;
+    }else{
+      action.textContent="VER CÓMO INSTALAR";
+      info.textContent="La instalación se realiza desde el navegador. Te mostramos cómo hacerlo sin perder tus reservas.";
+    }
+  }
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    installEvent=e;
+    updateUI();
   });
-  if(window.matchMedia("(display-mode: standalone)").matches)$("install-action").textContent="YA INSTALADA";
+  window.addEventListener("appinstalled",()=>{
+    installEvent=null;
+    action.textContent="ABRIR MIS TRASLADOS";
+    info.textContent="Traslados se agregó a tu dispositivo. Buscá su ícono en la pantalla de inicio.";
+    guide.hidden=true;
+  });
+  action.addEventListener("click",async()=>{
+    if(isStandaloneTraslados()){shiftView("viajes");return;}
+    if(!installEvent){showGuide();return;}
+    const pending=installEvent;
+    installEvent=null; // Un evento de instalación no se reutiliza.
+    action.disabled=true;
+    try{
+      await pending.prompt();
+      const choice=await pending.userChoice;
+      if(choice?.outcome==="accepted"){
+        info.textContent="Confirmaste la instalación. Buscá el ícono de Traslados en el inicio.";
+        guide.hidden=true;
+      }else{
+        info.textContent="No se completó la instalación. Podés volver cuando quieras.";
+        showGuide();
+      }
+    }catch{
+      info.textContent="El navegador no abrió la instalación automática. Probá desde su menú.";
+      showGuide();
+    }finally{
+      action.disabled=false;
+      if(!isStandaloneTraslados()&&!isReady())action.textContent="VER CÓMO INSTALAR";
+    }
+  });
+  copyButton.addEventListener("click",async()=>{
+    const link=new URL("./",window.location.href).href;
+    try{
+      await navigator.clipboard.writeText(link);
+      info.textContent="Enlace de Traslados copiado. Pegalo en la barra de Chrome para abrirlo allí.";
+    }catch{
+      info.textContent="Abrí esta misma dirección directamente en Chrome para instalar Traslados.";
+    }
+  });
+  updateUI();
   if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self){
-    window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{}));
+    const register=()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});
+    if(document.readyState==="complete")void register();
+    else window.addEventListener("load",register,{once:true});
   }
 }
 function init(){
