@@ -159,6 +159,43 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0I. ENTREGA GPS EN VIVO / ETA REAL — 10/10/2026 (último corte)
+
+**Solicitud del usuario:** «Adelante con todas las modificaciones en todo». Se realizaron cambios reales en **Supabase operativo, Mapa Android, Cliente Android nativo, PWA Pasajero GitHub Pages y Web Premium Cloudflare**, preservando reservas, datos GPS históricos, SQLite y sonidos. **No se activó ni simuló una ubicación personal del conductor.** Hacen falta opt-in voluntario desde la nueva APK y prueba física Samsung. Se mantiene un único contexto maestro y el documento especializado [DISPO_AUTOMATICA_Y_ETA_RECOGIDA.md](DISPO_AUTOMATICA_Y_ETA_RECOGIDA.md).
+
+### Arquitectura implementada y probada
+
+**Backend Supabase `zetaudvvutlouiqxopvg`, YA APLICADO:** migración [pickup_live_presence_v1.sql](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/operativa/migrations/20261010023000_pickup_live_presence_v1.sql), `driver_live_presence` privada RLS sin SELECT anon/authenticated, OFF por defecto, vinculada al dispositivo Mapa y PIN validado de Conductor. El heartbeat `mapa_presence_ping_v1` guarda ubicación solo con jornada activa, no pausada, no viaje en Mapa, no «ocupado manual», GPS ≤90s con precisión ≤45m y conducción ≤5 minutos. No confundir conducir con estar libre haciendo Uber/Cabify: el estado es **«Disponible para consultas, sujeto a aprobación»** y existe override ocupado. Cuando no está activo no conserva lat/lon publicables. Nuevo `driver_pickup_eta_context_v1` solo ejecutable desde `service_role`, verifica sesión Cliente real, comprueba 60min de agenda y limita 3 consultas/min y 20/h. Pruebas SQL: sin registro de presencia inicial, SELECT de tabla y RPC de coordenadas denegados a anon, sesión inválida rechazada.
+
+**Edge Supabase `pickup-eta` versión 1 YA DESPLEGADA ACTIVE:** requiere token de sesión propio de Cliente en POST; `verify_jwt=false` justificado exclusivamente por autenticación custom PIN + consulta verificada de sesión, nunca acepta cualquier visitante como autorizado. Consulta ORS a través del Worker Cloudflare **servidor-a-servidor**, devuelve km redondeados a 0,5 km, ETA redondeada a 5 min, antigüedad y disponibilidad **sin lat/lng**. Test público de sesión inválida [Actions 38019205391](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38019205391) **SUCCESS**, HTTP 401 y sin coordenadas; matriz Bun 1.2/1.3 con build/TypeScript y contratos de seguridad aprobados. El flujo positivo necesita opt-in del teléfono antes de poder probarse.
+
+**Mapa Trayectos R24.5 / versionCode 47:** compilado con `TrackingService` GPS ya filtrado, nuevo modo `Menú → Disponibilidad de recogida`: consentimiento inicial con PIN de conductor, compartir OFF por defecto, ocupado manual Uber/Cabify, desactivar/borrar posición. Heartbeats no bloqueantes cada ~25s y al cambiar jornada, pausa, viaje y modo ocupado; sin PIN guardado, sin lat/lng públicas. Firma APK estable. [Actions 38019254898](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019254898) **SUCCESS** (nombre del ZIP corregido a R24.5, huella SHA256 firma d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d). Parche adicional [ae81b5a](https://github.com/marcelofgx-ctrl/traslados-android/commit/ae81b5adb63c5b3aa90b0c8aa396f6af15f54900) garantiza que desactivar el permiso **corta localmente** subidas GPS aun sin Internet; se recompila en [Actions 38019431505](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019431505). Antes de entregar un APK definitivo **usar esa última compilación, comprobar SUCCESS y artefacto R24.5**. No desinstalar ni borrar datos para actualizar.
+
+**Cliente nativo Android 11.5-R11/versionCode 121:** `cliente-pasajero/scripts/build_cliente_r11.py` y `ClienteTripEnhancements.showPickupEta`: los accesos AHORA/+10 MIN con una sesión real y punto de origen abren diálogo de km/ETA mediante la Edge Function; no crean reserva inválida (lead time de 30min); WhatsApp para consultar. **APK RELEASE firmada** [Actions 38019069484](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019069484) **SUCCESS** (artefacto 11657810025). CI R10 antiguo desactivado salvo ejecución manual; hubo fallos de compilación intermedios antes de añadir el import de HttpURLConnection, corregidos. Integración de GUI y uso real Samsung todavía no probados.
+
+**Pasajero Web/PWA GitHub Pages v12:** `web-pasajero/app.js` llama la Edge Function autenticada si el usuario marca A y «Ahora/En 10 min», refrescando a intervalos prudentes en pantalla activa; muestra km y minutos aproximados de Conductor→A solo cuando hay posición válida. Sin sesión requiere iniciar sesión; conserva WhatsApp y no registra automáticamente un viaje urgente. JS y caché PWA v12. CI [38019114673](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019114673) **SUCCESS** y publicación Pages [38019114312](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019114312) **SUCCESS**. Probar v12 en Samsung, no confundir publicación con prueba visual.
+
+**Web Premium Cloudflare:** nuevos `src/components/DriverPickupEta.tsx`, importado en `src/routes/index.tsx` durante modos inmediatos, UX petróleo/champagne con km/min/estado, login requerido. [Actions 38019205391](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38019205391) **SUCCESS**. **El deploy de la nueva Web Premium en Cloudflare no fue ejecutado**, aunque ORS_API_KEY ya estaba configurada y los kilómetros A→B funcionaban antes: todavía hay que hacer el despliegue vía el flujo manual del repositorio o desde la cuenta Cloudflare. NO afirmar que el UI Premium en producción refleja estos cambios.
+
+**Conductor independiente:** mantiene gestión de reservas y presupuestos y conserva su release previa; no publica GPS por separado, porque la fuente oficial de jornada y GPS es Mapa. No sustituir el origen de señales creando un segundo tracking.
+
+### Condición real de disponibilidad y privacidad
+
+1. Consentimiento explícito inicial una sola vez en Mapa con PIN; después basta jornada + conducción GPS reciente. Un viaje Uber/Cabify **no detectado por Mapa** exige marcar «Ocupado» manualmente.
+2. Solo sesión Cliente real obtiene ETA redondeada a partir del origen seleccionado; no ve la posición del vehículo. Nunca se promete recogida sin aprobación.
+3. Si cierra/pausa jornada, viaje activo, ocupado, última conducción >5min, GPS >90s, conflictos de agenda o cliente sin sesión, **no publicar ETA**. Al optar por OFF se interrumpe subida desde el dispositivo incluso sin red y presencia remota se invalida por TTL.
+4. Programados usan su agenda, **nunca** proyección de posición actual a fecha futura. «Ahora/10 min» son consultas con confirmación personal hasta crear flujo específico aprobado para reservas urgentes.
+
+### QA de entrega y pendientes estrictos
+
+- Comprobar SUCCESS final de [Mapa run 38019431505](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019431505), extraer APK firmada, contrastar SHA-256 con archivo artefacto y cert; hacer lo mismo con Cliente R11.
+- Usuario instala Mapa R24.5 encima de la versión actual (no desinstalar) y entra en Menú → Disponibilidad de recogida → PIN/compartir. Sin autorización no hay presencia: es una propiedad de privacidad, no un fallo.
+- Usuario inicia jornada y conduce normalmente, luego inicia sesión en Cliente Web v12 y selecciona A + Ahora. Comprobar distancia conductor→A con ORS y ocultación al cerrar, pausar, ocupar y perder GPS; validar red móvil, pantalla bloqueada.
+- Probar Cliente R11 en Samsung, y luego publicar Web Premium Cloudflare nueva versión. **Ningún tramo positivo real de ETA se ha comprobado con GPS personal hasta que el conductor active y pruebe la APK**.
+- Probar reserva programada real consentida → Conductor → presupuesto final → aceptación → historial sin datos de prueba persistentes. No cambiar backend para auto-confirmación inmediata sin definir reglas de negocio y consentimiento.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
