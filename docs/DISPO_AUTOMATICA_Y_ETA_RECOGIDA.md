@@ -1,5 +1,26 @@
 # Traslados — disponibilidad automática por jornada, conducción reciente y ETA de recogida
 
+## Corrección de interfaz — disponibilidad pública sin iniciar sesión (10/10/2026)
+
+**Reclamo originado por captura Samsung:** Pasajero web v12 mostraba «Iniciá sesión en Mi cuenta para consultar la llegada aproximada». El conductor aclaró que **su disponibilidad en vivo se toma automáticamente de Mapa Trayectos**, y no debe depender de que el visitante tenga una cuenta para conocer si está activo. Separar dos preguntas:
+
+- **¿El conductor está aceptando consultas ahora?** Respuesta pública sí/no basada exclusivamente en heartbeat voluntario de Mapa, sin exigir login.
+- **¿A qué distancia/tiempo está del origen específico A?** Requiere cuenta Cliente válida, ruta ORS y coordenada privada solo en servidores. Esto evita que visitantes anónimos prueben muchas ubicaciones para deducir posición del vehículo.
+
+**Backend real aplicado a Supabase operativo:** [`public_driver_availability_v1.sql`](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/operativa/migrations/20261010034000_public_driver_availability_v1.sql), commit `0c8d669`. RPC SECURITY DEFINER `public_driver_availability_v1()` devuelve solamente `available:boolean`, `status:"available_for_requests"|"not_available"`, `confirmationRequired:true`. Exige autorización previa, jornada activa, no pausada, no viaje activo, no ocupado, GPS/heartbeat ≤90 s, conducción ≤5 min, precisión ≤45 m y ausencia de conflicto de agenda durante ventana conservadora de 60 min. **No retorna coordenadas, ID dispositivo, horarios, rutas ni datos del pasajero**. Pruebas SQL: anon EXECUTE=true para esta RPC, SELECT=false sobre `driver_live_presence`, EXECUTE=false para RPC privada `driver_pickup_eta_context_v1`.
+
+**Estado verificado:** la tabla de presencia contenía **0 dispositivos autorizados** durante la auditoría. Por lo tanto la respuesta real actual es `not_available`. **No** afirmar que se lee una jornada del usuario en vivo antes de que instale Mapa R24.5, dé consentimiento mediante PIN, inicie jornada y circule con GPS reciente.
+
+**PWA GitHub Pages v13:** `web-pasajero/app.js` ahora siempre consulta el estado público antes del login en modos Ahora/10 min, cache de 25 s y refresco mientras la página está visible cada 40 s. Si activo: «Conductor disponible para consultas» sin exigir cuenta. Si hay sesión y origen elegido: además consulta la Edge privada ETA. Si no hay sesión: informa disponibilidad pública, sin inventar km/min ni mostrar GPS. Si no está autorizado o hay señal caducada: «No disponible». `styles.css` añade distinción discreta de estado, cache SW v13, HTML `app.js?v=13`. Test VM [`public-driver-presence-smoke.cjs`](../web-pasajero/tests/public-driver-presence-smoke.cjs) ejecuta funciones reales y comprueba visitante anónimo, ocupado, sesión y privacidad. CI [38020967639](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38020967639) **SUCCESS**, Pages [38020967392](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38020967392) **SUCCESS**.
+
+**Web Premium Cloudflare:** `src/components/DriverPickupEta.tsx` consume `public_driver_availability_v1()` sin login y habilita cálculo por origen solo con sesión cliente; CI Web [38020875344](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38020875344) **SUCCESS**, sin publicación nueva del Worker Cloudflare. No confundir CI verde con Web Premium actualizada en producción.
+
+**Cliente Android nativo:** `ClienteTripEnhancements.showPickupEta` consulta estado público aunque `sessionToken` sea vacío; con origen/sesión solicita ETA por Edge privada y conserva WhatsApp/confirmación manual. Se generó la versión **11.5-R12, versionCode 122** y desactivó la compilación automática obsoleta de R11 (queda manual). Hubo fallos intermedios por asignación `final` en Java corregidos en commit `be1d8e9`. **RELEASE R12 firmada CI SUCCESS [38021100002](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38021100002)**, artefacto `11658906107`, SHA256 APK `ac4dc6ae06705d9764fc25333f7b876f10ea8ab8586c7c6dac471bb26e8545c4`, firma v2 validada y certificado estable `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d`. R11 es una versión anterior; no confundir.
+
+**Mapa Trayectos** no precisó nueva compilación para esta corrección: mantiene **R24.5** con opt-in/heartbeat/ocupado. Solo cambió el consumidor de estado en backend y clientes. **Prueba positiva real con el coche y Samsung sigue pendiente.**
+
+---
+
 ## Implementación integrada (10/10/2026) — diferenciar compilación y uso real
 
 **Backend Supabase OPERATIVO** `zetaudvvutlouiqxopvg`, migración aplicada y versionada en
