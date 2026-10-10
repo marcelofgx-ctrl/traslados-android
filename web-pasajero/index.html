@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=14">
+  <link rel="stylesheet" href="./styles.css?v=17">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -126,8 +126,14 @@
       <div class="section-heading"><p class="eyebrow">TRASLADOS EN TU CELULAR</p><h2 id="install-title">Instalá Traslados en el celular</h2><p>Accedé como si fuera una app, directamente desde la pantalla de inicio. Es gratuita y no requiere Play Store.</p></div>
       <div class="card">
         <div class="install-logo"><img src="./icons/icon-192.png" alt="" width="78" height="78"><div><strong>Traslados con Reserva</strong><span>Acceso directo a tus traslados</span></div></div>
-        <button id="install-action" class="primary full" type="button">INSTALAR TRASLADOS</button>
-        <div id="install-info" class="subnote">En Chrome para Android: menú ⋮ → «Instalar aplicación» o «Agregar a pantalla principal». En iPhone: Compartir → «Agregar a pantalla de inicio».</div>
+        <button id="install-action" class="primary full" type="button">VER CÓMO INSTALAR</button>
+        <div id="install-info" class="subnote" role="status" aria-live="polite">El navegador te permite instalar Traslados o agregar un acceso a tu pantalla de inicio.</div>
+        <div id="install-guide" class="install-guide" hidden>
+          <h3 id="install-guide-title">Instalá Traslados</h3>
+          <ol id="install-guide-steps"></ol>
+          <p id="install-guide-note"></p>
+          <button id="install-copy-link" class="secondary full" type="button">COPIAR ENLACE DE TRASLADOS</button>
+        </div>
       </div>
       <div class="card"><h3>Tu espacio de viajes</h3><p class="hint">Instalá Traslados en tu pantalla principal para entrar rápidamente, consultar solicitudes y revisar tus presupuestos.</p><p class="hint">Las reservas necesitan conexión a Internet; <strong>no se envían solicitudes sin conexión.</strong></p></div>
     </section>
@@ -140,6 +146,6 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
-  <script src="./app.js?v=16" defer></script>
+  <script src="./app.js?v=17" defer></script>
 </body>
 </html>
