@@ -118,12 +118,11 @@ async function refreshPickupPresence(force=false){
     status.textContent="Conductor disponible para consultas. Elegí tu origen para calcular la llegada.";
     return;
   }
-  if(!authReady()){
-    status.textContent="Conductor disponible para consultas · Jornada activa. Para conocer km y minutos hasta tu origen, iniciá sesión.";
-    return;
-  }
+  // El visitante sin cuenta obtiene una ETA de zona APROXIMADA, con cupos
+  // anti-rastreo en el servidor. Nunca se devuelve el GPS del conductor.
+  const signedIn=authReady();
   const lat=record.origin.lat,lng=record.origin.lng;
-  const key=session.token+"|"+lat.toFixed(5)+","+lng.toFixed(5);
+  const key=(signedIn?session.token:"visitante")+"|"+lat.toFixed(5)+","+lng.toFixed(5);
   if(!force&&key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<65000)return;
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
   status.textContent="Conductor en actividad · calculando km y llegada hasta tu origen…";
@@ -131,16 +130,21 @@ async function refreshPickupPresence(force=false){
   fetch(API+"/functions/v1/pickup-eta",{
     method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
     headers:{"apikey":KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({sessionToken:session.token,originLat:lat,originLng:lng})
+    body:JSON.stringify({
+      ...(signedIn?{sessionToken:session.token}:{}),
+      originLat:lat,originLng:lng
+    })
   }).then(async r=>{
     const obj=await r.json().catch(()=>({available:false,reason:"temporarily_unavailable"}));
     return obj;
   }).then(data=>{
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.etaMin)){
-      status.textContent="Conductor disponible para consultas · A unos "+
+      status.textContent="Conductor disponible para recogerte ahora · A unos "+
         data.distanceKm.toLocaleString("es-UY")+" km · "+data.etaMin+
-        " min de llegada aprox. El viaje requiere confirmación.";
+        " min de llegada aprox."+
+        (data.estimateType==="coarse"?" (ubicación por zona).":"")+
+        " Recogida sujeta a confirmación del conductor.";
     }else{
       const labels={
         login_required:"Conductor en actividad. Volvé a iniciar sesión para consultar la llegada.",
