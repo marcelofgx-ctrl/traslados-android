@@ -61,6 +61,14 @@ jobs:
           test -n "$STORE_PASSWORD"
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
           test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Aplicar icono original de marca Traslados a Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s web-pasajero/icons/icon-512.png
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png \
+             cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
       - name: Build release APK signed with existing Cliente key
         shell: bash
         env:
