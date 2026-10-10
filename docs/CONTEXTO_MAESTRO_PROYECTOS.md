@@ -224,6 +224,20 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0L. CORRECCIÓN DE PRIORIDAD DEL USUARIO — WEB PRINCIPAL WORKERS (10/10/2026)
+
+**Decisión inequívoca del usuario:** «Pero se supone que yo quiero la versión más completa en la ruta workers». **ÚNICA WEB PÚBLICA PRINCIPAL Y OBJETIVO FINAL:** [https://traslados-web.marcelof-gx.workers.dev/](https://traslados-web.marcelof-gx.workers.dev/), repositorio `marcelofgx-ctrl/traslados-web`, app TanStack/Cloudflare Workers. **No recomendar GitHub Pages como principal**: `marcelofgx-ctrl.github.io/traslados-android/web-pasajero/` es PWA auxiliar/beta para QA y comparaciones mientras se comprueba paridad. Evitar que un pasajero reciba enlaces diferentes como equivalentes.
+
+**Comprobación real del código:** Workers contiene el formulario avanzado con paradas, A→B km/min y tarifa, reservas/agendas/historial, Passkeys y el estado de llegada para clientes autenticados. Gap detectado: disponibilidad en vivo estaba dentro de `Booking` que exige sesión. Se creó `src/components/DriverLiveStatus.tsx` y se insertó en `PremiumHome.tsx`, para mostrar disponibilidad Mapa sin login en la portada principal con refresco cada 40s y al retomar pestaña, sin exponer GPS. Tests `tests/workers-canonical.test.ts` y CI actualizados. **No confundir código en main / CI SUCCESS con Worker publicado**.
+
+**Regla de publicación:** workflow `traslados-web/.github/workflows/publicar-cloudflare-manual.yml` conserva activación exclusivamente manual, verifica build/tests/TS/estado Mapa/ORS y requiere secretos `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` en GitHub; no se tienen las credenciales Cloudflare conectadas a este chat ni existe invocación de workflow dispatch entre las acciones GitHub disponibles. **El despliegue de los últimos cambios NO está verificado**, de modo que no asegurar que la URL Workers muestre ya el banner nuevo. `keep_vars:true` conserva las variables remotas y no debe incluirse la API ORS en GitHub.
+
+**Gap de producto a resolver:** en Workers `go("reserva")` redirige a iniciar sesión antes de dejar elegir A/B; la PWA Pages permite seleccionar A/B previamente. Lograr paridad premium en Workers sin activar solicitudes anónimas reales: mostrar cálculo de ruta y presupuesto de referencia antes de autenticarse, pero exigir login/confirmación antes de guardar reserva. No sustituir la web Workers por PWA ni redirigir Pages antes de validación integral. Km/min Conductor→A sin login continúan restringidos por privacidad, ya que la API pública anónima no está desplegada.
+
+**Documento web específico:** [WEB_PRINCIPAL_WORKERS.md](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/WEB_PRINCIPAL_WORKERS.md). Este apartado anula sugerencias antiguas que promovían GitHub Pages como web canónica.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
