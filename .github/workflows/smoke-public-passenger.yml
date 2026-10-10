@@ -55,6 +55,25 @@ jobs:
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
           echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
+      - name: Diagnosticar motor de ruta compartido y tarifa sin inventar resultados
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.016380%2C-34.836960%3B-56.180000%2C-34.900000'
+          status="$(curl -sSL --max-time 18 -o /tmp/route-runtime.json -w '%{http_code}' "$endpoint" || true)"
+          echo "Cloudflare ruta pública: HTTP $status"
+          python3 - <<'PY'
+          import json
+          try:
+            with open("/tmp/route-runtime.json",encoding="utf8") as f:data=json.load(f)
+          except Exception:
+            print("Estado: sin JSON público verificable")
+            raise SystemExit(0)
+          print("Motor disponible:",bool(data.get("available")))
+          print("Motivo de indisponibilidad:",data.get("reason","ninguno"))
+          print("Trae tarifa orientativa del Worker:",isinstance(data.get("referenceFareUyu"),(int,float)))
+          print("No se inspeccionan ni registran secretos.")
+          PY
       - name: Revisar datos nacionales publicados
         shell: bash
         run: |
