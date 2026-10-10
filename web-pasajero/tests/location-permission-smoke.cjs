@@ -35,5 +35,5 @@ assert(js.includes('if(geo?.disabled)return'),"Repeated taps must not stack perm
 assert(!js.includes('()=>tell("No se pudo obtener GPS. Revisá permisos.")'),"Do not regress to generic error");
 assert(css.includes(".gps-permission-help[hidden]"),"Help must stay hidden until needed");
 assert(html.includes('./app.js?v=16')&&html.includes('./styles.css?v=14'));
-assert(sw.includes('traslados-cliente-pwa-v15'));
+assert(sw.includes('traslados-cliente-pwa-v16'));
 console.log("PASS: permission denied/unavailable/timeout, actionable Android help, GPS retry and manual origin; no auto-grant.");
