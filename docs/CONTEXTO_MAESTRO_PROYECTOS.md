@@ -238,6 +238,20 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0M. PRESUPUESTO PREVIO A LOGIN EN WEB WORKERS (10/10/2026)
+
+**A pedido expreso del usuario:** habilitar en la URL PRINCIPAL Workers que el visitante elija A/B, opcionalmente hasta ocho paradas, y vea **km por carretera, minutos y tarifa de referencia ANTES de registrarse o iniciar sesión**; solo exigir acceso antes de enviar la solicitud. La PWA GitHub Pages continúa como secundaria.
+
+**IMPLEMENTADO en `marcelofgx-ctrl/traslados-web` main y CI aprobado:**
+- Componentes nuevos `src/components/GuestRoutePlanner.tsx`, `src/components/GuestRouteDetails.tsx` y módulo `src/lib/guest-route-draft.ts`, reutilizando buscador oficial `UyLocationPicker`, tarjeta premium `BookingQuickSummary`, ORS público seguro y paradas configurables (máximo ocho, reordenables). Sin km ni tarifas inventados; motor no disponible → «A confirmar».
+- `src/routes/index.tsx` ahora abre `GuestRoutePlanner` con `go("reserva")` también sin sesión; NO llama a `createReservation` ni a funciones de disponibilidad privada para visitantes. CTA «Continuar para solicitar» guarda sólo direcciones y paradas en estado React y `sessionStorage` con TTL de dos horas; al iniciar sesión `Booking` restaura las selecciones en sus estados iniciales, conserva la lógica programada de agenda/presupuesto privado, y recién un cliente autenticado puede confirmar y enviar la solicitud. Tras envío satisfactorio se elimina el borrador.
+- Tests `tests/guest-booking.test.ts` con casos Uruguay/lat-lng/paradas/límite de 8, cálculo público previo a login, restauración y ausencia de reservas anónimas. Se integraron a CI general y al flujo de publicación manual. **[GitHub Actions 38023590926](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38023590926) SUCCESS**: Bun 1.2/1.3, pruebas, compilación Workers/TanStack y TypeScript estricto. HEAD en ese run commit `065901098`.
+- **DESPLIEGUE EN PRODUCCIÓN WORKERS PENDIENTE:** no se ejecutó el workflow manual `.github/workflows/publicar-cloudflare-manual.yml`; este chat carece de credenciales Cloudflare conectadas para lanzar `wrangler deploy`, y no hay herramienta GitHub `workflow_dispatch` disponible. El usuario debe ejecutarlo en GitHub Actions (con `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` en secrets) y comprobar `https://traslados-web.marcelof-gx.workers.dev/` desde Samsung. CI verde no equivale a Worker publicado. El secreto ORS debe permanecer configurado como Secret remoto; `wrangler.jsonc` lo mantiene fuera de GitHub con `keep_vars:true`.
+
+**El pedido anterior de ETA anónimo Conductor→origen A es DIFERENTE** de este precio A→B: no prometer esos km/min del conductor a visitantes sin sesión mientras la Edge privada no tenga autorización/privacidad verificadas. El nuevo formulario público permite cotizar el **recorrido del pasajero**, no rastrear la posición del conductor.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
