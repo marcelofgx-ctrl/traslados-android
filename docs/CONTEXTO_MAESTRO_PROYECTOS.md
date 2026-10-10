@@ -14,6 +14,18 @@
 
 ---
 
+## 0.0.d INSTALACIÓN WEB PASAJERO — CORRECCIÓN BOTÓN (10/10/2026; PWA v17)
+
+**Evidencia:** fotografía del Samsung en sección «Instalar», con botón «INSTALAR TRASLADOS» y reporte «No, solo mensaje error» tras pulsarlo. Se examinó `web-pasajero/app.js`: función `installUI()` solo ofrecía diálogo de instalación si Chrome emitía antes `beforeinstallprompt`; si no, mostraba un `toast` temporal que el usuario interpretó como fallo. En modo `standalone` respondía con otro `toast` aunque ya estuviera instalada. No se recibió aún texto literal del mensaje de error de instalación de Android/Chrome, por lo que no atribuirlo a un fallo específico del navegador sin evidencia.
+
+**IMPLEMENTADO en `traslados-android/main`:**
+- `web-pasajero/app.js`: `installUI()` nuevo; detecta aplicación abierta en modo standalone y ofrece **ABRIR MIS TRASLADOS** (lleva a «Mis traslados»); si hay `beforeinstallprompt`, presenta **INSTALAR TRASLADOS** y usa `prompt()` tras toque real, captura cancelación/error; si Chrome no envía el evento, presenta **VER CÓMO INSTALAR** con guía persistente en página, instrucciones específicas para Chrome Android, Samsung Internet, Safari iPhone y otros, además de **COPIAR ENLACE DE TRASLADOS**. No intenta inventar APIs para abrir el menú nativo. Evita reutilizar un evento `beforeinstallprompt` ya consumido. Registro del service worker preparado tanto si `load` ocurrió como si todavía está pendiente.
+- `web-pasajero/index.html`: zona guía accesible `install-guide`, textos, lista de pasos y botón copiar enlace. `styles.css`: tarjeta con estética petróleo/champagne; recursos `app.js?v=17` y `styles.css?v=17`. `sw.js`: `traslados-cliente-pwa-v17`.
+- `web-pasajero/tests/install-flow-smoke.cjs`: test funcional en Node VM de ausencia/presencia de diálogo nativo, modo instalado, error/cancelación, iOS y copiado de URL, además de estructura HTML/estilos/cache. Integrado en `deploy-web-pasajero-pwa.yml` y `check-web-pasajero-review.yml`; actualizado `public-branding-smoke.cjs` y `location-permission-smoke.cjs`. [CI PWA #38068632523](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38068632523) **SUCCESS**. [Pages #38068634728](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38068634728) en progreso al primer chequeo; actualizar estado según resultado.
+- **LÍMITES:** una PWA no puede forzar el cuadro nativo de instalación si el navegador no emite `beforeinstallprompt`, ni saber siempre si hay otra instalación cuando está abierta en pestaña normal. Ofrecer guía y enlace es solución compatible, no APK. Antes de declarar solucionado en el teléfono, comprobar publicación Pages y probar en Samsung al estacionar. **No afecta** Workers principal, Supabase, reservas, GPS, Mapa Trayectos ni APK. Pages sigue auxiliar: para clientes compartir solo Workers una vez publicada R4; su URL GitHub visible no cumple la decisión de marca pública.
+
+---
+
 ## 0.0.c GPS BLOQUEADO POR BURBUJAS EN SAMSUNG — 10/10/2026 (PWA V16 / WORKERS)
 
 **Evidencia del usuario, a las 11:59 Uruguay:** pantalla de reserva de **PWA auxiliar GitHub Pages** con alerta nativa Android «Este sitio no puede solicitarte permiso. Cierra las burbujas o superposiciones de otras apps». En la captura se ven arriba a la derecha burbujas flotantes de **Uber y Cabify**, no solo Mapa Trayectos. Ocultar únicamente la de Mapa no resuelve esa pantalla. El permiso lo protege Android a nivel sistema, no lo puede conceder el sitio ni Supabase. El usuario estaba conduciendo: insistir en NO pedir manipular ajustes mientras conduce.
