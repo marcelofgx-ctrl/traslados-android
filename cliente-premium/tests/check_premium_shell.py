@@ -6,12 +6,13 @@ root=Path(__file__).resolve().parents[1]
 app=(root/'app/src/main/java/uy/com/traslados/cliente/MainActivity.java').read_text()
 manifest=(root/'app/src/main/AndroidManifest.xml').read_text()
 gradle=(root/'app/build.gradle').read_text()
-workflow=Path('.github/workflows/build-cliente-premium-v13.yml').read_text()
+workflow=Path('.github/workflows/build-cliente-premium-v14.yml').read_text()
 expected='https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/'
 assert expected in gradle, 'Native Cliente must load the canonical passenger PWA'
 assert "marcelofgx-ctrl.github.io" in app and "OFFICIAL_PATH" in app
+assert 'TrasladosClienteNative/14' in app, "Native APK must identify itself without any JS bridge"
 assert "uy.com.traslados.cliente" in gradle and "uy.com.traslados.cliente" in app
-assert "versionCode 201" in gradle
+assert "versionCode 202" in gradle
 assert 'targetSdk 35' in gradle
 assert 'minSdk 26' in gradle
 assert 'android:usesCleartextTraffic="false"' in manifest
@@ -40,5 +41,5 @@ assert not re.search(r'javascriptinterface|addJavascriptInterface|setAllowUniver
 assert not re.search(r'(?i)(sb_secret_|service_role|TRASLADOS_SIGNING_PASSWORD=)',app)
 assert 'SIGNING_PASSWORD' in workflow and 'Verify signature' in workflow
 assert "run-id: 38021100002" in workflow, 'must compare original signing certificate'
-assert 'web-pasajero/downloads/traslados-cliente-premium-v13.apk' in workflow
-print('PASS Cliente Premium v13: GitHub Pages PWA canonical, original package, WebView TLS/GPS restrictions, signing, no secrets.')
+assert 'web-pasajero/downloads/traslados-cliente-premium-v14.apk' in workflow
+print('PASS Cliente Premium v14: GitHub Pages PWA canonical, original package, WebView TLS/GPS restrictions, signing, no secrets.')
