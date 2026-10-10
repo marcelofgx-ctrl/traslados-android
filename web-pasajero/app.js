@@ -991,7 +991,9 @@ function installUI(){
     guideNote.textContent=content.note;
   }
   function updateUI(){
-    apkOption.hidden=true;
+    // Mostrar siempre APK como opción secundaria si el dispositivo es Android.
+    // No ocultarla porque Chrome también permite instalar la PWA.
+    apkOption.hidden=!(android&&apkReady)||isStandaloneTraslados();
     if(isStandaloneTraslados()){
       action.textContent="ABRIR MIS TRASLADOS";
       info.textContent="Traslados ya está abierto como aplicación. No necesitás instalarlo otra vez.";
