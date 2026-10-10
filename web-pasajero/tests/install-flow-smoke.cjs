@@ -13,9 +13,9 @@ const end=js.indexOf("\nfunction init(){",start);
 assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
-assert(html.includes("./app.js?v=19")&&html.includes("./styles.css?v=19"));
-assert(sw.includes("traslados-cliente-pwa-v19"));
-assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-v11.5-r12.apk"));
+assert(html.includes("./app.js?v=20")&&html.includes("./styles.css?v=19"));
+assert(sw.includes("traslados-cliente-pwa-v20"));
+assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v12.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140",apkAvailable=false}={}){
@@ -31,7 +31,7 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
     "install-guide-steps","install-guide-note","install-copy-link",
     "install-apk-option","install-apk-link","install-apk-web-guide"
   ].map(id=>[id,element(id)]));
-  elements["install-apk-link"].href="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-v11.5-r12.apk";
+  elements["install-apk-link"].href="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v12.apk";
   elements["install-apk-link"].click=()=>{apkClicks++;};
   const browser={
     matchMedia:()=>({matches:standalone}),
@@ -48,7 +48,7 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
     shiftView:to=>{visited=to;},URL,Boolean,
     fetch:async(url,opts)=>({
       ok:apkAvailable&&opts.method==="HEAD"&&String(url).endsWith(".apk"),
-      headers:{get:k=>k==="content-type"?"application/vnd.android.package-archive":k==="content-length"?"144012":""}
+      headers:{get:k=>k==="content-type"?"application/vnd.android.package-archive":k==="content-length"?"17764":""}
     }),
   };
   const fn=runInNewContext("let installEvent=null;\n"+js.slice(start,end)+"\ninstallUI;",ctx);
