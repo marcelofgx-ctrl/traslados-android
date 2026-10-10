@@ -14,6 +14,54 @@ public final class Api {
     private static final Object SYNC_LOCK=new Object();
     private static volatile boolean syncing=false;
 
+    private static final java.util.concurrent.atomic.AtomicBoolean PRESENCE_BUSY=
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    public static boolean pickupPresenceEnabled(){
+        return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+            .getBoolean("enabled",false);
+    }
+    public static boolean pickupManuallyBusy(){
+        return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+            .getBoolean("manually_busy",false);
+    }
+    /** User PIN is used only for one-time device linking, never persisted. */
+    public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
+        registerDevice();
+        String[] ids=credentials();JSONObject body=new JSONObject();
+        body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
+        body.put("p_pin",enabled?pin:"");body.put("p_enabled",enabled);
+        JSONObject result=new JSONObject(postRpc("mapa_presence_consent_v1",body));
+        if(!result.optBoolean("ok",false))return false;
+        APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
+            .putBoolean("enabled",enabled).apply();
+        return true;
+    }
+    /** Asynchronous, bounded heartbeat; never blocks GPS or writes secret/PIN to logs. */
+    public static void publishPickupPresenceAsync(boolean active,boolean paused,
+        boolean inTrip,double lat,double lng,float accuracy,long gpsTimeMs,long lastMovingAtMs){
+        if(APP==null||!pickupPresenceEnabled()||!PRESENCE_BUSY.compareAndSet(false,true))return;
+        final boolean busy=pickupManuallyBusy();
+        new Thread(()->{
+            try{
+                String[] ids=credentials();
+                JSONObject body=new JSONObject();
+                body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
+                body.put("p_shift_active",active);body.put("p_shift_paused",paused);
+                body.put("p_trip_active",inTrip);body.put("p_manually_busy",busy);
+                body.put("p_lat",lat);body.put("p_lng",lng);
+                body.put("p_accuracy_m",accuracy);body.put("p_gps_at_ms",gpsTimeMs);
+                body.put("p_last_move_at_ms",lastMovingAtMs);
+                JSONObject result=new JSONObject(postRpc("mapa_presence_ping_v1",body));
+                // Revoke local permission if a different device has been linked.
+                if(!result.optBoolean("ok",false)&&"not_authorized".equals(result.optString("reason"))){
+                    APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+                        .edit().putBoolean("enabled",false).apply();
+                }
+            }catch(Exception ignored){
+                // Server expires location after 90 s; stale position is never published.
+            }finally{PRESENCE_BUSY.set(false);}
+        },"mapa-pickup-presence").start();
+    }
     private Api(){}
     public static void init(Context context){APP=context.getApplicationContext();credentials();}
 

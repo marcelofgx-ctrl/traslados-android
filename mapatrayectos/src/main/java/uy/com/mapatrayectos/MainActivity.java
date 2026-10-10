@@ -440,11 +440,103 @@ public class MainActivity extends Activity {
             ()->startActivity(new Intent(this,ReminderActivity.class)));
         addMainMenuRow(menu,"▤","Historial y estadísticas","Viajes, kilómetros y jornadas",popup,
             ()->startActivity(new Intent(this,HistoryActivity.class)));
+        addMainMenuRow(menu,"⌖","Disponibilidad de recogida",
+            Api.pickupPresenceEnabled()
+              ? (Api.pickupManuallyBusy()?"Ocupado · no se publica ubicación":"GPS privado · jornada activa")
+              : "Activar una vez con PIN · apagado por defecto",
+            popup,this::showPickupPresenceDialog);
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
         try{popup.showAsDropDown(anchor,-dp(181),dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
+    /** Opt-in privacy control. Driver PIN is never stored and network uses background thread. */
+    private void showPickupPresenceDialog(){
+        final boolean enabled=Api.pickupPresenceEnabled();
+        final boolean busy=Api.pickupManuallyBusy();
+        if(!enabled){
+            new AlertDialog.Builder(this)
+                .setTitle("Compartir disponibilidad de recogida")
+                .setMessage("Solo durante tu jornada activa y con conducción y GPS recientes. "+
+                    "Los clientes verán km y minutos aproximados, nunca tu ubicación exacta. "+
+                    "Podés desactivarlo en cualquier momento. Requiere tu PIN del conductor.")
+                .setNegativeButton("Cancelar",null)
+                .setPositiveButton("Continuar",(dialog,which)->promptPickupConsent())
+                .show();
+            return;
+        }
+        String[] opts={busy?"Volver a disponible":"Marcar ocupado (Uber / Cabify)",
+            "Desactivar y borrar ubicación"};
+        new AlertDialog.Builder(this).setTitle("Disponibilidad para recogidas")
+            .setMessage("El estado automático usa jornada, GPS y conducción reciente. "+
+                "Un viaje activo o un horario comprometido tienen prioridad.")
+            .setItems(opts,(dialog,which)->{
+                if(which==0){
+                    getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
+                        .putBoolean("manually_busy",!busy).apply();
+                    requestPickupPresenceSync();
+                    Toast.makeText(this,!busy?"Marcado ocupado":"Disponibilidad automática activada",Toast.LENGTH_SHORT).show();
+                }else{
+                    new AlertDialog.Builder(this).setTitle("Desactivar ubicación")
+                        .setMessage("Se borrará tu posición comercial del servidor. "+
+                            "Esto no borra jornadas ni viajes guardados.")
+                        .setNegativeButton("Cancelar",null)
+                        .setPositiveButton("Desactivar",(d,w)->{
+                            new Thread(()->{
+                                try{
+                                    if(Api.setPickupConsent("",false)){
+                                        runOnUiThread(()->Toast.makeText(this,
+                                            "Ubicación compartida desactivada",Toast.LENGTH_LONG).show());
+                                    }
+                                }catch(Exception ignored){
+                                    runOnUiThread(()->Toast.makeText(this,
+                                        "Sin conexión: la posición expirará; volvé a intentar desactivarla",
+                                        Toast.LENGTH_LONG).show());
+                                }
+                            },"pickup-presence-off").start();
+                        }).show();
+                }
+            }).setNegativeButton("Cerrar",null).show();
+    }
+    private void promptPickupConsent(){
+        EditText pinInput=new EditText(this);
+        pinInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
+            android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        pinInput.setHint("PIN del conductor");
+        pinInput.setSingleLine(true);
+        int padding=(int)(22*getResources().getDisplayMetrics().density);
+        pinInput.setPadding(padding,padding/2,padding,padding/2);
+        new AlertDialog.Builder(this).setTitle("Autorizar GPS para recogidas")
+            .setView(pinInput)
+            .setNegativeButton("Cancelar",null)
+            .setPositiveButton("Autorizar",(d,w)->{
+                final String pin=pinInput.getText().toString();
+                pinInput.setText("");
+                if(pin.length()<4){
+                    Toast.makeText(this,"Ingresá tu PIN válido",Toast.LENGTH_LONG).show();return;
+                }
+                new Thread(()->{
+                    try{
+                        boolean ok=Api.setPickupConsent(pin,true);
+                        runOnUiThread(()->{
+                            Toast.makeText(this,ok?
+                                "Disponibilidad activada. Se publicará solo con jornada y GPS válidos.":
+                                "No se pudo autorizar el dispositivo",Toast.LENGTH_LONG).show();
+                            if(ok)requestPickupPresenceSync();
+                        });
+                    }catch(Exception e){
+                        runOnUiThread(()->Toast.makeText(this,
+                            "No se pudo autorizar. Revisá el PIN y conexión.",Toast.LENGTH_LONG).show());
+                    }
+                },"pickup-presence-enable").start();
+            }).show();
+    }
+    private void requestPickupPresenceSync(){
+        if(!shiftActive)return;
+        Intent i=new Intent(this,TrackingService.class).setAction(TrackingService.ACTION_PRESENCE_SYNC);
+        if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);
+    }
+
     private void addMainMenuRow(LinearLayout menu,String icon,String title,String sub,
                                 PopupWindow popup,Runnable action){
         LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
