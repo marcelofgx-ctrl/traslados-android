@@ -133,6 +133,18 @@
 
 ---
 
+## 0G. MOTOR DE RUTAS ACTIVADO (09/10/2026, 23:11 Uruguay)
+
+El usuario configuró el proveedor de rutas desde Cloudflare. GitHub Actions [38016029489](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38016029489) comprobó la respuesta real del Worker público: **HTTP 200, source openrouteservice, distancia por carretera, duración estimada y tarifa de referencia válidas**. Ya no es correcto afirmar que el proveedor principal sigue sin configurar: se activó para la ruta de control. Esto no demuestra que el itinerario del pasajero mostrado en su captura se haya probado en Samsung.
+
+La configuración aparece como variable de texto visible en la captura. Recomendación de seguridad: utilizar un Secret en Cloudflare y renovar la credencial en el proveedor, sin introducir sus valores en documentos, chats o repositorios.
+
+El segundo control CI agregado en el repositorio web ([aa2a5aa](https://github.com/marcelofgx-ctrl/traslados-web/commit/aa2a5aa89f02db1e51c2fa9a94bfe8c1664ee838)) verifica también que el origen de la PWA tenga permiso CORS y muestra métricas de control sin exponer credenciales. Verificar ese run por separado.
+
+PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y botón Maps; solo por comprobar en Chrome Android. La oferta final sigue perteneciendo al Conductor. No se habilitó ETA de conductor hasta pasajero.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
