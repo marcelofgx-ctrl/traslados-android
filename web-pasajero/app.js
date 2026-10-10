@@ -324,7 +324,7 @@ function renderRouteSummary(){
         ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})+" aprox." : "A confirmar";
       clear(map);
       addRoadDiagram(map,data.geometry);
-      status.textContent="Trayecto estimado por openrouteservice/OpenStreetMap, sin tráfico en vivo.";
+      status.textContent="Trayecto estimado por carretera, sin tráfico en vivo. © openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors.";
     }else{
       latestRoad=null;
       distance.textContent="Ver en Maps";duration.textContent="Ver en Maps";reference.textContent="A confirmar";
