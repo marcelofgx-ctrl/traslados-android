@@ -38,16 +38,16 @@ jobs:
           base="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero"
           for i in 1 2 3 4 5 6; do
             if curl -fsSL --max-time 25 -o /tmp/traslados.html "$base/?ci=$GITHUB_RUN_ID"; then
-              if grep -q 'app.js?v=13' /tmp/traslados.html; then break; fi
+              if grep -q 'app.js?v=19' /tmp/traslados.html; then break; fi
             fi
             echo "Esperando versión publicada ($i/6)"
             sleep 12
           done
-          grep -q 'app.js?v=13' /tmp/traslados.html
+          grep -q 'app.js?v=19' /tmp/traslados.html
           grep -q 'id="route-overview"' /tmp/traslados.html
           grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
-          curl -fsSL --max-time 25 "$base/app.js?v=13&ci=$GITHUB_RUN_ID" -o /tmp/app.js
+          curl -fsSL --max-time 25 "$base/app.js?v=19&ci=$GITHUB_RUN_ID" -o /tmp/app.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/app.js
@@ -62,6 +62,28 @@ jobs:
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
           echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
+      - name: Confirmar APK Cliente publica e integridad SHA256 tras Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads'
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL --max-time 30 "$base/traslados-cliente-v11.5-r12.apk" -o /tmp/traslados-cliente-v11.5-r12.apk; then
+              if [ "$(wc -c </tmp/traslados-cliente-v11.5-r12.apk)" -gt 100000 ]; then break; fi
+            fi
+            echo "Esperando publicacion binaria Cliente ($i/6)"
+            sleep 10
+          done
+          curl -fsSL --max-time 30 "$base/SHA256SUMS.txt" -o /tmp/SHA256SUMS.txt
+          (cd /tmp && sha256sum -c SHA256SUMS.txt)
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('/tmp/traslados-cliente-v11.5-r12.apk')
+          assert path.stat().st_size>100000,'APK no esta disponible'
+          assert path.open('rb').read(2)==b'PK','Se recibió HTML o un error en vez del APK'
+          print('APK publica de Traslados Cliente validada:',path.stat().st_size,'bytes')
+          PY
+          curl -sSI --max-time 15 "$base/traslados-cliente-v11.5-r12.apk" | grep -iE 'HTTP/|content-type|content-length' || true
       - name: Verificar motor de rutas internas por RPC pública segura (solo lectura)
         shell: bash
         run: |
