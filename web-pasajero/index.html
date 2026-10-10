@@ -49,7 +49,20 @@
         <p>Elegí origen y destino para consultar kilómetros, minutos y valor orientativo. El conductor confirmará el presupuesto definitivo; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
       </div>
       <div class="card">
-        <div class="section-mini"><span>01</span><h3>¿Cuándo viajás?</h3></div>
+        <div class="section-mini"><span>01</span><h3>Tu recorrido</h3></div>
+        <div id="origin-picker" class="location-pane"></div>
+        <div class="wayline"><span>↓</span></div>
+        <div id="stop-wrap" class="stops-wrapper" hidden>
+          <div class="between"><span class="caption">PARADAS INTERMEDIAS · HASTA 8</span><button id="add-stop" class="tiny-btn" type="button">+ Agregar</button></div>
+          <div id="stops"></div>
+        </div>
+        <div id="destination-picker" class="location-pane"></div>
+        <section id="route-overview" class="route-overview" hidden aria-live="polite"></section>
+        <div id="login-for-stops" class="subnote">¿Necesitás paradas intermedias? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-mini"><span>02</span><h3>¿Cuándo viajás?</h3></div>
         <div class="quick-times" role="group" aria-label="Modalidad de reserva">
           <button type="button" class="choice active" data-when="now">Ahora</button>
           <button type="button" class="choice" data-when="10">En 10 min</button>
@@ -65,19 +78,6 @@
             <option value="1">1 pasajero</option><option value="2">2 pasajeros</option><option value="3">3 pasajeros</option><option value="4">4 pasajeros</option><option value="5">5 pasajeros</option><option value="6">6 pasajeros</option><option value="7">7 pasajeros</option><option value="8">8 pasajeros</option>
           </select>
         </label>
-      </div>
-
-      <div class="card">
-        <div class="section-mini"><span>02</span><h3>Tu recorrido</h3></div>
-        <div id="origin-picker" class="location-pane"></div>
-        <div class="wayline"><span>↓</span></div>
-        <div id="stop-wrap" class="stops-wrapper" hidden>
-          <div class="between"><span class="caption">PARADAS INTERMEDIAS · HASTA 8</span><button id="add-stop" class="tiny-btn" type="button">+ Agregar</button></div>
-          <div id="stops"></div>
-        </div>
-        <div id="destination-picker" class="location-pane"></div>
-        <section id="route-overview" class="route-overview" hidden aria-live="polite"></section>
-        <div id="login-for-stops" class="subnote">¿Necesitás paradas intermedias? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
       </div>
 
       <div class="card">
