@@ -212,6 +212,18 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0K. Solicitud km y minutos públicos para recogida (10/10/2026)
+
+**Captura y necesidad:** la web PWA v13 muestra correctamente «Conductor disponible para consultas · Jornada activa» desde Mapa; el usuario quiere que **también un visitante sin iniciar sesión** vea kilómetros y minutos aproximados del conductor hasta el origen A elegido. No confundir con el cálculo de tarifa A→B, que ya funciona.
+
+**Verificación REAL actual en Supabase:** `driver_live_presence` contiene **1 dispositivo habilitado con heartbeat reciente** y `public_driver_availability_v1()` devuelve `available:true, status:"available_for_requests"`. La conexión Mapa → Supabase → Web está funcionando con datos reales. Solo `service_role` puede leer la posición o ejecutar `driver_pickup_eta_context_v1`; anónimos no pueden.
+
+**Preparación de privacidad, aún sin interfaz operativa:** se versionó y aplicó en Supabase la migración [anonymous_pickup_eta_coarse_v1.sql](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/operativa/migrations/20261010042000_anonymous_pickup_eta_coarse_v1.sql), commit `8c78e72`. Crea una RPC **solo para service_role** con redondeo privado de coordenadas del conductor a celdas ~1 km, limitación global y por visitante, máximo 3 celdas de origen distintas por hora. La prueba confirmó `anon_can_read_coarse=false`. **IMPORTANTE: el código de Edge / PWA / Cliente NO fue actualizado ni desplegado para consumir esta RPC**: la operación de actualización del servicio fue bloqueada por una verificación de seguridad y no hay distancia/ETA pública anónima activa. No declarar entregada esa funcionalidad ni inventar los números; continuar solo con un diseño que supere las comprobaciones de privacidad y autorización.
+
+**Actual hoy:** web puede afirmar «Disponible» sin sesión; para km/min Conductor→A el servicio `pickup-eta` todavía requiere sesión válida. La nueva migración privada no cambia esa política por sí sola. Evitar confundir «base preparada» con «producto terminado».
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
