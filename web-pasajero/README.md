@@ -1,5 +1,8 @@
 # Traslados con Reserva — sitio web y PWA de pasajeros
 
+> **WEB OFICIAL Y DEFINITIVA — DECISIÓN EXPRESA 10/10/2026:** https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/. Esta es la interfaz «Traslados con Reserva — Tu viaje, bien organizado» que el usuario eligió en una captura. NO es una auxiliar; desestimar afirmaciones históricas posteriores en este archivo que priorizan el frontend Workers. `traslados-web.marcelof-gx.workers.dev` continúa prestando API técnica de distancia/ruta/tarifa a esta PWA, mientras el navegador y la APK muestran la misma web Pages. APK Cliente Premium v13 (versionCode 201) con firma anterior, descarga en `downloads/traslados-cliente-premium-v13.apk`. Para futuras mejoras, primero actualizar `web-pasajero/`, ejecutar checks y confirmar GitHub Pages. No reescribir la estética aprobada ni cambiar backend sin autorización.
+
+
 Este directorio contiene una aplicación web estática, premium y gratuita: **la misma interfaz es la web y la PWA instalable** (no son dos aplicaciones con datos distintos). Android Cliente v11.5 R10 es una **APK nativa separada**. Las tres leen/escriben sobre el mismo Supabase operativo `zetaudvvutlouiqxopvg`.
 
 ## Funciones
