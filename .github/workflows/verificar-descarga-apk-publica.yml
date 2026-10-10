@@ -1,0 +1,48 @@
+name: Verificar descarga pública Traslados Cliente APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verificar-descarga-apk-publica.yml'
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verificar que Pages entrega una APK y no una página HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads"
+          for intento in 1 2 3 4 5 6 7 8; do
+            if curl --fail --silent --show-error --location --max-time 25 \
+               "$base/traslados-cliente-v11.5-r12.apk" -o /tmp/traslados-cliente-v11.5-r12.apk && \
+               curl --fail --silent --show-error --location --max-time 25 \
+               "$base/SHA256SUMS.txt" -o /tmp/SHA256SUMS.txt; then
+              if (cd /tmp && sha256sum -c SHA256SUMS.txt) && \
+                 [ "$(wc -c </tmp/traslados-cliente-v11.5-r12.apk)" -gt 100000 ]; then
+                echo "APK pública verificada"
+                break
+              fi
+            fi
+            if [ "$intento" = 8 ]; then echo "APK todavía no publicada"; exit 1; fi
+            sleep 10
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          target=Path('/tmp/traslados-cliente-v11.5-r12.apk')
+          assert target.open('rb').read(2)==b'PK','No es una APK válida'
+          assert target.stat().st_size>100000
+          print('PASS ruta pública Cliente: bytes',target.stat().st_size)
+          PY
+          curl -fsSI --max-time 20 "$base/traslados-cliente-v11.5-r12.apk" \
+            | grep -iE 'HTTP/|content-type|content-length' || true
