@@ -1,5 +1,36 @@
 # Traslados — disponibilidad automática por jornada, conducción reciente y ETA de recogida
 
+## Implementación integrada (10/10/2026) — diferenciar compilación y uso real
+
+**Backend Supabase OPERATIVO** `zetaudvvutlouiqxopvg`, migración aplicada y versionada en
+[`traslados-web/operativa/migrations/20261010023000_pickup_live_presence_v1.sql`](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/operativa/migrations/20261010023000_pickup_live_presence_v1.sql):
+
+- Tabla `driver_live_presence` (singleton, lat/lng PRIVADAS con RLS sin SELECT anon/auth). La tabla no tiene datos mientras el usuario no autorice el seguimiento desde Mapa.
+- `mapa_presence_consent_v1` vincula exclusivamente el dispositivo Mapa autorizado con PIN del conductor; OFF por defecto y revocable. La posición se borra al desactivar.
+- `mapa_presence_ping_v1` requiere el secreto de dispositivo, guarda solo GPS preciso ≤45 m y reciente ≤90 segundos; exige jornada activa/no pausada, sin viaje activo ni «ocupado», y movimiento confirmado ≤5 minutos.
+- `driver_pickup_eta_context_v1` NO ejecutable por anon/auth, solo por service_role: comprueba sesión real del cliente, límite atómico 3 solicitudes/min y 20/h, conflictos de agenda en hora actual y devuelve coordenadas solamente al servidor Edge.
+- API **Supabase Edge Function `pickup-eta` v1 ACTIVA**, fuente versionada en [traslados-web/operativa/edge-functions/pickup-eta/index.ts](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/operativa/edge-functions/pickup-eta/index.ts). Requiere sesión cliente de la cuenta (verifica mediante SQL; `verify_jwt=false` solo porque utiliza autenticación propia por PIN), consulta ORS por Cloudflare servidor-servidor y responde solo kilómetros redondeados al medio km, minutos redondeados a 5 y antigüedad de lectura. **Jamás devuelve las coordenadas del conductor**; sin sesión respuesta HTTP 401. Pruebas de seguridad [GitHub Actions 38019205391](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38019205391) SUCCESS: API pública con sesión inválida rechazó HTTP 401, no entregó GPS; tests de permisos.
+- Se corroboró en Supabase que `anon` NO tiene SELECT en la tabla de presencia ni EXECUTE en la RPC que retorna coordenadas y que `service_role` sí lo tiene. No se crearon reservas de prueba.
+
+**Android Mapa** código nuevo en `TrackingService.java`, `Api.java`, `MainActivity.java`, **R24.5 / versionCode 47**. En **Menú → Disponibilidad de recogida** ofrece activar con PIN (opt-in), «Ocupado (Uber/Cabify)» y desactivar/borrar ubicación. Nunca almacena PIN. Envía heartbeat en hilo independiente aprox. cada 25s mientras jornada activa y en eventos de pausa, inicio/fin viaje, fin jornada y cambio de disponibilidad. Conserva SQLite, MP3, firma de Mapa. CI release firmada en [38018783116](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38018783116) SUCCESS; para la entrega con nombre de artefacto corregido **R24.5**, revisar último run [38019254898](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019254898). **No se activó GPS del usuario ni se hizo prueba real de ubicación Samsung**.
+
+**Web Pasajero PWA GitHub Pages v12:** código de `web-pasajero/app.js` consulta `/functions/v1/pickup-eta` cuando el usuario inicia sesión, marca origen y elige «Ahora / En 10 min». Polling máximo 75s y deduplicación cliente 65s; conserva alternativa WhatsApp y no crea reserva inmediata inválida (lead_time_min=30). CSS petróleo/champagne, URLs JS/CSS v12 y service worker v12. [CI PWA 38019114673](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019114673) SUCCESS y Pages [38019114312](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019114312) SUCCESS. Prueba visual real de Samsung pendiente.
+
+**Web Premium Cloudflare:** `src/components/DriverPickupEta.tsx` y página `src/routes/index.tsx`, incluyendo selección de modo «Ahora/10 min»; usa exactamente la API Edge central, CORS restringido y número sin posición GPS. CI [38019205391](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38019205391) SUCCESS. **PENDIENTE de desplegar la NUEVA versión del Worker en Cloudflare**: el hecho de tener el código en GitHub y CI verde no actualiza automáticamente ese Worker. La clave ORS ya operaba para rutas A→B, no sustituye publicar el frontend nuevo.
+
+**Cliente Android nativo 11.5-R11 / versionCode 121:** se recompila firmado con los antiguos sources recuperados y patch `cliente-pasajero/scripts/build_cliente_r11.py`. En «Ahora» y «+10 MIN» abre un diálogo de recogida, consulta la misma Edge Function con sesión y origen seleccionados, muestra km/min o estado, y ofrece WhatsApp. **No crea una reserva inválida para menos de 30 min**. [Actions 38019069484](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38019069484) **SUCCESS**, APK RELEASE firmada; prueba Android física pendiente. R10 legado está marcado para ejecución manual y no debe confundirse con R11.
+
+### QA pendiente antes de declarar «en vivo probado»
+
+1. Instalar R24.5 RELEASE sobre R24.4 (sin desinstalar, manteniendo firma y datos), abrir Mapa, menú → Disponibilidad de recogida → activación con PIN, iniciar jornada, circular de modo normal con GPS. **El asistente NO ha activado la compartición de ubicación por su cuenta**.
+2. Desde otro dispositivo/navegador con cuenta Cliente iniciada, elegir A y «Ahora». Debe verse el estado real y km/min aproximados, sin posición cruda ni promesas de servicio aceptado.
+3. Probar fin de jornada, pausa, ocupado Uber/Cabify, viaje activo, pérdida GPS (90s), inmóvil más de 5min, segundo plano, red móvil y cambio de usuario. En todos los casos no elegibles, ocultar ETA.
+4. Probar conflicto por reserva programada, 10 minutos, tráfico/quota ORS, cliente sin sesión, demasiadas consultas. Ninguna acción debe crear una reserva real sin confirmación.
+5. Publicar Cloudflare Premium mediante flujo manual con autorización y credenciales seguras; luego hacer prueba Samsung y actualización del contexto maestro. Conductor independiente solo administra reservas/presupuestos; el GPS se origina desde Mapa, no desde la aplicación independiente.
+
+---
+
+
 **Acordado conceptualmente:** 09/10/2026, tras captura del formulario de recogida «Ahora / En 10 minutos». **Estado:** especificación técnica verificada contra el código; no se implementó aún el canal de presencia comercial ni la respuesta ETA en producción. Contexto único: [CONTEXTO_MAESTRO_PROYECTOS.md](CONTEXTO_MAESTRO_PROYECTOS.md).
 
 ## La regla simple que pidió el usuario
