@@ -76,6 +76,22 @@
 
 ---
 
+## 0D. CORRECCIÓN URGENTES Y PWA V9 — verificación posterior (09/10/2026)
+
+**Hallazgo nuevo en Supabase real:** la función `availability_settings_effective()` devuelve actualmente **`lead_time_min = 30`** (no hay fila de configuración explícita en `driver_availability_settings`). Por tanto **«Ahora» y «En 10 min» NO pueden usar de forma honesta el mismo RPC de reserva programada**: la comprobación de agenda rechazaría la mayoría de solicitudes por `TOO_SOON`.
+
+**Cambios de seguridad/UX realizados para Pasajero PWA** (no se tocó producción Supabase ni el APK instalada):
+- Para `programado`: se conserva el formulario completo, chequeo de agenda, revisión, reserva Supabase, presupuesto final de conductor.
+- Para `ahora` y `10 min`: **no se intenta crear reserva con horario inválido**; se muestra CTA claro de **consulta WhatsApp**, con modalidad, origen y destino precargados, y aviso de que no es reserva confirmada. Se desactiva el flujo de revisión/envío normal. Para volver a programada se propone fecha/hora a más de 45 min si la anterior expiró. Commit principal [da489b0](https://github.com/marcelofgx-ctrl/traslados-android/commit/da489b02fcac81d8aab246270424ebc27108cfc1). Esto es fallback temporal mientras no exista GPS/estado comercial real; NO prometer llegada o viaje.
+- Desde la captura se mejoró también `#login-for-stops`: ya no ocupa un bloque de fondo alto; es una indicación compacta. Se eliminó el aviso repetido de tarifa en «Datos del pasajero» (sigue la información en resumen). La Web PWA usa caché/service worker **v9** con `app.js?v=8` y `styles.css?v=9` para renovar el JS tras actualizaciones. Código final principal [420911d](https://github.com/marcelofgx-ctrl/traslados-android/commit/420911d1ff20bfd63e4c34077959913061f02003).
+- Prueba nueva [booking-summary-smoke.cjs](../web-pasajero/tests/booking-summary-smoke.cjs), sin librerías externas, crea nodos DOM falsos y ejecuta la **función real** `renderRouteSummary()`: cuando API de ruta falla exige solo 1 enlace Maps, sin kilómetros/precios ficticios y mapa plegado; cuando la API entrega 8 km/14 min/$320 exige los valores correctos. Prueba que el flujo urgente no use la confirmación RPC convencional. Corren bajo `deploy-web-pasajero-pwa.yml`; run [38013194341](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38013194341) **SUCCESS**, paquete exportado. **El despliegue Pages y prueba física Chrome/Samsung todavía son validaciones separadas**, revisar su run más reciente.
+- Runbook externo para activar `ORS_API_KEY` y el deploy Web Premium [ACTIVACION_MOTOR_RUTAS_Y_TARIFAS.md](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/ACTIVACION_MOTOR_RUTAS_Y_TARIFAS.md). Sin secreto válido el Worker responde 503 `not_configured`, el precio en producción sigue pendiente. `FARE_REFERENCE_UYU_PER_KM=40` permite A→B a 40 UYU/km; NUNCA se debe mostrar como presupuesto definitivo ni inventar kilómetros.
+- **ETA real Conductor→A sigue sin implementar**: Mapa recoge GPS local, pero su sincronización existente `mapa_trayectos_points` se realiza sobre trayectos finalizados y no implica posición pública autorizada. Falta consentimiento de compartir, vincular conductor autorizado mediante PIN, estado libre/ocupado/pausado (incluido Uber/Cabify), canal seguro con caducidad y servidor que calcule ruta por carretera sin revelar coordenadas. Concluir ese circuito requiere cambios y pruebas de APK y backend específicos; no se entregó una APK nueva en esta sesión.
+
+**No se tocó el backend de reservas ni se insertaron datos ficticios.** Prioridad: Cloudflare clave ORS + deploy, QA visual de PWA v9 en Samsung, prueba programada de punta a punta consentida, después telemetría segura y cálculo ETA.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
