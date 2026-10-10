@@ -184,3 +184,47 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 /* Invitación de paradas sin caja gigante de publicidad/ayuda. */
 .stops-signin-hint{margin:7px 0 0;padding:6px 4px;color:#c9dbd3;font-size:11.5px;line-height:1.4}
 .stops-signin-hint .text-button{font-size:inherit}
+
+/* Reserva v11 — propuesta premium compacta a partir de la captura real.
+   Los campos A/B ya aparecen arriba; no repetir las direcciones aquí. */
+.location-widget .location-selected{
+  min-height:64px;padding:10px 11px;margin:7px 0;
+  border-radius:13px;
+}
+.location-widget .location-selected-label{font-size:13.5px;line-height:1.35}
+.location-widget .location-selected-hint{font-size:10px;margin-top:3px;color:#b8d3c9}
+.location-widget .location-edit{min-height:39px!important;padding-inline:11px!important}
+.location-title{margin-bottom:6px}
+.route-overview{
+  margin-top:11px;padding:12px 13px;
+  border-radius:17px;
+  background:radial-gradient(ellipse at 96% 1%,rgba(222,177,96,.10),transparent 60%),linear-gradient(130deg,#164147,#092a33);
+  border:1px solid rgba(225,192,129,.53);
+  box-shadow:0 12px 28px rgba(0,0,0,.15);
+}
+.route-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.route-summary-title{display:flex;gap:7px;align-items:center;min-width:0}
+.route-summary-title h3{font-size:15px;line-height:1.3;font-weight:800;letter-spacing:-.018em;color:#fff2de;margin:0}
+.route-summary-symbol{font-size:15px;color:#e8c882}
+.route-summary-indicator{font-size:10px;color:#c5d4ce;border:1px solid rgba(219,192,128,.26);border-radius:100px;padding:5px 8px;line-height:1.3}
+.route-summary-indicator.is-verified{color:#c1e7c8;border-color:rgba(132,214,163,.5);background:rgba(49,107,73,.20)}
+.route-metrics{padding-top:0;gap:7px}
+.route-metric{border-radius:11px;padding:9px 12px;min-height:64px}
+.route-metric small{font-size:10px;line-height:1.3;letter-spacing:.055em}
+.route-metric strong{font-size:18px;line-height:1.25;margin-top:4px}
+.route-metric-fare{min-height:53px;padding:11px 12px;background:linear-gradient(110deg,rgba(229,182,104,.17),rgba(8,36,43,.38))}
+.route-fare-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.route-metric-fare .route-fare-heading strong{margin:0;font-size:20px}
+.route-footer{padding:8px 0 0;margin:0;gap:8px;flex-wrap:wrap}
+.route-footer .route-status{font-size:10.5px;line-height:1.45;flex:1 1 180px;margin:0;color:#c6d9d0}
+.route-footer .route-google{font-size:10.5px;padding:7px 10px;min-height:35px;border-radius:10px;white-space:nowrap}
+.route-extra{margin-top:8px;padding-top:5px}
+.route-extra summary{font-size:10.5px;min-height:30px;padding-top:6px}
+.route-extra .route-map-caption{font-size:10.5px;margin:6px 0}
+.route-extra .route-road-map:empty{display:none}
+@media(max-width:420px){
+  .route-overview{padding:11px}
+  .route-metric{padding:8px 10px;min-height:60px}
+  .route-metric-fare .route-fare-heading strong{font-size:19px}
+  .route-footer .route-google{min-height:36px}
+}
