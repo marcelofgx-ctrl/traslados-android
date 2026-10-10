@@ -161,6 +161,12 @@ function setWhen(kind){
   selectedPickupMode=kind;
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
+  // Solo las programadas tienen fecha/hora editables. Urgentes = consulta, no reserva.
+  $("pickup-datetime-block").hidden=urgent;
+  $("pickup-mode-caption").hidden=!urgent;
+  $("pickup-mode-caption").textContent=kind==="10"
+    ?"Dentro de 10 minutos · Consultar disponibilidad y llegada"
+    :"Ahora · Consultar disponibilidad y llegada";
   // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
   // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
   $("urgent-whatsapp").hidden=!urgent;
@@ -180,7 +186,7 @@ function setWhen(kind){
   }
   const when=currentUY(kind==="10"?10:2);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
-  $("availability").textContent="Recogida urgente sujeta a confirmación personal: consultá directamente por WhatsApp. No se crea una reserva hasta que el conductor la acepte.";
+  $("availability").textContent="Consulta directa: no se envía una reserva automática. El conductor debe confirmar.";
   refreshPickupPresence();
 }
 function shiftView(name){
