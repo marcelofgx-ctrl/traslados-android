@@ -12,6 +12,7 @@ import android.widget.*;
 import org.json.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.net.HttpURLConnection;
 import java.util.function.IntConsumer;
 
 /** Customer booking additions. Source-controlled separately from the recovered R9.1 baseline. */
