@@ -428,8 +428,8 @@ function picker(name,mount,position){
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return {state:()=>selected,chooseDept,input,persist,box};
 }
-// Shared routing engine with the premium Cloudflare calculator.
-// ORS_API_KEY stays on the server; never copy a routing secret into this PWA.
+// Shared verified route service used by our customer interfaces.
+// Credentials remain exclusively server-side.
 const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
 const roadCache=new Map();
 let latestRoad=null,activeRouteKey="",routeSequence=0;
@@ -556,8 +556,8 @@ function renderRouteSummary(){
       indicator.classList.add("is-verified");
       note.textContent="Importe orientativo, sin peajes ni extras. El conductor confirma el precio final.";
       detailCaption.textContent=data.source==="supabase_route_cache"
-        ? "Ruta por calles calculada anteriormente y conservada en nuestro sistema (OSRM). © OpenStreetMap contributors. No incluye tráfico en vivo."
-        : "Ruta por calles calculada por openrouteservice/HeiGIT. © OpenStreetMap contributors. No incluye tráfico en vivo.";
+        ? "Ruta guardada, calculada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo."
+        : "Ruta estimada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo.";
       clear(map);
       if(Array.isArray(data.geometry)&&data.geometry.length>1)addRoadDiagram(map,data.geometry);
     }else{
@@ -856,7 +856,7 @@ async function decideQuote(id,accept){
 }
 async function loadTrips(){
   const list=$("trips-list"),status=$("trips-status");clear(list);
-  status.textContent="Consultando Supabase…";
+  status.textContent="Consultando tus traslados…";
   try{
     if(authReady()){
       const rows=await rpc("customer_list_reservations_v12",{p_session_token:session.token});
