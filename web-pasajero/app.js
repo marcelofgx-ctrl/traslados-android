@@ -194,6 +194,34 @@ function shiftView(name){
   window.scrollTo({top:Math.min(window.scrollY,150),behavior:"smooth"});
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
+// El navegador solo puede SOLICITAR el permiso al tocar el botón.
+// Android/Chrome controlan su concesión; ninguna PWA puede activarlo por su cuenta.
+function locationPermissionGuidance(errorCode){
+  if(errorCode===1)return{
+    title:"Ubicación bloqueada por Android o Chrome",
+    description:"Traslados no puede cambiar el permiso automáticamente. Habilitalo una sola vez y volvé a probar.",
+    steps:[
+      "Cerrá las burbujas y ventanas flotantes de Mapa Trayectos u otras aplicaciones. Si persiste, desactivá temporalmente «Aparecer encima» para esas apps.",
+      "Abrí Traslados en Chrome, tocá el icono junto a la dirección y entrá en Permisos → Ubicación → Permitir.",
+      "Si Chrome no tiene acceso: Ajustes del celular → Aplicaciones → Chrome → Permisos → Ubicación → Permitir mientras se usa la aplicación, con ubicación precisa."
+    ]
+  };
+  if(errorCode===3)return{
+    title:"La ubicación está demorando",
+    description:"Android no consiguió una posición antes de que terminara el tiempo de espera.",
+    steps:["Activá la ubicación (GPS) del celular y probá en un lugar con mejor señal."]
+  };
+  if(errorCode===2)return{
+    title:"No pudimos determinar tu posición",
+    description:"El permiso puede estar concedido, pero Android no obtuvo coordenadas.",
+    steps:["Activá la ubicación del teléfono, comprobá la señal y volvé a intentar."]
+  };
+  return{
+    title:"No se puede acceder a tu ubicación",
+    description:"Esta función requiere abrir Traslados mediante una dirección HTTPS en un navegador compatible.",
+    steps:["Usá Chrome actualizado o elegí el origen escribiendo una dirección."]
+  };
+}
 function picker(name,mount,position){
   const key=name==="origin"||name==="destination"?name:"stop"+position;
   const box=document.createElement("section");box.className="location-widget";mount.appendChild(box);
@@ -225,6 +253,8 @@ function picker(name,mount,position){
   row.appendChild(input);
   const search=button(row,"Buscar","tiny-btn",()=>void lookup()); 
   const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn",()=>void useCurrent()):null;
+  const gpsHelp=name==="origin"?text(controls,"div","","gps-permission-help"):null;
+  if(gpsHelp){gpsHelp.hidden=true;gpsHelp.setAttribute("role","alert");}
   const results=text(controls,"div","","results");
   const feedback=text(controls,"p","","geo-feedback");feedback.hidden=true;
   const source=text(controls,"p","","geo-attribution");source.hidden=true;
@@ -346,19 +376,54 @@ function picker(name,mount,position){
     renderEntries(window.TrasladosGeo.immediate(q,dept),[],q);
     debounce=setTimeout(()=>void lookup(),240);
   });
-  const useCurrent=async()=>{
-    if(!navigator.geolocation){tell("El dispositivo no ofrece GPS.");return;}
-    tell("Solicitando permiso para tu ubicación…");
+  function showGpsPermissionHelp(errorCode){
+    if(!gpsHelp)return;
+    const guidance=locationPermissionGuidance(errorCode);
+    clear(gpsHelp);gpsHelp.hidden=false;
+    text(gpsHelp,"strong",guidance.title,"gps-permission-title");
+    text(gpsHelp,"p",guidance.description,"gps-permission-description");
+    const steps=text(gpsHelp,"ol","","gps-permission-steps");
+    for(const step of guidance.steps)text(steps,"li",step);
+    const actions=text(gpsHelp,"div","","gps-permission-actions");
+    button(actions,"↻ Volver a intentar","tiny-btn",()=>void useCurrent());
+    button(actions,"Escribir dirección","tiny-btn gps-manual",()=>{
+      gpsHelp.hidden=true;input.focus();
+    });
+  }
+  const useCurrent=()=>{
+    if(!navigator.geolocation||window.isSecureContext===false){
+      showGpsPermissionHelp(0);return;
+    }
+    if(geo?.disabled)return; // evita diálogos superpuestos por múltiples toques
+    if(gpsHelp)gpsHelp.hidden=true;
+    const original=geo.textContent;
+    geo.disabled=true;geo.textContent="⌖ Obteniendo ubicación…";
+    const finish=()=>{geo.disabled=false;geo.textContent=original;};
+    tell("Solicitando ubicación al navegador…");
+    // Debe llamarse directamente desde el toque del usuario.
     navigator.geolocation.getCurrentPosition(async p=>{
-      const lat=p.coords.latitude,lng=p.coords.longitude;
-      if(!isUruguayCoords(lat,lng)){tell("La ubicación detectada no está en Uruguay.");return;}
-      let address="Ubicación actual (GPS)",selectedDept=dept;
       try{
-        const r=await fetch(IDE+"/reverse?limit=1&latitud="+lat+"&longitud="+lng);
-        if(r.ok){const arr=await r.json();if(Array.isArray(arr)&&arr[0]?.address){address=arr[0].address;selectedDept=arr[0].departamento||dept;}}
-      }catch{}
-      persist({text:address,lat,lng,department:selectedDept});
-    },()=>tell("No se pudo obtener GPS. Revisá permisos."),{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
+        const lat=p.coords.latitude,lng=p.coords.longitude;
+        if(!isUruguayCoords(lat,lng)){
+          tell("La ubicación detectada no está en Uruguay. Elegí el origen manualmente.");return;
+        }
+        let address="Ubicación actual (GPS)",selectedDept=dept;
+        try{
+          const r=await fetch(IDE+"/reverse?limit=1&latitud="+lat+"&longitud="+lng);
+          if(r.ok){
+            const arr=await r.json();
+            if(Array.isArray(arr)&&arr[0]?.address){
+              address=arr[0].address;selectedDept=arr[0].departamento||dept;
+            }
+          }
+        }catch{/* Las coordenadas GPS siguen siendo válidas sin geocodificación. */}
+        persist({text:address,lat,lng,department:selectedDept});
+      }catch{showGpsPermissionHelp(2);}
+      finally{finish();}
+    },error=>{
+      finish();
+      showGpsPermissionHelp(error?.code??0);
+    },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   };
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return {state:()=>selected,chooseDept,input,persist,box};
