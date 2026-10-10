@@ -1,11 +1,6 @@
 name: Build Traslados Cliente v11.5 R10 RELEASE
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/build-cliente-v11-5-R10.yml'
-      - 'cliente-pasajero/**'
 permissions:
   contents: read
   actions: read
