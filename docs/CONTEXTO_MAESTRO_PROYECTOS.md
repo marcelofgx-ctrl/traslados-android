@@ -40,6 +40,21 @@
 
 ---
 
+## 0B. NUEVO AVANCE — MOTOR DE RUTA Y TARIFA ORIENTATIVA (09/10/2026)
+
+**Pedido:** tras elegir A (origen) y B (destino) mostrar km por calles, duración de viaje y **valor de referencia**. Tarifa parametrizable interna inicial de **40 UYU/km** (8 km → $320). El Conductor dentro de Mapa envía **siempre** el importe final, independiente del estimador. Por separado, para «Ahora» y «En 10 min» se quiere mostrar km y ETA **Conductor→A**, no confundirlos con A→B.
+
+**Realizado en código (sin afirmar GPS live ni Cloudflare publicado):**
+- Repositorio **traslados-web**, cambios motor en commit [f38a607](https://github.com/marcelofgx-ctrl/traslados-web/commit/f38a607cd21fb388254f0465b69fb8862a5770d6): `/api/public/route-estimate` calcula `referenceFareUyu` solo cuando ORS devuelve distancia por calles; parámetro interno Worker `FARE_REFERENCE_UYU_PER_KM` (por defecto 40), redondeo $10, sin peajes/esperas/extras y sin venderlo como oferta final. Cotización de Conductor/Supabase sigue intacta. Componentes [BookingQuickSummary](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/src/components/BookingQuickSummary.tsx) y [RoutePreview](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/src/components/RoutePreview.tsx) presentan precio junto a km/min; página /distancia hereda la mejora. Pruebas nuevas **8km→$320 y 43km→$1720**, commit [4273694](https://github.com/marcelofgx-ctrl/traslados-web/commit/4273694f82306a2d0e08c695ef08c812aa56d336). Web CI [38010767896](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38010767896) **SUCCESS**.
+- Repositorio **traslados-android / web-pasajero**, PWA Pages: tarjeta precio/km/min después de A/B, valor en pantalla de revisión, copia explícita «orientativo, final conductor», estética premium compacta; recursos/cache PWA v4. Recorrido DOM pasa a **A/B primero, fecha/hora después**, commit [4dd2bb6](https://github.com/marcelofgx-ctrl/traslados-android/commit/4dd2bb64f80ccaaca2308f1f566f65255e8a8101). Pages [38010884638](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38010884638) **SUCCESS** sobre commit 1f7ced3, pero queda smoke nuevo de recurso v4 y prueba humana para validar publicación efectiva.
+- El smoke público se ajustó a correr después de Pages, evitando falso fallo inicial cuando la versión 4 todavía no había desplegado. Run transitorio [38010809884](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38010809884) rojo por leer el JS anterior **antes del despliegue**; no confundir con error de ruta o backend.
+- **Limitación operacional principal:** CI Cloudflare **no despliega automáticamente el Worker**. La nueva propiedad `referenceFareUyu` será visible en las webs solo al publicar el código actualizado en Cloudflare **y** con clave `ORS_API_KEY` correctamente configurada. La PWA no inventa precios si el servidor sigue viejo o sin proveedor; muestra «A confirmar». No se confirmó todavía esa configuración del Worker desde una ejecución HTTP real.
+- **GPS comercial:** sigue **PENDIENTE**. Los puntos ya guardados por Mapa en Supabase no se publican a pasajeros sin opt-in expreso, vínculo de identidad móvil/Conductor, estado manual Disponible/Ocupado/Pausado, caducidad y endpoint seguro que solo devuelva km/ETA (no coordenadas). No calcular “estoy a 7 min” hasta que exista telemetría fresca y motor de ruta A conductor→A pasajero. Ver diseño detallado en [Flujo Web, tarifas y presencia](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/traslados-flujo-web-tarifa-presencia-2026-10-09.md).
+
+**Prioridad P0:** probar despliegue Cloudflare/ORS/tarifa real; luego **una reserva consentida de punta a punta** PWA/Cliente → Conductor Mapa → presupuesto final → aceptación → historial. **Prioridad P1:** publicar disponibilidad autorizada desde Mapa y ETA de recogida segura, contemplando viajes Uber/Cabify externos. **P2:** pantalla interna privada para parametrizar tarifa (hoy se controla vía variable del Worker), y homogeneizar UX Premium y Pages. Todas las pruebas y migraciones deben proteger los datos reales.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
