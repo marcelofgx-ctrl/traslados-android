@@ -266,3 +266,18 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 .install-guide p{color:#c6d9d2;font-size:12px;line-height:1.5;margin:13px 0 8px}
 .install-guide .secondary{font-size:12px;letter-spacing:.02em}
 .install-guide[hidden]{display:none!important}
+
+/* Instala preferentemente la web; solo ofrece la APK nativa cuando el archivo
+   está verificado y el navegador no emitió su evento de instalación. */
+.install-apk-option{margin-top:15px;padding:18px;border-radius:18px;
+  border:1px solid rgba(231,203,133,.42);
+  background:linear-gradient(143deg,rgba(15,63,68,.97),rgba(7,37,44,.92));
+  box-shadow:0 13px 25px rgba(0,0,0,.12)}
+.install-apk-option[hidden]{display:none!important}
+.install-apk-option .install-apk-label{display:block;margin-bottom:8px;font-size:10px;
+  letter-spacing:.16em;font-weight:800;color:#e9cb89}
+.install-apk-option h3{color:#f9ecd0;font-size:16px;margin-bottom:9px}
+.install-apk-option p{color:#cfe1db;font-size:12.5px;line-height:1.6;margin-bottom:12px}
+.install-apk-option .primary{font-size:12px;letter-spacing:.025em}
+.install-apk-option .install-apk-hint{font-size:11px;color:#c9d2c8}
+.install-apk-option .text-button{margin-top:4px;font-size:12px}
