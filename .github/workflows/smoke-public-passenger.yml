@@ -2,6 +2,11 @@ name: Comprobar web pública de Traslados Pasajero
 
 # Se comprueba DESPUÉS de terminar Pages, no en un push antes de publicarse.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-pasajero/**'
+      - '.github/workflows/smoke-public-passenger.yml'
   workflow_run:
     workflows: ["pages build and deployment"]
     types: [completed]
@@ -50,6 +55,7 @@ jobs:
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/app.js
+          node --check /tmp/app.js
           grep -q 'referenceFareUyu' /tmp/app.js
           grep -q 'PRECIO ORIENTATIVO' /tmp/app.js
           grep -q 'function showPreview()' /tmp/app.js
