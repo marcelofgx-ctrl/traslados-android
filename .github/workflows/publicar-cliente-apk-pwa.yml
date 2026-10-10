@@ -43,14 +43,14 @@ jobs:
           test -s SHA256SUMS.txt
           test -s SIGNING.txt
           python3 - <<'PYSHA'
-          import hashlib,re
+          import hashlib
           from pathlib import Path
           sums=Path('SHA256SUMS.txt').read_text()
-          expected=re.findall(r'\\b[a-fA-F0-9]{64}\\b',sums)
-          assert len(expected)==1,'Suma SHA256 del artefacto ambigua'
+          expected=sums.split()[0]
+          assert len(expected)==64,'Suma SHA256 invalida'
           data=Path('Traslados_Cliente_v11.5_R12_RELEASE.apk').read_bytes()
           actual=hashlib.sha256(data).hexdigest()
-          assert actual.lower()==expected[0].lower(),'Firma de integridad SHA256 incorrecta'
+          assert actual.lower()==expected.lower(),'Firma de integridad SHA256 incorrecta'
           print('SHA256 oficial de la APK: ',actual)
           PYSHA
           grep -Eiq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' SIGNING.txt
