@@ -1,0 +1,61 @@
+name: Verificar APK Premium publica e integra
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verificar-cliente-premium-publica.yml'
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verificar binario premium oficial publicado y su SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads'
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if curl -fsSL --max-time 25 "$base/traslados-cliente-premium-v12.apk" -o /tmp/traslados-cliente-premium-v12.apk && \
+               curl -fsSL --max-time 25 "$base/PREMIUM-SHA256SUMS.txt" -o /tmp/PREMIUM-SHA256SUMS.txt && \
+               (cd /tmp && sha256sum -c PREMIUM-SHA256SUMS.txt); then
+              echo 'APK PREMIUM publicada'
+              break
+            fi
+            if [ "$attempt" = 8 ]; then echo 'No hay APK premium publica verificada'; exit 1; fi
+            sleep 10
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          a=Path('/tmp/traslados-cliente-premium-v12.apk')
+          assert a.stat().st_size>10000
+          assert a.read_bytes()[:2]==b'PK','El archivo servido no es una APK'
+          print('APK Cliente Premium: HTTP publico + SHA256 ok; bytes',a.stat().st_size)
+          PY
+          curl -fsSI --max-time 20 "$base/traslados-cliente-premium-v12.apk" -o /tmp/premium-head
+          grep -qi '^content-type: application/vnd.android.package-archive' /tmp/premium-head
+          echo 'MIME publico de instalacion Android correcto'
+      - name: Comprobar que la PWA ofrece instalador Premium
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero'
+          for i in 1 2 3 4 5 6; do
+            curl -fsSL --max-time 25 "$base/?verify=$GITHUB_RUN_ID" -o /tmp/traslados.html
+            if grep -q 'app.js?v=20' /tmp/traslados.html; then break; fi
+            sleep 10
+          done
+          grep -q 'app.js?v=20' /tmp/traslados.html
+          grep -q 'traslados-cliente-premium-v12.apk' /tmp/traslados.html
+          curl -fsSL --max-time 25 "$base/app.js?v=20&ci=$GITHUB_RUN_ID" -o /tmp/cliente.js
+          grep -q 'apkReady' /tmp/cliente.js
+          node --check /tmp/cliente.js
+          echo 'PWA v20 con fallback Cliente Premium operativa en linea'
