@@ -1,0 +1,125 @@
+name: Build Traslados Cliente v11.5 R11 RELEASE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-cliente-v11-5-R11.yml'
+      - 'cliente-pasajero/**'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore original Android base and Cliente assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c059c89bac5a5ebb423176af474134a289f88418/.github/workflows/build-apks.yml" -o /tmp/base.yml
+          curl -fsSL "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/d819c60656fe1934be9d6aa31eefdea7beb041be/.github/workflows/build-apks.yml" -o /tmp/cliente-v9.yml
+          python3 - <<'PYRESTORE'
+          import base64,io,re,tarfile
+          from pathlib import Path
+          base=Path("/tmp/base.yml").read_text()
+          m=re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| tar -xz",base)
+          if not m: raise SystemExit("Android base payload not found")
+          with tarfile.open(fileobj=io.BytesIO(base64.b64decode(m.group(1))),mode="r:gz") as t:t.extractall(".")
+          old=Path("/tmp/cliente-v9.yml").read_text()
+          m=re.search(r"payload\s*=\s*\(([\s\S]*?)\n\s*\)",old)
+          if not m:raise SystemExit("Cliente base package not found")
+          pieces=re.findall(r'"([A-Za-z0-9+/=]+)"',m.group(1))
+          if not pieces:raise SystemExit("Cliente assets empty")
+          with tarfile.open(fileobj=io.BytesIO(base64.b64decode("".join(pieces))),mode="r:gz") as t:t.extractall(".")
+          PYRESTORE
+          test -f cliente/src/main/AndroidManifest.xml
+      - name: Download verified R9.1 source snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.4-R9.1-patched-source
+          run-id: 37128790720
+          repository: marcelofgx-ctrl/traslados-android
+          github-token: ${{ github.token }}
+          path: /tmp/clientr91
+      - name: Restore and upgrade native Cliente
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s /tmp/clientr91/src/main/java/uy/com/traslados/cliente/MainActivity.java
+          test -s /tmp/clientr91/src/main/java/uy/com/traslados/cliente/Api.java
+          cp -a /tmp/clientr91/. cliente/
+          cp cliente-pasajero/src-extra/uy/com/traslados/cliente/ClienteTripEnhancements.java cliente/src/main/java/uy/com/traslados/cliente/
+          python3 cliente-pasajero/scripts/build_cliente_r11.py
+          grep -q "versionCode 121" cliente/build.gradle
+          grep -q "versionName '11.5-R11'" cliente/build.gradle
+          grep -q "customer_create_reservation_v12" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
+          grep -q "p_stops" cliente/src/main/java/uy/com/traslados/cliente/MainActivity.java
+          grep -q "showPickupEta" cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
+          grep -q "pickup-eta" cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
+          test -s cliente/src/main/java/uy/com/traslados/cliente/ClienteTripEnhancements.java
+          test -s cliente/src/main/res/raw/cliente_actualizacion.wav
+      - name: Restore permanent signing keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Build native RELEASE with stable key
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :cliente:assembleRelease --stacktrace --no-daemon
+      - name: Verify signed APK and archive complete native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="cliente/build/outputs/apk/release/cliente-release.apk"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/cliente-signing.txt
+          grep -qi 'Verified using v2 scheme.*true' /tmp/cliente-signing.txt
+          mkdir -p artifacts
+          cp "$APK" artifacts/Traslados_Cliente_v11.5_R11_RELEASE.apk
+          cp /tmp/cliente-signing.txt artifacts/SIGNING.txt
+          sha256sum artifacts/*.apk | tee artifacts/SHA256SUMS.txt
+          tar -czf artifacts/Traslados_Cliente_R11_SOURCE.tar.gz cliente
+          ls -lh artifacts/
+      - name: Publish Cliente signed APK and full source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.5-R11-RELEASE
+          path: artifacts/
+          if-no-files-found: error
