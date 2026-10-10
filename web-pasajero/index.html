@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=3">
+  <link rel="stylesheet" href="./styles.css?v=4">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -46,7 +46,7 @@
       <div class="section-heading">
         <p class="eyebrow">SOLICITAR UN SERVICIO</p>
         <h2 id="reserva-title">Reservá tu traslado</h2>
-        <p>Elegí origen, destino y horario. Recibirás el precio final que prepare el conductor; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
+        <p>Elegí origen y destino para consultar kilómetros, minutos y valor orientativo. El conductor confirmará el presupuesto definitivo; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
       </div>
       <div class="card">
         <div class="section-mini"><span>01</span><h3>¿Cuándo viajás?</h3></div>
@@ -87,7 +87,7 @@
           <label>Teléfono<input id="person-phone" autocomplete="tel" inputmode="tel" placeholder="Ej.: 099 123 456"></label>
         </div>
         <label>Indicaciones (opcional)<textarea id="comments" rows="2" placeholder="N° de vuelo, equipaje, punto de encuentro o indicaciones…" maxlength="500"></textarea></label>
-        <div class="subnote">Precio estimado: <strong>a confirmar por el conductor</strong>. No mostramos valores inventados.</div>
+        <div class="subnote">Al elegir origen y destino verás un <strong>valor orientativo en pesos</strong> si el motor calcula la ruta por carretera. La cotización final la enviará el conductor; no incluye peajes ni extras.</div>
       </div>
       <div id="booking-preview" class="card preview" hidden></div>
       <button id="review-booking" type="button" class="primary full">REVISAR SOLICITUD <span>→</span></button>
@@ -135,6 +135,6 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
-  <script src="./app.js?v=3" defer></script>
+  <script src="./app.js?v=4" defer></script>
 </body>
 </html>
