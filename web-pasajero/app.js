@@ -51,13 +51,14 @@ function currentUY(offsetMinutes=0){
   return{day:`${parts.year}-${parts.month}-${parts.day}`,time:`${parts.hour}:${parts.minute}`};
 }
 let selectedPickupMode="schedule";
-function refreshPickupPresence(){
+let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaAt=0;
+function refreshPickupPresence(force=false){
   const host=$("pickup-presence");
   if(!host)return;
-  host.hidden=selectedPickupMode==="schedule";
-  if(host.hidden)return;
+  const urgent=selectedPickupMode!=="schedule";
+  host.hidden=!urgent;
+  if(!urgent){pickupEtaRequestSeq++;return;}
   const label=selectedPickupMode==="10"?"en 10 minutos":"lo antes posible";
-  $("pickup-presence-status").textContent="Conductor → origen: distancia y llegada no disponibles hasta habilitar GPS y presencia segura. Consulta su disponibilidad.";
   const message=["Hola, quisiera consultar una recogida "+label+".",
     record.origin?"Origen: "+record.origin.text:"",
     record.destination?"Destino: "+record.destination.text:"",
@@ -66,6 +67,49 @@ function refreshPickupPresence(){
   const contact="https://wa.me/59897228175?text="+encodeURIComponent(message);
   $("pickup-presence-whatsapp").href=contact;
   $("urgent-whatsapp").href=contact;
+  const status=$("pickup-presence-status");
+  if(!record.origin){
+    status.textContent="Elegí tu origen para consultar los minutos de llegada del conductor.";
+    pickupEtaRequestSeq++;return;
+  }
+  if(!authReady()){
+    status.textContent="Iniciá sesión en Mi cuenta para consultar la llegada aproximada. También podés escribir por WhatsApp.";
+    pickupEtaRequestSeq++;return;
+  }
+  const lat=record.origin.lat,lng=record.origin.lng;
+  const key=session.token+"|"+lat.toFixed(5)+","+lng.toFixed(5);
+  if(!force&&key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<65000)return;
+  lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
+  const seq=++pickupEtaRequestSeq;
+  status.textContent="Consultando jornada, disponibilidad y tiempo de llegada…";
+  const ctrl=new AbortController(),abort=setTimeout(()=>ctrl.abort(),9000);
+  fetch(API+"/functions/v1/pickup-eta",{
+    method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
+    headers:{"apikey":KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({sessionToken:session.token,originLat:lat,originLng:lng})
+  }).then(async r=>{
+    const obj=await r.json().catch(()=>({available:false,reason:"temporarily_unavailable"}));
+    return obj;
+  }).then(data=>{
+    if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
+    if(data?.available&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.etaMin)){
+      status.textContent="Conductor en actividad · a unos "+data.distanceKm.toLocaleString("es-UY")+
+        " km · "+data.etaMin+" min de llegada aprox. Disponibilidad sujeta a confirmación.";
+    }else{
+      const labels={
+        login_required:"Iniciá sesión para consultar la llegada estimada.",
+        rate_limited:"La próxima actualización estará disponible en unos minutos.",
+        occupied:"El conductor tiene compromisos de agenda próximos.",
+        not_available:"No hay una ubicación y disponibilidad recientes para recogida.",
+        route_unavailable:"No se pudo calcular la llegada por carretera en este momento.",
+      };
+      status.textContent=labels[data?.reason]||
+        "No pudimos confirmar la distancia de recogida. Podés consultar por WhatsApp.";
+    }
+  }).catch(()=>{
+    if(seq===pickupEtaRequestSeq)
+      status.textContent="Llegada no disponible por conexión. Consultá por WhatsApp.";
+  }).finally(()=>clearTimeout(abort));
 }
 function setWhen(kind){
   selectedPickupMode=kind;
@@ -496,6 +540,7 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
+    lastPickupEtaAt=0;refreshPickupPresence(true);
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
     // Claim existing guest bookings in this browser so they become visible
     // in the new account, just like the native Cliente app does.
@@ -739,6 +784,11 @@ function init(){
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>shiftView(tab.dataset.view));
   document.querySelectorAll("[data-open-login]").forEach(x=>x.addEventListener("click",()=>shiftView("cuenta")));
   document.querySelectorAll("[data-when]").forEach(b=>b.addEventListener("click",()=>setWhen(b.dataset.when)));
+  // Bounded refresh only while a foreground visitor requests an urgent pickup.
+  pickupEtaTimer=setInterval(()=>{
+    if(selectedPickupMode!=="schedule"&&document.visibilityState==="visible")
+      refreshPickupPresence();
+  },75000);
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
