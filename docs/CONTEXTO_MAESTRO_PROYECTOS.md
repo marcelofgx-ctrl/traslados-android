@@ -254,6 +254,18 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0N. RELEASE WORKERS PREPARADA; FALTA SOLAMENTE PUBLICACIÓN MANUAL (10/10/2026)
+
+**Pedido actual del usuario:** «Deja ya todo listo». Se verificó el estado real de `marcelofgx-ctrl/traslados-web`: commit de código principal **[`6872670`](https://github.com/marcelofgx-ctrl/traslados-web/commit/6872670ea3ee6ef1b261b9db780e431a7a75e305)** con `GuestRoutePlanner`, cálculo de carretera km/min y tarifa antes de login, hasta ocho paradas y alerta cuando hay paradas incompletas; borrador A/B/paradas de hasta 2 h en `sessionStorage`, y reservas únicamente tras autenticación. `DriverLiveStatus` toma jornada de Mapa sin GPS público en portada. Workers continúa como **única web principal**; Pages es auxiliar.
+
+**Verificación técnica:** [CI GitHub Actions **38023721789**](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38023721789) **SUCCESS en 2 jobs** (Bun 1.2.15 y 1.3.4), TypeScript, tests de guest booking, privacidad, agenda, motor ORS y build. Artifacts `traslados-web-cloudflare` disponibles. Workflow de despliegue [`publicar-cloudflare-manual.yml`](https://github.com/marcelofgx-ctrl/traslados-web/actions/workflows/publicar-cloudflare-manual.yml) incluye pruebas, chequeo de credenciales, Wrangler deploy y prueba HTTP contra URL principal.
+
+**Bloqueador único de publicación:** GitHub App conectada NO ofrece acción `workflow_dispatch` ni lectura de los secretos de Actions, y no hay Cloudflare conectado. Se intentó habilitar publicación puntual mediante la modificación del workflow, pero la operación fue rechazada por controles de permisos y **NO cambió el workflow de publicación ni desplegó Workers**. **No intentar sortear esa autorización por vías laterales.** El propietario debe abrir el workflow y elegir **Run workflow → main → Run workflow**; requiere los secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` previamente configurados. Si faltan, asignarlos en GitHub Settings → Secrets and variables → Actions (nunca compartir claves en chat). `wrangler.jsonc` contiene `keep_vars:true` y no contiene ORS_API_KEY. **Nunca afirmar «Workers publicado» sin run manual SUCCESS y verificación de producción.**
+
+**Documento de entrega para siguiente sesión:** [RELEASE_WORKERS_PREPARADO_20261010.md](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/RELEASE_WORKERS_PREPARADO_20261010.md), con versiones exactas, enlaces, checklist de Samsung, limitaciones y ruta de publicación. No quedan cambios de código obligatorios para publicar la mejora A/B antes del login; sí queda QA física posterior al deploy. No confundir cálculo público A→B con ETA privado Conductor→A para evitar triangulación GPS.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
