@@ -144,7 +144,7 @@ function picker(name,mount,position){
     selectedBox.hidden=false;controls.hidden=true;
     const shown=text(selectedBox,"div","","location-chosen-content");
     text(shown,"strong",selected.text,"location-selected-label");
-    text(shown,"small",selected.department?selected.department+" · Punto de referencia ajustable":"Punto seleccionado","location-selected-hint");
+    text(shown,"small",selected.department?selected.department+" · Ubicación seleccionada":"Ubicación seleccionada","location-selected-hint");
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
@@ -345,74 +345,80 @@ function renderRouteSummary(){
   if(!host)return;
   const points=selectedRoadPoints();
   clear(host);host.hidden=points.length<2;
-  // No stale pricing, route, or pickup data when A/B/stops are changed.
-  if(points.length<2){activeRouteKey="";latestRoad=null;routeSequence++;refreshPickupPresence();return;}
-  const key=routeKeyOf(points);activeRouteKey=key;
-  refreshPickupPresence();
-  const header=text(host,"div","","route-head");
-  const heading=text(header,"div","","route-headline");
-  text(heading,"h3","Tu recorrido");
-  text(heading,"small",points.length>2?(points.length-2)+" parada(s) intermedia(s)":"Origen → Destino");
-  const trip=text(host,"div","","route-compact-path");
-  const from=text(trip,"div","","route-compact-point");
-  text(from,"span","DESDE","route-caption");
-  const fromAddress=text(from,"strong",points[0].text,"route-address");
-  fromAddress.title=points[0].text;
-  const to=text(trip,"div","","route-compact-point");
-  text(to,"span","HASTA","route-caption");
-  const toAddress=text(to,"strong",points[points.length-1].text,"route-address");
-  toAddress.title=points[points.length-1].text;
+  if(points.length<2){
+    activeRouteKey="";latestRoad=null;routeSequence++;
+    refreshPickupPresence();return;
+  }
+  const key=routeKeyOf(points);activeRouteKey=key;refreshPickupPresence();
+
+  // A and B are already displayed directly above, in their editable cards.
+  // Do not repeat addresses inside a second giant card.
+  const header=text(host,"div","","route-summary-heading");
+  const heading=text(header,"div","","route-summary-title");
+  text(heading,"span","✦","route-summary-symbol");
+  text(heading,"h3","Estimación del viaje");
+  const indicator=text(header,"span","Consultando ruta…","route-summary-indicator");
+  indicator.setAttribute("role","status");
+
   const metrics=text(host,"div","","route-metrics");
   const km=text(metrics,"div","","route-metric");
-  text(km,"small","DISTANCIA");
-  const distance=text(km,"strong","Calculando…");
+  text(km,"small","RECORRIDO");
+  const distance=text(km,"strong","…");
   const min=text(metrics,"div","","route-metric");
-  text(min,"small","DURACIÓN");
-  const duration=text(min,"strong","Calculando…");
+  text(min,"small","TIEMPO APROX.");
+  const duration=text(min,"strong","…");
   const fare=text(metrics,"div","","route-metric route-metric-fare");
   const fareInfo=text(fare,"div","","route-fare-heading");
-  text(fareInfo,"small","PRECIO ORIENTATIVO");
-  const reference=text(fareInfo,"strong","Calculando…");
-  const disclaimer=text(host,"p","Valor estimado según ruta. La tarifa definitiva la confirma el conductor; no incluye peajes ni extras.","route-disclaimer");
+  text(fareInfo,"small","VALOR DE REFERENCIA");
+  const reference=text(fareInfo,"strong","Consultando…");
+
   const footer=text(host,"div","","route-footer");
-  const status=text(footer,"span","Consultando kilómetros por carretera…","route-status");
-  status.setAttribute("role","status");
-  const a=text(footer,"a","Abrir ruta en Maps ↗","route-google");
+  const note=text(footer,"p","Calculamos por carretera; no incluye tráfico en vivo.","route-status");
+  const a=text(footer,"a","Abrir en Maps ↗","route-google");
   a.href=mapsLinkFromBooking({origin:points[0],destination:points[points.length-1],stops:points.slice(1,-1)});
   a.target="_blank";a.rel="noopener noreferrer";
-  const details=document.createElement("details");details.className="route-extra";host.appendChild(details);
-  text(details,"summary","Ver trazado y detalles de cálculo");
+
+  const details=document.createElement("details");
+  details.className="route-extra";host.appendChild(details);
+  text(details,"summary","Detalles de la estimación");
+  const detailCaption=text(details,"p","","route-map-caption");
   const map=text(details,"div","","route-road-map");
-  const detailCaption=text(details,"p","Kilómetros y duración por carretera, sin tráfico en vivo. © openrouteservice.org by HeiGIT · © OpenStreetMap contributors.","route-map-caption");
   const seq=++routeSequence;
-  const finish=(data)=>{
+  const finish=data=>{
     if(seq!==routeSequence||key!==activeRouteKey)return;
-    const success=data?.available===true&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.durationMin);
-    if(success){
+    const valid=data?.available===true
+      &&Number.isFinite(data.distanceKm)&&data.distanceKm>0
+      &&Number.isFinite(data.durationMin)&&data.durationMin>=0
+      &&["openrouteservice","supabase_route_cache"].includes(data.source);
+    if(valid){
       latestRoad={key,data};
       distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
       duration.textContent=data.durationMin+" min";
       reference.textContent=Number.isFinite(data.referenceFareUyu)&&data.referenceFareUyu>0
-        ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0}) : "A confirmar";
-      clear(map);addRoadDiagram(map,data.geometry);
-      status.textContent=data.source==="supabase_route_cache"
-        ?"Ruta real guardada · tiempo estimado"
-        :"Ruta verificada por carretera · tiempo estimado";
-      disclaimer.textContent="Referencia no vinculante; peajes y extras no incluidos. El conductor envía el precio definitivo.";
+        ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+        : "A confirmar";
+      indicator.textContent="Ruta verificada";
+      indicator.classList.add("is-verified");
+      note.textContent="Importe orientativo, sin peajes ni extras. El conductor confirma el precio final.";
       detailCaption.textContent=data.source==="supabase_route_cache"
-        ?"Ruta previamente calculada por OSRM · © OpenStreetMap contributors. No incluye tráfico en vivo."
-        :"Trayecto por carretera, sin tráfico en vivo. © openrouteservice.org by HeiGIT · © OpenStreetMap contributors.";
-      detailCaption.hidden=false;
+        ? "Ruta por calles calculada anteriormente y conservada en nuestro sistema (OSRM). © OpenStreetMap contributors. No incluye tráfico en vivo."
+        : "Ruta por calles calculada por openrouteservice/HeiGIT. © OpenStreetMap contributors. No incluye tráfico en vivo.";
+      clear(map);
+      if(Array.isArray(data.geometry)&&data.geometry.length>1)addRoadDiagram(map,data.geometry);
     }else{
       latestRoad=null;
-      distance.textContent="—"; duration.textContent="—"; reference.textContent="Pendiente";
-      status.textContent="Cálculo no disponible por ahora";
-      disclaimer.textContent="El conductor confirmará distancia y precio. Podés consultar el trayecto en Google Maps.";
-      clear(map);detailCaption.hidden=true;
+      distance.textContent="—";duration.textContent="—";reference.textContent="A confirmar";
+      indicator.textContent="Cálculo pendiente";
+      indicator.classList.remove("is-verified");
+      note.textContent="El cálculo automático aún no está disponible para este recorrido. Podés ver la ruta en Maps.";
+      detailCaption.textContent="El servicio principal de rutas necesita estar habilitado. La caché interna solo tiene recorridos ya verificados. No usamos distancias en línea recta para estimar precios.";
+      clear(map);
     }
   };
-  const cached=roadCache.get(key);
-  if(cached){finish(cached);return;}
+
+  const hit=roadCache.get(key);
+  if(hit&&hit.expires>Date.now()){finish(hit.data);return;}
+  if(hit)roadCache.delete(key);
   latestRoad=null;
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7500);
@@ -423,10 +429,13 @@ function renderRouteSummary(){
     const result=await r.json();
     return result?.available?result:null;
   }).catch(()=>null).then(async result=>{
-    // The Cloudflare Worker may still lack its ORS secret. Cache-only fallback
-    // uses old, real road calculations already present in our own Supabase.
     if(!result)result=await cachedRoadRoute(points);
-    if(result){roadCache.set(key,result);if(roadCache.size>65)roadCache.clear();}
+    if(result){
+      // Keep published fare changes bounded: refreshing the form revalidates
+      // the driver's internal rate after at most five minutes.
+      roadCache.set(key,{data:result,expires:Date.now()+300000});
+      if(roadCache.size>65)roadCache.clear();
+    }
     finish(result);
   }).catch(()=>finish(null)).finally(()=>clearTimeout(timer));
 }
