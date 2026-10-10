@@ -440,16 +440,51 @@ public class MainActivity extends Activity {
             ()->startActivity(new Intent(this,ReminderActivity.class)));
         addMainMenuRow(menu,"▤","Historial y estadísticas","Viajes, kilómetros y jornadas",popup,
             ()->startActivity(new Intent(this,HistoryActivity.class)));
-        addMainMenuRow(menu,"⌖","Disponibilidad de recogida",
-            Api.pickupPresenceEnabled()
-              ? (Api.pickupManuallyBusy()?"Ocupado · no se publica ubicación":"GPS privado · jornada activa")
-              : "Activar una vez con PIN · apagado por defecto",
-            popup,this::showPickupPresenceDialog);
+        addPickupPresenceRow(menu,popup);
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
         try{popup.showAsDropDown(anchor,-dp(181),dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
+    /** Semáforo del permiso comercial, no una garantía automática de GPS o agenda. */
+    private void addPickupPresenceRow(LinearLayout menu,PopupWindow popup){
+        boolean enabled=Api.pickupPresenceEnabled();
+        boolean busy=Api.pickupManuallyBusy();
+        boolean publishing=enabled&&!busy;
+        LinearLayout row=new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(7),dp(3),dp(7),dp(3));
+        TextView symbol=text("⌖",18,CHAMPAGNE,true);
+        symbol.setGravity(Gravity.CENTER);
+        row.addView(symbol,new LinearLayout.LayoutParams(dp(33),dp(34)));
+        LinearLayout labels=new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        TextView title=text("Disponibilidad de recogida",11.8f,TEXT,true);
+        title.setSingleLine(true);
+        TextView desc=text(!enabled?"Apagada · no localizable":
+            busy?"Ocupado · no localizable":
+            (!shiftActive||shiftPaused||tripActive)?"Activada · esperando jornada libre":
+            "Activada · GPS y agenda mandan",9.1f,MUTED,false);
+        desc.setSingleLine(true);
+        labels.addView(title);labels.addView(desc);
+        LinearLayout.LayoutParams body=new LinearLayout.LayoutParams(0,-2,1);
+        body.leftMargin=dp(6);
+        row.addView(labels,body);
+        // Verde = opt-in habilitado y NO marcado ocupado. Rojo = desactivado
+        // u ocupado. La disponibilidad real se valida en backend por GPS/agenda.
+        TextView dot=text("●",20f,
+            publishing?Color.rgb(104,226,164):Color.rgb(243,111,116),true);
+        dot.setGravity(Gravity.CENTER);
+        dot.setContentDescription(publishing?"Interruptor de recogida activado":
+            "Interruptor de recogida apagado");
+        row.addView(dot,new LinearLayout.LayoutParams(dp(24),dp(38)));
+        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(49)));
+        View line=new View(this);
+        line.setBackgroundColor(Color.argb(70,231,202,130));
+        menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
+        row.setOnClickListener(v->{popup.dismiss();showPickupPresenceDialog();});
+    }
+
     /** Opt-in privacy control. Driver PIN is never stored and network uses background thread. */
     private void showPickupPresenceDialog(){
         final boolean enabled=Api.pickupPresenceEnabled();
@@ -465,9 +500,9 @@ public class MainActivity extends Activity {
                 .show();
             return;
         }
-        String[] opts={busy?"Volver a disponible":"Marcar ocupado (Uber / Cabify)",
+        String[] opts={busy?"Activar disponibilidad (verde)":"Marcar ocupado (rojo · Uber / Cabify)",
             "Desactivar y borrar ubicación"};
-        new AlertDialog.Builder(this).setTitle("Disponibilidad para recogidas")
+        new AlertDialog.Builder(this).setTitle(busy?"● ROJO · Recogidas en pausa":"● VERDE · Recogidas activadas")
             .setMessage("El estado automático usa jornada, GPS y conducción reciente. "+
                 "Un viaje activo o un horario comprometido tienen prioridad.")
             .setItems(opts,(dialog,which)->{
