@@ -36,14 +36,21 @@ import android.widget.Toast;
 import java.util.Locale;
 
 /**
- * Traslados Cliente Premium: una sola interfaz web oficial para web y Android.
+ * Traslados Cliente Premium: misma PWA de pasajeros GitHub Pages en web y Android.
  * Nunca se cargan versiones HTML duplicadas dentro del APK.
  * No hay JS bridge, ni secretos de servidor ni GPS del conductor.
  */
 public final class MainActivity extends Activity {
     private static final int LOCATION_REQUEST = 201;
     private static final int FILE_REQUEST = 202;
-    private static final String OFFICIAL_HOST = "traslados-web.marcelof-gx.workers.dev";
+    private static final String OFFICIAL_HOST = "marcelofgx-ctrl.github.io";
+    private static final String OFFICIAL_PATH = "/traslados-android/web-pasajero/";
+    // Solo la PWA de pasajeros es la superficie propia; no todo github.io.
+    private boolean officialHost(Uri uri) {
+        return officialHost(uri) && uri.getPath() != null
+            && (OFFICIAL_PATH.substring(0, OFFICIAL_PATH.length()-1).equals(uri.getPath())
+                || uri.getPath().startsWith(OFFICIAL_PATH));
+    }
     private static final int PETROLEO = Color.rgb(16, 43, 49);
     private static final int GOLD = Color.rgb(230, 199, 134);
     private WebView web;
@@ -144,7 +151,7 @@ public final class MainActivity extends Activity {
 
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onGeolocationPermissionsShowPrompt(String origin,GeolocationPermissions.Callback callback) {
-                if(!official(Uri.parse(origin))) {
+                if(!officialHost(Uri.parse(origin))) {
                     callback.invoke(origin,false,false);
                     return;
                 }
