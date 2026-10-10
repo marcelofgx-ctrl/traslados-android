@@ -13,8 +13,8 @@ const end=js.indexOf("\nfunction init(){",start);
 assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
-assert(html.includes("./app.js?v=17")&&html.includes("./styles.css?v=17"));
-assert(sw.includes("traslados-cliente-pwa-v17"));
+assert(html.includes("./app.js?v=18")&&html.includes("./styles.css?v=17"));
+assert(sw.includes("traslados-cliente-pwa-v18"));
 
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140"}={}){
   const events={};let copied="",visited="";
@@ -56,6 +56,8 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   assert.equal(noEvent.elements["install-guide"].hidden,false,"Fallback should be persistent");
   assert.equal(noEvent.elements["install-guide-steps"].children.length,3,"Actionable three steps");
   assert.match(noEvent.elements["install-guide-title"].textContent,/Chrome/);
+  assert.match(noEvent.elements["install-guide-steps"].children.map(x=>x.textContent).join(" "),/Instalar y crear acceso directo/);
+  assert.match(noEvent.elements["install-guide-note"].textContent,/Crear acceso directo/);
   await noEvent.copy();
   assert.match(noEvent.getCopied(),/github\.io\/traslados-android\/web-pasajero\/$/);
   const installable=setup();let promptCalls=0,prevented=false;
