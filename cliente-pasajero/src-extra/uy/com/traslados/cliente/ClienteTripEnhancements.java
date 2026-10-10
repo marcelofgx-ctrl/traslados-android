@@ -116,7 +116,7 @@ public final class ClienteTripEnhancements {
             .setNegativeButton("CERRAR",null).create();
         dialog.show();
         worker.execute(()->{
-            final String display;
+            String display;
             try{
                 JSONObject live=postPickupRpc(Api.BASE+
                     "/rest/v1/rpc/public_driver_availability_v1",new JSONObject());
@@ -147,7 +147,8 @@ public final class ClienteTripEnhancements {
             }catch(Exception ex){
                 display="No pudimos consultar el estado en este momento. Consultá por WhatsApp.";
             }
-            activity.runOnUiThread(()->{if(dialog.isShowing())status.setText(display);});
+            final String shown=display;
+            activity.runOnUiThread(()->{if(dialog.isShowing())status.setText(shown);});
         });
     }
 
