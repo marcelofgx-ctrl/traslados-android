@@ -52,12 +52,42 @@ function currentUY(offsetMinutes=0){
 }
 let selectedPickupMode="schedule";
 let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaAt=0;
-function refreshPickupPresence(force=false){
+let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
+/** Public yes/no comes from Mapa's consented heartbeat through Supabase.
+ * No login needed, and no GPS coordinates ever reach the browser.
+ */
+async function publicDriverAvailability(force=false){
+  if(!force&&publicPresenceCache&&Date.now()-publicPresenceAt<25000)
+    return publicPresenceCache;
+  if(publicPresencePending)return publicPresencePending;
+  publicPresencePending=(async()=>{
+    const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),6000);
+    try{
+      const response=await fetch(API+"/rest/v1/rpc/public_driver_availability_v1",{
+        method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
+        headers:{"apikey":KEY,"Content-Type":"application/json"},
+        body:"{}",
+      });
+      if(!response.ok)return null;
+      const v=await response.json();
+      if(typeof v?.available!=="boolean"||!["available_for_requests","not_available"].includes(v.status))
+        return null;
+      publicPresenceCache={available:v.available,status:v.status};
+      publicPresenceAt=Date.now();
+      return publicPresenceCache;
+    }catch{return null;}finally{clearTimeout(timeout);}
+  })();
+  try{return await publicPresencePending;}
+  finally{publicPresencePending=null;}
+}
+async function refreshPickupPresence(force=false){
   const host=$("pickup-presence");
   if(!host)return;
   const urgent=selectedPickupMode!=="schedule";
   host.hidden=!urgent;
-  if(!urgent){pickupEtaRequestSeq++;return;}
+  if(!urgent){
+    pickupEtaRequestSeq++;host.removeAttribute("data-presence");return;
+  }
   const label=selectedPickupMode==="10"?"en 10 minutos":"lo antes posible";
   const message=["Hola, quisiera consultar una recogida "+label+".",
     record.origin?"Origen: "+record.origin.text:"",
@@ -68,20 +98,35 @@ function refreshPickupPresence(force=false){
   $("pickup-presence-whatsapp").href=contact;
   $("urgent-whatsapp").href=contact;
   const status=$("pickup-presence-status");
+  const seq=++pickupEtaRequestSeq;
+  status.textContent="Consultando disponibilidad de Mapa Trayectos…";
+  host.dataset.presence="checking";
+  const driver=await publicDriverAvailability(force);
+  if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
+  if(!driver){
+    status.textContent="No pudimos consultar el estado actual del conductor. Escribile por WhatsApp.";
+    host.dataset.presence="unknown";return;
+  }
+  if(!driver.available){
+    status.textContent="Conductor no disponible para recogidas inmediatas en este momento.";
+    host.dataset.presence="offline";return;
+  }
+  // Activity is published only with active shift, fresh driving/GPS,
+  // consent and a compatible schedule, irrespective of customer login.
+  host.dataset.presence="online";
   if(!record.origin){
-    status.textContent="Elegí tu origen para consultar los minutos de llegada del conductor.";
-    pickupEtaRequestSeq++;return;
+    status.textContent="Conductor disponible para consultas. Elegí tu origen para calcular la llegada.";
+    return;
   }
   if(!authReady()){
-    status.textContent="Iniciá sesión en Mi cuenta para consultar la llegada aproximada. También podés escribir por WhatsApp.";
-    pickupEtaRequestSeq++;return;
+    status.textContent="Conductor disponible para consultas · Jornada activa. Para conocer km y minutos hasta tu origen, iniciá sesión.";
+    return;
   }
   const lat=record.origin.lat,lng=record.origin.lng;
   const key=session.token+"|"+lat.toFixed(5)+","+lng.toFixed(5);
   if(!force&&key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<65000)return;
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
-  const seq=++pickupEtaRequestSeq;
-  status.textContent="Consultando jornada, disponibilidad y tiempo de llegada…";
+  status.textContent="Conductor en actividad · calculando km y llegada hasta tu origen…";
   const ctrl=new AbortController(),abort=setTimeout(()=>ctrl.abort(),9000);
   fetch(API+"/functions/v1/pickup-eta",{
     method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
@@ -93,22 +138,23 @@ function refreshPickupPresence(force=false){
   }).then(data=>{
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.etaMin)){
-      status.textContent="Conductor en actividad · a unos "+data.distanceKm.toLocaleString("es-UY")+
-        " km · "+data.etaMin+" min de llegada aprox. Disponibilidad sujeta a confirmación.";
+      status.textContent="Conductor disponible para consultas · A unos "+
+        data.distanceKm.toLocaleString("es-UY")+" km · "+data.etaMin+
+        " min de llegada aprox. El viaje requiere confirmación.";
     }else{
       const labels={
-        login_required:"Iniciá sesión para consultar la llegada estimada.",
-        rate_limited:"La próxima actualización estará disponible en unos minutos.",
-        occupied:"El conductor tiene compromisos de agenda próximos.",
-        not_available:"No hay una ubicación y disponibilidad recientes para recogida.",
-        route_unavailable:"No se pudo calcular la llegada por carretera en este momento.",
+        login_required:"Conductor en actividad. Volvé a iniciar sesión para consultar la llegada.",
+        rate_limited:"Conductor en actividad. Podrás actualizar los km en unos minutos.",
+        occupied:"No disponible para recogida: tiene compromisos de agenda.",
+        not_available:"Conductor no disponible para recogida en este momento.",
+        route_unavailable:"Conductor en actividad; no se pudo calcular la ruta hasta tu origen.",
       };
       status.textContent=labels[data?.reason]||
-        "No pudimos confirmar la distancia de recogida. Podés consultar por WhatsApp.";
+        "Conductor en actividad; llegada aún no confirmada. Consultá por WhatsApp.";
     }
   }).catch(()=>{
     if(seq===pickupEtaRequestSeq)
-      status.textContent="Llegada no disponible por conexión. Consultá por WhatsApp.";
+      status.textContent="Conductor en actividad, pero sin cálculo de llegada por conexión.";
   }).finally(()=>clearTimeout(abort));
 }
 function setWhen(kind){
@@ -787,8 +833,8 @@ function init(){
   // Bounded refresh only while a foreground visitor requests an urgent pickup.
   pickupEtaTimer=setInterval(()=>{
     if(selectedPickupMode!=="schedule"&&document.visibilityState==="visible")
-      refreshPickupPresence();
-  },75000);
+      void refreshPickupPresence();
+  },40000);
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
