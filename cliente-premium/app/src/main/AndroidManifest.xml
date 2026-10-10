@@ -8,7 +8,7 @@
         android:usesCleartextTraffic="false"
         android:label="Traslados"
         android:theme="@style/Theme.Traslados"
-        android:icon="@drawable/traslados_icon"
+        android:icon="@drawable/traslados_brand"
         android:roundIcon="@drawable/traslados_icon"
         android:supportsRtl="true">
         <activity
