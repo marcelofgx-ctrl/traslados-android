@@ -238,3 +238,20 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 .pickup-presence[data-presence="offline"]{border-color:rgba(214,190,145,.25)}
 .pickup-presence[data-presence="offline"] .pickup-presence-status{color:#d0dad3}
 .pickup-presence[data-presence="checking"] .pickup-presence-status{color:#d6c49d}
+
+/* Asistencia contextual de Android para GPS: discreta, visible y accesible. */
+.gps-permission-help{
+  margin:12px 0 4px;padding:14px 15px;border-radius:16px;
+  border:1px solid rgba(225,191,119,.5);
+  background:linear-gradient(145deg,rgba(216,177,102,.13),rgba(9,47,55,.93));
+  box-shadow:0 12px 25px rgba(0,0,0,.12);color:#f5ead5;
+}
+.gps-permission-title{display:block;font-size:14px;color:#f5daa2;line-height:1.35}
+.gps-permission-description{font-size:12px;color:#dbe4d8;line-height:1.6;margin:8px 0}
+.gps-permission-steps{padding-left:21px;margin:9px 0 14px;font-size:12px;line-height:1.6;color:#e0e4da}
+.gps-permission-steps li{padding-left:2px;margin-bottom:8px}
+.gps-permission-steps li::marker{color:#eacb8e;font-weight:700}
+.gps-permission-actions{display:flex;flex-wrap:wrap;gap:8px}
+.gps-permission-actions .tiny-btn{min-height:44px;font-size:12px;padding:9px 13px}
+.gps-permission-actions .gps-manual{border-color:rgba(213,226,220,.35);color:#e7e6dc;background:rgba(10,34,42,.6)}
+.gps-permission-help[hidden]{display:none!important}
