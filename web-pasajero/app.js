@@ -50,12 +50,32 @@ function currentUY(offsetMinutes=0){
   const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"America/Montevideo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(dt).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
   return{day:`${parts.year}-${parts.month}-${parts.day}`,time:`${parts.hour}:${parts.minute}`};
 }
+let selectedPickupMode="schedule";
+function refreshPickupPresence(){
+  const host=$("pickup-presence");
+  if(!host)return;
+  host.hidden=selectedPickupMode==="schedule";
+  if(host.hidden)return;
+  const label=selectedPickupMode==="10"?"en 10 minutos":"lo antes posible";
+  $("pickup-presence-status").textContent="Conductor → origen: distancia y llegada no disponibles hasta habilitar GPS y presencia segura. Consulta su disponibilidad.";
+  const message=["Hola, quisiera consultar una recogida "+label+".",
+    record.origin?"Origen: "+record.origin.text:"",
+    record.destination?"Destino: "+record.destination.text:"",
+    "¿Estás libre y cuánto tardarías en llegar?"
+  ].filter(Boolean).join("\n");
+  $("pickup-presence-whatsapp").href="https://wa.me/59897228175?text="+encodeURIComponent(message);
+}
 function setWhen(kind){
+  selectedPickupMode=kind;
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
-  if(kind==="schedule"){$("pickup-date").focus();return;}
+  if(kind==="schedule"){
+    $("availability").textContent="Horario sujeto a agenda y confirmación del conductor.";
+    refreshPickupPresence();return;
+  }
   const when=currentUY(kind==="10"?10:2);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
-  $("availability").textContent=kind==="now"?"Solicitud para ahora: requiere disponibilidad y confirmación del conductor.": "Solicitud para dentro de 10 minutos: el conductor puede indicar otro horario.";
+  $("availability").textContent=kind==="now"?"Solicitás recogida lo antes posible; no equivale a disponibilidad confirmada.":"Solicitás recogida en 10 min; no se garantiza el horario hasta la confirmación.";
+  refreshPickupPresence();
 }
 function shiftView(name){
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
@@ -287,8 +307,9 @@ function renderRouteSummary(){
   const points=selectedRoadPoints();
   clear(host);host.hidden=points.length<2;
   // No stale pricing, route, or pickup data when A/B/stops are changed.
-  if(points.length<2){activeRouteKey="";latestRoad=null;routeSequence++;return;}
+  if(points.length<2){activeRouteKey="";latestRoad=null;routeSequence++;refreshPickupPresence();return;}
   const key=routeKeyOf(points);activeRouteKey=key;
+  refreshPickupPresence();
   const header=text(host,"div","","route-head");
   const heading=text(header,"div","","route-headline");
   text(heading,"h3","Tu recorrido");
