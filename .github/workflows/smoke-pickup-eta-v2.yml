@@ -22,7 +22,7 @@ jobs:
             'https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta' \
             -H 'Origin: https://marcelofgx-ctrl.github.io' \
             -H 'Content-Type: application/json' -H "apikey: $API_KEY" \
-            --data '{"originLat":-34.833,"originLng":-56.028}')"
+            --data '{"originLat":-34.83696,"originLng":-56.01638}')"
           echo "Estado HTTP respuesta anonima: $status"
           test "$status" = 200 -o "$status" = 429
           python3 - <<'PY'
@@ -47,6 +47,6 @@ jobs:
             'https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta' \
             -H 'Origin: https://unauthorized.example' \
             -H 'Content-Type: application/json' \
-            --data '{"originLat":-34.833,"originLng":-56.028}')"
+            --data '{"originLat":-34.83696,"originLng":-56.01638}')"
           test "$code" = 403
           echo 'PASS: origen externo no autorizado'
