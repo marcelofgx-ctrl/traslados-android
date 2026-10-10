@@ -28,6 +28,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,6 +48,7 @@ public final class MainActivity extends Activity {
     private static final int GOLD = Color.rgb(230, 199, 134);
     private WebView web;
     private View unavailable;
+    private boolean loadFailed=false;
     private GeolocationPermissions.Callback pendingLocationCallback;
     private String pendingLocationOrigin;
     private ValueCallback<Uri[]> pendingFileCallback;
@@ -115,11 +117,23 @@ public final class MainActivity extends Activity {
                 Uri uri=Uri.parse(url);
                 return !official(uri)&&openExternal(uri);
             }
+            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon) {
+                loadFailed=false;
+            }
             @Override public void onPageFinished(WebView view,String url) {
-                if(official(Uri.parse(url)))unavailable.setVisibility(View.GONE);
+                if(official(Uri.parse(url))&&!loadFailed)unavailable.setVisibility(View.GONE);
             }
             @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error) {
-                if(req.isForMainFrame())unavailable.setVisibility(View.VISIBLE);
+                if(req.isForMainFrame()) {
+                    loadFailed=true;
+                    unavailable.setVisibility(View.VISIBLE);
+                }
+            }
+            @Override public void onReceivedHttpError(WebView view,WebResourceRequest req,android.webkit.WebResourceResponse response) {
+                if(req.isForMainFrame()&&response.getStatusCode()>=500) {
+                    loadFailed=true;
+                    unavailable.setVisibility(View.VISIBLE);
+                }
             }
             @Override public void onReceivedSslError(WebView view,SslErrorHandler handler,SslError error) {
                 // No eludir fallos TLS, ni siquiera para pruebas.
@@ -217,12 +231,10 @@ public final class MainActivity extends Activity {
         panel.setPadding(dp(30),dp(30),dp(30),dp(30));
         panel.setBackgroundColor(PETROLEO);
 
-        TextView mark=new TextView(this);
-        mark.setText("✦");
-        mark.setTextColor(GOLD);
-        mark.setTextSize(48);
-        mark.setGravity(Gravity.CENTER);
-        panel.addView(mark,new LinearLayout.LayoutParams(-1,dp(76)));
+        ImageView mark=new ImageView(this);
+        mark.setImageResource(R.drawable.traslados_brand);
+        mark.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        panel.addView(mark,new LinearLayout.LayoutParams(-1,dp(90)));
 
         TextView title=new TextView(this);
         title.setText("TRASLADOS");
