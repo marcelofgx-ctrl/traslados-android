@@ -28,6 +28,7 @@ jobs:
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs
+          node web-pasajero/tests/install-flow-smoke.cjs
           node --check web-pasajero/sw.js
       - name: Verify review flow and offline safety
         run: |
