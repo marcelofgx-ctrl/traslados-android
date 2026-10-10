@@ -26,6 +26,10 @@ public final class Api {
     }
     /** User PIN is used only for one-time device linking, never persisted. */
     public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
+        // Privacy first: OFF must stop future GPS uploads even if offline.
+        // Remote presence will expire after 90 s if the revocation request fails.
+        if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+            .edit().putBoolean("enabled",false).apply();
         registerDevice();
         String[] ids=credentials();JSONObject body=new JSONObject();
         body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
