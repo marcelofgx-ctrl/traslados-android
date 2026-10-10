@@ -76,6 +76,18 @@ public final class Api {
         return new JSONObject(postRpc("driver_send_quote_v10_7",b));
     }
 
+    /** Tarifa orientativa pública, no confundir con el importe final de las reservas. */
+    public static JSONObject getWebReferenceRate(String pin) throws Exception {
+        JSONObject b=new JSONObject();b.put("p_pin",pin);
+        return new JSONObject(postRpc("driver_get_reference_rate_v1",b));
+    }
+    public static JSONObject setWebReferenceRate(String pin,double rate) throws Exception {
+        if(Double.isNaN(rate)||Double.isInfinite(rate)||rate<1||rate>1000)
+            throw new IllegalArgumentException("Tarifa inválida");
+        JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_rate",rate);
+        return new JSONObject(postRpc("driver_set_reference_rate_v1",b));
+    }
+
     public static void logEvent(String event,String message,String details){
         try{JSONObject d;try{d=details==null?new JSONObject():new JSONObject(details);}catch(Exception e){d=new JSONObject();d.put("raw_details",String.valueOf(details));}enqueueLog(event,event!=null&&event.contains("error")?"error":"info",message,d,null);flushQueuedLogs();}catch(Exception ignored){}
     }
