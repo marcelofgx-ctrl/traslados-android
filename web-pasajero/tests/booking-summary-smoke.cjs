@@ -25,7 +25,7 @@ assert(js.includes("const contact=\"https://wa.me/59897228175?text=\""),"WhatsAp
 
 
 class E{
- constructor(tag="div"){this.tag=tag;this.nodes=[];this.textContent="";this.hidden=false;this.attributes={};}
+ constructor(tag="div"){this.tag=tag;this.nodes=[];this.textContent="";this.hidden=false;this.attributes={};this.classList={add:(name)=>{const names=new Set(this.className.split(/\s+/).filter(Boolean));names.add(name);this.className=[...names].join(" ");},remove:(name)=>{this.className=this.className.split(/\s+/).filter(x=>x!==name).join(" ");}};}
  appendChild(x){this.nodes.push(x);return x;}
  replaceChildren(){this.nodes=[];this.textContent="";}
  setAttribute(k,v){this.attributes[k]=String(v);}
