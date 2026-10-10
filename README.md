@@ -1,5 +1,8 @@
 # Traslados Android — índice del repositorio
 
+> **ENLACE ÚNICO PARA PASAJEROS (10/10/2026):** https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ . Web/PWA con diseño aprobado por el usuario; APK Cliente v13 carga ESTA web (no Cloudflare). Cloudflare Worker solo complementa con APIs de rutas, km/min/tarifa; no sustituir la web aprobada.
+
+
 > **INICIO EN CUALQUIER SESIÓN:** [CONTEXTO MAESTRO DE TODOS LOS PROYECTOS](docs/CONTEXTO_MAESTRO_PROYECTOS.md) — Mapa, Conductor, Cliente APK, GitHub Pages/PWA, Cloudflare y Supabase. Contiene enlaces correctos, último estado comprobado y reglas de actualización. Leelo **antes** de los contextos históricos específicos.
 
 Este repositorio contiene **más de una aplicación Android**. Antes de programar, elegí el módulo correcto.
