@@ -249,7 +249,7 @@ public class MainActivity extends Activity {
         box.addView(actions,lpMatch(dp(50),0,7));
         if(!history){
             LinearLayout tools=new LinearLayout(this);tools.setGravity(Gravity.CENTER_VERTICAL);
-            Button alertPrefs=secondaryButton("AVISOS"),pricePrefs=secondaryButton("PRESETS"),gpsPrefs=secondaryButton("GPS");
+            Button alertPrefs=secondaryButton("AVISOS"),pricePrefs=secondaryButton("TARIFAS"),gpsPrefs=secondaryButton("GPS");
             applyActionIcon(alertPrefs,R.drawable.ic_bell);applyActionIcon(pricePrefs,R.drawable.ic_tune);applyActionIcon(gpsPrefs,R.drawable.ic_gps);
             for(Button b:new Button[]{alertPrefs,pricePrefs,gpsPrefs}){b.setTextSize(10);b.setPadding(dp(4),0,dp(4),0);}
             tools.addView(alertPrefs,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools,6);tools.addView(pricePrefs,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools,6);tools.addView(gpsPrefs,new LinearLayout.LayoutParams(0,dp(46),1));
@@ -1206,7 +1206,114 @@ public class MainActivity extends Activity {
 
     private void showDriverAlertSettings(){android.content.SharedPreferences p=getSharedPreferences("driver_alert_settings",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("AVISOS","Elegí qué señales querés recibir. Cada evento importante suena/vibra una sola vez.");ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);sc.addView(box);shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));android.widget.CheckBox n=new android.widget.CheckBox(this);n.setText("Sonido de nueva solicitud");n.setTextColor(TEXT);n.setChecked(p.getBoolean("new_sound",true));android.widget.CheckBox c=new android.widget.CheckBox(this);c.setText("Sonido de cambios del cliente");c.setTextColor(TEXT);c.setChecked(p.getBoolean("change_sound",true));android.widget.CheckBox t=new android.widget.CheckBox(this);t.setText("Sonido al iniciar / finalizar");t.setTextColor(TEXT);t.setChecked(p.getBoolean("trip_sound",true));android.widget.CheckBox r=new android.widget.CheckBox(this);r.setText("Aviso inteligente de próximo viaje");r.setTextColor(TEXT);r.setChecked(p.getBoolean("trip_reminder",true));android.widget.CheckBox v=new android.widget.CheckBox(this);v.setText("Vibración");v.setTextColor(TEXT);v.setChecked(p.getBoolean("vibrate",true));for(CheckBox x:new CheckBox[]{n,c,t,r,v})box.addView(x);EditText prep=availabilityField(box,"Avisarme antes de la hora recomendada de salida (min)",String.valueOf(p.getInt("trip_reminder_lead_min",10)),true);TextView explain=body("Ejemplo: si para llegar con margen deberías salir 09:30 y elegís 10 min, recibirás un aviso de preparación 09:20 y otro HORA DE SALIR a las 09:30.",11,MUTED);box.addView(explain,lpMatch(-2,4,6));Button test=secondaryButton("🧪 PROBAR AVISOS");test.setOnClickListener(x->showTestMode());box.addView(test,lpMatch(dp(48),4,5));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(50),1));shell.addView(actions,lpMatch(dp(54),8,0));cancel.setOnClickListener(x->d.dismiss());save.setOnClickListener(x->{p.edit().putBoolean("new_sound",n.isChecked()).putBoolean("change_sound",c.isChecked()).putBoolean("trip_sound",t.isChecked()).putBoolean("trip_reminder",r.isChecked()).putBoolean("vibrate",v.isChecked()).putInt("trip_reminder_lead_min",Math.max(0,Math.min(60,intValue(prep,10)))).apply();toast("Preferencias de avisos guardadas");d.dismiss();});showDriverDialog(d,shell,.92f,.82f);}
 
-    private void showPricingPresetDialog(){android.content.SharedPreferences p=getSharedPreferences("pricing",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("PRESET DE PRESUPUESTO","Valores internos predeterminados. El cliente nunca ve este desglose.");ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);sc.addView(box);EditText rate=quoteNumberField(box,"Referencia habitual por km",bitsValue(p,"price_per_km_bits"));EditText min=quoteNumberField(box,"Mínimo habitual",bitsValue(p,"minimum_bits"));EditText toll=quoteNumberField(box,"Valor habitual por peaje",bitsValue(p,"toll_unit_bits"));EditText wait=quoteNumberField(box,"Espera habitual",bitsValue(p,"waiting_bits"));EditText pickup=quoteNumberField(box,"Extra habitual hasta origen",bitsValue(p,"pickup_extra_bits"));EditText other=quoteNumberField(box,"Otros extras habituales",bitsValue(p,"other_bits"));shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));shell.addView(actions,lpMatch(dp(56),8,0));cancel.setOnClickListener(v->d.dismiss());save.setOnClickListener(v->{p.edit().putLong("price_per_km_bits",Double.doubleToRawLongBits(num(rate))).putLong("minimum_bits",Double.doubleToRawLongBits(num(min))).putLong("toll_unit_bits",Double.doubleToRawLongBits(num(toll))).putLong("waiting_bits",Double.doubleToRawLongBits(num(wait))).putLong("pickup_extra_bits",Double.doubleToRawLongBits(num(pickup))).putLong("other_bits",Double.doubleToRawLongBits(num(other))).apply();toast("Preset guardado");d.dismiss();});showDriverDialog(d,shell,.94f,.86f);}
+    private void showPricingPresetDialog(){
+        android.content.SharedPreferences p=getSharedPreferences("pricing",MODE_PRIVATE);
+        final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout shell=driverDialogShell("TARIFAS Y PRESUPUESTOS",
+            "La web muestra una referencia. Vos siempre definís el presupuesto final para cada pasajero.");
+        ScrollView sc=new ScrollView(this);
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        sc.addView(box);
+
+        TextView webTitle=body("✦ PRECIO ORIENTATIVO EN LA WEB",14,GOLD);
+        webTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+        box.addView(webTitle,lpMatch(-2,4,2));
+        double savedWeb=Double.longBitsToDouble(p.getLong("web_reference_rate_bits",Double.doubleToLongBits(40)));
+        if(!Double.isFinite(savedWeb)||savedWeb<1||savedWeb>1000)savedWeb=40;
+        EditText webRate=quoteNumberField(box,"Pesos uruguayos por kilómetro",
+            String.format(Locale.US,"%.2f",savedWeb));
+        TextView webExample=body("Ejemplo: 8 km × "+String.format(Locale.US,"%.0f",savedWeb)
+            +" = $"+String.format(Locale.US,"%.0f",Math.round(8*savedWeb/10.0)*10)+
+            " aprox. · Sin peajes ni extras.",11,MUTED);
+        box.addView(webExample,lpMatch(-2,2,4));
+        TextView webStatus=body("Comprobando tarifa publicada…",11,MUTED);
+        box.addView(webStatus,lpMatch(-2,2,5));
+        Button updateWeb=secondaryButton("ACTUALIZAR TARIFA DE LA WEB");
+        updateWeb.setTextSize(11);
+        box.addView(updateWeb,lpMatch(dp(47),6,12));
+
+        TextView localTitle=body("PRESETS PRIVADOS DEL CONDUCTOR",13,GOLD);
+        localTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+        box.addView(localTitle,lpMatch(-2,16,5));
+        EditText rate=quoteNumberField(box,"Referencia habitual para presupuestos finales por km",
+            bitsValue(p,"price_per_km_bits"));
+        EditText min=quoteNumberField(box,"Mínimo habitual",bitsValue(p,"minimum_bits"));
+        EditText toll=quoteNumberField(box,"Valor habitual por peaje",bitsValue(p,"toll_unit_bits"));
+        EditText wait=quoteNumberField(box,"Espera habitual",bitsValue(p,"waiting_bits"));
+        EditText pickup=quoteNumberField(box,"Extra habitual hasta origen",bitsValue(p,"pickup_extra_bits"));
+        EditText other=quoteNumberField(box,"Otros extras habituales",bitsValue(p,"other_bits"));
+        shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
+
+        LinearLayout actions=new LinearLayout(this);
+        Button cancel=secondaryButton("CERRAR"),save=primaryButton("GUARDAR PRESETS");
+        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));
+        spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));
+        shell.addView(actions,lpMatch(dp(56),8,0));
+        cancel.setOnClickListener(v->d.dismiss());
+        save.setOnClickListener(v->{
+            p.edit()
+                .putLong("price_per_km_bits",Double.doubleToRawLongBits(num(rate)))
+                .putLong("minimum_bits",Double.doubleToRawLongBits(num(min)))
+                .putLong("toll_unit_bits",Double.doubleToRawLongBits(num(toll)))
+                .putLong("waiting_bits",Double.doubleToRawLongBits(num(wait)))
+                .putLong("pickup_extra_bits",Double.doubleToRawLongBits(num(pickup)))
+                .putLong("other_bits",Double.doubleToRawLongBits(num(other))).apply();
+            toast("Presets locales guardados");d.dismiss();
+        });
+        updateWeb.setOnClickListener(v->{
+            double value=num(webRate);
+            if(!Double.isFinite(value)||value<1||value>1000){
+                toast("La tarifa web debe estar entre $1 y $1000 por km");return;
+            }
+            updateWeb.setEnabled(false);updateWeb.setText("GUARDANDO EN SUPABASE…");
+            pool.execute(()->{
+                try{
+                    JSONObject result=Api.setWebReferenceRate(pin,value);
+                    double confirmed=result.optDouble("rateUyuPerKm",value);
+                    p.edit().putLong("web_reference_rate_bits",
+                        Double.doubleToRawLongBits(confirmed)).apply();
+                    runOnUiThread(()->{
+                        if(!d.isShowing())return;
+                        webExample.setText("Ejemplo: 8 km × "+
+                            String.format(Locale.US,"%.0f",confirmed)+" = $"+
+                            String.format(Locale.US,"%.0f",Math.round(8*confirmed/10.0)*10)+
+                            " aprox. · Sin peajes ni extras.");
+                        webStatus.setText("✓ Tarifa de referencia web actualizada");
+                        toast("Precio orientativo de la web guardado");
+                        updateWeb.setEnabled(true);updateWeb.setText("ACTUALIZAR TARIFA DE LA WEB");
+                    });
+                }catch(Exception e){
+                    runOnUiThread(()->{
+                        if(!d.isShowing())return;
+                        webStatus.setText("No se actualizó la tarifa web: "+friendly(e));
+                        updateWeb.setEnabled(true);updateWeb.setText("REINTENTAR TARIFA WEB");
+                    });
+                }
+            });
+        });
+        showDriverDialog(d,shell,.94f,.88f);
+        pool.execute(()->{
+            try{
+                JSONObject remote=Api.getWebReferenceRate(pin);
+                double value=remote.optDouble("rateUyuPerKm",40);
+                if(!Double.isFinite(value)||value<1||value>1000)return;
+                p.edit().putLong("web_reference_rate_bits",Double.doubleToRawLongBits(value)).apply();
+                runOnUiThread(()->{
+                    if(!d.isShowing())return;
+                    if(!webRate.hasFocus())webRate.setText(String.format(Locale.US,"%.2f",value));
+                    webStatus.setText("✓ Tarifa vigente sincronizada con la web");
+                    webExample.setText("Ejemplo: 8 km × "+String.format(Locale.US,"%.0f",value)+
+                        " = $"+String.format(Locale.US,"%.0f",Math.round(8*value/10.0)*10)+
+                        " aprox. · Sin peajes ni extras.");
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    if(d.isShowing())webStatus.setText(
+                        "Sin conexión con la tarifa remota. No se cambiará hasta guardar.");
+                });
+            }
+        });
+    }
     private String bitsValue(android.content.SharedPreferences p,String key){double v=Double.longBitsToDouble(p.getLong(key,Double.doubleToLongBits(0)));return v>0?String.format(Locale.US,"%.0f",v):"";}
 
 
