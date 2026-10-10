@@ -1,3 +1,17 @@
+# Traslados Cliente Premium v13.0 — web de pasajeros DEFINITIVA
+
+**ESTADO VERIFICADO 10/10/2026**: APK Android **v13.0 Premium / versionCode 201**, package `uy.com.traslados.cliente`, compilada y firmada en [GitHub Actions 38092623349](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38092623349) (**SUCCESS**) y comparada con el certificado original Cliente R12 (**idéntico**). Ya está publicada en `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v13.apk`, con comprobación SHA256 en la web.
+
+**DECISIÓN FINAL DEL USUARIO:** la APK usa como interfaz EXACTAMENTE `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/`, no la web anterior de Cloudflare. Es la interfaz aprobada con título «Tu viaje, bien organizado» y pestañas Reservar / Mis traslados / Mi cuenta / Instalar. La PWA y la APK comparten ese código de reservas. Cloudflare `traslados-web.marcelof-gx.workers.dev` presta el motor técnico de distancia/km/min/precio por sus endpoints, pero NO la portada comercial.
+
+- Fuente app: `cliente-premium/app/`. Build actual: `.github/workflows/build-cliente-premium-v13.yml`. La versión anterior `build-cliente-premium-v12.yml` queda histórica y solo manual, no debe reconstruirse al actualizar v13.
+- Configuración URL: `cliente-premium/app/build.gradle`; lista restrictiva host+path y GPS restringido al host: `MainActivity.java`.
+- Actualizar y verificar PWA primero; la APK no incluye HTML propio. No inventar push ni posición en vivo. Mantener firma, certificado y versionCode ascendente.
+- Estado Android real: **no hay prueba física de instalación/login/GPS** confirmada; hay que verificar en dispositivo estacionado. No crear reservas reales de prueba sin consentimiento.
+- **NOTA:** a continuación se conserva exclusivamente el historial v12 como referencia; sus afirmaciones de URL principal Workers y estado de despliegue fueron superadas por este corte.
+
+---
+
 # Traslados Cliente Premium 12.0 — Android
 
 **Estado (10/10/2026):** nueva APK nativa compilada, firmada, con certificado **idéntico** al Cliente anterior R12 y **publicada mediante GitHub Pages auxiliar**, con SHA256 y entrega HTTP pública verificados. **No** existe aún una prueba física de instalación, login, GPS y envío de reserva en un Android real. La web oficial de Cloudflare sigue pendiente de desplegar sus cambios premium actuales por falta de `CLOUDFLARE_API_TOKEN` en GitHub Actions.
