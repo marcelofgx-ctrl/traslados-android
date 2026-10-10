@@ -14,6 +14,20 @@
 
 ---
 
+## 0.0.e PWA: ANDROID MADRE NO VE INSTALAR — V18 (10/10/2026)
+
+**Evidencia nueva:** fotografía de otro Android (madre del usuario) mostrando en la pestaña Instalar de Traslados la tarjeta `VER CÓMO INSTALAR` y los pasos «Instalación desde Chrome». Esto prueba **solo que el navegador no emitió el evento `beforeinstallprompt`** a la web; NO prueba incompatibilidad de hardware, error de Supabase, falla de licencia ni que no pueda crearse un acceso directo. El ícono del teléfono del usuario puede ser PWA, acceso directo o APK; no confundir.
+
+**Comprobación de código:** `web-pasajero/manifest.webmanifest` declara name, start_url, scope, display=standalone, iconos 192/512/maskable; `sw.js` incluye fetch handler, recursos HTTPS y registro en `app.js`. No se ha probado la instalación real en el dispositivo de la madre ni se puede forzar `beforeinstallprompt` desde JS.
+
+**Criterio oficial Chrome actualizado 2026:** Google documenta en Android **⋮ → «Instalar y crear acceso directo» → «Instalar»** para aplicaciones web; si ofrece «Crear acceso directo» sin «Instalar» se obtendrá un ícono/atajo que normalmente abre Chrome, no necesariamente una PWA independiente. Fuentes: https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DAndroid&hl=es-419 y https://support.google.com/chrome/answer/15085120?co=GENIE.Platform%3DAndroid&hl=es-419 . El menú exacto depende de versión; en Chrome anterior puede decir «Agregar a pantalla principal».
+
+**IMPLEMENTADO en `traslados-android/main`:** actualizar `web-pasajero/app.js` `installHelpContent` (commit `74f1099d`) con el menú oficial actual y diferencia clara entre instalación independiente y simple atajo, sin engañar al usuario. Nuevos recursos `app.js?v=18`, cache `traslados-cliente-pwa-v18`. Prueba `install-flow-smoke.cjs` comprueba nuevos textos y `location-permission-smoke.cjs` cache; `check-web-pasajero-review.yml` actualizado. [CI #38071121230](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38071121230) **SUCCESS**. Pages corte documental posterior en curso [#38071123624](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38071123624); revisar resultado. **No modificó backend, APK ni Workers.**
+
+**PRÓXIMA ACCIÓN ÚNICA usuario:** en el Android de la madre abrir la web directamente en Chrome (no app embebida), abrir su menú ⋮ y comprobar si existe `Instalar y crear acceso directo`; dentro buscar `Instalar` vs `Crear acceso directo`. Si no ofrece, obtener captura de ese menú y versión de Chrome/Android antes de atribuir causa. Alternativa si se busca instalación independiente idéntica en cualquier equipo: distribuir APK Android nativa verificada, no confundir con acceso directo PWA.
+
+---
+
 ## 0.0.d INSTALACIÓN WEB PASAJERO — CORRECCIÓN BOTÓN (10/10/2026; PWA v17)
 
 **Evidencia:** fotografía del Samsung en sección «Instalar», con botón «INSTALAR TRASLADOS» y reporte «No, solo mensaje error» tras pulsarlo. Se examinó `web-pasajero/app.js`: función `installUI()` solo ofrecía diálogo de instalación si Chrome emitía antes `beforeinstallprompt`; si no, mostraba un `toast` temporal que el usuario interpretó como fallo. En modo `standalone` respondía con otro `toast` aunque ya estuviera instalada. No se recibió aún texto literal del mensaje de error de instalación de Android/Chrome, por lo que no atribuirlo a un fallo específico del navegador sin evidencia.
