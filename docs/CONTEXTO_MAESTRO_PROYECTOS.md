@@ -1,6 +1,6 @@
 # CONTEXTO MAESTRO — ECOSISTEMA TRASLADOS / MAPA TRAYECTOS
 
-**Corte comprobado:** 09/10/2026, ~21:20 Uruguay (America/Montevideo).
+**Corte comprobado:** 09/10/2026, auditoría posterior de repositorios, artefactos y CI (America/Montevideo).
 **Carácter:** documento de inicio de sesión, vivo y versionado en GitHub.
 **Repositorio canónico de coordinación:** `marcelofgx-ctrl/traslados-android`, rama `main`.
 **Segundo repositorio:** `marcelofgx-ctrl/traslados-web`, rama `main`.
@@ -14,16 +14,40 @@
 
 ---
 
+## 0. ACTUALIZACIÓN DE AUDITORÍA CI Y VERSIONES — 09/10/2026 (posterior al corte inicial)
+
+**Fuentes verificadas:** `main` de `traslados-android` y `traslados-web`, logs de GitHub Actions, jobs, artefactos y módulos `conductor/`, `mapatrayectos/` y workflows. Esta auditoría **no modificó la lógica de reservas, el esquema Supabase ni el diseño visual de producción**. Clasificación estricta:
+
+| Producto | Código real | Compilación comprobada | Publicado / probado |
+| --- | --- | --- | --- |
+| **Mapa Trayectos + Conductor integrado** | R24.3 / code 45 en `mapatrayectos/` | RELEASE firmada [37924921923](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37924921923) SUCCESS | APK disponible; prueba física definitiva Samsung y flujo completo Supabase **pendientes**. |
+| **Conductor independiente** | `conductor/` 11.5-R1 / code 123 | **RELEASE firmada** [37924922002](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37924922002) SUCCESS (artefacto 11613278802). **DEBUG desde fuente** [38009749431](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38009749431) SUCCESS (artefacto 11652782972) | No hay QA Samsung confirmado. Pantalla de demanda **BETA con datos simulados**; no publicitar datos en vivo. |
+| **Cliente Android nativa** | 11.5-R10 en su workflow RELEASE | [37945735891](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37945735891) SUCCESS, APK firmada; artefacto 11624055221 | QA Samsung y reserva real end-to-end **pendientes**. |
+| **PWA Pasajero Pages** | `web-pasajero/` con índice de POIs | Smoke público [38008909648](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38008909648) SUCCESS y Pages [38008909342](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38008909342) SUCCESS | Publicación de esas revisiones comprobada por CI; envío real de reserva, teclado/recorrido y estados **pendientes en móvil**. |
+| **Web Premium Cloudflare** | `traslados-web/main` [152298f](https://github.com/marcelofgx-ctrl/traslados-web/commit/152298fcb1300d1fcf68ef3c1bd354bc76de7584) | CI [38008884026](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38008884026) SUCCESS | CI **no equivale por sí solo** a despliegue nuevo ni prueba de flujos de Cloudflare; validar sitio y Workers. |
+
+**Diagnóstico del error Conductor:** el workflow antiguo `build-conductor.yml` decía **v9.2** y recompilaba un paquete histórico tar/base64 en vez del árbol actual. Falló repetidamente (último observado [38009749433](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38009749433)); en [38008909682](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38008909682) el compilador reportó `org.maplibre.android.* does not exist` al compilar `DemandMapActivity` con dependencias antiguas. **No significa que Mapa R24.3 ni Conductor 11.5-R1 RELEASE fallaran.** Retirado YAML obsoleto de `main` en [1ca663d](https://github.com/marcelofgx-ctrl/traslados-android/commit/1ca663d6ac76c39b85dd1901221d6fcfea95f0ec); los runs históricos quedan en Actions. El workflow DEBUG de fuente actual se corrigió en [6c3421f](https://github.com/marcelofgx-ctrl/traslados-android/commit/6c3421f41d02f633f24fe0449c710cdbbc5d87b2) y produjo el artefacto correcto. **No instalar DEBUG encima de RELEASE sin comprobar firma/datos.**
+
+**Cliente legado v9.0:** el job `Build Traslados Cliente v9.0` compilaba otra APK DEBUG desde tar histórico en **cada** push; que figurase SUCCESS no era una nueva versión de Cliente 11.5-R10. Se retiró su YAML `build-apks.yml` de `main` en [3fe7ad0](https://github.com/marcelofgx-ctrl/traslados-android/commit/3fe7ad0396d0f3e6ac41bad49b72e26c2c2b1cc3). Sus referencias históricas fijadas por SHA siguen accesibles desde Git; no se modificó la release. Avisar si se reintroducen trabajos obsoletos antes de habilitar ejecuciones automáticas en cada push.
+
+**Documentación especializada nueva:** [Conductor independiente — CI, release, beta y error antiguo](CONDUCTOR_INDEPENDIENTE_CI.md) y [Cliente Android — releases y CI](CLIENTE_ANDROID_CI.md). Esta fuente queda como **único contexto maestro transversal**; arquitectura de rutas, GPS, Web Cloudflare, Mapa y PWA siguen en sus documentos técnicos propios.
+
+**Cambios efectuados en esta tanda (sin tocar producción):** `6c3421f` (workflow DEBUG fuente actual), `1ca663d` (retirar Conductor v9.2 legado), `3fe7ad0` (retirar Cliente v9.0 legado), `a66a746` y `24a0c15` (documento especializado Conductor y evidencia de SUCCESS), `686ac86` (documento especializado Cliente). **Al modificar solamente CI/documentación no se generó nueva RELEASE ni nueva funcionalidad de pasajero.**
+
+**Pendiente P0:** ensayo consentido de **una sola** reserva real PWA/Cliente → Mapa Conductor → presupuesto → respuesta → historial; QA de IME Samsung en Mapa R24.3; verificar motor rutas/ORS y presencia comercial antes de ofrecer «Ahora / En 10 min» como disponibilidad garantizada. El API Cloudflare y la web pública no fueron probados de punta a punta durante esta auditoría, aunque sus CI más recientes revisados estaban verdes.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
 | --- | --- | --- | --- |
 | **Mapa Trayectos** — APK conductor principal | `traslados-android/mapatrayectos/` | GPS y mapa, jornadas Uber/Cabify/personal, historial, alertas, acciones y **Conductor integrado** | Código `0.1-R24.3`, `versionCode 45`; APK RELEASE firmada verificada en Actions **37924921923**; validación visual integral en Samsung pendiente. |
-| **Conductor nativo** integrado | `traslados-android/conductor/` y tarea `prepareEmbeddedConductor` de Mapa | Reservas Supabase, presupuestos, aceptar/rechazar, monitoreo periódico | Forma parte del APK Mapa R24.x. El build **Conductor independiente v9.2** figura fallido en Actions **38005505455**; investigar si se pretende entregar ese respaldo separado. No confundir con el build Mapa R24.3 exitoso. |
-| **Traslados Cliente** — APK nativa | `traslados-android/cliente-pasajero/` y workflows Android | App nativa distinta de la PWA; reservas e historial | Última release nativa documentada **11.5-R10**, run **37945735891**; workflows `Build Traslados Cliente v9.0` registran éxito más reciente (**38005505533**) pero el nombre del workflow no demuestra versión/firma/archivo: inspeccionar artefacto antes de anunciar actualización. |
+| **Conductor nativo** integrado | `traslados-android/conductor/` y tarea `prepareEmbeddedConductor` de Mapa | Reservas Supabase, presupuestos, aceptar/rechazar, monitoreo periódico | Forma parte de Mapa R24.x. Conductor **independiente 11.5-R1 RELEASE firmado** pasó Actions **37924922002**; DEBUG de código actual pasó **38009749431**. El job **v9.2 legado fallido** fue retirado, no confundir con las releases exitosas. |
+| **Traslados Cliente** — APK nativa | `traslados-android/cliente-pasajero/` y workflows Android | App nativa distinta de la PWA; reservas e historial | RELEASE nativa **11.5-R10** verificada, run **37945735891**; artefacto firmado 11624055221. El viejo job **v9.0 DEBUG** (otro código/paquete embebido) fue retirado; no confundir sus successes con actualizaciones. |
 | **Traslados Pasajero GitHub Pages** | `traslados-android/web-pasajero/` | Web/PWA ligera: invitados y clientes con teléfono/PIN, recorrido, reservas, presupuesto | Está **bajo /web-pasajero/**, no en raíz; smoke público **38005505447** y Pages **38005504188**, ambos success al corte. |
 | **Índice público del proyecto** | `traslados-android/index.html` | Página de acceso a apps y documentación; mantener como puerta de entrada y continuidad | Raíz GitHub Pages separada del formulario. |
-| **Traslados Web Premium Cloudflare** | `traslados-web/` | Otra interfaz web completa: portada premium, historial avanzado, PWA/passkeys en desarrollo, itinerarios, reservas | `main` **87f0038d0f670605e059b0a1e98732d2c78ba5c6**; CI **38000741722** success. Publicación/experiencia real a validar en sitio. |
+| **Traslados Web Premium Cloudflare** | `traslados-web/` | Otra interfaz web completa: portada premium, historial avanzado, PWA/passkeys en desarrollo, itinerarios, reservas | `main` **152298fcb1300d1fcf68ef3c1bd354bc76de7584**; CI **38008884026** success. Publicación/experiencia real a validar en sitio. |
 | **Backend único de reservas** | Supabase **`zetaudvvutlouiqxopvg`** | Clientes, sesiones, reservas, presupuestos, paradas, funciones RPC, estados | Producción real compartida: proteger esquema y registros existentes. |
 
 **Advertencia central:** la PWA GitHub Pages y la web Cloudflare son **dos frontends distintos**, aunque comparten Supabase. Un cambio visual en una NO aparece automáticamente en la otra. La APK Cliente es otro producto; no confundir APK nativa con PWA instalable. **No crear una tercera base ni reservas ficticias para simular integración.**
@@ -81,8 +105,8 @@
 - Mapa `mapatrayectos/build.gradle`: `versionName '0.1-R24.3'`, `versionCode 45` observado en este corte. Package `uy.com.mapatrayectos`; Android Java/Gradle/SDK35; release firmada.
 - Mapa R24.3: corrección del diálogo **Preparar presupuesto** del Conductor integrado ante teclado Samsung; UI scrolleable y acciones visibles. GitHub Actions **37924921923** success; APK respaldada en Drive según el documento RETOMAR. Falta prueba física definitiva.
 - Conductor integrado se empaqueta desde `conductor/` mediante `prepareEmbeddedConductor`; dentro de Mapa están reservaciones, presupuesto, estados y monitor. R24.2 introdujo Centro rápido de reservas/agenda/badges y R24.1 menú/burbuja más compactos.
-- Conductor independiente sigue como **respaldo**. Último workflow **Build Traslados Conductor v9.2** falla en **38005505455** (y runs previos): **diagnosticar logs antes de usarlo o recomendar su APK**. No afirmar que Mapa falló por ese build.
-- Cliente Android nativa 11.5-R10 documentada firmada: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37945735891 . `cliente-pasajero/` contiene scripts/fuentes extra. Consultar los workflows/artefactos más recientes si se pide APK.
+- Conductor independiente sigue como **respaldo**. La RELEASE **11.5-R1** está firmada y CI SUCCESS en **37924922002**; DEBUG 11.5-R1 desde fuente CI SUCCESS en **38009749431**. La falla v9.2 estaba en un workflow histórico empaquetado, retirado de main; ver [diagnóstico y precauciones](CONDUCTOR_INDEPENDIENTE_CI.md).
+- Cliente Android nativa 11.5-R10 RELEASE firmada: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37945735891 . `cliente-pasajero/` contiene scripts/fuentes extra. Se retiró CI obsoleto v9.0 DEBUG que se confundía con la versión actual; ver [Cliente Android CI](CLIENTE_ANDROID_CI.md).
 - Las alertas de Conductor por ahora consultan Supabase periódicamente (~15 s, si Android permite el servicio), **NO son push FCM garantizados**. No prometer recepción con app forzada a detener. FCM y GPS público vivo siguen pendientes de producto.
 - **Datos sensibles:** conservar SQLite, historiales, sonidos importados, versiones instaladas, PIN, SharedPreferences y firma APK. No desinstalar ni borrar datos para actualizar sin backup/permiso.
 
@@ -121,7 +145,7 @@ Funciones/Supabase que requieren compatibilidad: `create_reservation`, `get_rese
 - Probar **una** reserva real controlada desde `/web-pasajero/` → verla en Mapa/Conductor → enviar presupuesto → cliente acepta/rechaza → comprobar estados e historial; confirmar que desapareció `gen_random_bytes` y no se duplican reservas.
 - Probar UX Android en Samsung con capturas: búsqueda «Punta Carretas Shopping», «Plaza Italia Shopping», Aeropuerto Carrasco, origen/destino compacto, km/min o Maps, teclado sin tapar CTA, contraste.
 - Si falla la distancia en la PWA, verificar Cloudflare ruta `/api/public/route-estimate`, proveedor ORS y CORS autorizado; no crear falsos km.
-- Corregir build Conductor independiente **solo si** sigue siendo entregable necesario; no romper la APK Mapa principal.
+- Continuar pruebas físicas de Conductor RELEASE 11.5-R1 y DEBUG desde fuente ya compilados; el job legado v9.2 se retiró. No romper la APK Mapa principal.
 
 **P1 — integración Mapa ⇄ Web**
 - Implementar GPS/estado del conductor con consentimiento, seguridad, frecuencia, caducidad y privacidad.
@@ -159,6 +183,8 @@ Funciones/Supabase que requieren compatibilidad: `create_reservation`, `get_rese
 - [Historial Android](HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md) — histórico de releases, SHA y pruebas.
 - [Contexto histórico Mapa](CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md) — decisiones anteriores.
 - [Estado integrado de apps](ESTADO_INTEGRADO_CLIENTE_WEB_PWA_CONDUCTOR.md) — compatibilidad y Supabase.
+- [Conductor independiente — CI y beta](CONDUCTOR_INDEPENDIENTE_CI.md) — release firmada real, error histórico v9.2, DEBUG desde fuente.
+- [Cliente Android — CI](CLIENTE_ANDROID_CI.md) — release nativa 11.5-R10 y depuración de jobs v9.0.
 - [PWA Cliente — instrucciones](../web-pasajero/README.md) — publicador, scripts, claves públicas y UX.
 - [Mapa RELEASE CI](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37924921923) — última RELEASE principal conocida.
 - [Smoke GitHub Pages](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38005505447) — rutas públicas verificadas.
