@@ -13,8 +13,8 @@ const end=js.indexOf("\nfunction init(){",start);
 assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
-assert(html.includes("./app.js?v=23")&&html.includes("./styles.css?v=23"));
-assert(sw.includes("traslados-cliente-pwa-v23"));
+assert(html.includes("./app.js?v=24")&&html.includes("./styles.css?v=24"));
+assert(sw.includes("traslados-cliente-pwa-v24"));
 assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v14.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
@@ -89,6 +89,7 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   });
   assert(prevented,"Browser controls auto installation prompt");
   assert.equal(installable.elements["install-action"].textContent,"INSTALAR TRASLADOS");
+  assert.equal(installable.elements["install-apk-option"].hidden,false,"APK must remain an explicit choice even when PWA prompt exists");
   await installable.click();
   assert.equal(promptCalls,1,"Native installer must run on user click");
   assert.match(installable.elements["install-info"].textContent,/Confirmaste/);
