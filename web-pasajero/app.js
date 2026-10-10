@@ -968,7 +968,7 @@ function installUI(){
       const response=await fetch(apkLink.href,{method:"HEAD",cache:"no-store"});
       const type=(response.headers.get("content-type")||"").toLowerCase();
       const length=Number(response.headers.get("content-length")||"0");
-      apkReady=response.ok&&length>100000&&!/text\/html|application\/json|text\/plain/.test(type);
+      apkReady=response.ok&&length>10000&&!/text\/html|application\/json|text\/plain/.test(type);
     }catch{apkReady=false;}
     updateUI();
   }
