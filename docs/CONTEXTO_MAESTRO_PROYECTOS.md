@@ -14,6 +14,18 @@
 
 ---
 
+## 0.0.c GPS BLOQUEADO POR BURBUJAS EN SAMSUNG — 10/10/2026 (PWA V16 / WORKERS)
+
+**Evidencia del usuario, a las 11:59 Uruguay:** pantalla de reserva de **PWA auxiliar GitHub Pages** con alerta nativa Android «Este sitio no puede solicitarte permiso. Cierra las burbujas o superposiciones de otras apps». En la captura se ven arriba a la derecha burbujas flotantes de **Uber y Cabify**, no solo Mapa Trayectos. Ocultar únicamente la de Mapa no resuelve esa pantalla. El permiso lo protege Android a nivel sistema, no lo puede conceder el sitio ni Supabase. El usuario estaba conduciendo: insistir en NO pedir manipular ajustes mientras conduce.
+
+**IMPLEMENTADO en `traslados-android/main`:** `web-pasajero/app.js` ahora consulta `navigator.permissions.query({name:"geolocation"})` y, si un Android tiene permiso en `prompt` (pendiente), muestra **una tarjeta de preparación antes de abrir la ventana Android**. Explica específicamente Uber/Cabify/Mapa, requiere que el conductor esté estacionado y ofrece `⌖ Solicitar permiso` (un toque explícito) y `Elegir origen sin GPS` (buscador manual). Si ya está concedido se pide directamente la ubicación; si está denegado se presenta la guía de Chrome/Android sin bucle; se evitan varias ventanas de permisos simultáneas. Código `7a4c6ca6`, recursos PWA `app.js?v=16`, service worker cache `traslados-cliente-pwa-v16`. Prueba dinámica `web-pasajero/tests/location-permission-smoke.cjs`: simuló permisos pending/denied/granted y verificó **0 aperturas nativas en pending**, **1 apertura tras toque explícito**, guía tras denegación. [CI PWA #38062153790](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38062153790) **SUCCESS** y [Pages despliegue #38062152377](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38062152377) **SUCCESS**.
+
+**IMPLEMENTADO en `traslados-web/main`:** `src/components/UyLocationPicker.tsx` recibió preparación equivalente y mantuvo botón «Elegir en mapa» además de «Escribir origen». `tests/location-permission.test.ts` ampliado; [CI Workers #38062167575](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38062167575) **SUCCESS** (dos jobs). **NO PUBLICADO en Workers:** consulta de runs `event=workflow_dispatch` permanece en 0, se mantiene despliegue **manual** con URL canónica y sin alterar secretos. No redireccionar a Pages, ni cambiar identidad, ni pretender que CI=producción.
+
+**PENDIENTE de verificación real y única acción del usuario AL ESTACIONAR:** desactivar/ocultar todas las burbujas Uber/Cabify/Mapa y, si no basta, **Ajustes → Aplicaciones → Acceso especial → Aparecer encima**, desactivar temporalmente la app que genera la superposición. Entrar de nuevo al sitio y tocar «Solicitar permiso» en nuestra tarjeta. La PWA no puede cerrar ni detectar las burbujas de apps ajenas y no hay técnica web legítima que eluda el bloqueo Android. Se puede continuar con origen manual sin GPS. No se tocó backend, reservas, APK, PIN, GPS de Mapa ni funcionamiento de Uber/Cabify.
+
+---
+
 ## 0.0.b IDENTIDAD PÚBLICA SOLO TRASLADOS — 10/10/2026
 
 **Decisión del usuario:** ningún pasajero debe ver referencias a GitHub, Cloudflare, Supabase, desarrolladores, workflows, compilaciones o proveedores técnicos en la interfaz de uso normal. La web principal permanece en la URL aprobada **https://traslados-web.marcelof-gx.workers.dev/**. **No** redirigir a GitHub Pages (revelaría `github.io`), ni cambiar la estética premium petróleo/champagne/dorado.
