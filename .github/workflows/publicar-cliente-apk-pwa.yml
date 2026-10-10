@@ -42,7 +42,7 @@ jobs:
           test -s Traslados_Cliente_v11.5_R12_RELEASE.apk
           test -s SHA256SUMS.txt
           test -s SIGNING.txt
-          sha256sum -c SHA256SUMS.txt
+          sed 's|^artifacts/||' SHA256SUMS.txt | sha256sum -c -
           grep -Eiq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' SIGNING.txt
           python3 - <<'PY'
           from pathlib import Path
