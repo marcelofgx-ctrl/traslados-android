@@ -55,7 +55,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(customerEtaCalls,0,"No customer session required for guest");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/ubicación por zona/);
-  assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para consultas/);
+  assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para recogerte ahora/);
   assert(!/Iniciá sesión en Mi cuenta para consultar la llegada aproximada/.test(
     els["pickup-presence-status"].textContent));
   assert.equal(host.dataset.presence,"online");
