@@ -77,6 +77,7 @@ jobs:
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
           node --check web-pasajero/sw.js
           python3 - <<'PYCHECK'
           import json,pathlib
