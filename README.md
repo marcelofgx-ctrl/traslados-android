@@ -1,5 +1,7 @@
 # Traslados Android — índice del repositorio
 
+> **INICIO EN CUALQUIER SESIÓN:** [CONTEXTO MAESTRO DE TODOS LOS PROYECTOS](docs/CONTEXTO_MAESTRO_PROYECTOS.md) — Mapa, Conductor, Cliente APK, GitHub Pages/PWA, Cloudflare y Supabase. Contiene enlaces correctos, último estado comprobado y reglas de actualización. Leelo **antes** de los contextos históricos específicos.
+
 Este repositorio contiene **más de una aplicación Android**. Antes de programar, elegí el módulo correcto.
 
 ## Mapa Trayectos — empezar aquí
@@ -27,4 +29,4 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - `conductor/` conserva la APK Conductor independiente como respaldo. Sus fuentes también se empaquetan como módulo **interno** en Mapa Trayectos R24.0; no confundir la APK independiente con el nuevo acceso integrado.
 
 ## Instrucción mínima para otra sesión
-> Retomá Mapa Trayectos en `marcelofgx-ctrl/traslados-android`, rama `main`. Primero leé `docs/RETOMAR_MAPA_TRAYECTOS.md`, verificá el último commit y los GitHub Actions. No cambies el diseño aprobado, los sonidos de viajes ni datos existentes sin consultarme.
+> Retomá Mapa Trayectos en `marcelofgx-ctrl/traslados-android`, rama `main`. Primero leé `docs/CONTEXTO_MAESTRO_PROYECTOS.md`, después `docs/RETOMAR_MAPA_TRAYECTOS.md`, verificá el último commit y los GitHub Actions. No cambies el diseño aprobado, los sonidos de viajes ni datos existentes sin consultarme.
