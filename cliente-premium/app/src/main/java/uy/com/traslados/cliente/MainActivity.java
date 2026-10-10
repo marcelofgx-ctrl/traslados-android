@@ -47,9 +47,8 @@ public final class MainActivity extends Activity {
     private static final String OFFICIAL_PATH = "/traslados-android/web-pasajero/";
     // Solo la PWA de pasajeros es la superficie propia; no todo github.io.
     private boolean officialHost(Uri uri) {
-        return officialHost(uri) && uri.getPath() != null
-            && (OFFICIAL_PATH.substring(0, OFFICIAL_PATH.length()-1).equals(uri.getPath())
-                || uri.getPath().startsWith(OFFICIAL_PATH));
+        return uri != null && "https".equalsIgnoreCase(uri.getScheme())
+            && OFFICIAL_HOST.equalsIgnoreCase(uri.getHost());
     }
     private static final int PETROLEO = Color.rgb(16, 43, 49);
     private static final int GOLD = Color.rgb(230, 199, 134);
@@ -61,8 +60,9 @@ public final class MainActivity extends Activity {
     private ValueCallback<Uri[]> pendingFileCallback;
 
     private boolean official(Uri uri) {
-        return uri != null && "https".equalsIgnoreCase(uri.getScheme())
-            && OFFICIAL_HOST.equalsIgnoreCase(uri.getHost());
+        return officialHost(uri) && uri.getPath() != null
+            && (OFFICIAL_PATH.substring(0, OFFICIAL_PATH.length()-1).equals(uri.getPath())
+                || uri.getPath().startsWith(OFFICIAL_PATH));
     }
     private GradientDrawable background(int color, int borderColor, int radiusDp) {
         float density=getResources().getDisplayMetrics().density;
