@@ -1,6 +1,6 @@
 # Traslados Cliente Premium v13.0 — web de pasajeros DEFINITIVA
 
-> **ÚLTIMO RELEASE 10/10/2026:** APK Cliente nativa **14.0-Premium** (`versionCode 202`), firmada con la misma clave original, build [38093358000](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093358000) SUCCESS. URL oficial `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/` abierta en WebView, no interfaz Cloudflare. UA identifica `TrasladosClienteNative/14` y PWA evita ofrecer otra APK dentro. Descarga `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v14.apk`, comprobada SHA256 [38093458652](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093458652) SUCCESS. Workflow **ACTIVO** `.github/workflows/build-cliente-premium-v14.yml`; v13 solamente histórico/manual. Las pantallas cambian con la PWA v23 sin recompilar. No hay prueba física completa Android ni push/notificaciones garantizadas.
+> **ÚLTIMO RELEASE 10/10/2026:** APK Cliente nativa **14.0-Premium** (`versionCode 202`), firmada con la misma clave original, build [38093358000](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093358000) SUCCESS. URL oficial `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/` abierta en WebView, no interfaz Cloudflare. UA identifica `TrasladosClienteNative/14` y PWA evita ofrecer otra APK dentro. Descarga `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v14.apk`, comprobada SHA256 [38093642130](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093642130) SUCCESS. Workflow **ACTIVO** `.github/workflows/build-cliente-premium-v14.yml`; v13 solamente histórico/manual. Las pantallas cambian con la PWA v24 sin recompilar. No hay prueba física completa Android ni push/notificaciones garantizadas.
 
 
 **ESTADO VERIFICADO 10/10/2026**: APK Android **v13.0 Premium / versionCode 201**, package `uy.com.traslados.cliente`, compilada y firmada en [GitHub Actions 38092623349](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38092623349) (**SUCCESS**) y comparada con el certificado original Cliente R12 (**idéntico**). Ya está publicada en `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v13.apk`, con comprobación SHA256 en la web.
@@ -16,6 +16,9 @@
 ---
 
 # Traslados Cliente Premium 12.0 — Android
+
+**Instalación web y APK:** desde la sección «Instalar», Chrome ofrece primero la PWA si está disponible y la APK Android v14 aparece también como alternativa visible (no queda oculta por el instalador PWA). Verificado en CI y GitHub Pages. 
+
 
 **Estado (10/10/2026):** nueva APK nativa compilada, firmada, con certificado **idéntico** al Cliente anterior R12 y **publicada mediante GitHub Pages auxiliar**, con SHA256 y entrega HTTP pública verificados. **No** existe aún una prueba física de instalación, login, GPS y envío de reserva en un Android real. La web oficial de Cloudflare sigue pendiente de desplegar sus cambios premium actuales por falta de `CLOUDFLARE_API_TOKEN` en GitHub Actions.
 
