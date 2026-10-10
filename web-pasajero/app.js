@@ -278,6 +278,29 @@ function picker(name,mount,position){
 const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
 const roadCache=new Map();
 let latestRoad=null,activeRouteKey="",routeSequence=0;
+
+/* The existing Supabase availability engine has a small ROAD-only cache.
+ * Only retrieve already verified routes through a restricted, read-only RPC.
+ * Never use OSRM's public DEMO for new commercial requests or bill estimates
+ * from its ESTIMATED/haversine fallback.
+ */
+async function cachedRoadRoute(points){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),3500);
+  try{
+    const response=await fetch(API+"/rest/v1/rpc/public_cached_route_preview_v1",{
+      method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json","Accept":"application/json"},
+      body:JSON.stringify({p_points:points.map(p=>({lat:p.lat,lng:p.lng}))}),
+      signal:controller.signal,cache:"no-store"
+    });
+    if(!response.ok)return null;
+    const data=await response.json();
+    return data?.available===true&&data.source==="supabase_route_cache"
+      &&Number.isFinite(data.distanceKm)&&data.distanceKm>0
+      &&Number.isFinite(data.durationMin)&&data.durationMin>=0
+      ? data:null;
+  }catch{return null;}finally{clearTimeout(timeout);}
+}
 function selectedRoadPoints(){
   return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
 }
@@ -372,8 +395,13 @@ function renderRouteSummary(){
       reference.textContent=Number.isFinite(data.referenceFareUyu)&&data.referenceFareUyu>0
         ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0}) : "A confirmar";
       clear(map);addRoadDiagram(map,data.geometry);
-      status.textContent="Ruta por carretera · tiempo estimado";
+      status.textContent=data.source==="supabase_route_cache"
+        ?"Ruta real guardada · tiempo estimado"
+        :"Ruta verificada por carretera · tiempo estimado";
       disclaimer.textContent="Referencia no vinculante; peajes y extras no incluidos. El conductor envía el precio definitivo.";
+      detailCaption.textContent=data.source==="supabase_route_cache"
+        ?"Ruta previamente calculada por OSRM · © OpenStreetMap contributors. No incluye tráfico en vivo."
+        :"Trayecto por carretera, sin tráfico en vivo. © openrouteservice.org by HeiGIT · © OpenStreetMap contributors.";
       detailCaption.hidden=false;
     }else{
       latestRoad=null;
@@ -394,7 +422,10 @@ function renderRouteSummary(){
     if(!r.ok)return null;
     const result=await r.json();
     return result?.available?result:null;
-  }).then(result=>{
+  }).catch(()=>null).then(async result=>{
+    // The Cloudflare Worker may still lack its ORS secret. Cache-only fallback
+    // uses old, real road calculations already present in our own Supabase.
+    if(!result)result=await cachedRoadRoute(points);
     if(result){roadCache.set(key,result);if(roadCache.size>65)roadCache.clear();}
     finish(result);
   }).catch(()=>finish(null)).finally(()=>clearTimeout(timer));
