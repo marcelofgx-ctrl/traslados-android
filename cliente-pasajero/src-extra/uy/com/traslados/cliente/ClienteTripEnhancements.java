@@ -81,6 +81,84 @@ public final class ClienteTripEnhancements {
         add.setOnClickListener(v->askNewStop());addBox(extra,add,4);
         redrawStops();
     }
+    /** Native Android client uses the SAME authenticated, privacy-safe ETA service.
+     * Immediate requests are consultations, not reservations (30-min booking lead time).
+     */
+    public void showPickupEta(String sessionToken,boolean originSet,double lat,double lng,
+        int withinMinutes,String originText,String destinationText){
+        if(sessionToken==null||sessionToken.length()<24){
+            toast("Iniciá sesión para consultar la llegada del conductor.");return;
+        }
+        if(!originSet||!Double.isFinite(lat)||!Double.isFinite(lng)){
+            toast("Seleccioná primero el punto exacto donde te pasamos a buscar.");return;
+        }
+        LinearLayout panel=new LinearLayout(activity);
+        panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(18),dp(12),dp(18),dp(10));
+        TextView heading=caption("◈ LLEGADA ESTIMADA · TU PUNTO DE RECOGIDA");
+        heading.setTextSize(15);heading.setTextColor(gold);panel.addView(heading);
+        TextView status=caption("Consultando jornada, GPS y agenda del conductor…");
+        status.setTextColor(white);status.setTextSize(13);panel.addView(status);
+        TextView privacy=caption("La distancia es aproximada. No muestra la ubicación exacta del vehículo. El conductor debe aceptar la solicitud.");
+        privacy.setTextColor(0xffc2d5cc);panel.addView(privacy);
+        Button whatsapp=button("CONSULTAR POR WHATSAPP");
+        addBox(panel,whatsapp,10);
+        String message="Hola, quisiera consultar recogida "+
+            (withinMinutes<=1?"ahora":"dentro de 10 minutos")+
+            (originText==null||originText.isEmpty()?"":"\\nOrigen: "+originText)+
+            (destinationText==null||destinationText.isEmpty()?"":"\\nDestino: "+destinationText)+
+            "\\n¿Podés confirmar disponibilidad?";
+        whatsapp.setOnClickListener(v->{
+            try{
+                Intent i=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(
+                    "https://wa.me/59897228175?text="+android.net.Uri.encode(message)));
+                activity.startActivity(i);
+            }catch(Exception ignored){toast("No se pudo abrir WhatsApp");}
+        });
+        AlertDialog dialog=new AlertDialog.Builder(activity).setView(panel)
+            .setNegativeButton("CERRAR",null).create();
+        dialog.show();
+        worker.execute(()->{
+            HttpURLConnection c=null;
+            try{
+                c=(HttpURLConnection)new java.net.URL(
+                    Api.BASE+"/functions/v1/pickup-eta").openConnection();
+                c.setRequestMethod("POST");c.setDoOutput(true);
+                c.setConnectTimeout(9000);c.setReadTimeout(12000);
+                c.setRequestProperty("apikey",Api.KEY);
+                c.setRequestProperty("Content-Type","application/json");
+                JSONObject body=new JSONObject();body.put("sessionToken",sessionToken);
+                body.put("originLat",lat);body.put("originLng",lng);
+                try(java.io.OutputStream output=c.getOutputStream()){
+                    output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                int code=c.getResponseCode();
+                java.io.InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
+                java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();
+                byte[] buf=new byte[2048];int n;while((n=stream.read(buf))>0)bytes.write(buf,0,n);
+                JSONObject result=new JSONObject(bytes.toString("UTF-8"));
+                boolean available=result.optBoolean("available",false);
+                double km=result.optDouble("distanceKm",Double.NaN);
+                int eta=result.optInt("etaMin",-1);
+                final String display;
+                if(available&&Double.isFinite(km)&&km>0&&eta>0){
+                    display=String.format(Locale.forLanguageTag("es-UY"),
+                        "Conductor en actividad · %.1f km · %d min para llegar (aprox.).\\nDisponibilidad sujeta a confirmación.",km,eta);
+                }else{
+                    String reason=result.optString("reason","");
+                    if("occupied".equals(reason))display="Conductor con una reserva programada próxima. Consultá otro horario.";
+                    else if("rate_limited".equals(reason))display="Podés volver a consultar dentro de unos minutos.";
+                    else if("route_unavailable".equals(reason))display="No fue posible calcular el recorrido por carretera.";
+                    else display="No tenemos disponibilidad y GPS recientes para confirmar la recogida.";
+                }
+                activity.runOnUiThread(()->{if(dialog.isShowing())status.setText(display);});
+            }catch(Exception ex){
+                activity.runOnUiThread(()->{
+                    if(dialog.isShowing())status.setText("Llegada no disponible por conexión. Consultá por WhatsApp.");
+                });
+            }finally{if(c!=null)c.disconnect();}
+        });
+    }
+
     private void selectDepartment(boolean from){
         AlertDialog dialog=new AlertDialog.Builder(activity)
             .setTitle("Seleccioná el departamento")
