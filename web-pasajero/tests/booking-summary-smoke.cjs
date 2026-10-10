@@ -50,6 +50,7 @@ const ctx={
   roadCache:new Map(),
   routeSequence:0,activeRouteKey:"",latestRoad:null,
   SHARED_ROUTER:"https://example.invalid/route-estimate",
+  cachedRoadRoute:async()=>null,
   fetch:async()=>response.available?{ok:true,json:async()=>response}:{ok:false,json:async()=>response}
 };
 runInNewContext(js.slice(begin,end),ctx);
@@ -67,7 +68,19 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(nodes("route-extra")[0].attributes.open,undefined);
   assert.equal(ctx.latestRoad,null,"No fictional road data");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"Pendiente");
-  response={available:true,distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};
+  // Existing Supabase ROAD route is reused only if Cloudflare did not provide a route.
+  ctx.cachedRoadRoute=async()=>({
+    available:true,source:"supabase_route_cache",distanceKm:18.1,durationMin:25,
+    referenceFareUyu:720,geometry:[],calculatedAt:new Date().toISOString()
+  });
+  ctx.roadCache.clear();ctx.renderRouteSummary();
+  await settle();
+  assert.equal(nodes("route-metric")[0].nodes[1].textContent,"18,1 km");
+  assert.equal(nodes("route-metric")[1].nodes[1].textContent,"25 min");
+  assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 720");
+  assert.equal(ctx.latestRoad.data.source,"supabase_route_cache");
+  // ORS remains the primary provider when it is available.
+    response={available:true,distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};
   ctx.roadCache.clear();ctx.renderRouteSummary();
   await settle();
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"8 km");
