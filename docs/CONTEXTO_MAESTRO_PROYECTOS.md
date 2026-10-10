@@ -145,6 +145,20 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0H. DISPONIBILIDAD AUTOMÁTICA POR JORNADA Y CONDUCCIÓN RECIENTE — 09/10/2026
+
+**Nueva definición del usuario:** «Si estoy con jornada iniciada y en conducción reciente, de algún modo se lo mostrará como disponible y mi distancia y tiempo». Quiere **estado automático** y **km/min Conductor→origen pasajero** en «Ahora / En 10 minutos» sin introducir distancia manualmente.
+
+**Auditoría del código real:** `mapatrayectos/TrackingService.java` ya registra `shiftActive`, `shiftPaused`, `tripActive`, `vehicleMoving`, `lastAcceptedTs`, `lastAcceptedAccuracy` y coordenadas válidas; `broadcastState` transmite esas señales **dentro del teléfono**. El sincronizador Mapa/Supabase existente sube jornadas/puntos al finalizar viajes, **NO** es telemetría comercial en vivo. No se ha construido el servidor ni la APK que publique ubicación comercial; no comunicar que la función está activa.
+
+**Política de producto acordada para desarrollar:** con consentimiento inicial visible y revocable («Compartir disponibilidad para recogidas», OFF por defecto), jornada iniciada y no pausada, GPS ≤90 s/precisión ≤45m, conducción verificada recientemente (≤5 min), sin viaje Mapa en curso y sin conflictos de agenda, el sistema muestra **«Disponible para consultas»** y solicita km/min reales por ruta ORS desde ubicación del conductor al origen A. No exige estar moviéndose exactamente en ese segundo (puede detenerse en semáforo). En jornada pausada/cerrada, viaje activo, falta GPS, dato viejo o «Ocupado manual», oculta distancia y ETA. Uber/Cabify externos no son detectados por Mapa: por eso debe haber «Ocupado» manual de un toque y la solicitud no se considera aceptada hasta confirmar. Para reservas programadas no predecir desde dónde estará el conductor en el futuro.
+
+**Arquitectura necesaria:** heartbeat Android→Supabase cada 20–30s con autenticación PIN/dispositivo, tabla privada, caducidad server 90s; servicio Cloudflare a Supabase autenticado server-to-server para leer ubicación privada y consultar ORS sin revelar lat/lon en la web, con cuota/caché; respuesta pública únicamente estado/km/ETA. Dejar la función apagada por defecto hasta consentir. La lógica urgente requiere tratamiento separado de `lead_time_min=30` de Supabase, sin reservar de modo automático.
+
+**Documento técnico específico creado:** [DISPO_AUTOMATICA_Y_ETA_RECOGIDA.md](DISPO_AUTOMATICA_Y_ETA_RECOGIDA.md), commit [08594ed](https://github.com/marcelofgx-ctrl/traslados-android/commit/08594eda6bb9feeb4bd1c5c8fa919710267ce9cc). **Esto es especificación técnica respaldada por código existente, NO implementación ni release nueva de ubicación viva**. Prioridad P0 para la siguiente intervención: programar captura/heartbeat privado con consentimiento; P1: motor ETA seguro y visualización PWA/Web; P2: conflictos de agenda y confirmaciones inmediatas.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
