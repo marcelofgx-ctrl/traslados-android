@@ -8,7 +8,7 @@ manifest=(root/'app/src/main/AndroidManifest.xml').read_text()
 gradle=(root/'app/build.gradle').read_text()
 workflow=Path('.github/workflows/build-cliente-premium-v12.yml').read_text()
 expected='https://traslados-web.marcelof-gx.workers.dev/'
-assert f"'{expected}'" in gradle, 'Native Cliente must load official premium Worker'
+assert expected in gradle, 'Native Cliente must load official premium Worker'
 assert "traslados-web.marcelof-gx.workers.dev" in app
 assert "uy.com.traslados.cliente" in gradle and "uy.com.traslados.cliente" in app
 assert "versionCode 200" in gradle
