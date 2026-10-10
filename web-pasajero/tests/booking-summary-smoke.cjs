@@ -14,7 +14,9 @@ const end=js.indexOf("\nlet originPicker,destPicker",begin);
 assert(begin>=0&&end>begin,"Route function not found");
 assert(html.includes('id="route-overview"'),"Missing view target");
 assert(html.includes('id="pickup-presence-whatsapp"'),"Missing urgent consultation");
-assert(css.includes(".route-compact-path"),"Missing compact styling");
+assert(css.includes(".route-summary-heading"),"Missing premium compact heading");
+assert(css.includes(".route-summary-indicator"),"Missing status styling");
+assert(!js.slice(begin,end).includes("route-compact-path"),"Do not repeat A/B already shown in selectors");
 assert(css.includes(".route-extra:not([open])"),"Route details must remain folded");
 assert(html.includes('id="urgent-whatsapp"'),"Urgent pickup CTA missing");
 assert(js.includes('selectedPickupMode!=="schedule"'),"Immediate booking must not use normal reservation RPC");
@@ -61,13 +63,15 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   ctx.renderRouteSummary();
   await settle();
   assert.equal(nodes("route-metrics").length,1);
+  assert.equal(nodes("route-summary-heading").length,1);
+  assert.equal(nodes("route-compact-path").length,0,"Do not duplicate origin/destination");
   assert.equal(nodes("route-metric").length,3);
   assert.deepEqual(val("route-metric").filter(x=>x==="Ver en Maps"),[]);
   assert.equal(nodes("route-google").length,1,"Just one Maps link");
   assert.equal(nodes("route-extra").length,1,"Details folded");
   assert.equal(nodes("route-extra")[0].attributes.open,undefined);
   assert.equal(ctx.latestRoad,null,"No fictional road data");
-  assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"Pendiente");
+  assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"A confirmar");
   // Existing Supabase ROAD route is reused only if Cloudflare did not provide a route.
   ctx.cachedRoadRoute=async()=>({
     available:true,source:"supabase_route_cache",distanceKm:18.1,durationMin:25,
@@ -80,12 +84,13 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 720");
   assert.equal(ctx.latestRoad.data.source,"supabase_route_cache");
   // ORS remains the primary provider when it is available.
-    response={available:true,distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};
+    response={available:true,source:"openrouteservice",distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};
   ctx.roadCache.clear();ctx.renderRouteSummary();
   await settle();
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"8 km");
   assert.equal(nodes("route-metric")[1].nodes[1].textContent,"14 min");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 320");
   assert(ctx.latestRoad&&ctx.latestRoad.data.referenceFareUyu===320);
+  assert(ctx.roadCache.get(ctx.activeRouteKey)?.expires>Date.now(),"Price cache must expire so driver tariff changes propagate");
   console.log("PASS PWA compact summary: route results / ORS missing / price / no invented values");
 })().catch(e=>{console.error(e);process.exitCode=1;});
