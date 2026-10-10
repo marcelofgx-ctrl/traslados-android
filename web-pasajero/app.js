@@ -57,7 +57,7 @@ let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
  * No login needed, and no GPS coordinates ever reach the browser.
  */
 async function publicDriverAvailability(force=false){
-  if(!force&&publicPresenceCache&&Date.now()-publicPresenceAt<25000)
+  if(!force&&publicPresenceCache&&Date.now()-publicPresenceAt<8000)
     return publicPresenceCache;
   if(publicPresencePending)return publicPresencePending;
   publicPresencePending=(async()=>{
@@ -72,7 +72,7 @@ async function publicDriverAvailability(force=false){
       const v=await response.json();
       if(typeof v?.available!=="boolean"||!["available_for_requests","not_available"].includes(v.status))
         return null;
-      publicPresenceCache={available:v.available,status:v.status};
+      publicPresenceCache={available:v.available,status:v.status,checkedAt:v.checkedAt};
       publicPresenceAt=Date.now();
       return publicPresenceCache;
     }catch{return null;}finally{clearTimeout(timeout);}
@@ -99,23 +99,32 @@ async function refreshPickupPresence(force=false){
   $("urgent-whatsapp").href=contact;
   const status=$("pickup-presence-status");
   const seq=++pickupEtaRequestSeq;
-  status.textContent="Consultando disponibilidad de Mapa Trayectos…";
+  status.textContent="Comprobando disponibilidad y agenda en Mapa Trayectos…";
   host.dataset.presence="checking";
   const driver=await publicDriverAvailability(force);
   if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
   if(!driver){
-    status.textContent="No pudimos consultar el estado actual del conductor. Escribile por WhatsApp.";
+    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+    status.textContent="No se pudo comprobar el estado actual del conductor. Consultá por WhatsApp.";
     host.dataset.presence="unknown";return;
   }
+  const serverAge=Date.parse(driver.checkedAt||"");
+  const elapsedCheck=Number.isFinite(serverAge)
+    ?Math.max(0,Math.round((Date.now()-serverAge)/1000)):null;
+  const checkedLabel="Estado comprobado"+
+    (elapsedCheck===null?" recientemente":" hace "+elapsedCheck+" s")+
+    " · Puede cambiar mientras viajás.";
   if(!driver.available){
-    status.textContent="Conductor no disponible para recogidas inmediatas en este momento.";
+    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+    status.textContent="Conductor no disponible para recogida ahora. "+checkedLabel;
     host.dataset.presence="offline";return;
   }
-  // Activity is published only with active shift, fresh driving/GPS,
-  // consent and a compatible schedule, irrespective of customer login.
+  // Consent, jornada libre, GPS reciente y agenda validada en servidor.
+  // Estar estacionado SIN viaje ya NO se considera una indisponibilidad.
   host.dataset.presence="online";
   if(!record.origin){
-    status.textContent="Conductor disponible para consultas. Elegí tu origen para calcular la llegada.";
+    status.textContent="Conductor disponible para recogida ahora. "+
+      checkedLabel+" Elegí tu origen para conocer kilómetros y llegada aproximada.";
     return;
   }
   // El visitante sin cuenta obtiene una ETA de zona APROXIMADA, con cupos
@@ -123,11 +132,17 @@ async function refreshPickupPresence(force=false){
   const signedIn=authReady();
   const lat=record.origin.lat,lng=record.origin.lng;
   const key=(signedIn?session.token:"visitante")+"|"+lat.toFixed(5)+","+lng.toFixed(5);
-  if(!force&&key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<65000&&lastPickupEtaMessage){
-    status.textContent=lastPickupEtaMessage;return;
+  // Availability refreshes often, but location-based ETA is intentionally
+  // rate-limited to avoid tracking a vehicle from successive public requests.
+  const etaInterval=signedIn?190000:100000;
+  if(key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval&&lastPickupEtaMessage){
+    const elapsedEstimate=Math.max(0,Math.round((Date.now()-lastPickupEtaAt)/1000));
+    status.textContent=lastPickupEtaMessage+
+      " · Estimación de hace "+elapsedEstimate+" s. "+checkedLabel;
+    return;
   }
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();lastPickupEtaMessage="";
-  status.textContent="Conductor en actividad · calculando km y llegada hasta tu origen…";
+  status.textContent="Disponibilidad comprobada · Calculando km y minutos hasta tu origen… "+checkedLabel;
   const ctrl=new AbortController(),abort=setTimeout(()=>ctrl.abort(),9000);
   fetch(API+"/functions/v1/pickup-eta",{
     method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
@@ -150,6 +165,7 @@ async function refreshPickupPresence(force=false){
         (data.estimateType==="coarse"?" (ubicación por zona).":"")+
         " Recogida sujeta a confirmación del conductor.";
       lastPickupEtaMessage=status.textContent;
+      status.textContent=lastPickupEtaMessage+" "+checkedLabel;
     }else{
       const labels={
         login_required:"Conductor en actividad. Volvé a iniciar sesión para consultar la llegada.",
@@ -161,15 +177,20 @@ async function refreshPickupPresence(force=false){
       status.textContent=labels[data?.reason]||
         "Conductor en actividad; llegada aún no confirmada. Consultá por WhatsApp.";
       lastPickupEtaMessage=status.textContent;
+      status.textContent=lastPickupEtaMessage+" "+checkedLabel;
     }
   }).catch(()=>{
     if(seq===pickupEtaRequestSeq){
       status.textContent="Conductor en actividad, pero sin cálculo de llegada por conexión.";
       lastPickupEtaMessage=status.textContent;
+      status.textContent=lastPickupEtaMessage+" "+checkedLabel;
     }
   }).finally(()=>clearTimeout(abort));
 }
 function setWhen(kind){
+  if(selectedPickupMode!==kind){
+    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+  }
   selectedPickupMode=kind;
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
@@ -1099,8 +1120,8 @@ function init(){
   // Bounded refresh only while a foreground visitor requests an urgent pickup.
   pickupEtaTimer=setInterval(()=>{
     if(selectedPickupMode!=="schedule"&&document.visibilityState==="visible")
-      void refreshPickupPresence();
-  },40000);
+      void refreshPickupPresence(true);
+  },20000);
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
