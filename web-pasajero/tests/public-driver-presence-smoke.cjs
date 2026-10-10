@@ -12,6 +12,8 @@ assert(fragment.includes('public_driver_availability_v1'),"Must read the Mapa st
 assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.indexOf('const signedIn=authReady()'),
   "Public status must be checked BEFORE customer login");
 assert(fragment.includes('estimateType==="coarse"'),"Anonymous ETA must be labeled coarse");
+assert(fragment.includes('checkedAt'),"Availability message must identify last server verification");
+assert(js.includes('},20000);'),"Refresh driver availability every 20 seconds while visible");
 assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
   "No raw driver coordinates may be used by the passenger");
 assert(fragment.includes('sessionToken:session.token'),"Private ETA still requires a real customer session");
@@ -33,7 +35,7 @@ const ctx={
     if(url.includes("public_driver_availability_v1")){
       publicCalls++;
       return{ok:true,json:async()=>({available:published,
-        status:published?"available_for_requests":"not_available",confirmationRequired:true})};
+        status:published?"available_for_requests":"not_available",checkedAt:new Date().toISOString(),confirmationRequired:true})};
     }
     if(url.includes("pickup-eta")){
       const payload=JSON.parse(opts.body);
@@ -56,6 +58,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/ubicación por zona/);
   assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para recogerte ahora/);
+  assert.match(els["pickup-presence-status"].textContent,/Estado comprobado hace/);
   assert(!/Iniciá sesión en Mi cuenta para consultar la llegada aproximada/.test(
     els["pickup-presence-status"].textContent));
   assert.equal(host.dataset.presence,"online");
@@ -65,6 +68,8 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(host.dataset.presence,"offline");
   assert.match(els["pickup-presence-status"].textContent,/no disponible/i);
+  assert.match(els["pickup-presence-status"].textContent,/Estado comprobado hace/);
+  assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
   assert.equal(guestEtaCalls,1);
   assert.equal(customerEtaCalls,0);
 
