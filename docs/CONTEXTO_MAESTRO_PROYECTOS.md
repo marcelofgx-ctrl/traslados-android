@@ -118,6 +118,21 @@
 
 ---
 
+## 0F. CAPTURA PASAJERO 22:47 — RESUMEN V11 SIN DIRECCIONES DUPLICADAS (09/10/2026)
+
+**Entrada del usuario:** captura Samsung de PWA pública v10 para «Roque Sáenz Peña 1711, Canelones → Aeropuerto Internacional de Carrasco». Ambos puntos están seleccionados, pero en el resumen aparecían **distancia —, duración —, precio Pendiente**. Además el resumen repetía las direcciones que ya se veían en las tarjetas superiores y ocupaba mucho espacio. **No atribuir el fallo al usuario ni afirmar que la ruta se calculó.** El Worker público carece de `ORS_API_KEY` configurada y la caché `route_reposition_cache` contiene pocas rutas `ROAD`; el trayecto de la captura no produjo un valor válido. Sin un proveedor seguro de rutas nuevas, no hay cálculo universal. La RPC de caché existente NO llama al servidor OSRM demo para rutas nuevas.
+
+**Corrección real efectuada en `web-pasajero/`:**
+- `app.js`: `renderRouteSummary` muestra solo un encabezado de **Estimación del viaje**, dos métricas compactas km/min y una franja champagne **Valor de referencia**. Ya NO vuelve a mostrar `DESDE/HASTA` con direcciones repetidas: esas direcciones permanecen editables en sus campos superiores. Se mantiene «Abrir en Maps» y un acordeón «Detalles de la estimación». Distancia/tiempo y tarifa se muestran únicamente con `available:true`, magnitudes finitas/positivas y fuente verificada `openrouteservice` o `supabase_route_cache`. Sin ruta real: km/min **—**, precio **A confirmar**, con aviso comprensible. Diagnóstico del backend principal y la caché limitada figura solo en detalles; no vender rutas aéreas como kilómetros por calles.
+- **Seguridad de precios:** caché en el navegador ahora expira en 5 minutos, de modo que la tarifa modificada mediante PIN en Mapa Conductor no quede visible indefinidamente como precio antiguo. Se invalida al cambiar A/B/paradas. Si `data.geometry` no existe (cache Supabase), el mapa detallado no dibuja una línea falsa.
+- `styles.css`: tarjetas A/B seleccionadas menos altas y panel premium de estimación compacto, contraste y control táctil móvil; estilo petróleo/champagne intacto. Se simplificó subtítulo de puntos: «Ubicación seleccionada».
+- `index.html` usa **`app.js?v=11` y `styles.css?v=11`**; `sw.js` usa `traslados-cliente-pwa-v11` para vaciar cachés antiguos; `smoke-public-passenger.yml` exige v11 y nuevo componente. Commit de publicación [53a2184](https://github.com/marcelofgx-ctrl/traslados-android/commit/53a2184154c170cd0b8d338a43c748766958aeb2).
+- `booking-summary-smoke.cjs` se actualizó para exigir cero direcciones duplicadas, confirmar datos del motor de caché previo y ORS preferente, y expiración positiva de la tarifa. El primer test v11 falló únicamente porque el nodo DOM simulado no implementaba `classList` (la API nativa sí la tiene). Corregido el simulador en [bcb3d30](https://github.com/marcelofgx-ctrl/traslados-android/commit/bcb3d30723b3f3533cf3270cdb056418e099a38b). **CI PWA [38014754040](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38014754040) SUCCESS** con JS parseado, tests y paquete exportado. **Verificar el deploy Pages v11 y una captura real Samsung por separado** antes de marcar UI publicada/probada.
+
+**Limitaciones explícitas:** ORS necesita una credencial real de HeiGIT como secreto `ORS_API_KEY` en Cloudflare y desplegar la versión actual del Worker. Si no está, la mayoría de recorridos nuevos seguirán sin cotización. Tampoco hay GPS comercial conductor→A ni ETA hasta recogida; «Ahora/En 10 min» usa consulta WhatsApp por diseño, sin crear reserva automática inválida. No modificar funciones de backend de reservas, datos, firma APK o sonidos para solucionar un problema exclusivamente de Web.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
