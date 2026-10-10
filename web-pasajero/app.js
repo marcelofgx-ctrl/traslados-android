@@ -303,6 +303,10 @@ function renderRouteSummary(){
   const min=text(metrics,"div","","route-metric");
   text(min,"small","TIEMPO DE VIAJE ESTIMADO");
   const duration=text(min,"strong","Consultando…");
+  const fare=text(metrics,"div","","route-metric route-metric-fare");
+  text(fare,"small","PRECIO ORIENTATIVO · NO DEFINITIVO");
+  const reference=text(fare,"strong","Calculando…");
+  text(fare,"small","Calculado según la distancia por carretera. El conductor confirmará la tarifa.");
   const map=text(host,"div","","route-road-map");
   const status=text(host,"p","Consultando el motor de rutas…","route-status");
   const a=text(host,"a","↗ Ver ruta, kilómetros y minutos en Google Maps","route-google");
@@ -316,12 +320,14 @@ function renderRouteSummary(){
       latestRoad={key,data};
       distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
       duration.textContent=data.durationMin+" min";
+      reference.textContent=Number.isFinite(data.referenceFareUyu)&&data.referenceFareUyu>0
+        ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})+" aprox." : "A confirmar";
       clear(map);
       addRoadDiagram(map,data.geometry);
       status.textContent="Trayecto estimado por openrouteservice/OpenStreetMap, sin tráfico en vivo.";
     }else{
       latestRoad=null;
-      distance.textContent="Ver en Maps";duration.textContent="Ver en Maps";
+      distance.textContent="Ver en Maps";duration.textContent="Ver en Maps";reference.textContent="A confirmar";
       clear(map);
       status.textContent="Cálculo interno de ruta no disponible. Google Maps puede mostrarte el recorrido por calles y su duración.";
     }
@@ -491,9 +497,12 @@ function showPreview(){
     text(passengers,"strong",p.passengers===1?"1 persona":p.passengers+" personas");
 
     const budget=text(target,"div","","preview-budget");
-    text(budget,"span","PRESUPUESTO","preview-label");
-    text(budget,"strong","A confirmar por el conductor");
-    text(budget,"p","No se cobra ni se confirma el traslado al enviar.");
+    text(budget,"span","VALOR ORIENTATIVO","preview-label");
+    const quote=latestRoad?.key===routeKeyOf([p.origin,...p.stops,p.destination])
+      ? latestRoad.data.referenceFareUyu : null;
+    text(budget,"strong",Number.isFinite(quote)&&quote>0
+      ? "$ "+quote.toLocaleString("es-UY",{maximumFractionDigits:0})+" aprox." : "A confirmar por el conductor");
+    text(budget,"p","Es una referencia sin peajes ni extras. El conductor enviará el presupuesto definitivo desde Mapa; no se cobra ni confirma el viaje al solicitar.");
 
     const tools=text(target,"div","","preview-tools");
     const link=text(tools,"a","↗ Ver recorrido en Google Maps","preview-maps");
