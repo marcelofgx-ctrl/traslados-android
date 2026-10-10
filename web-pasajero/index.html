@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=21">
+  <link rel="stylesheet" href="./styles.css?v=22">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -68,10 +68,11 @@
           <button type="button" class="choice" data-when="10">En 10 min</button>
           <button type="button" class="choice" data-when="schedule">Programar</button>
         </div>
-        <div class="two-cols">
+        <div class="two-cols" id="pickup-datetime-block">
           <label>Fecha<input id="pickup-date" type="date" required></label>
-          <label>Hora (24 h)<input id="pickup-time" type="time" required></label>
+          <label>Hora<input id="pickup-time" type="time" required></label>
         </div>
+        <p id="pickup-mode-caption" class="pickup-mode-caption" aria-live="polite" hidden></p>
         <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
         <div id="pickup-presence" class="pickup-presence" hidden>
           <span id="pickup-presence-status" role="status" aria-live="polite">Consultando disponibilidad y tiempo de recogida…</span>
@@ -154,6 +155,6 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
-  <script src="./app.js?v=21" defer></script>
+  <script src="./app.js?v=22" defer></script>
 </body>
 </html>
