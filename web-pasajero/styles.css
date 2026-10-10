@@ -255,3 +255,14 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 .gps-permission-actions .tiny-btn{min-height:44px;font-size:12px;padding:9px 13px}
 .gps-permission-actions .gps-manual{border-color:rgba(213,226,220,.35);color:#e7e6dc;background:rgba(10,34,42,.6)}
 .gps-permission-help[hidden]{display:none!important}
+
+/* Instalación transparente: opciones en pantalla, no avisos efímeros. */
+.install-guide{margin-top:14px;padding:17px 16px;border:1px solid rgba(231,203,133,.38);
+  border-radius:17px;background:linear-gradient(135deg,rgba(231,203,133,.10),rgba(7,35,43,.55))}
+.install-guide h3{color:#f1d797;font-size:16px;margin-bottom:12px}
+.install-guide ol{margin:0;padding-left:23px;color:#e8e8dd;line-height:1.6;font-size:13px}
+.install-guide li{margin-bottom:8px;padding-left:4px}
+.install-guide li::marker{color:#e9ca83;font-weight:800}
+.install-guide p{color:#c6d9d2;font-size:12px;line-height:1.5;margin:13px 0 8px}
+.install-guide .secondary{font-size:12px;letter-spacing:.02em}
+.install-guide[hidden]{display:none!important}
