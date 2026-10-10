@@ -14,6 +14,17 @@
 
 ---
 
+## 0.0.b IDENTIDAD PÚBLICA SOLO TRASLADOS — 10/10/2026
+
+**Decisión del usuario:** ningún pasajero debe ver referencias a GitHub, Cloudflare, Supabase, desarrolladores, workflows, compilaciones o proveedores técnicos en la interfaz de uso normal. La web principal permanece en la URL aprobada **https://traslados-web.marcelof-gx.workers.dev/**. **No** redirigir a GitHub Pages (revelaría `github.io`), ni cambiar la estética premium petróleo/champagne/dorado.
+
+- **Workers / web principal:** implementada revisión interna `data-app-release="traslados-2026-10-10-r4"` (identificador solo diagnóstico). Footer ahora dice «Atención personal · Uruguay», QR muestra «sitio oficial de Traslados», explicaciones de ruta omiten motores y proveedores; se quitó enlace visible «Conductor (sistema anterior)» del pie de cliente. Se conservan atribuciones cartográficas legalmente necesarias. **CI [38060418736](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38060418736) SUCCESS (dos jobs)** con prueba `tests/public-branding.test.ts` y prueba canónica actualizadas. Workflow manual de Cloudflare exige R4; **AÚN NO se confirmó ejecución ni publicación**. No alterar el Worker/código de reservas para sustituirlo por Pages.
+- **PWA secundaria GitHub Pages:** se quitó el enlace visible a GitHub Actions/APK obsoleta y descripciones técnicas de instalación; se reemplazaron «Consultando Supabase» y nombres de motores por mensajes de usuario. Recursos del navegador versión 15 (`app.js?v=15`, `sw.js` cache v15), test `web-pasajero/tests/public-branding-smoke.cjs` y verificación en workflows. **Empaquetado [38060462002](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38060462002) SUCCESS y Pages [38060461006](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38060461006) SUCCESS**. **NO** se ha hecho prueba visual Samsung del nuevo cambio.
+- **Política de enlace para pasajeros:** mostrar **solo** la URL principal Workers una vez su versión final esté publicada. Pages queda auxiliar/técnico y no se reparte por QR, tarjetas o WhatsApp.
+- **Limitación de marca blanca:** el sufijo `.workers.dev` indica infraestructura a quien mire la URL. Para ocultar incluso el proveedor de hosting se necesita **dominio propio** que apunte al Worker, a definir/aprobar por el usuario, sin apagar la URL anterior. Una web siempre puede revelar integraciones en solicitudes de red y debe conservar créditos/cartografía según licencias: no prometer ocultamiento técnico absoluto. La limpieza actual es de elementos **visibles al pasajero**, no una red de proxy ni un nuevo dominio.
+
+---
+
 ## 0.0.a PERMISOS GPS GUIADOS — 10/10/2026 (corrección UX cross-web)
 
 **Incidente Samsung real:** captura de la PWA `/web-pasajero/` con bloqueo Android/Chrome «Este sitio no puede solicitarte permiso. Cierra las burbujas o superposiciones». Ocultar una burbuja y volver a intentar no siempre resuelve el permiso, que es controlado por Android.
