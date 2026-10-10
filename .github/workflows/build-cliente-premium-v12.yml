@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'cliente-premium/**'
+      - 'cliente-premium/app/**'
+      - 'cliente-premium/tests/**'
+      - 'cliente-premium/build.gradle'
+      - 'cliente-premium/settings.gradle'
+      - 'cliente-premium/gradle.properties'
       - '.github/workflows/build-cliente-premium-v12.yml'
   workflow_dispatch:
 
@@ -147,4 +151,13 @@ jobs:
             exit 0
           fi
           git commit -m 'Publicar Traslados Cliente Premium v12 RELEASE firmada'
-          git push origin HEAD:main
+          # El repositorio puede recibir un commit de documentación o CI
+          # mientras Gradle compila. Actualizar sin force-push ni sobrescrituras.
+          for intento in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "Se actualizó main durante la compilación; integrando cambios ($intento)"
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'No pudimos publicar tras reintentos seguros'
+          exit 1
