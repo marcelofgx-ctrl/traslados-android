@@ -51,10 +51,12 @@ jobs:
           grep -q 'id="route-overview"' /tmp/traslados.html
           grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
-          curl -fsSL --max-time 25 "$base/app.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/app.js
+          curl -fsSL --max-time 25 "$base/app.js?v=4&ci=$GITHUB_RUN_ID" -o /tmp/app.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/app.js
+          grep -q 'referenceFareUyu' /tmp/app.js
+          grep -q 'PRECIO ORIENTATIVO' /tmp/app.js
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
           echo "HTML, Aeropuerto Carrasco, km/min, Maps y motor OSM publicados."
