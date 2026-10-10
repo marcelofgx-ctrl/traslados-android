@@ -266,6 +266,23 @@ PWA Pasajero v11: resumen premium sin A/B repetidos, km/min/precio calculados y 
 
 ---
 
+## 0P. URL ESTABLE WORKERS Y REVISIÓN PREMIUM R3 — 10/10/2026
+
+**Captura del usuario:** dirección `traslados-web.marcelof-gx.workers.dev`, formulario firmado con sección «¿Cuándo querés que te pasemos a buscar?», recuadro grande «Recogida lo antes posible» y panel inferior «Disponibilidad de Mapa Trayectos». El usuario percibe que es versión antigua aunque le gusta portada. Quiere que **la versión más completa y perfeccionada esté SIEMPRE en esa misma dirección**; no cambiar hostname ni abrir un Worker con nuevo nombre.
+
+**Verificación:** `traslados-web/wrangler.jsonc` fija `"name":"traslados-web"`, `PASSKEY_PUBLIC_ORIGIN:"https://traslados-web.marcelof-gx.workers.dev"`, `keep_vars:true`. No hay evidencia en GitHub Actions de una publicación manual reciente, aunque sí CI exitosa para el nuevo formulario de invitado. La captura es compatible con la vista autenticada **Booking**, que seguía usando componentes de recogida anteriores a `GuestRoutePlanner`; NO concluir solamente de la captura que el código publicado sea exactamente un commit u otro. La burbuja circular con 9+ de Mapa en la captura es superposición Android externa a Workers, no parte del layout web.
+
+**Cambios reales en main en esta sesión:**
+- `src/components/PickupModePicker.tsx`: rediseño más compacto y premium de Ahora / En 10 min / Programar, sin texto gigante ni bloque repetido, enlaces WhatsApp discretos y detalles opcionales. Mantiene consulta sujeta a confirmación.
+- `src/routes/index.tsx`: `DriverPickupEta compact` integrado como **hijo dentro de una sola tarjeta** de horario y recogida, en vez de dos grandes recuadros consecutivos. Conserva booking, paradas y pagos sin cambios; añade marcador de revisión visible en pie «Web principal · Workers R3» y `data-web-release="workers-2026-10-10-r3"`.
+- `src/components/DriverPickupEta.tsx`: variante compacta dentro de la tarjeta, basada en estado de Mapa y API de ETA sin exponer coordenadas; origen/session según privacidad.
+- `.github/workflows/publicar-cloudflare-manual.yml`: bloquea nombre del Worker distinto de `traslados-web`, PASSKEY_PUBLIC_ORIGIN distinto, pérdida de `keep_vars` o inclusión indebida de ORS_API_KEY en config; tras deploy exige marca R3 del HTML en producción, motor ORS válido y tarifa. Sigue siendo `workflow_dispatch` MANUAL; **no** crea Workers adicionales ni toca el hostname.
+- `tests/workers-canonical.test.ts`: contrato de hostname, variante compacta y marcador de versión. Último commit de código `4d4152e1ff0b6d10a57169cf3c6ea06eda29cd6a`.
+
+**Estado de release:** verificar [Actions CI más reciente](https://github.com/marcelofgx-ctrl/traslados-web/actions) para resultados finales del commit `4d4152e1f`. **La URL no cambia**, pero la revisión R3 de código solo aparecerá tras publicar desde el workflow manual [Publicar Traslados Web en Cloudflare](https://github.com/marcelofgx-ctrl/traslados-web/actions/workflows/publicar-cloudflare-manual.yml), confirmar SUCCESS y ver en pantalla el marcador «Workers R3». Actualmente no hay acceso a Cloudflare ni acción GitHub `workflow_dispatch` entre las herramientas disponibles. No anunciar despliegue completado sin comprobarlo. Si el usuario ya tiene sesión, debe revisar específicamente el flujo autenticado de horario, además del nuevo preview previo a login.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
