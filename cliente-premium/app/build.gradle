@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'uy.com.traslados.cliente'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'uy.com.traslados.cliente'
+        minSdk 26
+        targetSdk 35
+        versionCode 200
+        versionName '12.0-Premium'
+        buildConfigField 'String', 'OFFICIAL_WEB_URL', '"https://traslados-web.marcelof-gx.workers.dev/"'
+    }
+
+    signingConfigs {
+        release {
+            if (System.getenv('ANDROID_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'traslados-conductor'
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug { applicationIdSuffix '.debug' }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (System.getenv('ANDROID_KEYSTORE_PATH')) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures { buildConfig true }
+}
