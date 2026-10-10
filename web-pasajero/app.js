@@ -958,7 +958,7 @@ function installUI(){
   const apkOption=$("install-apk-option"),apkLink=$("install-apk-link");
   const apkGuideButton=$("install-apk-web-guide");
   const android=/Android/i.test(navigator.userAgent||"");
-  let apkReady=false;
+  let apkReady=false,installConfirmed=false;
   const isReady=()=>Boolean(installEvent);
   // No suponer que una URL existe: comprobar HEAD y tipo binario antes de
   // mostrar el botón de descarga; nunca dar un enlace al workflow de GitHub.
@@ -987,6 +987,9 @@ function installUI(){
       action.textContent="ABRIR MIS TRASLADOS";
       info.textContent="Traslados ya está abierto como aplicación. No necesitás instalarlo otra vez.";
       guide.hidden=true;
+    }else if(installConfirmed){
+      action.textContent="INSTALACIÓN SOLICITADA";
+      guide.hidden=true;
     }else if(isReady()){
       action.textContent="INSTALAR TRASLADOS";
       info.textContent="Chrome permite instalar Traslados como aplicación web. Tocá para confirmar.";
@@ -1007,12 +1010,14 @@ function installUI(){
   });
   window.addEventListener("appinstalled",()=>{
     installEvent=null;
+    installConfirmed=true;
     action.textContent="ABRIR MIS TRASLADOS";
     info.textContent="Traslados se agregó a tu dispositivo. Buscá su ícono en la pantalla de inicio.";
     guide.hidden=true;
   });
   action.addEventListener("click",async()=>{
     if(isStandaloneTraslados()){shiftView("viajes");return;}
+    if(installConfirmed){info.textContent="Instalación solicitada. Buscá el ícono de Traslados en el inicio.";return;}
     if(!installEvent){
       if(android&&apkReady){
         // El enlace real es el de esta misma web, a una APK cuya presencia
@@ -1030,6 +1035,7 @@ function installUI(){
       await pending.prompt();
       const choice=await pending.userChoice;
       if(choice?.outcome==="accepted"){
+        installConfirmed=true;
         info.textContent="Confirmaste la instalación. Buscá el ícono de Traslados en el inicio.";
         guide.hidden=true;
       }else{
@@ -1041,7 +1047,7 @@ function installUI(){
       showGuide();
     }finally{
       action.disabled=false;
-      if(!isStandaloneTraslados()&&!isReady())updateUI();
+      if(!isStandaloneTraslados()&&!isReady()&&!installConfirmed)updateUI();
     }
   });
   copyButton.addEventListener("click",async()=>{
