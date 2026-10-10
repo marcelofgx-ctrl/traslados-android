@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/smoke-pickup-eta-v2.yml']
+    paths: ['.github/workflows/smoke-pickup-eta-v2.yml', 'docs/PICKUP_ETA_PUBLICO.md']
 permissions:
   contents: read
 jobs:
