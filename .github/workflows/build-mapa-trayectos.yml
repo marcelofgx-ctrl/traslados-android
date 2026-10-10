@@ -11,7 +11,7 @@ on:
       - '.github/workflows/build-mapa-trayectos.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -412,7 +412,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R24-5-RELEASE
+          name: Mapa-Trayectos-v0.1-R24-6-RELEASE
           path: |
             artifacts/Mapa_Trayectos_v0.1_R24_6_RELEASE.apk
             artifacts/SHA256SUMS.txt
@@ -420,3 +420,28 @@ jobs:
             artifacts/SOUND_STATUS.txt
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publicar APK Mapa firmado en descarga directa sin Play Store
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web-pasajero/downloads
+          cp artifacts/Mapa_Trayectos_v0.1_R24_6_RELEASE.apk \
+            web-pasajero/downloads/mapa-trayectos-r24.6.apk
+          (cd web-pasajero/downloads && sha256sum mapa-trayectos-r24.6.apk > MAPA-R24.6-SHA256SUMS.txt)
+          git config user.name "Traslados Release CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add web-pasajero/downloads/mapa-trayectos-r24.6.apk \
+                  web-pasajero/downloads/MAPA-R24.6-SHA256SUMS.txt
+          if git diff --cached --quiet; then
+            echo 'APK Mapa R24.6 ya publicada sin alterar binario'
+            exit 0
+          fi
+          git commit -m 'Publicar Mapa Trayectos R24.6 APK firmada'
+          for retry in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'Error de publicación; conservar artifact firmado del run'
+          exit 1
