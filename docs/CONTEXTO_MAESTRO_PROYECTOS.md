@@ -59,6 +59,23 @@
 
 ---
 
+## 0C. PASAJERO PWA — CORRECCIÓN A PARTIR DE CAPTURA REAL (09/10/2026)
+
+**Captura recibida:** Samsung/Chrome en `marcelofgx-ctrl.github.io`, ruta «ROQUE SAENZ PEÑA 1711 → Aeropuerto de Carrasco». Mostraba una tarjeta enorme con **dos cajas «Ver en Maps»**, más «A confirmar», párrafos largos y CTA gigante: la PWA consumía pantalla sin informar km reales. La captura es evidencia UX del despliegue anterior, NO un fallo de cálculo de A/B por error en datos.
+
+**Código implementado y comprobado en GitHub Actions** (sin tocar APK, datos ni reservas): 
+- `web-pasajero/app.js`: se reescribió `renderRouteSummary` como resumen móvil **compacto**, con origen/destino legibles en dos líneas cortas, **una sola** franja km/min/precio orientativo, un único enlace a Google Maps y trazado/copyright ORS/OSM dentro de detalles plegables. Si ORS/Worker devuelve error, mostrar **km — / min — / precio «Pendiente»**, sin falsificar distancia ni repetir «Ver en Maps». El backend solo almacena `latestRoad` cuando retorna kilómetros válidos para los puntos actualmente seleccionados. Commit base [fb403c6](https://github.com/marcelofgx-ctrl/traslados-android/commit/fb403c6ea21a009dc34c1c650ed91083b9f0057f).
+- `web-pasajero/styles.css`: superficie petróleo/champagne premium, formato compacto mobile-first, contraste ajustado, botones táctiles, sin tarjetas superpuestas, detalles plegables. Commit [f271fc7](https://github.com/marcelofgx-ctrl/traslados-android/commit/f271fc7cf43af5d9aac1f3f7b60e2a0a001a5397).
+- **Recogidas «Ahora / En 10 min»**: `setWhen` y `refreshPickupPresence` ahora muestran mensaje **explícito** de distancia conductor→origen desconocida y botón WhatsApp con origen, destino y modalidad precompletados. No se muestra un ETA fingido. Commit [ed450dc](https://github.com/marcelofgx-ctrl/traslados-android/commit/ed450dcb02082f3021728830d90af5fad15dc4d2). Se debe diseñar e implementar después el GPS opt-in para reemplazar este mensaje.
+- PWA HTML y service worker se versionaron en **v7** para evitar conservar JS/estilos viejos en Chrome; el sitio debe reabrirse recargando si Android dejó el service worker anterior. El fichero `web-pasajero/tests/booking-summary-smoke.cjs` prueba DOM del resumen sin paquetes externos: ruta no disponible no inventa números, un solo enlace Maps, detalles cerrados y cálculo de muestra de **8 km / 14 min / $320** cuando el servidor entrega datos. El workflow `deploy-web-pasajero-pwa.yml` ejecuta el test. Build [38012982264](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38012982264) **SUCCESS**, incluye pruebas sintácticas y paquete PWA; **la última publicación GitHub Pages debe verificarse por separado**.
+- No se editó la lógica de presupuesto final ni se enviaron reservas de prueba a Supabase. El diseño de la web Cloudflare sigue su otro repositorio y continúa con el formulario compacto integrado del commit `a876eae`.
+
+**Bloqueo funcional que persiste:** `/api/public/route-estimate` de Cloudflare respondió **503 `not_configured`** porque falta `ORS_API_KEY` en el Worker. Aunque el código esté listo y la PWA publicada, **hasta configurar una clave válida y desplegar el Worker** no se calculan km/precio reales; no confundir UI corregida y precio calculado. El Worker tiene precio parametrizable `FARE_REFERENCE_UYU_PER_KM=40`; el valor final lo envía Conductor integrado desde Mapa. El usuario no debe compartir secretos en chat.
+
+**Siguientes verificaciones imprescindibles:** 1) confirmar Pages v7 y smoke post-Pages SUCCESS; 2) introducir clave privada ORS en Cloudflare por canal seguro y desplegar `traslados-web`; 3) verificar A/B del ejemplo real con km/min/precio, en Chrome del Samsung; 4) verificar una reserva consentida end-to-end y visualización del presupuesto; 5) proyecto de GPS comercial con consentimiento expreso, PIN, disponibilidad libre/ocupado, privacidad y caducidad (90 s), antes de habilitar un ETA Conductor→A. Los archivos técnicos por aplicación son la referencia; un CI verde **no** certifica pruebas reales del teléfono.
+
+---
+
 ## 1. Mapa de componentes y responsabilidades
 
 | Pieza | Ubicación real | Función | Último estado observado |
