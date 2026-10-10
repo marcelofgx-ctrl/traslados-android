@@ -1,5 +1,8 @@
 # Traslados Android — índice del repositorio
 
+> **Release pasajero vigente (10/10/2026):** web/PWA única y definitiva https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ (**v23**). APK nativa **Cliente Premium v14.0 / versionCode 202**, firmada mismo certificado; descarga https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v14.apk . Ambas usan exactamente la interfaz Pages, no frontend visual Workers. PWA urgente compacta; Mapa controla disponibilidad, no se simulan reservas inmediatas. [APK SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093358000) · [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093464623).
+
+
 > **ENLACE ÚNICO PARA PASAJEROS (10/10/2026):** https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ . Web/PWA con diseño aprobado por el usuario; APK Cliente v13 carga ESTA web (no Cloudflare). Cloudflare Worker solo complementa con APIs de rutas, km/min/tarifa; no sustituir la web aprobada.
 
 
