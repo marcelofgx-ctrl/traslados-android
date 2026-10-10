@@ -1,8 +1,8 @@
-# ACTUALIZADO: 2026-10-05
+# ACTUALIZADO: 2026-10-09
 # FUENTE DE VERDAD: proyecto Android versionado en GitHub
 # No reconstruye desde YAML históricos ni artifacts previos.
 
-name: Build Traslados Conductor from source
+name: Build Traslados Conductor from source DEBUG
 
 on:
   workflow_dispatch:
@@ -51,7 +51,7 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Verify canonical source
+      - name: Verify current canonical source
         shell: bash
         run: |
           set -euo pipefail
@@ -60,57 +60,36 @@ jobs:
           test -f conductor/build.gradle
           test -f conductor/src/main/AndroidManifest.xml
           D=conductor/src/main/java/uy/com/traslados/conductor
-          test -f "$D/MainActivity.java"
-          test -f "$D/Api.java"
-          test -f "$D/ReservationMonitorService.java"
-          test -f "$D/TripTelemetryService.java"
+          for cls in MainActivity Api ReservationMonitorService TripTelemetryService DemandMapActivity; do
+            test -s "$D/$cls.java"
+          done
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
           test -s conductor/src/main/res/drawable-nodpi/app_icon.png
-          test -f conductor/src/main/res/drawable/ic_refresh.xml
-          test -f conductor/src/main/res/drawable/ic_history.xml
-          test -f conductor/src/main/res/drawable/ic_logout.xml
-          test -f conductor/src/main/res/drawable/ic_bell.xml
-          test -f conductor/src/main/res/drawable/ic_tune.xml
-          test -f conductor/src/main/res/drawable/ic_gps.xml
-          test -f conductor/src/main/res/drawable/ic_diagnostics.xml
-          test -f conductor/src/main/res/drawable/ic_lab.xml
-          test -f conductor/src/main/res/drawable/ic_calendar.xml
-          grep -q "versionCode 122" conductor/build.gradle
-          grep -q "versionName '11.4-R10.4'" conductor/build.gradle
-          grep -q '11.4-R10.4' "$D/Api.java"
-          grep -q 'Conductor v11.4 R10.4 iniciado' "$D/MainActivity.java"
-          grep -q 'collapseAllOtherDays' "$D/MainActivity.java"
-          grep -q 'WindowInsets' "$D/MainActivity.java"
-          grep -q 'TripTelemetryService' "$D/MainActivity.java"
-          grep -q 'driverNewReservationCueOnce' "$D/ReservationMonitorService.java"
-          grep -q 'agendaStatusMode' "$D/MainActivity.java"
-          grep -q 'gpsStateChip' "$D/MainActivity.java"
-          grep -q 'activeSyncInFlight' "$D/MainActivity.java"
-          grep -q 'v11.4 · R10.4 · build 122' "$D/MainActivity.java"
-          grep -q 'collapsed.addAll(groups.keySet())' "$D/MainActivity.java"
-          grep -q 'tocá un día para desplegar' "$D/MainActivity.java"
-          grep -q 'driverBubbleDp(66),driverBubbleDp(66)' "$D/ReservationMonitorService.java"
-          grep -q 'driverBubbleDp(46),driverBubbleDp(46)' "$D/ReservationMonitorService.java"
-          echo 'Canonical Conductor R10.4 source verified'
+          grep -q "applicationId 'uy.com.traslados.conductor'" conductor/build.gradle
+          grep -q "versionName '11.5-R1'" conductor/build.gradle
+          grep -q 'versionCode 123' conductor/build.gradle
+          grep -q 'org.maplibre.gl:android-sdk:13.6.1' conductor/build.gradle
+          grep -q 'DemandMapActivity' conductor/src/main/AndroidManifest.xml
+          grep -q 'showKeyboardSafeQuoteDialog' "$D/MainActivity.java"
+          echo 'Código fuente Conductor 11.5-R1 comprobado (incluye corrección de teclado R24.3)'
 
-      - name: Build Traslados Conductor
-        run: gradle :conductor:assembleDebug --stacktrace
+      - name: Build Traslados Conductor DEBUG from repository source
+        run: gradle :conductor:assembleDebug --stacktrace --no-daemon
 
-      - name: Prepare APK and checksum
+      - name: Prepare DEBUG artifact and traceability
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.4_R10.4.apk
-          sha256sum artifacts/Traslados_Conductor_v11.4_R10.4.apk | tee artifacts/SHA256SUMS.txt
-          ls -lh artifacts/Traslados_Conductor_v11.4_R10.4.apk artifacts/SHA256SUMS.txt
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.5_R1_DEBUG.apk
+          sha256sum artifacts/*.apk | tee artifacts/SHA256SUMS.txt
+          printf 'Source commit: %s\nBuild type: DEBUG (NO reemplaza una APK RELEASE)\nModule: conductor/\nVersion: 11.5-R1 / code 123\n' "$GITHUB_SHA" > artifacts/BUILD_INFO.txt
+          ls -lh artifacts/
 
-      - name: Upload APK
+      - name: Upload DEBUG APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.4-R10.4
-          path: |
-            artifacts/Traslados_Conductor_v11.4_R10.4.apk
-            artifacts/SHA256SUMS.txt
+          name: Traslados-Conductor-v11.5-R1-DEBUG-SOURCE
+          path: artifacts/
           if-no-files-found: error
