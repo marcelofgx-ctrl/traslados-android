@@ -201,7 +201,7 @@ function locationPermissionGuidance(errorCode){
     title:"Ubicación bloqueada por Android o Chrome",
     description:"Traslados no puede cambiar el permiso automáticamente. Habilitalo una sola vez y volvé a probar.",
     steps:[
-      "Cerrá las burbujas y ventanas flotantes de Mapa Trayectos u otras aplicaciones. Si persiste, desactivá temporalmente «Aparecer encima» para esas apps.",
+      "Cuando estés estacionado, cerrá las burbujas de Uber, Cabify o Mapa Trayectos. Si siguen superpuestas, desactivá temporalmente «Aparecer encima» para esas aplicaciones en Ajustes de Android.",
       "Abrí Traslados en Chrome, tocá el icono junto a la dirección y entrá en Permisos → Ubicación → Permitir.",
       "Si Chrome no tiene acceso: Ajustes del celular → Aplicaciones → Chrome → Permisos → Ubicación → Permitir mientras se usa la aplicación, con ubicación precisa."
     ]
@@ -390,17 +390,60 @@ function picker(name,mount,position){
       gpsHelp.hidden=true;input.focus();
     });
   }
-  const useCurrent=()=>{
+  function showGpsPermissionPreparation(){
+    if(!gpsHelp)return;
+    clear(gpsHelp);gpsHelp.hidden=false;
+    text(gpsHelp,"strong","Antes de autorizar la ubicación","gps-permission-title");
+    text(gpsHelp,"p","Android bloquea el permiso si hay burbujas flotantes abiertas. En tu caso vimos Uber y Cabify. No hace falta desinstalarlas.","gps-permission-description");
+    const steps=text(gpsHelp,"ol","","gps-permission-steps");
+    text(steps,"li","Cuando estés estacionado, cerrá temporalmente las burbujas de Uber, Cabify o Mapa Trayectos.");
+    text(steps,"li","Después tocá «Solicitar permiso» para que Android permita la ubicación de Traslados.");
+    const actions=text(gpsHelp,"div","","gps-permission-actions");
+    button(actions,"⌖ Solicitar permiso","tiny-btn",requestGps);
+    button(actions,"Elegir origen sin GPS","tiny-btn gps-manual",()=>{
+      gpsHelp.hidden=true;input.focus();
+    });
+  }
+  // El sitio no puede detectar ni cerrar superposiciones de otras apps.
+  // Antes del PRIMER pedido de permiso en Android, prevenir el diálogo bloqueado.
+  const useCurrent=async()=>{
     if(!navigator.geolocation||window.isSecureContext===false){
       showGpsPermissionHelp(0);return;
     }
-    if(geo?.disabled)return; // evita diálogos superpuestos por múltiples toques
+    if(geo?.disabled)return;
+    const android=/Android/i.test(navigator.userAgent||"");
+    if(!navigator.permissions?.query){
+      if(android)showGpsPermissionPreparation();
+      else requestGps();
+      return;
+    }
+    geo.disabled=true;
+    const original=geo.textContent;
+    geo.textContent="⌖ Revisando permiso…";
+    let state="prompt";
+    try{
+      const status=await navigator.permissions.query({name:"geolocation"});
+      state=status.state;
+    }catch{/* Some browsers do not expose the Permissions API. */}
+    finally{
+      geo.disabled=false;geo.textContent=original;
+    }
+    if(state==="denied"){
+      showGpsPermissionHelp(1);
+    }else if(state==="granted"||!android){
+      requestGps();
+    }else{
+      showGpsPermissionPreparation();
+    }
+  };
+  function requestGps(){
+    if(!navigator.geolocation||geo?.disabled)return;
     if(gpsHelp)gpsHelp.hidden=true;
     const original=geo.textContent;
     geo.disabled=true;geo.textContent="⌖ Obteniendo ubicación…";
     const finish=()=>{geo.disabled=false;geo.textContent=original;};
     tell("Solicitando ubicación al navegador…");
-    // Debe llamarse directamente desde el toque del usuario.
+    // La ventana de Android se solicita SOLO al tocar «Solicitar permiso».
     navigator.geolocation.getCurrentPosition(async p=>{
       try{
         const lat=p.coords.latitude,lng=p.coords.longitude;
@@ -424,7 +467,7 @@ function picker(name,mount,position){
       finish();
       showGpsPermissionHelp(error?.code??0);
     },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
-  };
+  }
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return {state:()=>selected,chooseDept,input,persist,box};
 }
