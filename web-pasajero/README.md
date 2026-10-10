@@ -55,3 +55,13 @@ Las burbujas flotantes de Uber/Mapa que pueden cubrir los botones en capturas An
 - **Web premium separada:** https://traslados-web.marcelof-gx.workers.dev/
 
 **Pendiente de completar:** la clave gratuita de openrouteservice `ORS_API_KEY` en los secretos de Cloudflare para presentar km/min directamente en ambas webs; el GPS en vivo del conductor es otro componente todavía no activo. No modificar el backend de reservas para suplir rutas. Verificar con un teléfono real antes de anunciar una función de recogida inmediata.
+
+## Ayuda GPS Android / Chrome — 10/10/2026
+
+La captura real del usuario mostró el aviso de seguridad de Android **«Este sitio no puede solicitarte permiso. Cierra las burbujas o superposiciones»** al tocar «Usar ubicación actual» desde la PWA instalada. La fuente era este `web-pasajero/app.js`; el antiguo error de GPS era un `toast` efímero y genérico.
+
+**Implementado en código (PWA v14):** `app.js` solicita el permiso mediante `navigator.geolocation.getCurrentPosition` tras pulsación explícita; distingue denegado (1), no disponible (2) y demora (3), explica cómo desactivar superposiciones y cómo conceder ubicación a Chrome en Android, y ofrece botones **Volver a intentar** y **Escribir dirección**. La guía premium está en `styles.css`, `index.html` apunta a recursos `?v=14` y `sw.js` usa caché `traslados-cliente-pwa-v14`. Smoke `tests/location-permission-smoke.cjs` se añadió al workflow de empaquetado y al de revisión. No toca reservas, tokens ni Supabase.
+
+**Limitación:** una web/PWA no puede abrir de forma fiable ni configurar automáticamente el permiso de ubicación del sistema; debe pedirlo desde un gesto del usuario y guiar en caso de bloqueo por overlays. GitHub Actions de empaquetado y Pages reportaron SUCCESS en [38026118498](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38026118498) y [38026121606](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38026121606). La entrega HTTP y el diálogo de permisos en un Samsung real **siguen pendientes de comprobación**, y el usuario debe reabrir/actualizar la PWA.
+
+**Paridad:** `traslados-web/src/components/UyLocationPicker.tsx` recibió la misma asistencia en el código Workers, con CI verde (compilaciones y TypeScript). **Su despliegue Cloudflare permanece manual y pendiente**; GitHub Pages no es la web pública principal.
