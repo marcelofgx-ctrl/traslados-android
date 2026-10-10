@@ -1,0 +1,76 @@
+name: Publicar APK Cliente verificada para fallback PWA
+
+# Fuente única: R12 RELEASE firmada en ejecución previamente comprobada.
+# Se publica como recurso estático servido por el mismo origen de la PWA.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publicar-cliente-apk-pwa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publicar-cliente-apk-r12
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verificar firma y publicar APK Cliente nativa
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Descargar APK de Cliente firmada y su certificado
+        uses: actions/download-artifact@v4
+        with:
+          name: Traslados-Cliente-v11.5-R12-RELEASE
+          run-id: 38021100002
+          repository: marcelofgx-ctrl/traslados-android
+          github-token: ${{ github.token }}
+          path: /tmp/cliente-r12-apk
+      - name: Verificar artefacto correcto, integridad y firma Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/cliente-r12-apk
+          test -s Traslados_Cliente_v11.5_R12_RELEASE.apk
+          test -s SHA256SUMS.txt
+          test -s SIGNING.txt
+          sha256sum -c SHA256SUMS.txt
+          grep -Eiq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' SIGNING.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          apk=Path('Traslados_Cliente_v11.5_R12_RELEASE.apk')
+          assert apk.stat().st_size > 100_000, 'APK demasiado chica o incompleta'
+          assert apk.open('rb').read(2)==b'PK','APK no es un archivo ZIP Android'
+          print('APK Android íntegra, firma validada por workflow RELEASE')
+          PY
+      - name: Copiar APK y suma verificable a ruta pública estable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web-pasajero/downloads
+          cp /tmp/cliente-r12-apk/Traslados_Cliente_v11.5_R12_RELEASE.apk \
+             web-pasajero/downloads/traslados-cliente-v11.5-r12.apk
+          cd web-pasajero/downloads
+          sha256sum traslados-cliente-v11.5-r12.apk > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Publicar mediante GitHub Pages (rama main ya configurada)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Traslados CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add web-pasajero/downloads/traslados-cliente-v11.5-r12.apk web-pasajero/downloads/SHA256SUMS.txt
+          if git diff --cached --quiet; then
+            echo "La APK verificada ya está publicada: sin cambios"
+            exit 0
+          fi
+          git commit -m "Publicar APK Cliente v11.5 R12 firmada para instalador web"
+          git push origin HEAD:main
