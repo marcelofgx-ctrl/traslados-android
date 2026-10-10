@@ -1,6 +1,6 @@
 # Traslados Android — índice del repositorio
 
-> **Release pasajero vigente (10/10/2026):** web/PWA única y definitiva https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ (**v23**). APK nativa **Cliente Premium v14.0 / versionCode 202**, firmada mismo certificado; descarga https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v14.apk . Ambas usan exactamente la interfaz Pages, no frontend visual Workers. PWA urgente compacta; Mapa controla disponibilidad, no se simulan reservas inmediatas. [APK SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093358000) · [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093464623).
+> **Release pasajero vigente (10/10/2026):** web/PWA única y definitiva https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ (**v24**). APK nativa **Cliente Premium v14.0 / versionCode 202**, firmada mismo certificado; descarga https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v14.apk . Ambas usan exactamente la interfaz Pages, no frontend visual Workers. PWA urgente compacta; Mapa controla disponibilidad, no se simulan reservas inmediatas. [APK SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093358000) · [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38093646637).
 
 
 > **ENLACE ÚNICO PARA PASAJEROS (10/10/2026):** https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/ . Web/PWA con diseño aprobado por el usuario; APK Cliente v13 carga ESTA web (no Cloudflare). Cloudflare Worker solo complementa con APIs de rutas, km/min/tarifa; no sustituir la web aprobada.
@@ -16,6 +16,9 @@ Este repositorio contiene **más de una aplicación Android**. Antes de programa
 - [Contexto histórico ampliado](docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md).
 - [Roadmap histórico](docs/mapa-trayectos-roadmap-2026-10-08.md).
 - Aplicación Android nativa en `mapatrayectos/`. Paquete `uy.com.mapatrayectos`.
+
+**Instalación web y APK:** desde la sección «Instalar», Chrome ofrece primero la PWA si está disponible y la APK Android v14 aparece también como alternativa visible (no queda oculta por el instalador PWA). Verificado en CI y GitHub Pages. 
+
 - Build firmado: [Mapa Trayectos GitHub Actions](.github/workflows/build-mapa-trayectos.yml).
 
 **Corte documentado:** `0.1-R24.3`, `versionCode 45`, [build firmado exitoso 37924921923](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/37924921923). Este número no sustituye verificar `main` ni las compilaciones posteriores.
