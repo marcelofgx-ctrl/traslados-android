@@ -54,7 +54,7 @@ let selectedPickupMode="schedule";
 let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaAt=0,lastPickupEtaMessage="";
 let lastPickupEtaIsEstimate=false,lastVerifiedEtaKey="",lastVerifiedEtaAt=0,lastVerifiedEtaMessage="";
 let lastVerifiedEtaResult=null;
-let etaRetryNotBefore=0;
+let etaRetryNotBefore=0,etaRetryIdentity="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
 function forgetPickupEta(){
   lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
@@ -173,7 +173,8 @@ async function refreshPickupPresence(force=false){
   }
   const signedIn=authReady();
   const lat=record.origin.lat,lng=record.origin.lng;
-  const key=(signedIn?session.token:"visitante")+"|"+lat.toFixed(5)+","+lng.toFixed(5);
+  const identity=signedIn?session.token:"visitante";
+  const key=identity+"|"+lat.toFixed(5)+","+lng.toFixed(5);
   const lastGood=latestPickupEstimate(key);
   // Mapa envía el último movimiento detectado; la web no obtiene velocidad
   // ni posición del conductor. Los períodos aplican en primer plano.
@@ -196,7 +197,7 @@ async function refreshPickupPresence(force=false){
   };
   // La disponibilidad se comprueba cada 15 segundos, y la ruta
   // cada 30 segundos al moverse o 60 detenido. No quemar cuotas por pestañas.
-  if(Date.now()<etaRetryNotBefore ||
+  if((etaRetryIdentity===identity&&Date.now()<etaRetryNotBefore) ||
       (key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval)){
     showWaiting("Estamos actualizando la llegada aproximada a tu origen.");
     return;
@@ -220,7 +221,7 @@ async function refreshPickupPresence(force=false){
       lastVerifiedEtaResult={km,minutes,coarse:data.estimateType==="coarse"};
       lastVerifiedEtaKey=key;lastVerifiedEtaAt=Date.now();
       lastPickupEtaIsEstimate=true;
-      etaRetryNotBefore=0;
+      etaRetryNotBefore=0;etaRetryIdentity="";
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:"Llegada estimada hasta tu punto de partida.",
         km,minutes,estimateNote:data.estimateType==="coarse"?"Distancia y tiempo aproximados.":"Tiempo y distancia aproximados.",
@@ -237,6 +238,7 @@ async function refreshPickupPresence(force=false){
       }
       if(reason==="rate_limited"){
         // Espera prudente para no insistir sobre una cuota aún agotada.
+        etaRetryIdentity=identity;
         etaRetryNotBefore=Math.max(etaRetryNotBefore,Date.now()+90000);
         showWaiting("Estamos actualizando tu tiempo estimado de llegada.");
       }else if(reason==="login_required"){
