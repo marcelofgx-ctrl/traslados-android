@@ -87,6 +87,7 @@
   }
   function notifications(previous,items){
     const changed=[];
+    if(!previous||typeof previous.has!=="function")return changed;
     for(const r of items){
       const key=String(r.id||r.code||"");
       if(!key||!previous.has(key))continue; // first load is baseline
