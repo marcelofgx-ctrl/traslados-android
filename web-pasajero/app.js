@@ -55,6 +55,13 @@ function suggestBookingStep(error){
     const name=$("person-name"),phone=$("person-phone");
     target=name?.value?.trim().length>=2?phone:name;
   }
+  if(step==="when"){
+    const inline=$("booking-when-error");
+    inline.textContent=/pasado/i.test(message)
+      ?"El horario elegido ya pasó. Seleccioná otro horario futuro y volvé a revisar la solicitud."
+      :"Revisá la fecha y la hora. La solicitud no se envió.";
+    inline.hidden=false;
+  }
   bookingSteps.open(step,{scroll:true});
   // Esperar al cambio de visibilidad antes de enfocar un campo plegado.
   if(target)setTimeout(()=>target.focus?.({preventScroll:true}),60);
@@ -87,6 +94,24 @@ function loading(el,value){
   }
   el.dataset.original??=el.textContent;
   el.textContent=value?"Procesando…":el.dataset.original;
+}
+function clearBookingFeedback(){
+  for(const id of ["booking-send-error","booking-when-error","booking-fix-when"]){
+    const el=$(id);if(el)el.hidden=true;
+  }
+}
+function bookingSendFailure(error){
+  const message=String(error?.message||"");
+  const scheduleIssue=/horario|fecha|hora|disponible|pasado/i.test(message);
+  const notice=$("booking-send-error");
+  if(notice){
+    notice.textContent=scheduleIssue
+      ?"El horario no pudo confirmarse. La solicitud no se registró; elegí otra fecha u hora para continuar."
+      :"No pudimos confirmar el resultado del envío. Revisá «Mis traslados» antes de intentarlo nuevamente.";
+    notice.hidden=false;
+  }
+  $("booking-fix-when").hidden=!scheduleIssue;
+  showError(error);
 }
 function guardConnection(){if(!navigator.onLine)throw new Error("Estás sin Internet; no enviamos reservas offline.");}
 async function rpc(name,payload={}){
@@ -299,6 +324,7 @@ function setWhen(kind){
   // "Ahora" y "En 10 min" comparten el mismo origen: cambiar de pestaña
   // no debe disparar nuevas ETA ni eludir la cuota de privacidad.
   selectedPickupMode=kind;
+  clearBookingFeedback();
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
   // Solo las programadas tienen fecha/hora editables. Urgentes = consulta, no reserva.
@@ -868,6 +894,7 @@ function previewLocation(parent,kind,address){
 }
 function showPreview(){
   if(selectedPickupMode!=="schedule"){tell("Para recogidas inmediatas, consultá por WhatsApp. No enviamos una reserva automática.");return;}
+  clearBookingFeedback();
   try{
     pendingReview=bookingData();
     const p=pendingReview;
@@ -939,6 +966,7 @@ function saveGuest(result){
 async function submitBooking(){
   if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
   if(busy||!pendingReview)return;
+  clearBookingFeedback();
   // El resumen aprobado debe coincidir exactamente con los campos al enviar:
   // editar detrás del panel nunca puede registrar un viaje desactualizado.
   try{
@@ -982,7 +1010,7 @@ async function submitBooking(){
     button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
     $("booking-preview").hidden=true;$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=true;
     pendingReview=null;box.scrollIntoView({behavior:"smooth"});
-  }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
+  }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
 }
 function statusName(s){return states[s]||s||"Sin estado";}
 function reservationView(r,guestToken){
@@ -1219,10 +1247,22 @@ function init(){
   }
   $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
   $("urgent-switch-scheduled").addEventListener("click",()=>{
+    // Este CTA NO envía solicitudes: únicamente abre fecha/hora programada.
     setWhen("schedule");
     bookingSteps.open("when",{scroll:true});
     $("pickup-date").focus({preventScroll:true});
   });
+  $("booking-fix-when").addEventListener("click",()=>{
+    bookingSteps.open("when",{scroll:true});
+    $("pickup-date").focus({preventScroll:true});
+  });
+  for(const id of ["pickup-date","pickup-time"]){
+    $(id).addEventListener("change",()=>{
+      $("booking-when-error").hidden=true;
+      $("booking-send-error").hidden=true;
+      $("booking-fix-when").hidden=true;
+    });
+  }
   $("when-next").addEventListener("click",()=>{
     if(selectedPickupMode!=="schedule")return;
     const d=$("pickup-date").value,t=$("pickup-time").value;
