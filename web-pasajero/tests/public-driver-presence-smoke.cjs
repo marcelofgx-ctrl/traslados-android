@@ -4,11 +4,13 @@ const {createContext,runInContext}=require("node:vm");
 const {strict:assert}=require("node:assert");
 const path=require("node:path");
 const js=readFileSync(path.join(__dirname,"..","app.js"),"utf8");
+const etaSource=readFileSync(path.join(__dirname,"..","eta-engine.js"),"utf8");
 const begin=js.indexOf('let selectedPickupMode="schedule";');
 const end=js.indexOf("\nfunction setWhen(kind){",begin);
 assert(begin>=0&&end>begin,"Public live availability routine must exist");
 const fragment=js.slice(begin,end);
-assert(fragment.includes('public_driver_availability_v1'),"Must read the Mapa status without login");
+assert(etaSource.includes('public_driver_availability_v1')&&fragment.includes('window.TrasladosETA.availability'),
+  "Public Mapa state must use the isolated network client");
 assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.indexOf('const signedIn=authReady()'),
   "Public status must be checked BEFORE customer login");
 assert(fragment.includes('estimateType==="coarse"'),"Anonymous ETA must be labeled coarse");
@@ -18,7 +20,8 @@ assert(fragment.includes('driver.motionHint==="moving"?30000:60000'),"Adapt ETA 
 assert(!fragment.includes('driver.speed'),"Never expose a driver's raw speed");
 assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
   "No raw driver coordinates may be used by the passenger");
-assert(fragment.includes('sessionToken:session.token'),"Private ETA still requires a real customer session");
+assert(fragment.includes('sessionToken:signedIn?session.token:null')&&etaSource.includes('sessionToken'),
+  "Signed-in ETA must use its own session identity");
 
 const host={hidden:false,dataset:{},removeAttribute(k){if(k==="data-presence")delete this.dataset.presence;}};
 const pickupLocationButton={hidden:true};
@@ -35,6 +38,7 @@ const els={
 };
 let published=true,moving=false,limitedEta=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
 const ctx={
+  window:{},
   $:id=>els[id],API:"https://example.invalid",KEY:"publishable-test-key",
   session:null,record:{origin:{lat:-34.83,lng:-56.02,text:"Origen verificado"},
     destination:{lat:-34.90,lng:-56.04,text:"Destino verificado"}},
@@ -59,6 +63,7 @@ const ctx={
   }
 };
 createContext(ctx);
+runInContext(etaSource,ctx,{filename:"eta-engine.js"});
 runInContext(fragment,ctx);
 runInContext('selectedPickupMode="now";',ctx);
 async function settled(){await Promise.resolve();await new Promise(setImmediate);}
