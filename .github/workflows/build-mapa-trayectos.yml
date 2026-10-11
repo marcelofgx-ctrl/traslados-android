@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     paths:
       - 'mapatrayectos/**'
+      - 'conductor/src/**' # Shared Conductor sources are embedded into Mapa
+      - 'conductor/build.gradle'
+      - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
       - '.github/workflows/build-mapa-trayectos.yml'

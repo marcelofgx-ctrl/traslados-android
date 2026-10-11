@@ -24,6 +24,7 @@ jobs:
       - name: Validate JavaScript and service worker
         run: |
           node --check web-pasajero/geo-search.js
+          node --check web-pasajero/address-engine.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
@@ -50,7 +51,9 @@ jobs:
           assert 'preview-extra' in app and '.preview-place-name' in css
           assert 'ENVIAR SOLICITUD AL CONDUCTOR' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
-          assert 'traslados-cliente-pwa-v28' in sw
+          version=html.split('./app.js?v=')[1].split('"')[0]
+          assert version.isdigit() and ('traslados-cliente-pwa-v'+version) in sw
+          assert 'address-engine.js' in html and 'address-engine.js' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
           assert 'gen_random_bytes' not in html
