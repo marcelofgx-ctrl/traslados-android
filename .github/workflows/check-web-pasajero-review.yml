@@ -25,8 +25,14 @@ jobs:
         run: |
           node --check web-pasajero/geo-search.js
           node --check web-pasajero/address-engine.js
+          node --check web-pasajero/route-engine.js
+          node --check web-pasajero/eta-engine.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/booking-summary-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs
           node web-pasajero/tests/install-flow-smoke.cjs
@@ -54,6 +60,8 @@ jobs:
           version=html.split('./app.js?v=')[1].split('"')[0]
           assert version.isdigit() and ('traslados-cliente-pwa-v'+version) in sw
           assert 'address-engine.js' in html and 'address-engine.js' in sw
+          assert 'route-engine.js' in html and 'route-engine.js' in sw
+          assert 'eta-engine.js' in html and 'eta-engine.js' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
           assert 'gen_random_bytes' not in html
