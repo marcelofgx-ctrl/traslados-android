@@ -18,7 +18,7 @@
   function pickupTimeMs(r){
     const day=String(r?.pickup_date||"");
     const clock=String(r?.pickup_time||"");
-    if(!validDay(day)||!/^\\d{2}:\\d{2}/.test(clock))return null;
+    if(!validDay(day)||!/^\d{2}:\d{2}/.test(clock))return null;
     const ms=Date.parse(day+"T"+clock.slice(0,5)+":00-03:00");
     return Number.isFinite(ms)?ms:null;
   }
