@@ -371,7 +371,7 @@ function picker(name,mount,position){
           if(!isUruguayCoords(lat,lng)&&item.type==="address"){
             const resp=await fetch(IDE+"/direcUnica?limit=5&q="+encodeURIComponent(p.address),{cache:"no-store"});
             const arr=resp.ok?await resp.json():[];
-            const found=Array.isArray(arr)?arr.find(t=>isUruguayCoords(Number(t.lat),Number(t.lng))):null;
+            const found=Array.isArray(arr)?arr.find(t=>isUruguayCoords(Number(t.lat),Number(t.lng))&&addressScore(t,q)>=0):null;
             if(!found)throw new Error("La dirección no tiene coordenadas verificables.");
             lat=Number(found.lat);lng=Number(found.lng);
           }
