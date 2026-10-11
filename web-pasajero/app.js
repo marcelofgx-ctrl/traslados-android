@@ -76,7 +76,18 @@ function showError(e,fallback="No se pudo completar la acción"){
     msg="Ese horario dejó de estar disponible. Elegí otra hora para tu traslado.";
   tell(msg);
 }
-function loading(el,value){if(!el)return;el.disabled=value;el.dataset.original??=el.textContent;if(value)el.textContent="Procesando…";else{el.textContent=el.dataset.original;}}
+function loading(el,value){
+  if(!el)return;
+  el.disabled=value;el.setAttribute("aria-busy",String(Boolean(value)));
+  const label=el.querySelector?.(".booking-cta-label");
+  if(label){
+    label.dataset.original??=label.textContent;
+    label.textContent=value?"Enviando solicitud…":label.dataset.original;
+    return;
+  }
+  el.dataset.original??=el.textContent;
+  el.textContent=value?"Procesando…":el.dataset.original;
+}
 function guardConnection(){if(!navigator.onLine)throw new Error("Estás sin Internet; no enviamos reservas offline.");}
 async function rpc(name,payload={}){
   guardConnection();
@@ -294,6 +305,7 @@ function setWhen(kind){
   // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
   // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
   $("urgent-whatsapp").hidden=!urgent;
+  $("booking-final").hidden=urgent;
   $("review-booking").hidden=urgent;
   $("booking-preview").hidden=true;
   $("submit-actions").hidden=true;
@@ -838,9 +850,9 @@ function showPreview(){
     const target=$("booking-preview");clear(target);target.hidden=false;
 
     const title=text(target,"div","","preview-title");
-    text(title,"span","PASO FINAL · REVISÁ TU TRASLADO","preview-eyebrow");
-    text(title,"h3","Antes de enviar");
-    text(title,"p","Comprobá el recorrido y el horario. El conductor confirmará tu solicitud.");
+    text(title,"span","ÚLTIMO PASO · CONFIRMACIÓN","preview-eyebrow");
+    text(title,"h3","Confirmá tu solicitud");
+    text(title,"p","Revisá origen, destino, horario y pasajeros. La confirmación del traslado llegará después de la respuesta del conductor.");
 
     const journey=text(target,"div","","preview-journey");
     previewLocation(journey,"Origen",p.origin.text);
@@ -891,7 +903,7 @@ function showPreview(){
       const row=text(details,"div","","preview-row");
       text(row,"span",label);text(row,"span",value);
     }
-    $("review-booking").hidden=true;$("submit-actions").hidden=false;
+    $("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=false;
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){pendingReview=null;suggestBookingStep(e);showError(e);}
 }
@@ -903,6 +915,24 @@ function saveGuest(result){
 async function submitBooking(){
   if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
   if(busy||!pendingReview)return;
+  // El resumen aprobado debe coincidir exactamente con los campos al enviar:
+  // editar detrás del panel nunca puede registrar un viaje desactualizado.
+  try{
+    if(JSON.stringify(bookingData())!==JSON.stringify(pendingReview)){
+      pendingReview=null;
+      $("booking-preview").hidden=true;
+      $("submit-actions").hidden=true;
+      $("booking-final").hidden=false;
+      tell("Cambiaste algún dato. Revisá nuevamente la solicitud antes de enviarla.");
+      return;
+    }
+  }catch(e){
+    pendingReview=null;
+    $("booking-preview").hidden=true;
+    $("submit-actions").hidden=true;
+    $("booking-final").hidden=false;
+    suggestBookingStep(e);showError(e);return;
+  }
   const btn=$("confirm-booking");busy=true;loading(btn,true);
   try{
     guardConnection();const p=pendingReview;
@@ -926,7 +956,7 @@ async function submitBooking(){
     text(box,"div",result.code,"code");
     text(box,"p","Guardamos el acceso a tu reserva en este dispositivo. Con cuenta también la verás desde otro teléfono.");
     button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
-    $("booking-preview").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=true;
+    $("booking-preview").hidden=true;$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=true;
     pendingReview=null;box.scrollIntoView({behavior:"smooth"});
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
@@ -1173,7 +1203,7 @@ function init(){
     bookingSteps.open("passenger",{scroll:true});
   });
   $("review-booking").addEventListener("click",showPreview);
-  $("edit-booking").addEventListener("click",()=>{pendingReview=null;$("booking-preview").hidden=true;$("review-booking").hidden=false;$("submit-actions").hidden=true;bookingSteps.open("route",{scroll:true});});
+  $("edit-booking").addEventListener("click",()=>{pendingReview=null;$("booking-preview").hidden=true;$("booking-final").hidden=false;$("review-booking").hidden=false;$("submit-actions").hidden=true;bookingSteps.open("passenger",{scroll:true});});
   $("confirm-booking").addEventListener("click",()=>void submitBooking());
   $("refresh-trips").addEventListener("click",()=>void loadTrips());
   $("mode-login").addEventListener("click",()=>setAccountMode(false));

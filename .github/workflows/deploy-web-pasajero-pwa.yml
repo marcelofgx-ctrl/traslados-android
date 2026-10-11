@@ -88,6 +88,7 @@ jobs:
           node web-pasajero/tests/booking-contracts-smoke.cjs
           node web-pasajero/tests/rpc-client-smoke.cjs
           node web-pasajero/tests/booking-steps-smoke.cjs
+          node web-pasajero/tests/booking-finish-premium-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
