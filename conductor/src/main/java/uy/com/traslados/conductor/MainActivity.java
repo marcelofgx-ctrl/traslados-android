@@ -546,6 +546,26 @@ public class MainActivity extends Activity {
                 acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
                 quote.setOnClickListener(v->showQuoteDialog(r));reject.setOnClickListener(v->confirmReject(r));
             }else if("ACEPTADA".equals(status)){
+                // Estado operativo explícito: no deducir «En camino» por el GPS.
+                String pickupPhase=r.optString("pickup_phase","SIN_INICIAR");
+                if("SIN_INICIAR".equals(pickupPhase)){
+                    Button moving=primaryButton("↗ VOY EN CAMINO");
+                    moving.setTextSize(12);
+                    bodyBox.addView(moving,lpMatch(dp(49),5,2));
+                    moving.setOnClickListener(v->showDriverConfirm("Avisar al pasajero",
+                        "¿Indicar que estás en camino al punto de recogida?",
+                        "VOLVER","EN CAMINO",()->changePickupPhase(r,"EN_CAMINO")));
+                }else if("EN_CAMINO".equals(pickupPhase)){
+                    addDetail(bodyBox,"car","RECOGIDA EN CURSO","El pasajero puede ver que vas en camino.");
+                    Button arrived=primaryButton("✓ LLEGUÉ AL ORIGEN");
+                    arrived.setTextSize(12);
+                    bodyBox.addView(arrived,lpMatch(dp(49),5,2));
+                    arrived.setOnClickListener(v->showDriverConfirm("Avisar llegada",
+                        "¿Ya estás en el punto de recogida del pasajero?",
+                        "VOLVER","YA LLEGUÉ",()->changePickupPhase(r,"EN_PUNTO")));
+                }else if("EN_PUNTO".equals(pickupPhase)){
+                    addDetail(bodyBox,"pin","CONDUCTOR EN ORIGEN","Llegada comunicada al pasajero.");
+                }
                 bodyBox.addView(tripSlideControl(r,false),lpMatch(dp(54),6,2));
             }else if("EN_VIAJE".equals(status)){
                 bodyBox.addView(tripSlideControl(r,true),lpMatch(dp(54),6,2));
@@ -804,6 +824,29 @@ public class MainActivity extends Activity {
                 Api.setStatus(pin,id,to);Api.logEvent("status_changed",to,"{\"reservation\":\""+r.optString("code")+"\"}");
                 runOnUiThread(()->{driverStatusInFlight.remove(changeKey);if("FINALIZADA".equals(to)){stopTripTelemetry(r);playTripActionCue(true);toast("✓ Viaje finalizado");handler.postDelayed(()->showTripFinishSummary(r),900);}else if("EN_VIAJE".equals(to)){playTripActionCue(false);toast("✓ Viaje iniciado · verificando GPS");handler.postDelayed(()->verifyTripTelemetryStart(r,0),700);}else toast("Estado actualizado: "+prettyStatus(to));expandedId="";loadActive(true);});
             }catch(Exception e){getSharedPreferences("driver_bubble",MODE_PRIVATE).edit().remove("self_change_id").remove("self_change_at").apply();runOnUiThread(()->{driverStatusInFlight.remove(changeKey);if(telemetryArmed)abortTripTelemetry(r);toast("No se pudo cambiar el estado: "+friendly(e));});}
+        });
+    }
+
+    private void changePickupPhase(JSONObject r,String phase){
+        String id=r.optString("id","");
+        if(id.isEmpty()||!driverStatusInFlight.add("phase-"+id))return;
+        toast("Comunicando estado al pasajero…");
+        pool.execute(()->{
+            try{
+                JSONObject result=Api.setPickupPhase(pin,id,phase);
+                runOnUiThread(()->{
+                    driverStatusInFlight.remove("phase-"+id);
+                    if(!phase.equals(result.optString("pickup_phase"))){
+                        toast("No se pudo comprobar el estado enviado");
+                    }else{
+                        hapticTick();
+                        toast("EN_CAMINO".equals(phase)?"Aviso enviado: En camino":"Aviso enviado: Llegué al origen");
+                    }
+                    expandedId=id;loadActive(true);
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{driverStatusInFlight.remove("phase-"+id);toast("No pude actualizar la llegada: "+friendly(e));});
+            }
         });
     }
 
