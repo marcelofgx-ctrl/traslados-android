@@ -30,18 +30,7 @@ function loading(el,value){if(!el)return;el.disabled=value;el.dataset.original??
 function guardConnection(){if(!navigator.onLine)throw new Error("Estás sin Internet; no enviamos reservas offline.");}
 async function rpc(name,payload={}){
   guardConnection();
-  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),18000);
-  try{
-    const res=await fetch(API+"/rest/v1/rpc/"+encodeURIComponent(name),{
-      method:"POST",mode:"cors",headers:{"apikey":KEY,"Content-Type":"application/json","Accept":"application/json"},
-      body:JSON.stringify(payload),signal:controller.signal,cache:"no-store"
-    });
-    const content=await res.text();let parsed;
-    try{parsed=content?JSON.parse(content):null;}catch{parsed=content;}
-    if(!res.ok)throw new Error(parsed?.message||parsed?.error||"Servicio temporalmente no disponible");
-    return parsed;
-  }catch(e){if(e?.name==="AbortError")throw new Error("La conexión tardó demasiado. Revisá Mis traslados antes de volver a enviar para evitar duplicados.");throw e;}
-  finally{clearTimeout(timer);}
+  return window.TrasladosRpc.call({api:API,publishableKey:KEY,name,payload});
 }
 function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;if(offline)tell("Sin conexión: no podés enviar reservas hasta reconectarte.");}
 function currentUY(offsetMinutes=0){
