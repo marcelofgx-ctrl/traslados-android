@@ -137,7 +137,7 @@ jobs:
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class TransferQuickPanel" mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
-          grep -q "class QuickReservationLogic" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickReservationLogic.java
+          grep -q "class QuickReservationLogic" core-reservations/src/main/java/uy/com/mapatrayectos/QuickReservationLogic.java
           grep -q 'TransferAlerts.refreshAsync' mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
           grep -q 'TransferAlerts.snapshot' mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
           grep -q 'popup.showAsDropDown' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
@@ -338,7 +338,7 @@ jobs:
             mapatrayectos/tests/BubbleClosePolicyTest.java
           java -cp /tmp/mapa-anchor-check BubbleClosePolicyTest
           javac -d /tmp/mapa-anchor-check \
-            mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickReservationLogic.java \
+            core-reservations/src/main/java/uy/com/mapatrayectos/QuickReservationLogic.java \
             mapatrayectos/tests/QuickReservationLogicTest.java
           java -cp /tmp/mapa-anchor-check QuickReservationLogicTest
 
