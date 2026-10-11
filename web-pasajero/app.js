@@ -336,14 +336,14 @@ function picker(name,mount,position){
     const returnedDept=normalizeAddress(item.departamento);
     if(returnedDept ? returnedDept!==requestedDept : !address.split(" ").includes(requestedDept))return -1;
     const ignored=new Set(["calle","av","avenida","avda","nro","numero","num","esq","esquina","de","del","la","las","los","el","y"]);
-    const terms=normalizeAddress(q).split(" ").filter(w=>w&&!/^\\d+$/.test(w)&&!ignored.has(w));
+    const terms=normalizeAddress(q).split(" ").filter(w=>w&&!/^\d+$/.test(w)&&!ignored.has(w));
     if(!terms.length)return -1;
     const words=address.split(" ");
     if(!terms.every(t=>words.some(w=>w===t||(t.length>=3&&w.startsWith(t)))))return -1;
     // Un portal faltante no es una dirección exacta: jamás sustituir 2274
     // por un centroide de calle o por la altura de otro domicilio.
-    const askedNumbers=String(q).match(/\\b\\d{1,5}\\b/g)||[];
-    const foundNumbers=String(item.address).match(/\\b\\d{1,5}\\b/g)||[];
+    const askedNumbers=String(q).match(/\b\d{1,5}\b/g)||[];
+    const foundNumbers=String(item.address).match(/\b\d{1,5}\b/g)||[];
     if(!askedNumbers.every(n=>foundNumbers.includes(n)))return -1;
     return 20+(address.startsWith(normalizeAddress(q))?10:0)+
       (Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lng))?2:0);
@@ -424,7 +424,7 @@ function picker(name,mount,position){
         addresses=valid(raw);
         // Para calle + puerta consultar además el geocodificador oficial:
         // Candidates puede omitir la altura y devolver calles lejanas.
-        if(!addresses.length&&/\\b\\d{1,5}\\b/.test(q)){
+        if(!addresses.length&&/\b\d{1,5}\b/.test(q)){
           const precise=await fetch(IDE+"/direcUnica?limit=10&q="+encodeURIComponent(q+", "+dept),{cache:"no-store"});
           if(precise.ok)addresses=valid(await precise.json());
         }
