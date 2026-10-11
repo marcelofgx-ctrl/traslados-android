@@ -18,6 +18,8 @@ Ante captura Samsung 16:36 con tarjeta «Recogida no confirmada por ahora» se s
 - El backend `pickup-eta` v5 permanece intacto; al bloquear antes de Edge, no deben esperarse entradas de esa función. En otro incidente, empezar por disponibilidad, agenda, GPS y solo después mirar Edge/ORS.
 
 ## Pruebas y publicación
+**Actualización de despliegue y diagnóstico posterior (19:57 UYT):** Pages build/deploy exitoso en [run 38169989200](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38169989200). La agenda ya no presentaba conflictos, pero `shift_active=false`, heartbeat ~35 min atrasado y no había GPS vigente; por ello seguía correctamente no disponible. El test de regresión ahora cubre además HTTP 503 de disponibilidad (`issue`) y recuperación (`ready`). Matriz Samsung y límites de verificación: [QA_SAMSUNG_V54_Y_VERIFICACION_PRODUCCION.md](QA_SAMSUNG_V54_Y_VERIFICACION_PRODUCCION.md). Prueba física pendiente.
+
 - `tests/pickup-health-v54-smoke.cjs` valida privacidad, límites, estados y estilos.
 - Regresiones de presencia, ETA, reservas y Cliente Premium v15 en CI antes de publicar. CI no prueba físicamente GPS/Samsung ni reemplaza el manejo de reservas ACEPTADAS.
 - Confirmar visualmente en Samsung que no haya superposición de cabecera y tarjeta, que animación solo se active al comprobar y que el estado pueda pasar a ETA válida cuando la agenda lo permita. No crear viajes falsos para simular disponibilidad.
