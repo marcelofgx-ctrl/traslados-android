@@ -441,6 +441,8 @@ public class MainActivity extends Activity {
         addMainMenuRow(menu,"▤","Historial y estadísticas","Viajes, kilómetros y jornadas",popup,
             ()->startActivity(new Intent(this,HistoryActivity.class)));
         addPickupPresenceRow(menu,popup);
+        addMainMenuRow(menu,"◈","Estado del sistema","Supabase · GPS · sincronización",popup,
+            ()->startActivity(new Intent(this,SystemStatusActivity.class)));
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
         try{popup.showAsDropDown(anchor,-dp(181),dp(4));}

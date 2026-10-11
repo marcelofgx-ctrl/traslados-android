@@ -51,6 +51,7 @@
             </intent-filter>
         </receiver>
         <activity android:name=".TripDetailActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".SystemStatusActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".HistoryActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
             <intent-filter>
