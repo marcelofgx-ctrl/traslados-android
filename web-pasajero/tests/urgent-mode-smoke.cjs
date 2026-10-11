@@ -63,6 +63,6 @@ assert.equal(nodes["pickup-mode-caption"].hidden,true);
 assert.equal(nodes["review-booking"].hidden,false);
 assert.equal(nodes["booking-final"].hidden,false);
 assert.equal(nodes["when-next"].hidden,false,"Scheduled trips may advance to contact details");
-assert.equal(nodes["urgent-whatsapp"].hidden,true);
+assert.equal(nodes["urgent-actions"].hidden,true);
 assert.match(nodes.availability.textContent,/Reserva programada/);
 console.log("PASS: urgente compacto y sin reserva falsa; programado vuelve a mostrar fecha/hora");
