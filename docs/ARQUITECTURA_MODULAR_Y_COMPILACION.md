@@ -1,5 +1,17 @@
 # Traslados — arquitectura modular, escalabilidad y compilaciones eficientes
 
+## Integración adaptativa Mapa / Cliente / Supabase — 11/10/2026
+
+- Backend [traslados-web PR #8](https://github.com/marcelofgx-ctrl/traslados-web/pull/8): `supabase/migrations/20261011_pickup_adaptive_demand.sql` aplicada en Supabase real con `pickupDemandActive` calculado únicamente para dispositivo autorizado por actividad ETA reciente (<75 s); Edge `pickup-eta` v5 activa, caché RAM 20 s por ruta verificada **después** de cuota SQL, CORS y verificación, sin entregar GPS del conductor al cliente.
+- Android [PR #33](https://github.com/marcelofgx-ctrl/traslados-android/pull/33): `PickupPresenceCadence.java` módulo aislado (test Java independiente), `TrackingService` usa 25 s en ausencia de demanda, 15 s con movimiento reciente y demanda, 30 s detenido con demanda. GPS local sin cambios, opt-in revocable, ocupado/jornada/viaje conservados. Mapa RELEASE `R24.8` versionCode 50 firmada, certificada y publicada (run [38109157734](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109157734)).
+- PWA `pickup-cadence.js` y v40: disponibilidad 15 s en primer plano, ETA 25/45 s según `motionHint` del SQL, rangos reales coherentes con los 5 min de redondeo del Edge (e.g. 5–10 min). Tests Node, cache PWA offline y checks HTTP actualizados.
+- Cliente [PR #34](https://github.com/marcelofgx-ctrl/traslados-android/pull/34): `Cliente Premium v15` versionCode 203, UA `TrasladosClienteNative/15`, misma WebView apuntando a GitHub Pages con diseño **idéntico**; workflow RELEASE nuevo con comparación SHA-256 de certificado respecto de R12 y publicación verificada ([run 38109359918](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918)); workflow v14 histórico solo manual. CI DEBUG Android de regresión sin secretos.
+- Instalación [PR #35](https://github.com/marcelofgx-ctrl/traslados-android/pull/35): PWA v42 actualiza link a APK v15 existente, reinicia caché SW; ningún cambio de CSS o apariencia. PWA 14 sigue reconocida para quienes la tengan; prioridad de instalación nativa preservada.
+- **Límites pendientes:** prueba E2E física en Samsung y coche reales, variabilidad red/GPS y consumo de batería; CI valida código y firma, no demuestra latencia exacta de producción. Sin publicación de ubicación sin opt-in del conductor ni exposición de lat/lng a visitantes.
+
+---
+
+
 ## Cierre UI plegable — PWA v38 y corrección v39 (11/10/2026)
 
 - [PR #31](https://github.com/marcelofgx-ctrl/traslados-android/pull/31): `booking-steps.js` controla tres secciones expandibles de forma accesible, resúmenes de ruta, fecha y pasajero y barra de progreso sin borrar datos al plegar. Ajustes móviles/Montevideo-Canelones/resto del país; CSS premium v38 sin rehacer estética. Ambas suites PWA PASS; [Pages main v38 SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38107584523).
