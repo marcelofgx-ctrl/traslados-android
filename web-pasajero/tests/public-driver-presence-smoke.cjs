@@ -37,7 +37,7 @@ const els={
   "pickup-estimate-note":{textContent:"",hidden:true},
   "pickup-presence-meta":{textContent:""}
 };
-let published=true,moving=false,limitedEta=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
+let published=true,moving=false,limitedEta=false,availabilityFailure=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
 const ctx={
   window:{},
   $:id=>els[id],API:"https://example.invalid",KEY:"publishable-test-key",
@@ -49,6 +49,7 @@ const ctx={
   fetch:async(url,opts)=>{
     if(url.includes("public_driver_availability_v1")){
       publicCalls++;
+      if(availabilityFailure)return{ok:false,status:503};
       return{ok:true,json:async()=>({available:published,
         status:published?"available_for_requests":"not_available",checkedAt:new Date().toISOString(),
         motionHint:moving?"moving":"stationary",confirmationRequired:true})};
@@ -124,6 +125,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   published=false;
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(host.dataset.presence,"busy");
+  assert.equal(host.dataset.phase,"blocked","Agenda bloqueada must show a stable non-animated state");
   assert.match(els["pickup-presence-status"].textContent,/Recogida inmediata no disponible/);
   assert.match(els["pickup-presence-status"].textContent,/automáticamente/);
   assert.match(els["pickup-presence-status"].textContent,/Estado consultado hace/);
@@ -132,10 +134,22 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(guestEtaCalls,3);
   assert.equal(customerEtaCalls,0);
 
+  // A failed availability request is not a busy agenda. Do not call ETA
+  // when a network/API error makes the availability response unknown.
+  availabilityFailure=true;
+  await ctx.refreshPickupPresence(true);await settled();
+  assert.equal(host.dataset.presence,"unknown");
+  assert.equal(host.dataset.phase,"issue","Connection problems have their own visual state");
+  assert.match(els["pickup-presence-status"].textContent,/No pudimos comprobar la disponibilidad/);
+  assert.equal(els["pickup-presence-metrics"].hidden,true);
+  assert.equal(guestEtaCalls,3,"No pickup ETA for unavailable or failed availability checks");
+  availabilityFailure=false;
+
   published=true;
   ctx.session={token:"signed-in-customer-session-example"};
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(customerEtaCalls,1,"Signed-in customer uses private ETA");
+  assert.equal(host.dataset.phase,"ready","Confirmed server ETA ends the routing animation");
   assert.equal(guestEtaCalls,3,"Guest public request never borrows a customer session");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/10 min/);
