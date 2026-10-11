@@ -1579,6 +1579,10 @@ function init(){
     saveStorage("traslados.sound-prefs.v1",$("trips-alert-sound").checked);
     armTripSound();
   });
+  // Tras reabrir Traslados, Web Audio requiere un gesto real para reanudar.
+  // Nunca reproducir sonidos sin el consentimiento guardado.
+  document.addEventListener("pointerdown",armTripSound,{once:true});
+  document.addEventListener("keydown",armTripSound,{once:true});
   $("trip-alert-close").addEventListener("click",closeTripNotice);
   $("trip-alert-open").addEventListener("click",()=>{
     const target=tripFocused;closeTripNotice();
