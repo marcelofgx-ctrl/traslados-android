@@ -75,9 +75,28 @@
         <p id="pickup-mode-caption" class="pickup-mode-caption" aria-live="polite" hidden></p>
         <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
         <div id="pickup-presence" class="pickup-presence" hidden>
-          <span id="pickup-presence-status" role="status" aria-live="polite">Consultando disponibilidad y tiempo de recogida…</span>
+          <div class="pickup-card-header">
+            <span class="pickup-live-indicator" aria-hidden="true"></span>
+            <div class="pickup-card-heading">
+              <strong id="pickup-presence-title">Consultando disponibilidad</strong>
+              <p id="pickup-presence-subtitle">Un momento, estamos comprobando tu recogida.</p>
+            </div>
+          </div>
+          <div id="pickup-presence-metrics" class="pickup-presence-metrics" hidden>
+            <div class="pickup-presence-metric">
+              <span class="pickup-metric-label"><span aria-hidden="true">⌁</span> DISTANCIA</span>
+              <strong id="pickup-distance">—</strong>
+            </div>
+            <div class="pickup-presence-metric">
+              <span class="pickup-metric-label"><span aria-hidden="true">◷</span> LLEGADA APROX.</span>
+              <strong id="pickup-minutes">—</strong>
+            </div>
+          </div>
+          <p id="pickup-estimate-note" class="pickup-estimate-note" hidden></p>
+          <p id="pickup-presence-meta" class="pickup-presence-meta"></p>
+          <span id="pickup-presence-status" class="pickup-screen-reader-status" role="status" aria-live="polite">Consultando disponibilidad y tiempo de recogida…</span>
           <button type="button" id="pickup-use-location" class="pickup-locate" hidden>⌖ Calcular llegada desde mi ubicación</button>
-          <a id="pickup-presence-whatsapp" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">Consultar por WhatsApp ↗</a>
+          <a id="pickup-presence-whatsapp" class="pickup-contact-action" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">Consultar recogida por WhatsApp <span aria-hidden="true">↗</span></a>
         </div>
         <label>Pasajeros
           <select id="passengers">
