@@ -49,6 +49,7 @@ jobs:
           grep -q 'eta-engine.js' /tmp/traslados.html
           grep -q 'booking-contracts.js' /tmp/traslados.html
           grep -q 'booking-steps.js' /tmp/traslados.html
+          grep -q 'pickup-cadence.js' /tmp/traslados.html
           grep -q 'id="route-overview"' /tmp/traslados.html
           grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
@@ -57,6 +58,7 @@ jobs:
           curl -fsSL --max-time 25 "$base/eta-engine.js?ci=$GITHUB_RUN_ID" -o /tmp/eta-engine.js
           curl -fsSL --max-time 25 "$base/booking-contracts.js?ci=$GITHUB_RUN_ID" -o /tmp/booking-contracts.js
           curl -fsSL --max-time 25 "$base/booking-steps.js?ci=$GITHUB_RUN_ID" -o /tmp/booking-steps.js
+          curl -fsSL --max-time 25 "$base/pickup-cadence.js?ci=$GITHUB_RUN_ID" -o /tmp/pickup-cadence.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/route-engine.js
@@ -65,6 +67,7 @@ jobs:
           node --check /tmp/eta-engine.js
           node --check /tmp/booking-contracts.js
           node --check /tmp/booking-steps.js
+          node --check /tmp/pickup-cadence.js
           grep -q 'referenceFareUyu' /tmp/app.js
           grep -q 'public_cached_route_preview_v1' /tmp/route-engine.js
           grep -q 'VALOR DE REFERENCIA' /tmp/app.js
@@ -74,6 +77,7 @@ jobs:
           ! grep -q 'distance.textContent="Ver en Maps"' /tmp/app.js
           grep -q 'window.TrasladosBookingContracts' /tmp/app.js
           grep -q 'window.TrasladosBookingSteps.mount(document)' /tmp/app.js
+          grep -q 'window.TrasladosPickupCadence.intervalMs' /tmp/app.js
           grep -q 'p_pickup_date' /tmp/booking-contracts.js
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
