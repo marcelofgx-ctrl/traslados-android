@@ -435,3 +435,10 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   .booking-step-content{animation:none}
   .booking-step-chevron,#booking-progress-fill{transition:none}
 }
+
+/* Resumen del recorrido plegado: trayecto arriba, métricas verificadas debajo. */
+.booking-step-heading [data-step-extra]{font-weight:760;color:#eed39b;font-size:11px;letter-spacing:.005em}
+.booking-step-card.is-open [data-step-extra]{display:none!important}
+@media(max-width:520px){
+  .booking-step-card[data-booking-step="route"]:not(.is-open) .booking-step-toggle{min-height:75px}
+}
