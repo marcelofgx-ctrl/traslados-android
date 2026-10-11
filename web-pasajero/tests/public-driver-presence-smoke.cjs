@@ -82,11 +82,11 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   runInContext('selectedPickupMode="10";',ctx);
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,1,"Same origin and timing tabs must share a cached ETA");
-  assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
+  assert.match(els["pickup-presence-status"].textContent,/Estimación obtenida/);
   assert.equal(els["pickup-presence-metrics"].hidden,false);
-  // Simulamos una cuota agotada con una estimación reciente ya verificada.
+  // Simulamos una cuota agotada con una estimación anterior aún utilizable.
   limitedEta=true;
-  runInContext("lastPickupEtaAt=Date.now()-101000;",ctx);
+  runInContext("lastPickupEtaAt=Date.now()-101000;lastVerifiedEtaAt=Date.now()-65000;",ctx);
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,2);
   assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
