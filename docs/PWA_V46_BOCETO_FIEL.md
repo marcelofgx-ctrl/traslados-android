@@ -19,5 +19,5 @@ El compás flotante que aparece en capturas de Samsung pertenece a una superposi
 ## Validación
 - Nuevo test `web-pasajero/tests/route-mockup-v46-smoke.cjs` exige que ambas acciones estén realmente en la **misma fila** del origen, con iconos y navegación del teclado.
 - Conservación de todos los tests anteriores y las tres verificaciones CI para PWA, formulario y Cliente WebView.
-- **Pendiente hasta verificar:** tests CI, integración PR, Pages.
+- **Verificado y publicado:** [PR #40](https://github.com/marcelofgx-ctrl/traslados-android/pull/40) integrada como `d8c324f`; PWA [38112008119](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38112008119), revisión [38112008203](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38112008203), paridad Android DEBUG [38112008122](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38112008122) y Pages [38112069236](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38112069236): SUCCESS. No se reconstruye la APK release v15.
 - Prueba física Samsung pendiente: comprobar campo/lupa/GPS en una fila sin desbordes con tamaños de fuente grande, departamento, búsqueda, selección, GPS permitido/denegado, plegado, consulta urgente y reservas autorizadas. No generar reservas reales para probar estética.
