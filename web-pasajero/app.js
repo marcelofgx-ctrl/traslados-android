@@ -421,7 +421,7 @@ function picker(name,mount,position){
     text(shown,"strong",selected.text,"location-selected-label");
     text(shown,"small",selected.department?selected.department+" · Ubicación seleccionada":"Ubicación seleccionada","location-selected-hint");
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
-      selected=null;selectedBox.hidden=true;controls.hidden=false;
+      selected=null;box.classList.remove("is-selected");selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
       renderRouteSummary();input.focus();
       clear(results);feedback.hidden=true;
@@ -691,10 +691,10 @@ function renderRouteSummary(){
 
   const metrics=text(host,"div","","route-metrics");
   const km=text(metrics,"div","","route-metric");
-  text(km,"small","RECORRIDO");
+  text(km,"small","DISTANCIA DEL VIAJE");
   const distance=text(km,"strong","…");
   const min=text(metrics,"div","","route-metric");
-  text(min,"small","TIEMPO APROX.");
+  text(min,"small","DURACIÓN DEL VIAJE");
   const duration=text(min,"strong","…");
   const fare=text(metrics,"div","","route-metric route-metric-fare");
   const fareInfo=text(fare,"div","","route-fare-heading");
@@ -725,7 +725,7 @@ function renderRouteSummary(){
         : "A confirmar";
       indicator.textContent="Ruta verificada";
       indicator.classList.add("is-verified");
-      note.textContent="Importe orientativo, sin peajes ni extras. El conductor confirma el precio final.";
+      note.textContent="Valor orientativo según kilómetros del viaje. No incluye el recorrido del conductor hasta recogerte, peajes ni extras; el conductor confirma el precio final.";
       detailCaption.textContent=data.source==="supabase_route_cache"
         ? "Ruta guardada, calculada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo."
         : "Ruta estimada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo.";
