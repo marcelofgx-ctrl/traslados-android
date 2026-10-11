@@ -18,12 +18,12 @@ assert(css.includes(".booking-step-chevron::before"),"Chevron must be drawn usin
 assert(css.includes("appearance:none;-webkit-appearance:none"),"Replace OS default select arrow");
 assert(css.includes(".booking-cta-arrow")&&css.includes(".booking-final-note"),"Premium action details must remain");
 assert(css.includes("repeating-linear-gradient"),"Preserve approved card texture");
-assert(html.includes('styles.css?v=43')&&html.includes('app.js?v=43'));
-assert(sw.includes('traslados-cliente-pwa-v43'));
+assert(html.includes('styles.css?v=44')&&html.includes('app.js?v=44'));
+assert(sw.includes('traslados-cliente-pwa-v44'));
 assert(js.includes('$("booking-final").hidden=urgent'),"Urgent pickups must not show scheduled booking CTA");
 assert(js.includes('$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=false;'),"Only review unlocks submission");
 assert(js.includes('JSON.stringify(bookingData())!==JSON.stringify(pendingReview)'),"Guard against edited data after review");
 assert(js.includes('label.textContent=value?"Enviando solicitud…":label.dataset.original'),"Retain premium icon/markup during network submission");
 assert(js.includes('window.TrasladosBookingContracts.registeredReservation')&&js.includes('window.TrasladosBookingContracts.guestReservation'),"Keep scheduled reservation contracts");
 assert(js.includes('window.TrasladosETA.availability')&&js.includes('refreshPickupPresence'),"Keep real-time availability");
-console.log("PASS PWA v43: UX, confirmation copy, native dropdown, safety, backend and WebView parity");
+console.log("PASS PWA v44: UX, confirmation copy, native dropdown, safety, backend and WebView parity");
