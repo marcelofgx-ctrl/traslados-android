@@ -10,6 +10,23 @@
 - **Compatibilidad:** sin ajustes de diseño, CSS, Android, paquete, firma ni permisos. PWA v37 está integrada y compiló con CI; publicación Pages sujeta a verificación del run indicado. Cliente Premium v14 consume la web existente sin recompilar.
 - **Pendiente en fase Android:** la biblioteca `:feature:driver` continúa sin migrarse. Realizarla por comparación de comportamiento y compilaciones firmadas, preservando `prepareEmbeddedConductor` hasta que las pruebas de notificaciones, burbuja, panel y firma sean equivalentes.
 
+
+## Formulario PWA v38 — mejoras de diseño y aislamiento UI
+
+El formulario de reservas ahora utiliza **tres tarjetas plegables** con cabeceras accesibles, indicadores de completitud y resúmenes que **no borran los valores** al contraerse. Se mantiene el diseño petróleo/dorado, la textura y la misma página aprobada. [PR #31](https://github.com/marcelofgx-ctrl/traslados-android/pull/31) fusionada en `main`.
+
+- **Módulo UI nuevo:** `web-pasajero/booking-steps.js` administra apertura de ruta, fecha y pasajero mediante `window.TrasladosBookingSteps.mount(document)`. No contiene fetch, Supabase, GPS, tarifas ni llamadas de reservas.
+- **Flujo progresivo:** inicia con Recorrido abierto; cuando origen y destino están seleccionados por primera vez, abre Fecha y pasajeros; botón explícito «Continuar con mis datos» abre el tercero en programadas. Cada cabecera se puede abrir/cerrar; al corregir un error de revisión se abre el paso correspondiente.
+- **Resumen verificable:** ruta corta A→B; solo con motor ROAD válido aparecen km/min y, cuando existe, importe de referencia en una segunda línea compacta. Si cambia el recorrido, se retiran los valores previos. Fecha y hora se resumen con hora numérica 24 h; teléfono no se muestra en la cabecera.
+- **Búsqueda/departamentos:** dos accesos rápidos Montevideo/Canelones y un selector con los otros 17; conserva motor IDE/POI y sus filtros. Buscador con ejemplo móvil más corto.
+- **Ergonomía:** nombre y teléfono en una columna en teléfonos; separaciones menores, barra de progreso, respeto por `prefers-reduced-motion`; misma identidad visual premium.
+- **Seguridad de negocio:** flujo programado conserva `booking-contracts.js` y `rpc-client.js` de PWA v37; «Ahora / En 10 min» continúan como consulta WhatsApp/ETA, no crean reserva; ningún cambio de firma ni compilación Android por esta revisión web.
+- **QA:** tests `booking-steps-smoke.cjs` validan aria, plegado, estado, métricas y conservación; CI PWA y revisión de PR [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38107520385) y [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38107520398). GitHub Pages y dispositivo físico comprobar por separado.
+
+**Pendiente:** revisar aspecto final en Samsung/Chrome y WebView Cliente Premium v14 y asegurar funcionamiento visible del selector, sugerencias y avance en un flujo real sin crear reservas de prueba. No inferir validación de navegador real únicamente desde pruebas DOM simuladas.
+
+---
+
 ## Estado vigente — PWA v36 y medición Android (10/10/2026)
 
 **Prioridad: código verificado en `main` frente a apuntes históricos de v33.** Las fases iniciales de modularización se ampliaron de forma incremental en cuatro PR adicionales.
