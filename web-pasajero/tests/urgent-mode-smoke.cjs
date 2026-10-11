@@ -40,6 +40,7 @@ const ctx={
   currentUY:(minutes=0)=>({day:"2099-01-02",time:minutes===60?"18:00":minutes===10?"17:10":"17:02"}),
   refreshPickupPresence:()=>{},
   refreshBookingSteps:()=>{},
+  clearBookingFeedback:()=>{},
   Date,console,
   pendingReview:null
 };

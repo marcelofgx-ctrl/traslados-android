@@ -93,6 +93,8 @@ jobs:
           node web-pasajero/tests/route-premium-v45-smoke.cjs
           node web-pasajero/tests/route-mockup-v46-smoke.cjs
           node web-pasajero/tests/route-selected-v47-smoke.cjs
+          node web-pasajero/tests/presence-honest-v48-smoke.cjs
+          node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs

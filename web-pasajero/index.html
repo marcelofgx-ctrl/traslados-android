@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=47">
+  <link rel="stylesheet" href="./styles.css?v=48">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -92,6 +92,7 @@
         </div>
         <p id="pickup-mode-caption" class="pickup-mode-caption" aria-live="polite" hidden></p>
         <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
+        <p id="booking-when-error" class="booking-when-error" role="alert" hidden></p>
         <div id="pickup-presence" class="pickup-presence" hidden>
           <div class="pickup-card-header">
             <span class="pickup-live-indicator" aria-hidden="true"></span>
@@ -168,10 +169,12 @@
         <h3>¿Necesitás viajar ahora?</h3>
         <p>Por el momento, las recogidas inmediatas se coordinan directamente con el conductor. No se registra una reserva en el sistema hasta que se acuerde.</p>
         <a id="urgent-whatsapp" class="secondary full urgent-booking-link" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">CONTACTAR POR WHATSAPP <span aria-hidden="true">↗</span></a>
-        <div class="urgent-actions-separator">o solicitá una reserva desde Traslados</div>
-        <button id="urgent-switch-scheduled" type="button" class="primary full booking-main-cta"><span>PROGRAMAR Y ENVIAR SOLICITUD</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
+        <div class="urgent-actions-separator">Para una solicitud desde Traslados, elegí fecha y hora</div>
+        <button id="urgent-switch-scheduled" type="button" class="primary full booking-main-cta"><span>ELEGIR FECHA Y HORA</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
       </div>
       <div id="submit-actions" hidden>
+        <p id="booking-send-error" class="booking-send-error" role="alert" hidden></p>
+        <button id="booking-fix-when" type="button" class="secondary booking-fix-when" hidden>← Elegir otro horario</button>
         <p class="booking-confirm-description">¿Todo correcto? Enviá tu solicitud para recibir la respuesta del conductor.</p>
         <button id="confirm-booking" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">CONFIRMAR SOLICITUD DE RESERVA</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
         <p class="booking-final-note">La solicitud no implica aceptación ni cobro automático.</p>
@@ -241,6 +244,6 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./app.js?v=47" defer></script>
+  <script src="./app.js?v=48" defer></script>
 </body>
 </html>
