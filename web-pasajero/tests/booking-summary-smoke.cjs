@@ -54,6 +54,7 @@ runInNewContext(routeSource,{
 const roadEngine=routeWindow.TrasladosRoutes;
 assert(roadEngine?.verified&&roadEngine?.estimate,"Shared routing module must load");
 const ctx={
+  API:"https://example.invalid",KEY:"test-public",
   Number,Map,AbortController,encodeURIComponent,
   setTimeout:()=>1,clearTimeout:()=>{},
   document:{createElement:tag=>new E(tag)},
