@@ -45,7 +45,7 @@ assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-
 assert(html.includes('src="./trip-board.js?v=2"'));
 assert(html.includes('app.js?v=51')&&html.includes('styles.css?v=51')&&sw.includes('traslados-cliente-pwa-v51'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
-assert(app.includes('customer_list_reservations_v12')&&app.includes('get_reservation_by_token'));
+assert(app.includes('customer_list_reservations_v13')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
 assert(app.includes('tripBoard.notifications(tripSnap,rows)'),"Change-based alerts only");
 assert(app.includes('document.visibilityState==="visible"'),"No polling while hidden");
