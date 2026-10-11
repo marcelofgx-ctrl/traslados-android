@@ -35,7 +35,8 @@ assert(js.includes('if(geo?.disabled)return'),"Repeated taps must not stack perm
 assert(!js.includes('()=>tell("No se pudo obtener GPS. Revisá permisos.")'),"Do not regress to generic error");
 assert(css.includes(".gps-permission-help[hidden]"),"Help must stay hidden until needed");
 const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
-assert(Number.isInteger(appVersion)&&appVersion>=28&&html.includes('./styles.css?v=28'));
+const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
+assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
 assert(sw.includes("traslados-cliente-pwa-v"+appVersion),"Service Worker and UI release must match");
 const {createContext,runInContext}=require("node:vm");
 const handlerStart=js.indexOf("  function showGpsPermissionHelp(errorCode){");
