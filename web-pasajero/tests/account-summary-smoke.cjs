@@ -14,7 +14,7 @@ assert(html.includes('id="urgent-actions"')&&html.includes('id="urgent-switch-sc
 assert(html.includes('id="urgent-whatsapp"')&&html.includes("No se registra una reserva en el sistema"));
 assert(html.includes("PROGRAMAR Y ENVIAR SOLICITUD"),"Programmed booking must remain reachable in app");
 assert(css.includes(".passenger-account-summary")&&css.includes(".urgent-actions"));
-assert(html.includes("app.js?v=44")&&html.includes("styles.css?v=44")&&sw.includes("traslados-cliente-pwa-v44"));
+assert(html.includes("app.js?v=45")&&html.includes("styles.css?v=45")&&sw.includes("traslados-cliente-pwa-v45"));
 const start=js.indexOf("function authReady(){"),end=js.indexOf("\nfunction renderAccount()",start);
 assert(start>=0&&end>start);
 const nodes=Object.fromEntries([
