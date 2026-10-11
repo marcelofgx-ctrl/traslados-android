@@ -51,7 +51,7 @@ jobs:
           for i in 1 2 3 4 5 6; do
             curl -fsSL --max-time 25 "$base/?verify=$GITHUB_RUN_ID" -o /tmp/traslados.html
             # La versión la declara el propio HTML publicado, sin fijar v28/v32.
-            APP_VERSION="$(sed -nE 's@.*src="\\./app\\.js\\?v=([0-9]+)".*@\\1@p' /tmp/traslados.html | head -n 1)"
+            APP_VERSION="$(sed -nE 's@.*src="\./app\.js\?v=([0-9]+)".*@\1@p' /tmp/traslados.html | head -n 1)"
             if [ -n "$APP_VERSION" ]; then break; fi
             sleep 10
           done
