@@ -67,7 +67,6 @@ public class TrackingService extends Service implements LocationListener {
     private float lastAcceptedAccuracy=999f,lastBearing=0f,filteredSpeed=0f;
     private long filteredSpeedTs=0L,lastGoodGpsTs=0L;
     private long lastMovingAtMs=0L,lastPresenceHeartbeatMs=0L;
-    private static final long PICKUP_HEARTBEAT_MS=25000L;
     private float prevMaxSample=-1f;
     private long prevMaxSampleTs=0L;
     private boolean vehicleMoving=false,shiftActive=false,tripActive=false,appVisible=false,tripOriginCaptured=false,stopActive=false,shiftPaused=false;
@@ -134,7 +133,10 @@ public class TrackingService extends Service implements LocationListener {
         @Override public void run(){
             if(!shiftActive||clockHandler==null)return;
             long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);broadcastState();clockPersistTick++;
-            if(now-lastPresenceHeartbeatMs>=PICKUP_HEARTBEAT_MS)publishPickupPresence(now);
+            boolean movingNow=PickupPresenceCadence.recentlyMoving(
+                vehicleMoving,lastAcceptedTs,now);
+            long interval=PickupPresenceCadence.intervalMs(movingNow,Api.pickupDemandActive());
+            if(now-lastPresenceHeartbeatMs>=interval)publishPickupPresence(now);
             if(clockPersistTick>=5){clockPersistTick=0;persist();persistLiveStats(now);updateNotification();if(bubbleView!=null)saveFloatingBubbleState(true);}
             clockHandler.postDelayed(this,CLOCK_TICK_MS);
         }

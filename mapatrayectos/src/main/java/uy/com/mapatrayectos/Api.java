@@ -14,6 +14,12 @@ public final class Api {
     private static final Object SYNC_LOCK=new Object();
     private static volatile boolean syncing=false;
 
+    // A short-lived server hint only. No passenger token, position or identity
+    // is retained on the driver device.
+    private static volatile long pickupDemandExpiresAt=0L;
+    public static boolean pickupDemandActive(){
+        return pickupPresenceEnabled()&&System.currentTimeMillis()<pickupDemandExpiresAt;
+    }
     private static final java.util.concurrent.atomic.AtomicBoolean PRESENCE_BUSY=
         new java.util.concurrent.atomic.AtomicBoolean(false);
     public static boolean pickupPresenceEnabled(){
@@ -28,6 +34,7 @@ public final class Api {
     public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
         // Privacy first: OFF must stop future GPS uploads even if offline.
         // Remote presence will expire after 90 s if the revocation request fails.
+        if(!enabled)pickupDemandExpiresAt=0L;
         if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .edit().putBoolean("enabled",false).apply();
         registerDevice();
@@ -56,6 +63,12 @@ public final class Api {
                 body.put("p_accuracy_m",accuracy);body.put("p_gps_at_ms",gpsTimeMs);
                 body.put("p_last_move_at_ms",lastMovingAtMs);
                 JSONObject result=new JSONObject(postRpc("mapa_presence_ping_v1",body));
+                // The server only returns this hint after device authentication.
+                // Expire it locally even if the network later goes offline.
+                pickupDemandExpiresAt=result.optBoolean("ok",false)
+                    &&result.optBoolean("pickupDemandActive",false)
+                    &&pickupPresenceEnabled() ?
+                    System.currentTimeMillis()+75000L : 0L;
                 // Revoke local permission if a different device has been linked.
                 if(!result.optBoolean("ok",false)&&"not_authorized".equals(result.optString("reason"))){
                     APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
