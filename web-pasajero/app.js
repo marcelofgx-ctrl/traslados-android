@@ -54,11 +54,13 @@ let selectedPickupMode="schedule";
 let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaAt=0,lastPickupEtaMessage="";
 let lastPickupEtaIsEstimate=false,lastVerifiedEtaKey="",lastVerifiedEtaAt=0,lastVerifiedEtaMessage="";
 let lastVerifiedEtaResult=null;
+let etaRetryNotBefore=0;
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
 function forgetPickupEta(){
   lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
   lastPickupEtaIsEstimate=false;lastVerifiedEtaKey="";lastVerifiedEtaAt=0;lastVerifiedEtaMessage="";
   lastVerifiedEtaResult=null;
+  // El enfriamiento de cuota pertenece al visitante, no al origen.
 }
 /** Una tarjeta con jerarquía visual: disponibilidad, km, minutos, información secundaria.
  * El lector de pantalla recibe un único resumen; nunca se muestra información
@@ -110,7 +112,9 @@ async function publicDriverAvailability(force=false){
       const v=await response.json();
       if(typeof v?.available!=="boolean"||!["available_for_requests","not_available"].includes(v.status))
         return null;
-      publicPresenceCache={available:v.available,status:v.status,checkedAt:v.checkedAt};
+      publicPresenceCache={available:v.available,status:v.status,
+        checkedAt:v.checkedAt,
+        motionHint:v.motionHint==="moving"?"moving":"stationary"};
       publicPresenceAt=Date.now();
       return publicPresenceCache;
     }catch{return null;}finally{clearTimeout(timeout);}
@@ -171,11 +175,13 @@ async function refreshPickupPresence(force=false){
   const lat=record.origin.lat,lng=record.origin.lng;
   const key=(signedIn?session.token:"visitante")+"|"+lat.toFixed(5)+","+lng.toFixed(5);
   const lastGood=latestPickupEstimate(key);
-  const etaInterval=signedIn?190000:100000;
+  // Mapa envía el último movimiento detectado; la web no obtiene velocidad
+  // ni posición del conductor. Los períodos aplican en primer plano.
+  const etaInterval=driver.motionHint==="moving"?30000:60000;
   const showWaiting=(prefix)=>{
     if(lastGood){
       const estimateAge=Date.now()-lastVerifiedEtaAt;
-      const freshEstimate=estimateAge<60000;
+      const freshEstimate=estimateAge<etaInterval+5000;
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:freshEstimate?"Llegada estimada hasta tu punto de partida.":
           "Estamos actualizando tu tiempo de llegada.",
@@ -188,9 +194,10 @@ async function refreshPickupPresence(force=false){
         checked:checkedLabel});
     }
   };
-  // La disponibilidad se verifica con frecuencia; la ETA tiene una
-  // cuota independiente. Cambiar de «Ahora» a «En 10 min» no la reinicia.
-  if(key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval){
+  // La disponibilidad se comprueba cada 15 segundos, y la ruta
+  // cada 30 segundos al moverse o 60 detenido. No quemar cuotas por pestañas.
+  if(Date.now()<etaRetryNotBefore ||
+      (key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval)){
     showWaiting("Estamos actualizando la llegada aproximada a tu origen.");
     return;
   }
@@ -213,6 +220,7 @@ async function refreshPickupPresence(force=false){
       lastVerifiedEtaResult={km,minutes,coarse:data.estimateType==="coarse"};
       lastVerifiedEtaKey=key;lastVerifiedEtaAt=Date.now();
       lastPickupEtaIsEstimate=true;
+      etaRetryNotBefore=0;
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:"Llegada estimada hasta tu punto de partida.",
         km,minutes,estimateNote:data.estimateType==="coarse"?"Distancia y tiempo aproximados.":"Tiempo y distancia aproximados.",
@@ -228,6 +236,8 @@ async function refreshPickupPresence(force=false){
         return;
       }
       if(reason==="rate_limited"){
+        // Espera prudente para no insistir sobre una cuota aún agotada.
+        etaRetryNotBefore=Math.max(etaRetryNotBefore,Date.now()+90000);
         showWaiting("Estamos actualizando tu tiempo estimado de llegada.");
       }else if(reason==="login_required"){
         showWaiting("Volvé a ingresar a tu cuenta para consultar la llegada.");
@@ -1202,7 +1212,7 @@ function init(){
   pickupEtaTimer=setInterval(()=>{
     if(selectedPickupMode!=="schedule"&&document.visibilityState==="visible")
       void refreshPickupPresence(true);
-  },20000);
+  },15000);
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
