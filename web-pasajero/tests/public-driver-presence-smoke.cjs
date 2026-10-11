@@ -22,7 +22,14 @@ const host={hidden:false,dataset:{},removeAttribute(k){if(k==="data-presence")de
 const pickupLocationButton={hidden:true};
 const els={
   "pickup-presence":host,"pickup-use-location":pickupLocationButton,"pickup-presence-whatsapp":{},
-  "urgent-whatsapp":{},"pickup-presence-status":{textContent:""}
+  "urgent-whatsapp":{},"pickup-presence-status":{textContent:""},
+  "pickup-presence-title":{textContent:""},
+  "pickup-presence-subtitle":{textContent:""},
+  "pickup-presence-metrics":{hidden:true},
+  "pickup-distance":{textContent:""},
+  "pickup-minutes":{textContent:""},
+  "pickup-estimate-note":{textContent:"",hidden:true},
+  "pickup-presence-meta":{textContent:""}
 };
 let published=true,limitedEta=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
 const ctx={
@@ -59,9 +66,13 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(guestEtaCalls,1,"Guest should get a privacy-coarsened ETA without login");
   assert.equal(customerEtaCalls,0,"No customer session required for guest");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
-  assert.match(els["pickup-presence-status"].textContent,/ubicación por zona/);
-  assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para recogida/);
-  assert.match(els["pickup-presence-status"].textContent,/Estado comprobado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Distancia y tiempo aproximados/);
+  assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para recogerte/);
+  assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
+  assert.equal(els["pickup-presence-metrics"].hidden,false);
+  assert.equal(els["pickup-distance"].textContent,"3,5 km");
+  assert.equal(els["pickup-minutes"].textContent,"10 min");
+  assert(!/servidor|rastreo|límite/i.test(els["pickup-presence-status"].textContent));
   assert(!/Iniciá sesión en Mi cuenta para consultar la llegada aproximada/.test(
     els["pickup-presence-status"].textContent));
   assert.equal(host.dataset.presence,"online");
@@ -71,15 +82,17 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   runInContext('selectedPickupMode="10";',ctx);
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,1,"Same origin and timing tabs must share a cached ETA");
-  assert.match(els["pickup-presence-status"].textContent,/Próximo intento en aprox/);
+  assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
+  assert.equal(els["pickup-presence-metrics"].hidden,false);
   // Simulamos una cuota agotada con una estimación reciente ya verificada.
   limitedEta=true;
   runInContext("lastPickupEtaAt=Date.now()-101000;",ctx);
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,2);
-  assert.match(els["pickup-presence-status"].textContent,/Último cálculo/);
-  assert.match(els["pickup-presence-status"].textContent,/Recálculo temporalmente limitado/);
-  assert.match(els["pickup-presence-status"].textContent,/Estado comprobado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
+  assert.match(els["pickup-presence-status"].textContent,/Estamos actualizando tu tiempo de llegada/);
+  assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
+  assert(!/servidor|límite|rastreo|cuota/i.test(els["pickup-presence-status"].textContent));
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,2,"Do not hammer pickup ETA again during local cooldown");
 
@@ -87,8 +100,9 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(host.dataset.presence,"offline");
   assert.match(els["pickup-presence-status"].textContent,/no disponible/i);
-  assert.match(els["pickup-presence-status"].textContent,/Estado comprobado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
+  assert.equal(els["pickup-presence-metrics"].hidden,true,"No ETA when driver becomes busy");
   assert.equal(guestEtaCalls,2);
   assert.equal(customerEtaCalls,0);
 
@@ -103,5 +117,5 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   runInContext('selectedPickupMode="schedule";',ctx);
   await ctx.refreshPickupPresence();await settled();
   assert.equal(host.hidden,true,"No current-location claim for future bookings");
-  console.log("PASS Mapa consent/agenda state, anonymous coarse ETA, authenticated ETA, no GPS leakage");
+  console.log("PASS Mapa consent/agenda state, premium passenger metrics, anonymous ETA, privacy throttle, no GPS leakage");
 })().catch(e=>{console.error(e);process.exitCode=1;});
