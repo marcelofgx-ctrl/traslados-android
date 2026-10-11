@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=49">
+  <link rel="stylesheet" href="./styles.css?v=50">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -183,11 +183,33 @@
     </section>
 
     <section id="view-viajes" class="view" aria-labelledby="mis-title">
-      <div class="section-heading"><p class="eyebrow">SEGUIMIENTO REAL</p><h2 id="mis-title">Mis traslados</h2><p>Consultá el estado y presupuesto de tus solicitudes, sin perder el contacto directo con el conductor.</p></div>
-      <div class="card">
-        <div class="between"><h3>Reservas vinculadas</h3><button id="refresh-trips" type="button" class="tiny-btn">↻ Actualizar</button></div>
-        <p id="trips-status" class="hint"></p>
-        <div id="trips-list"></div>
+      <div class="section-heading trip-intro"><p class="eyebrow">TU ESPACIO DE VIAJES</p><h2 id="mis-title">Mis traslados</h2><p>Todo en un solo lugar: próximas recogidas, presupuestos y seguimiento de tus solicitudes.</p></div>
+      <div class="card trips-board">
+        <div class="trips-board-heading">
+          <div><p class="trips-eyebrow">SEGUIMIENTO PERSONAL</p><h3>Tu agenda de traslados</h3></div>
+          <button id="refresh-trips" type="button" class="tiny-btn trips-refresh">↻ Actualizar</button>
+        </div>
+        <div class="trips-tabs" role="group" aria-label="Ver reservas">
+          <button class="trips-tab active" type="button" data-trips-scope="upcoming" aria-pressed="true">Próximos</button>
+          <button class="trips-tab" type="button" data-trips-scope="attention" aria-pressed="false">Por responder <span id="trips-attention-count" class="trips-tab-count" hidden></span></button>
+          <button class="trips-tab" type="button" data-trips-scope="history" aria-pressed="false">Historial</button>
+          <button class="trips-tab" type="button" data-trips-scope="all" aria-pressed="false">Todos</button>
+        </div>
+        <div class="trips-controls">
+          <label class="trips-filter-label">Agrupar por
+            <select id="trips-group-by" aria-label="Agrupar reservas"><option value="day">Día</option><option value="month">Mes</option></select>
+          </label>
+          <label class="trips-filter-label">Estado
+            <select id="trips-status-filter" aria-label="Filtrar reservas por estado">
+              <option value="all">Todos los estados</option><option value="pending">Pendientes</option>
+              <option value="quote">Presupuestos</option><option value="confirmed">Confirmadas</option>
+              <option value="moving">En curso</option><option value="finished">Finalizadas y cerradas</option>
+            </select>
+          </label>
+        </div>
+        <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-vibrate"> Avisarme con una vibración cuando llegue un presupuesto, mientras tenga Traslados abierto</label>
+        <p id="trips-status" class="trips-status" role="status" aria-live="polite"></p>
+        <div id="trips-list" class="trips-list"></div>
       </div>
     </section>
 
@@ -234,6 +256,17 @@
       <small>© 2026 · Uruguay · Servicio privado de traslados</small>
     </footer>
   </main>
+  <div id="trip-alert-overlay" class="trip-alert-overlay" hidden>
+    <div class="trip-alert-card" role="dialog" aria-modal="true" aria-labelledby="trip-alert-title" aria-describedby="trip-alert-description" tabindex="-1">
+      <button type="button" id="trip-alert-close" class="trip-alert-close" aria-label="Cerrar aviso">×</button>
+      <div class="trip-alert-symbol" aria-hidden="true">✦</div>
+      <p class="trips-eyebrow">NOVEDAD EN TU TRASLADO</p>
+      <h2 id="trip-alert-title">Tu reserva se actualizó</h2>
+      <p id="trip-alert-description">Tenés una nueva actualización.</p>
+      <button id="trip-alert-open" type="button" class="primary full">VER MI TRASLADO →</button>
+      <p class="trip-alert-footnote">También podés consultarlo desde Mis traslados.</p>
+    </div>
+  </div>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
   <script src="./address-engine.js?v=1" defer></script>
@@ -243,6 +276,7 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./app.js?v=49" defer></script>
+  <script src="./trip-board.js?v=1" defer></script>
+  <script src="./app.js?v=50" defer></script>
 </body>
 </html>
