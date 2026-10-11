@@ -1,13 +1,13 @@
 # Traslados — arquitectura modular, escalabilidad y compilaciones eficientes
 
 
-## Fase siguiente propuesta — transporte RPC web reutilizable (PWA v37)
+## Fase completada — transporte RPC web reutilizable (PWA v37)
 
-- **Rama de trabajo:** `refactor/pwa-rpc-transport-v37` (sin fusión ni publicación hasta pasar CI).
+- **Integrado:** [PR #30](https://github.com/marcelofgx-ctrl/traslados-android/pull/30), commit `7f8c1c5819766451144f256fd72b75dfa6280166`. PWA CI [38106796065](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106796065) SUCCESS y revisión de UI [38106796048](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106796048) SUCCESS; PWA de `main` [38106829513](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106829513) SUCCESS. Pages: [38106829276](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106829276) (comprobar resultado antes de asegurar despliegue).
 - **Separación técnica:** `web-pasajero/rpc-client.js` contiene únicamente POST RPC Supabase, JSON, timeout 18 segundos, parseo de errores y respuesta. `app.js` conserva el guardia offline, nombre RPC, sesión, carga útil y presentación; `booking-contracts.js` conserva la estructura exacta de parámetros.
 - **Seguridad operativa:** no repetir automáticamente una solicitud con respuesta incierta para impedir duplicados; no guardar tokens ni incorporar credenciales de servidor; el módulo no altera backend, privacidad de ubicación ni reglas de cotización.
 - **Integración:** script `defer` antes de `app.js`, caché SW v37, verificación del empaquetado PWA y nueva prueba `tests/rpc-client-smoke.cjs`. El verificador de contratos de reservas deja de requerir una versión fija del JS para evitar bloqueos futuros.
-- **Compatibilidad:** sin ajustes de diseño, CSS, Android, paquete, firma ni permisos. PWA v37 solo se considera publicada después de CI y GitHub Pages; la instalación Cliente Premium v14 consume la web existente sin recompilar.
+- **Compatibilidad:** sin ajustes de diseño, CSS, Android, paquete, firma ni permisos. PWA v37 está integrada y compiló con CI; publicación Pages sujeta a verificación del run indicado. Cliente Premium v14 consume la web existente sin recompilar.
 - **Pendiente en fase Android:** la biblioteca `:feature:driver` continúa sin migrarse. Realizarla por comparación de comportamiento y compilaciones firmadas, preservando `prepareEmbeddedConductor` hasta que las pruebas de notificaciones, burbuja, panel y firma sean equivalentes.
 
 ## Estado vigente — PWA v36 y medición Android (10/10/2026)
