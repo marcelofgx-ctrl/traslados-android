@@ -21,4 +21,4 @@ La diferencia actual es arquitectónica: `customer_create_reservation_v12` usa `
 4. Programar: RPC original sin cambios, respuesta pendiente, precio referencial y validación de campos.
 5. Samsung físico: teclado, plegado, desplazamiento, sesión real, disponibilidad/ETA, navegación y cache/actualización de WebView. Tests automatizados no sustituyen QA móvil.
 
-**Estado:** pendiente de CI/Pages en PR; actualizar después de comprobar resultados.
+**Estado de producción:** PR #37 integrada (`e41e46f`). CI PWA [38110985884](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38110985884), revisión [38110985874](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38110985874), Android Cliente DEBUG [38110985923](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38110985923) y Pages [38111051809](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38111051809) **SUCCESS**. Prueba física Samsung y envíos reales autorizados: pendientes. Petición urgente interna: [issue #38](https://github.com/marcelofgx-ctrl/traslados-android/issues/38), no implementada.
