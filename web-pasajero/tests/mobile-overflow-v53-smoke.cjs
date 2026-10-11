@@ -9,11 +9,11 @@ assert(fix.includes("overflow-x:clip"),"Root must not create extra horizontal sc
 assert(/html,body\s*\{[^}]*max-width:100%[^}]*overflow-x:clip/s.test(fix),"Clip only overflowing root content, preserve vertical scroll");
 assert(/\.tabs\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}/.test(fix),"Navigation columns may shrink");
 assert(/\.trips-tabs\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)[^}]*overflow:visible/s.test(fix),"Mobile trip tabs must wrap into two rows without sideways scrolling");
-assert(/\.trips-tab\s*\{[^}]*white-space:normal[^}]*min-height:42px/s.test(fix)===false || /min-height:42px/.test(fix),"Touch targets remain accessible");
+assert(/\.trips-tab\s*\{[^}]*min-height:42px/s.test(fix),"Touch targets remain accessible");
 assert(/\.trip-detail \.action-row\{flex-wrap:wrap\}/.test(fix),"Reservation buttons must wrap when narrow");
 assert(/@media\(max-width:365px\)\s*\{\s*\.trips-controls\{grid-template-columns:minmax\(0,1fr\)\}/.test(fix),"Very small mobile devices have single-column filters");
 assert(html.includes('styles.css?v=53')&&html.includes('app.js?v=53'),"Cache bust version in HTML");
 assert(sw.includes('traslados-cliente-pwa-v53'),"Service worker owns matching cache");
-assert(html.includes('id="trips-list"')&&html.includes('id="trips-alert-overlay"'),"Keep trip dashboard and alerts");
+assert(html.includes('id="trips-list"')&&html.includes('id="trip-alert-overlay"'),"Keep trip dashboard and alerts");
 assert(html.includes('id="trips-alert-sound"')&&html.includes('id="trips-alert-vibrate"'),"Keep sounds and vibration choices");
 console.log("PASS v53 mobile: no horizontal tabs, root clipping without sticky regression, responsive controls and existing interactions");
