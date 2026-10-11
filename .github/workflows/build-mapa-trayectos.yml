@@ -142,7 +142,7 @@ jobs:
           grep -q 'TransferAlerts.snapshot' mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
           grep -q 'popup.showAsDropDown' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q 'initialSpeedKmh' mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
-          grep -q 'driver_list_reservations_v2' conductor/src/main/java/uy/com/traslados/conductor/Api.java
+          grep -q 'driver_list_reservations_v3' conductor/src/main/java/uy/com/traslados/conductor/Api.java
           grep -q 'QuickReservationLogic.conflicts' mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java
           grep -q "class QuickActionsMenu" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q "showAsDropDown" mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
