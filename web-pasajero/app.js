@@ -276,15 +276,14 @@ function picker(name,mount,position){
   for(const opt of ["Montevideo","Canelones"]){
     const btn=button(dep,opt,"",()=>chooseDept(opt));depButtons.push(btn);
   }
-  const select=document.createElement("select");select.setAttribute("aria-label","Otros departamentos de Uruguay");
-  const prompt=document.createElement("option");prompt.text="Otros 17 departamentos";prompt.value="";select.appendChild(prompt);
-  for(const d of DEPTS.slice(2)){
+  const select=document.createElement("select");select.setAttribute("aria-label","Elegir cualquiera de los 19 departamentos de Uruguay");
+  for(const d of DEPTS){
     const item=document.createElement("option");item.value=d;item.textContent=d;select.appendChild(item);
   }
   dep.appendChild(select);
   function highlight(){
     for(const btn of depButtons)btn.classList.toggle("selected",btn.textContent===dept);
-    select.value=DEPTS.slice(2).includes(dept)?dept:"";
+    select.value=DEPTS.includes(dept)?dept:"Montevideo";
   }
   highlight();
   const row=text(controls,"div","","loc-search");
@@ -328,6 +327,27 @@ function picker(name,mount,position){
     if(input.value.trim().length>=2)void lookup();
   }
   select.addEventListener("change",()=>{if(select.value)chooseDept(select.value);});
+  // IDE Candidates devuelve a veces coincidencias parciales (ej.: cualquier
+  // "Grande" ante "Arenal Grande 2274"). No sugerir un domicilio incorrecto.
+  const normalizeAddress=s=>window.TrasladosGeo.normalize(String(s||""));
+  function addressScore(item,q){
+    if(!item?.address)return -1;
+    const address=normalizeAddress(item.address),requestedDept=normalizeAddress(dept);
+    const returnedDept=normalizeAddress(item.departamento);
+    if(returnedDept ? returnedDept!==requestedDept : !address.split(" ").includes(requestedDept))return -1;
+    const ignored=new Set(["calle","av","avenida","avda","nro","numero","num","esq","esquina","de","del","la","las","los","el","y"]);
+    const terms=normalizeAddress(q).split(" ").filter(w=>w&&!/^\\d+$/.test(w)&&!ignored.has(w));
+    if(!terms.length)return -1;
+    const words=address.split(" ");
+    if(!terms.every(t=>words.some(w=>w===t||(t.length>=3&&w.startsWith(t)))))return -1;
+    // Un portal faltante no es una dirección exacta: jamás sustituir 2274
+    // por un centroide de calle o por la altura de otro domicilio.
+    const askedNumbers=String(q).match(/\\b\\d{1,5}\\b/g)||[];
+    const foundNumbers=String(item.address).match(/\\b\\d{1,5}\\b/g)||[];
+    if(!askedNumbers.every(n=>foundNumbers.includes(n)))return -1;
+    return 20+(address.startsWith(normalizeAddress(q))?10:0)+
+      (Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lng))?2:0);
+  }
   function renderEntries(places,addresses,q){
     if(selected)return;
     clear(results);source.hidden=true;
@@ -365,7 +385,7 @@ function picker(name,mount,position){
       source.hidden=false;
       source.textContent="Lugares: © OpenStreetMap contributors (ODbL). Elegí en el mapa el acceso exacto si es necesario.";
     }
-    if(!unique.length){feedback.hidden=false;feedback.textContent="No encontramos coincidencias. Probá con otro nombre o número.";}
+    if(!unique.length){feedback.hidden=false;feedback.textContent="Sin coincidencias verificadas en "+dept+". Revisá calle y número o elegí otro departamento. No mostramos direcciones de otras zonas como si fueran correctas.";}
     else feedback.hidden=true;
   }
   const lookup=async()=>{
@@ -394,17 +414,21 @@ function picker(name,mount,position){
       try{
         // Consultar una sola vez TODO URUGUAY, sin añadir Canelones o
         // Montevideo al texto, que antes ocultaba puntos de interés.
-        const resp=await fetch(IDE+"/candidates?limit=20&q="+encodeURIComponent(q),{cache:"no-store"});
+        const resp=await fetch(IDE+"/candidates?limit=30&q="+encodeURIComponent(q),{cache:"no-store"});
         if(!resp.ok)throw new Error("IDE no disponible");
         const raw=await resp.json();
-        if(Array.isArray(raw)){
-          addresses=raw.filter(x=>x&&x.address&&
-            ((x.lat==null||x.lng==null)||isUruguayCoords(Number(x.lat),Number(x.lng))))
-            .sort((a,b)=>
-              Number(String(b.departamento||"").toLowerCase()===dept.toLowerCase())-
-              Number(String(a.departamento||"").toLowerCase()===dept.toLowerCase())
-            ).slice(0,12);
+        const valid=rows=>(Array.isArray(rows)?rows:[]).filter(x=>x&&x.address&&
+          ((x.lat==null||x.lng==null)||isUruguayCoords(Number(x.lat),Number(x.lng))))
+          .map(x=>({item:x,rank:addressScore(x,q)})).filter(x=>x.rank>=0)
+          .sort((a,b)=>b.rank-a.rank).map(x=>x.item);
+        addresses=valid(raw);
+        // Para calle + puerta consultar además el geocodificador oficial:
+        // Candidates puede omitir la altura y devolver calles lejanas.
+        if(!addresses.length&&/\\b\\d{1,5}\\b/.test(q)){
+          const precise=await fetch(IDE+"/direcUnica?limit=10&q="+encodeURIComponent(q+", "+dept),{cache:"no-store"});
+          if(precise.ok)addresses=valid(await precise.json());
         }
+        addresses=addresses.slice(0,12);
       }catch{/* POI index still available */}
       finally{done++;update();}
     })();
