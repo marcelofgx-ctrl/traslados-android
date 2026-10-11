@@ -5,6 +5,7 @@ const {strict:assert}=require("node:assert");
 const path=require("node:path");
 const js=readFileSync(path.join(__dirname,"..","app.js"),"utf8");
 const etaSource=readFileSync(path.join(__dirname,"..","eta-engine.js"),"utf8");
+const cadenceSource=readFileSync(path.join(__dirname,"..","pickup-cadence.js"),"utf8");
 const begin=js.indexOf('let selectedPickupMode="schedule";');
 const end=js.indexOf("\nfunction setWhen(kind){",begin);
 assert(begin>=0&&end>begin,"Public live availability routine must exist");
@@ -16,7 +17,7 @@ assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.
 assert(fragment.includes('estimateType==="coarse"'),"Anonymous ETA must be labeled coarse");
 assert(fragment.includes('checkedAt'),"Availability message must identify last server verification");
 assert(js.includes('},15000);'),"Refresh driver availability every 15 seconds while visible");
-assert(fragment.includes('driver.motionHint==="moving"?30000:60000'),"Adapt ETA to movement reported by Mapa");
+assert(fragment.includes('window.TrasladosPickupCadence.intervalMs(driver.motionHint)'),"Use isolated pickup cadence policy");
 assert(!fragment.includes('driver.speed'),"Never expose a driver's raw speed");
 assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
   "No raw driver coordinates may be used by the passenger");
@@ -64,6 +65,7 @@ const ctx={
 };
 createContext(ctx);
 runInContext(etaSource,ctx,{filename:"eta-engine.js"});
+runInContext(cadenceSource,ctx,{filename:"pickup-cadence.js"});
 runInContext(fragment,ctx);
 runInContext('selectedPickupMode="now";',ctx);
 async function settled(){await Promise.resolve();await new Promise(setImmediate);}
@@ -79,7 +81,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
   assert.equal(els["pickup-presence-metrics"].hidden,false);
   assert.equal(els["pickup-distance"].textContent,"3,5 km");
-  assert.equal(els["pickup-minutes"].textContent,"10 min");
+  assert.equal(els["pickup-minutes"].textContent,"5–10 min");
   assert(!/servidor|rastreo|límite/i.test(els["pickup-presence-status"].textContent));
   assert(!/Iniciá sesión en Mi cuenta para consultar la llegada aproximada/.test(
     els["pickup-presence-status"].textContent));
@@ -92,16 +94,16 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(guestEtaCalls,1,"Same origin and timing tabs must share a cached ETA");
   assert.match(els["pickup-presence-status"].textContent,/Estimación obtenida/);
   assert.equal(els["pickup-presence-metrics"].hidden,false);
-  // Detenido: antes de 60 segundos, no se solicita otra ruta.
-  runInContext("lastPickupEtaAt=Date.now()-31000;",ctx);
+  // Detenido: antes de 45 segundos, no se solicita otra ruta.
+  runInContext("lastPickupEtaAt=Date.now()-26000;",ctx);
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(guestEtaCalls,1,"Stopped vehicle must wait 60 seconds for next route");
-  // Al recibir movimiento reciente, el período baja a 30 segundos.
+  assert.equal(guestEtaCalls,1,"Stopped vehicle must wait 45 seconds for next route");
+  // Al recibir movimiento reciente, el período baja a 25 segundos.
   moving=true;
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(guestEtaCalls,2,"Moving vehicle can update after 30 seconds");
+  assert.equal(guestEtaCalls,2,"Moving vehicle can update after 25 seconds");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
-  // La siguiente actualización en menos de 30 segundos reutiliza la ruta.
+  // La siguiente actualización en menos de 25 segundos reutiliza la ruta.
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,2,"Moving ETA must not recalculate on every presence poll");
   // Simulamos una cuota agotada con una estimación anterior aún utilizable.
