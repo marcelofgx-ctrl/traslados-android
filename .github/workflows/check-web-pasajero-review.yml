@@ -61,7 +61,7 @@ jobs:
           assert 'noopener noreferrer' in app
           assert 'preview-journey' in app and 'preview-budget' in app
           assert 'preview-extra' in app and '.preview-place-name' in css
-          assert 'ENVIAR SOLICITUD AL CONDUCTOR' in html
+          assert 'CONFIRMAR SOLICITUD DE RESERVA' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
           version=html.split('./app.js?v=')[1].split('"')[0]
           assert version.isdigit() and ('traslados-cliente-pwa-v'+version) in sw
