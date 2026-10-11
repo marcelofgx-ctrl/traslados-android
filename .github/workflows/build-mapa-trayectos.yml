@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'mapatrayectos/**'
+      - 'core-reservations/**'
       - 'conductor/src/**' # Shared Conductor sources are embedded into Mapa
       - 'conductor/build.gradle'
       - 'build.gradle'
