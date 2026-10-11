@@ -36,6 +36,17 @@ jobs:
             core-reservations/src/main/java/uy/com/mapatrayectos/QuickReservationLogic.java \
             mapatrayectos/tests/QuickReservationLogicTest.java
           java -cp /tmp/traslados-core-test QuickReservationLogicTest
+      - name: Pure system-status threshold regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-system-status
+          javac -d /tmp/mapa-system-status \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusPolicy.java \
+            mapatrayectos/tests/SystemStatusPolicyTest.java
+          java -cp /tmp/mapa-system-status SystemStatusPolicyTest
+          grep -q 'driver_system_status_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'SystemStatusActivity' mapatrayectos/src/main/AndroidManifest.xml
       - name: Prepare existing Mapa offline assets
         shell: bash
         run: |
