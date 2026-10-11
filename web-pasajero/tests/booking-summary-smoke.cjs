@@ -69,6 +69,7 @@ const ctx={
   mapsLinkFromBooking:()=>"https://www.google.com/maps/dir/?api=1",
   addRoadDiagram:()=>{},
   roadEngine,
+  record:{stops:[]},
   routeSequence:0,activeRouteKey:"",latestRoad:null
 };
 runInNewContext(js.slice(begin,end),ctx);
@@ -108,5 +109,12 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 320");
   assert(ctx.latestRoad&&ctx.latestRoad.data.referenceFareUyu===320);
   assert(roadEngine.peek(ctx.activeRouteKey)?.referenceFareUyu===320,"Verified quote must be cached temporarily");
+  // A newly added stop has no coordinates: the previous quote must vanish.
+  ctx.record.stops=[null];
+  ctx.renderRouteSummary();
+  assert.equal(ctx.latestRoad,null,"Incomplete intermediate stop invalidates verified quotes");
+  assert.equal(ctx.activeRouteKey,"","Do not retain stale route cache identity");
+  assert.equal(nodes("route-metric").length,0,"No stale price when a stop awaits verification");
+  assert.match(val("route-status").join(" "),/dirección de todas las paradas/);
   console.log("PASS PWA compact summary: route results / ORS missing / price / no invented values");
 })().catch(e=>{console.error(e);process.exitCode=1;});
