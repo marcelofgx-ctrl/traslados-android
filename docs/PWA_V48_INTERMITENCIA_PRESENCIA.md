@@ -28,3 +28,11 @@
 
 ## Validaciones
 - Tests PWA `public-driver-presence-smoke.cjs`, `presence-honest-v48-smoke.cjs` y regresiones; CI/Pages sujetos a comprobación de GitHub Actions.
+
+
+## Incidencia adicional del envío de solicitud
+- Al usar «Ahora»/«En 10 min», el botón «PROGRAMAR Y ENVIAR SOLICITUD» ejecutaba únicamente `setWhen("schedule")` y `bookingSteps.open("when")`. El usuario observaba que regresaba a «¿Cuándo viajás?» con Programar seleccionado. **Causa confirmada: etiqueta errónea, no había RPC de reserva en ese botón.**
+- Se cambió por **«ELEGIR FECHA Y HORA»**, con texto claro de que para registrar la reserva hay que elegir horario programado. No se afirma ni simula que el cliente pueda enviar recogidas inmediatas todavía; funcionalidad backend pendiente en issue #38.
+- En reservas programadas, la RPC auténtica sigue detrás de **«CONFIRMAR SOLICITUD DE RESERVA»** después del resumen. Nunca se muestra «Solicitud enviada» sin un código real devuelto por el servidor.
+- Errores de disponibilidad/fecha quedan visibles junto al formulario, no solo en un toast efímero. Desde la confirmación se ofrece «Elegir otro horario» si la agenda no lo permite; errores de red o resultado ambiguo indican revisar **Mis traslados** antes de repetir para prevenir duplicaciones.
+- Nueva prueba `web-pasajero/tests/booking-send-navigation-v48-smoke.cjs` y ambas workflows CI.
