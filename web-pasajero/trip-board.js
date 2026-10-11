@@ -12,16 +12,39 @@
     const d=new Date(day+"T12:00:00Z");
     return Number.isNaN(d.getTime())?null:d;
   }
+  // PWA v55: fecha operativa en Uruguay. El servidor conserva la autoridad
+  // para aceptar y aplicar conflictos/buffers. Esta es SOLO una protección UI.
+  const QUOTE_WINDOW_MS=90*60*1000;
+  function pickupTimeMs(r){
+    const day=String(r?.pickup_date||"");
+    const clock=String(r?.pickup_time||"");
+    if(!validDay(day)||!/^\\d{2}:\\d{2}/.test(clock))return null;
+    const ms=Date.parse(day+"T"+clock.slice(0,5)+":00-03:00");
+    return Number.isFinite(ms)?ms:null;
+  }
+  function expiredQuote(r,at=Date.now()){
+    if(r?.status!=="PENDIENTE"||r?.quote_status!=="ENVIADO")return false;
+    const pickup=pickupTimeMs(r),created=Date.parse(String(r.created_at||""));
+    const mode=String(r.pickup_mode||"");
+    if((mode==="now"||mode==="10")&&Number.isFinite(created))
+      return at-created>=QUOTE_WINDOW_MS; // límite vigente en RPC v13
+    if(mode==="schedule"&&pickup!==null)return at>=pickup;
+    // Las API de listado v15/invitado v4 antiguas omiten pickup_mode.
+    // Solo apartar una cotización inequívocamente pasada (>90 min).
+    return pickup!==null&&at-pickup>=QUOTE_WINDOW_MS;
+  }
   function metadata(r){
     const status=String(r?.status||"PENDIENTE");
     const q=String(r?.quote_status||"SIN_PRESUPUESTO");
     const total=Number(r?.quote_final_total||0);
     const quotePending=q==="ENVIADO"&&total>0&&status==="PENDIENTE";
+    const quoteExpired=quotePending&&expiredQuote(r);
     if(terminal.has(status)){
       if(status==="FINALIZADA")return {label:"Finalizada",tone:"complete",icon:"check-circle",rank:5,action:"Ver detalle"};
       if(status==="RECHAZADA_CLIENTE")return {label:"Presupuesto rechazado",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
       return {label:status==="CANCELADA"?"Cancelada":"Rechazada",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
     }
+    if(quoteExpired)return {label:"Horario vencido",tone:"expired",icon:"clock-alert",rank:1,action:"Ver detalle"};
     if(status==="EN_VIAJE")return {label:"En viaje",tone:"moving",icon:"navigation",rank:4,action:"Seguir viaje"};
     // Fase informada explícitamente desde la APK Conductor y validada por PIN.
     if(accepted.has(status)&&r?.pickup_phase==="EN_CAMINO")
@@ -35,7 +58,7 @@
     if(q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
     return {label:"Pendiente",tone:"pending",icon:"clock-3",rank:0,action:"Ver detalle"};
   }
-  function isHistory(r){return terminal.has(r?.status);}
+  function isHistory(r){return terminal.has(r?.status)||expiredQuote(r);}
   function dateLabel(day,groupBy){
     const d=localDate(day);
     if(!d)return "Sin fecha";
@@ -110,6 +133,6 @@
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
-    metadata,isHistory,compactDay,groupReservations,notifications,snapshot,signature
+    metadata,isHistory,expiredQuote,compactDay,groupReservations,notifications,snapshot,signature
   });
 })(window);
