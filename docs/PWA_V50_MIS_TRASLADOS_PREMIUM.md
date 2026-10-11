@@ -54,3 +54,10 @@ El estilo incluye una viñeta pulsante **solo en estado de movimiento provenient
 - CI ejecuta smoke del módulo puro, conservación de HTML/estados, revisión de reservas y compatibilidad Android DEBUG.
 - Migración SQL aditiva y permisos por rol verificados sin insertar reservas falsas.
 - Sólo declarar Pages/CI SUCCESS cuando se vea la ejecución efectiva. Pruebas en Samsung, emisión real de un presupuesto, vibración y aceptación real aún pendientes de ensayo autorizado.
+
+
+## Resultado de publicación confirmado
+- PR [#45](https://github.com/marcelofgx-ctrl/traslados-android/pull/45) fusionada en `main` (commit `cd532864`), tests PWA, revisión y Cliente v15 Android DEBUG **SUCCESS**. Pages [38136356048](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38136356048) **SUCCESS**.
+- Backend PR [#10](https://github.com/marcelofgx-ctrl/traslados-web/pull/10) fusionada (commit `337aee78`); migración `customer_quote_decision_v13` aplicada con **SUCCESS** y roles registrados/invitados verificados read-only.
+- Popup/vibración: solo en PWA abierta, opción vibración explícita; **no existe push de segundo plano**. Seguimiento de esa fase en [GitHub #48](https://github.com/marcelofgx-ctrl/traslados-android/issues/48).
+- Comprobación física de recepción/aceptación de presupuesto en Samsung: **pendiente**. No se generaron reservas ficticias.
