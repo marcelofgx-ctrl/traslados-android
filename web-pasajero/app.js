@@ -192,15 +192,6 @@ async function refreshPickupPresence(force=false){
   const locationAction=$("pickup-use-location");
   if(locationAction)locationAction.hidden=!urgent||Boolean(record.origin);
   if(!urgent){pickupEtaRequestSeq++;host.removeAttribute("data-presence");return;}
-  const label=selectedPickupMode==="10"?"en 10 minutos":"lo antes posible";
-  const message=["Hola, quisiera consultar una recogida "+label+".",
-    record.origin?"Origen: "+record.origin.text:"",
-    record.destination?"Destino: "+record.destination.text:"",
-    "¿Estás libre y cuánto tardarías en llegar?"
-  ].filter(Boolean).join("\n");
-  const contact="https://wa.me/59897228175?text="+encodeURIComponent(message);
-  $("pickup-presence-whatsapp").href=contact;
-  $("urgent-whatsapp").href=contact;
   const seq=++pickupEtaRequestSeq;
   if(!host.dataset.presence||host.dataset.presence==="unknown"){
     paintPickupCard({presence:"checking",title:"Consultando disponibilidad",
@@ -211,7 +202,7 @@ async function refreshPickupPresence(force=false){
   if(!driver){
     forgetPickupEta();
     paintPickupCard({presence:"unknown",title:"No pudimos comprobar la disponibilidad",
-      subtitle:"Probá nuevamente en unos instantes o consultanos por WhatsApp."});
+      subtitle:"La consulta de disponibilidad se actualizará automáticamente. Igualmente podés enviar tu solicitud, sujeta a respuesta del conductor."});
     return;
   }
   const serverAge=Date.parse(driver.checkedAt||"");
@@ -327,15 +318,17 @@ function setWhen(kind){
   clearBookingFeedback();
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
-  // Solo las programadas tienen fecha/hora editables. Urgentes = consulta, no reserva.
+  // La fecha/hora inmediata se fija EXCLUSIVAMENTE en Supabase al enviar, no en el cliente.
   $("pickup-datetime-block").hidden=urgent;
   $("when-next").hidden=urgent;
   $("pickup-mode-caption").hidden=!urgent;
   $("pickup-mode-caption").textContent=kind==="10"
-    ?"Dentro de 10 minutos · Consultar disponibilidad y llegada"
-    :"Ahora · Consultar disponibilidad y llegada";
-  // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
-  // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
+    ?"Recogida en 10 minutos · Horario fijado por el servidor"
+    :"Recogida ahora · Horario fijado por el servidor";
+  $("urgent-actions-title").textContent=kind==="10"
+    ?"¿Te recogemos en 10 minutos?":"¿Necesitás viajar ahora?";
+  $("urgent-actions-description").textContent="Enviá tu recorrido al conductor. Recibirás un código para seguir la solicitud, que quedará pendiente de su confirmación.";
+  $("booking-success").hidden=true;
   $("urgent-actions").hidden=!urgent;
   $("booking-final").hidden=urgent;
   $("review-booking").hidden=urgent;
@@ -352,9 +345,9 @@ function setWhen(kind){
     $("availability").textContent="Reserva programada: los horarios disponibles se comprueban antes de enviar.";
     refreshBookingSteps();refreshPickupPresence();return;
   }
-  const when=currentUY(kind==="10"?10:2);
+  const when=currentUY(kind==="10"?10:0);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
-  $("availability").textContent="Consulta directa: no se envía una reserva automática. El conductor debe confirmar.";
+  $("availability").textContent="La hora se registra automáticamente al enviar. La solicitud queda pendiente de respuesta del conductor.";
   refreshBookingSteps();refreshPickupPresence();
 }
 function shiftView(name){
@@ -855,19 +848,21 @@ async function accountSubmit(){
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
 function bookingData(){
-  const date=$("pickup-date").value,time=$("pickup-time").value;
+  const scheduled=selectedPickupMode==="schedule";
+  const date=scheduled?$("pickup-date").value:null,time=scheduled?$("pickup-time").value:null;
   const passengers=Number($("passengers").value);
   const origin=record.origin,destination=record.destination;
   const name=authReady()?(session.customer.full_name||"").trim():$("person-name").value.trim();
   const phone=authReady()?(session.customer.phone||"").trim():$("person-phone").value.trim();
   if(!name||name.length<2||phone.replace(/\D/g,"").length<8)throw new Error("Faltan nombre o teléfono válidos.");
-  if(!date||!time)throw new Error("Elegí fecha y hora.");
-  if(new Date(date+"T"+time+":00-03:00").getTime()<Date.now()-20000)throw new Error("El horario elegido quedó en el pasado.");
+  if(scheduled&&(!date||!time))throw new Error("Elegí fecha y hora.");
+  if(scheduled&&new Date(date+"T"+time+":00-03:00").getTime()<Date.now()-20000)throw new Error("El horario elegido quedó en el pasado.");
+  if(!Number.isInteger(passengers)||passengers<1||passengers>8)throw new Error("Cantidad de pasajeros inválida.");
   if(!origin||!destination)throw new Error("Tenés que elegir direcciones verificadas para origen y destino.");
   if(origin.lat===destination.lat&&origin.lng===destination.lng)throw new Error("Origen y destino no pueden ser el mismo punto.");
   if(record.stops.some(s=>!s))throw new Error("Hay paradas sin dirección geográfica verificada.");
   if(record.stops.length&&!authReady())throw new Error("Para agregar paradas intermedias, ingresá a tu cuenta.");
-  return{date,time,passengers,origin,destination,name,phone,comments:$("comments").value.trim(),stops:[...record.stops]};
+  return{date,time,pickupMode:selectedPickupMode,passengers,origin,destination,name,phone,comments:$("comments").value.trim(),stops:[...record.stops]};
 }
 function reviewDate(date,time){
   const [year,month,day]=String(date).split("-").map(Number);
@@ -1246,12 +1241,7 @@ function init(){
     $(key).addEventListener("change",refreshBookingSteps);
   }
   $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
-  $("urgent-switch-scheduled").addEventListener("click",()=>{
-    // Este CTA NO envía solicitudes: únicamente abre fecha/hora programada.
-    setWhen("schedule");
-    bookingSteps.open("when",{scroll:true});
-    $("pickup-date").focus({preventScroll:true});
-  });
+  $("urgent-send").addEventListener("click",()=>void submitUrgentPickup());
   $("booking-fix-when").addEventListener("click",()=>{
     bookingSteps.open("when",{scroll:true});
     $("pickup-date").focus({preventScroll:true});
