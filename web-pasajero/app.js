@@ -174,11 +174,14 @@ async function refreshPickupPresence(force=false){
   const etaInterval=signedIn?190000:100000;
   const showWaiting=(prefix)=>{
     if(lastGood){
+      const estimateAge=Date.now()-lastVerifiedEtaAt;
+      const freshEstimate=estimateAge<60000;
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
-        subtitle:"Estamos actualizando tu tiempo de llegada.",
+        subtitle:freshEstimate?"Llegada estimada hasta tu punto de partida.":
+          "Estamos actualizando tu tiempo de llegada.",
         km:lastGood.km,minutes:lastGood.minutes,
-        estimateNote:"Última estimación "+elapsedShort(Date.now()-lastVerifiedEtaAt)+
-          " · La llegada puede variar.",checked:checkedLabel});
+        estimateNote:(freshEstimate?"Estimación obtenida ":"Última estimación ")+
+          elapsedShort(estimateAge)+" · La llegada puede variar.",checked:checkedLabel});
     }else{
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:prefix||"Estamos actualizando la llegada aproximada a tu origen.",
