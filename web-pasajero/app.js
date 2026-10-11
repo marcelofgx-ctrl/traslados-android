@@ -192,13 +192,16 @@ async function refreshPickupPresence(force=false){
   const serverAge=Date.parse(driver.checkedAt||"");
   const elapsedCheck=Number.isFinite(serverAge)
     ?Math.max(0,Math.round((Date.now()-serverAge)/1000)):null;
-  const checkedLabel="Disponibilidad verificada"+
+  // checkedAt refleja la consulta al servidor, NO una lectura nueva del GPS.
+  // Un estado negativo no identifica por sí solo si faltan datos de ubicación,
+  // red, consentimiento u horarios. Evitar un falso diagnóstico al pasajero.
+  const checkedLabel="Estado consultado"+
     (elapsedCheck===null?" recientemente":" hace "+elapsedCheck+" s")+
-    " · Recogida sujeta a confirmación.";
+    " · Actualización automática cada 15 s.";
   if(!driver.available){
     forgetPickupEta();
-    paintPickupCard({presence:"offline",title:"Conductor no disponible ahora",
-      subtitle:"Podés programar tu viaje o consultar otro horario.",
+    paintPickupCard({presence:"unknown",title:"Recogida no confirmada por ahora",
+      subtitle:"Estamos comprobando si el conductor puede recibirte. El estado puede variar por GPS, conexión o agenda; reintentaremos automáticamente.",
       checked:checkedLabel});
     return;
   }
@@ -263,8 +266,11 @@ async function refreshPickupPresence(force=false){
       const reason=data?.reason;
       if(reason==="not_available"||reason==="occupied"){
         forgetPickupEta();
-        paintPickupCard({presence:"offline",title:"Conductor no disponible ahora",
-          subtitle:"Podés programar el traslado o consultar otro horario.",
+        // La consulta ETA puede perder la frescura del GPS entre la lectura
+        // de disponibilidad y la petición de ruta. No atribuirlo a desconexión.
+        publicPresenceCache=null;publicPresenceAt=0;
+        paintPickupCard({presence:"unknown",title:"Recogida no confirmada por ahora",
+          subtitle:"La comprobación de llegada necesita información actualizada. Volveremos a consultar el estado automáticamente.",
           checked:checkedLabel});
         return;
       }
