@@ -25,14 +25,32 @@ vm.runInNewContext(fs.readFileSync("web-pasajero/geo-search.js","utf8"),sandbox,
 });
 const geo=sandbox.window.TrasladosGeo;
 assert(geo,"motor no cargado");
-// Contrato geocodificador: no ofrecer un "Grande" lejano por una
-// consulta a Arenal Grande con una altura precisa de Montevideo.
-const appJs=fs.readFileSync("web-pasajero/app.js","utf8");
-const addressStart=appJs.indexOf("  const normalizeAddress=s=>");
-const addressEnd=appJs.indexOf("  function renderEntries(places,addresses,q){",addressStart);
-assert(addressStart>=0&&addressEnd>addressStart,"Filtro de direcciones IDE no disponible");
-const scoringContext={window:{TrasladosGeo:geo},dept:"Montevideo"};
-const scoreAddress=vm.runInNewContext(appJs.slice(addressStart,addressEnd)+"\naddressScore;",scoringContext);
+// Contrato explícito del motor geográfico reutilizable.
+let ideCalls=0;
+const addresses=[
+ {address:"Arenal Grande 2274, Montevideo",departamento:"Montevideo",lat:-34.9,lng:-56.2},
+ {address:"Sarandí Grande, Florida",departamento:"Florida",lat:-33.4,lng:-56.3},
+ {address:"Playa Grande, Maldonado",departamento:"Maldonado",lat:-34.8,lng:-55.2},
+ {address:"Arenal Grande 2275, Montevideo",departamento:"Montevideo",lat:-34.9,lng:-56.2}
+];
+const addressesContext={
+  window:{TrasladosGeo:geo},
+  fetch:async url=>{
+    ideCalls++;
+    assert.match(String(url),/direcciones\.ide\.uy\/api\/v1\/geocode\//);
+    if(String(url).includes("/reverse?"))return {ok:true,json:async()=>[addresses[0]]};
+    if(String(url).includes("/direcUnica?"))return {ok:true,json:async()=>[addresses[0]]};
+    return {ok:true,json:async()=>addresses};
+  },
+  encodeURIComponent,Number,Set,Array,String,Error
+};
+vm.runInNewContext(fs.readFileSync("web-pasajero/address-engine.js","utf8"),addressesContext,{
+  filename:"address-engine.js"
+});
+const addressEngine=addressesContext.window.TrasladosAddress;
+assert(addressEngine?.score&&addressEngine?.find&&addressEngine?.resolve&&addressEngine?.reverse,
+  "Motor IDE desacoplado con contratos públicos");
+const scoreAddress=(item,q,dept="Montevideo")=>addressEngine.score(item,q,dept);
 const sample=(address,departamento)=>({address,departamento,lat:-34.9,lng:-56.2});
 assert(scoreAddress(sample("Arenal Grande 2274, Montevideo","Montevideo"),"Arenal Grande 2274")>=0,"Debe aceptar dirección exacta");
 assert(scoreAddress(sample("Sarandí Grande, Florida","Florida"),"Arenal Grande 2274")<0,"No sugerir Florida");
@@ -40,7 +58,18 @@ assert(scoreAddress(sample("Playa Grande, Maldonado","Maldonado"),"Arenal Grande
 assert(scoreAddress(sample("Arenal Grande, Montevideo","Montevideo"),"Arenal Grande 2274")<0,"No fingir una altura faltante");
 assert(scoreAddress(sample("Arenal Grande 2275, Montevideo","Montevideo"),"Arenal Grande 2274")<0,"No reemplazar altura por otra");
 assert(scoreAddress(sample("Arenal Grande 2274, Canelones","Canelones"),"Arenal Grande 2274")<0,"Respetar departamento");
-console.log("PASS: IDE directions validate street, exact door number and selected department");
+(async()=>{
+  const actual=await addressEngine.find("Arenal Grande 2274","Montevideo");
+  assert.equal(actual.length,1,"Filtrar resultados imprecisos por departamento y número");
+  assert.equal(actual[0].address,addresses[0].address);
+  const exact=await addressEngine.resolve(actual[0],"Arenal Grande 2274","Montevideo");
+  assert.equal(exact.lat,-34.9);
+  const reversed=await addressEngine.reverse(-34.9,-56.2);
+  assert.equal(reversed.address,addresses[0].address);
+  assert(ideCalls>=2,"Llamadas oficiales encapsuladas en un único módulo");
+  console.log("PASS: IDE directions validate street, exact door number and selected department");
+})().catch(e=>{console.error(e);process.exitCode=1});
+
 (async()=>{
   const known=geo.immediate("Aeropuerto","Canelones");
   assert.equal(known[0]?.id,"uy-airport-carrasco","Carrasco debe estar primero sin red");
