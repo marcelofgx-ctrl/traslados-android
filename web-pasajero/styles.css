@@ -1021,3 +1021,40 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   border:1px solid rgba(231,203,133,.48);color:#f0d7a1;
   background:rgba(4,44,52,.75)
 }
+
+
+/* PWA v49 — solicitud inmediata interna: cierre limpio, sin WhatsApp. */
+#view-reservar .urgent-actions{
+  margin:12px 0 17px;padding:20px 20px 17px;
+  border-color:rgba(231,203,133,.40);
+  border-radius:20px;
+  background:linear-gradient(133deg,rgba(13,66,70,.94),rgba(5,41,50,.98));
+}
+#view-reservar .urgent-actions h3{
+  font-size:20px;line-height:1.35;margin:0 0 7px;
+  letter-spacing:-.032em
+}
+#view-reservar .urgent-actions>p:not(.urgent-actions-eyebrow):not(.booking-final-note):not(.booking-send-error){
+  margin:0 0 15px;line-height:1.6;font-size:12.8px;color:#cce1d8
+}
+#view-reservar .urgent-actions .booking-main-cta{
+  min-height:61px;padding:11px 16px;margin:0;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  font-size:13px;letter-spacing:.025em;
+  background:linear-gradient(110deg,#d7a74f,#f1d694 85%);
+  box-shadow:0 9px 24px rgba(170,126,49,.16);
+}
+#view-reservar .urgent-actions .booking-main-cta:disabled{
+  opacity:.73;cursor:wait
+}
+#view-reservar .urgent-actions .booking-final-note{
+  margin:10px 2px 0;font-size:10.6px;color:#c6d7cb;text-align:center
+}
+#view-reservar .urgent-actions .booking-send-error{
+  margin:0 0 13px
+}
+@media(max-width:520px){
+  #view-reservar .urgent-actions{padding:17px 15px 15px}
+  #view-reservar .urgent-actions h3{font-size:18.5px}
+  #view-reservar .urgent-actions .booking-main-cta{font-size:12.6px}
+}
