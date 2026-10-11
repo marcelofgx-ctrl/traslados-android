@@ -1,0 +1,45 @@
+"use strict";
+/* Contratos reutilizables de reservas de pasajeros.
+ * Funciones puras; sin DOM, PIN, geolocalización, fetch ni persistencia.
+ * Los nombres RPC y su semántica no cambian.
+ * Paquetería será un dominio diferente: no reutilizar contratos de pasajeros
+ * para describir bultos ni crear envíos por accidente.
+ */
+(function(root){
+  function checkAvailability(sessionToken,p){
+    return {
+      p_session_token:sessionToken,p_pickup_date:p.date,p_pickup_time:p.time,
+      p_trip_duration_min:null,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
+      p_destination_lat:p.destination.lat,p_destination_lng:p.destination.lng
+    };
+  }
+  function registeredReservation(sessionToken,p){
+    return {
+      p_session_token:sessionToken,p_pickup_date:p.date,p_pickup_time:p.time,
+      p_passengers:p.passengers,p_comments:p.comments,
+      p_origin_text:p.origin.text,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
+      p_origin_department:p.origin.department,
+      p_destination_text:p.destination.text,p_destination_lat:p.destination.lat,
+      p_destination_lng:p.destination.lng,p_destination_department:p.destination.department,
+      p_stops:p.stops.map((x,i)=>({
+        position:i+1,address_text:x.text,lat:x.lat,lng:x.lng,department:x.department
+      })),
+      p_passenger_name:null,p_passenger_phone:null
+    };
+  }
+  function guestReservation(p){
+    // El backend invitado no soporta paradas: la UI ya exige una cuenta
+    // antes de permitirlas. No inventamos ese parámetro en la RPC.
+    return {
+      p_customer_name:p.name,p_customer_phone:p.phone,
+      p_pickup_date:p.date,p_pickup_time:p.time,
+      p_passengers:p.passengers,p_comments:p.comments,
+      p_origin_text:p.origin.text,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
+      p_destination_text:p.destination.text,p_destination_lat:p.destination.lat,
+      p_destination_lng:p.destination.lng
+    };
+  }
+  root.TrasladosBookingContracts=Object.freeze({
+    checkAvailability,registeredReservation,guestReservation
+  });
+})(window);
