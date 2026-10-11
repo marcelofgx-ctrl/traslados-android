@@ -849,29 +849,14 @@ async function submitBooking(){
     guardConnection();const p=pendingReview;
     let result;
     if(authReady()){
-      const availability=await rpc("customer_check_availability_v11_4",{
-        p_session_token:session.token,p_pickup_date:p.date,p_pickup_time:p.time,
-        p_trip_duration_min:null,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
-        p_destination_lat:p.destination.lat,p_destination_lng:p.destination.lng
-      });
+      const availability=await rpc("customer_check_availability_v11_4",
+        window.TrasladosBookingContracts.checkAvailability(session.token,p));
       if(!availability?.available)throw new Error("Este horario no está disponible. Seleccioná otro horario para el viaje.");
-      result=await rpc("customer_create_reservation_v12",{
-        p_session_token:session.token,p_pickup_date:p.date,p_pickup_time:p.time,
-        p_passengers:p.passengers,p_comments:p.comments,
-        p_origin_text:p.origin.text,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
-        p_origin_department:p.origin.department,
-        p_destination_text:p.destination.text,p_destination_lat:p.destination.lat,p_destination_lng:p.destination.lng,
-        p_destination_department:p.destination.department,
-        p_stops:p.stops.map((x,i)=>({position:i+1,address_text:x.text,lat:x.lat,lng:x.lng,department:x.department})),
-        p_passenger_name:null,p_passenger_phone:null
-      });
+      result=await rpc("customer_create_reservation_v12",
+        window.TrasladosBookingContracts.registeredReservation(session.token,p));
     }else{
-      result=await rpc("create_reservation",{
-        p_customer_name:p.name,p_customer_phone:p.phone,p_pickup_date:p.date,p_pickup_time:p.time,
-        p_passengers:p.passengers,p_comments:p.comments,
-        p_origin_text:p.origin.text,p_origin_lat:p.origin.lat,p_origin_lng:p.origin.lng,
-        p_destination_text:p.destination.text,p_destination_lat:p.destination.lat,p_destination_lng:p.destination.lng
-      });
+      result=await rpc("create_reservation",
+        window.TrasladosBookingContracts.guestReservation(p));
       if(result?.public_token)saveGuest(result);
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
