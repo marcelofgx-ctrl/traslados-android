@@ -391,6 +391,7 @@ function picker(name,mount,position){
   }
   highlight();
   const row=text(controls,"div","","loc-search");
+  row.classList.add(name==="origin"?"loc-search-origin":"loc-search-standard");
   const input=document.createElement("input");input.type="search";
   input.placeholder="Calle, número o lugar…";
   input.autocomplete="off";input.enterKeyHint="search";
