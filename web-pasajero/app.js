@@ -304,7 +304,7 @@ function setWhen(kind){
     :"Ahora · Consultar disponibilidad y llegada";
   // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
   // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
-  $("urgent-whatsapp").hidden=!urgent;
+  $("urgent-actions").hidden=!urgent;
   $("booking-final").hidden=urgent;
   $("review-booking").hidden=urgent;
   $("booking-preview").hidden=true;
@@ -749,10 +749,9 @@ function syncAuthUI(){
   const logged=authReady();
   $("stop-wrap").hidden=!logged;$("login-for-stops").hidden=logged;
   $("passenger-identification").hidden=logged;
-  if(logged){
-    $("person-name").value=session.customer.full_name||"";
-    $("person-phone").value=session.customer.phone||"";
-  }
+  $("passenger-account-summary").hidden=!logged;
+  $("passenger-account-name").textContent=logged?(session.customer.full_name||"Sin nombre"):"";
+  $("passenger-account-phone").textContent=logged?(session.customer.phone||"Sin teléfono"):"";
   renderAccount();renderStops();refreshBookingSteps();
 }
 function renderAccount(){
@@ -765,7 +764,9 @@ function renderAccount(){
   button(c,"CERRAR SESIÓN","secondary full",async()=>{
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
-    session=null;localStorage.removeItem(SESSION_KEY);syncAuthUI();tell("Sesión cerrada");
+    session=null;localStorage.removeItem(SESSION_KEY);
+    $("person-name").value="";$("person-phone").value="";
+    syncAuthUI();tell("Sesión cerrada");
   });
 }
 function setAccountMode(register){
@@ -1193,6 +1194,12 @@ function init(){
     $(key).addEventListener("input",refreshBookingSteps);
     $(key).addEventListener("change",refreshBookingSteps);
   }
+  $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
+  $("urgent-switch-scheduled").addEventListener("click",()=>{
+    setWhen("schedule");
+    bookingSteps.open("when",{scroll:true});
+    $("pickup-date").focus({preventScroll:true});
+  });
   $("when-next").addEventListener("click",()=>{
     if(selectedPickupMode!=="schedule")return;
     const d=$("pickup-date").value,t=$("pickup-time").value;

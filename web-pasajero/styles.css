@@ -518,3 +518,50 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   .booking-step-chevron,.booking-step-chevron::before,.booking-step-card input,
   .booking-step-card textarea,.booking-step-card select{transition:none}
 }
+
+
+/* PWA v44 — datos de cuenta visibles y elección honesta del tipo de solicitud. */
+.passenger-account-summary{
+  margin:8px 0 14px;padding:14px 15px 12px;
+  border:1px solid rgba(231,203,133,.37);border-radius:17px;
+  background:linear-gradient(115deg,rgba(7,49,55,.85),rgba(5,38,47,.89));
+  overflow-wrap:anywhere;
+}
+.passenger-account-top{display:flex;align-items:center;gap:7px;color:var(--gold);font-size:10px;letter-spacing:.07em;font-weight:800}
+.passenger-account-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#72d3a7}
+.passenger-account-status{margin-left:auto;color:#cce7d4;font-size:10px;letter-spacing:0;font-weight:600;white-space:nowrap}
+.passenger-account-details{display:grid;grid-template-columns:1.25fr 1fr;gap:15px;margin:15px 0 9px}
+.passenger-account-details div{min-width:0;display:grid;gap:3px}
+.passenger-account-details span{color:#aacbc5;font-size:11px}
+.passenger-account-details strong{color:#f8f3e9;font:750 13.5px/1.4 Manrope,"DM Sans",sans-serif}
+.passenger-account-link{border:0;padding:6px 0;background:transparent;color:var(--gold);font-size:11.5px;font-weight:750}
+.passenger-account-link span{padding-left:4px}
+.urgent-actions{
+  position:relative;overflow:hidden;margin:13px 0 17px;padding:20px;
+  border:1px solid rgba(231,203,133,.37);border-radius:21px;
+  background:linear-gradient(128deg,rgba(13,62,70,.98),rgba(7,43,52,.96));
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+}
+.urgent-actions::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(129deg,rgba(231,203,133,.019) 0,rgba(231,203,133,.019) 1px,transparent 1px,transparent 9px)}
+.urgent-actions>*{position:relative}
+.urgent-actions-eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;color:var(--gold);margin:0 0 5px}
+.urgent-actions h3{font:800 18px/1.35 Manrope,sans-serif;color:#f9f4e8;margin:0 0 6px;letter-spacing:-.025em}
+.urgent-actions>p:not(.urgent-actions-eyebrow){font-size:12px;line-height:1.55;color:#c8ddd5;margin-bottom:15px}
+.urgent-actions .urgent-booking-link{margin:0;border-color:rgba(231,203,133,.65);
+  padding:11px 13px;font-size:12px;text-align:center;min-height:49px;letter-spacing:.02em}
+.urgent-actions-separator{display:flex;gap:12px;align-items:center;text-align:center;color:#b5d0c9;
+  font-size:11px;line-height:1.4;margin:14px 0}
+.urgent-actions-separator::before,.urgent-actions-separator::after{
+  content:"";height:1px;flex:1;background:rgba(231,203,133,.23)}
+.urgent-actions .booking-main-cta{font-size:12px;letter-spacing:.014em;min-height:56px}
+@media(max-width:520px){
+  .urgent-actions{padding:17px 15px;border-radius:19px}
+  .passenger-account-summary{padding:13px}
+  .passenger-account-details{gap:8px}
+}
+@media(max-width:370px){
+  .passenger-account-details{grid-template-columns:minmax(0,1fr)}
+  .passenger-account-status{font-size:9px}
+  .urgent-actions .booking-main-cta{font-size:11px}
+}

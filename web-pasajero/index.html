@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=43">
+  <link rel="stylesheet" href="./styles.css?v=44">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -133,6 +133,18 @@
           <span class="booking-step-chevron" aria-hidden="true"></span>
         </button>
         <div id="booking-step-passenger" class="booking-step-content" data-step-body hidden>
+        <div id="passenger-account-summary" class="passenger-account-summary" hidden>
+          <div class="passenger-account-top">
+            <span class="passenger-account-dot" aria-hidden="true"></span>
+            <span>DATOS DE MI CUENTA</span>
+            <span class="passenger-account-status">Sesión iniciada</span>
+          </div>
+          <div class="passenger-account-details">
+            <div><span>Nombre y apellido</span><strong id="passenger-account-name"></strong></div>
+            <div><span>Teléfono de contacto</span><strong id="passenger-account-phone"></strong></div>
+          </div>
+          <button id="passenger-view-account" type="button" class="passenger-account-link">Ver mi cuenta <span aria-hidden="true">↗</span></button>
+        </div>
         <div id="passenger-identification" class="two-cols">
           <label>Nombre y apellido<input id="person-name" autocomplete="name" placeholder="Ej.: Ana Rodríguez" maxlength="120"></label>
           <label>Teléfono<input id="person-phone" autocomplete="tel" inputmode="tel" placeholder="Ej.: 099 123 456"></label>
@@ -151,7 +163,14 @@
         <p class="booking-final-note">Sin pagos ahora. El traslado se confirma cuando el conductor lo acepta.</p>
       </div>
       <div id="booking-preview" class="card preview" hidden></div>
-      <a id="urgent-whatsapp" class="primary full urgent-booking-link" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer" hidden>CONSULTAR RECOGIDA URGENTE POR WHATSAPP ↗</a>
+      <div id="urgent-actions" class="urgent-actions" hidden>
+        <p class="urgent-actions-eyebrow">RECOGIDA INMEDIATA</p>
+        <h3>¿Necesitás viajar ahora?</h3>
+        <p>Por el momento, las recogidas inmediatas se coordinan directamente con el conductor. No se registra una reserva en el sistema hasta que se acuerde.</p>
+        <a id="urgent-whatsapp" class="secondary full urgent-booking-link" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">CONTACTAR POR WHATSAPP <span aria-hidden="true">↗</span></a>
+        <div class="urgent-actions-separator">o solicitá una reserva desde Traslados</div>
+        <button id="urgent-switch-scheduled" type="button" class="primary full booking-main-cta"><span>PROGRAMAR Y ENVIAR SOLICITUD</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
+      </div>
       <div id="submit-actions" hidden>
         <p class="booking-confirm-description">¿Todo correcto? Enviá tu solicitud para recibir la respuesta del conductor.</p>
         <button id="confirm-booking" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">CONFIRMAR SOLICITUD DE RESERVA</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
@@ -222,6 +241,6 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./app.js?v=43" defer></script>
+  <script src="./app.js?v=44" defer></script>
 </body>
 </html>
