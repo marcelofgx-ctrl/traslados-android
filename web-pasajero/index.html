@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=31">
+  <link rel="stylesheet" href="./styles.css?v=38">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -48,8 +48,19 @@
         <h2 id="reserva-title">Reservá tu traslado</h2>
         <p>Elegí origen y destino para consultar kilómetros, minutos y valor orientativo. El conductor confirmará el presupuesto definitivo; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
       </div>
-      <div class="card">
-        <div class="section-mini"><span>01</span><h3>Tu recorrido</h3></div>
+      <div class="booking-progress" aria-label="Avance de la solicitud">
+        <span id="booking-progress-text" class="booking-progress-text" aria-live="polite">Paso 1 de 3</span>
+        <div id="booking-progress-bar" class="booking-progress-track" role="progressbar" aria-label="Secciones completadas" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><span id="booking-progress-fill"></span></div>
+      </div>
+
+      <div class="card booking-step-card is-open" data-booking-step="route">
+        <button type="button" class="booking-step-toggle" data-step-toggle aria-expanded="true" aria-controls="booking-step-route">
+          <span class="booking-step-number" aria-hidden="true">01</span>
+          <span class="booking-step-heading"><strong>Tu recorrido</strong><small data-step-summary id="booking-step-summary-route">Elegí origen y destino</small></span>
+          <span data-step-check class="booking-step-check" hidden aria-hidden="true"></span>
+          <span class="booking-step-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="booking-step-route" class="booking-step-content" data-step-body>
         <div id="origin-picker" class="location-pane"></div>
         <div class="wayline"><span>↓</span></div>
         <div id="stop-wrap" class="stops-wrapper" hidden>
@@ -59,18 +70,25 @@
         <div id="destination-picker" class="location-pane"></div>
         <section id="route-overview" class="route-overview" hidden aria-live="polite"></section>
         <div id="login-for-stops" class="stops-signin-hint">＋ ¿Necesitás paradas? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="section-mini"><span>02</span><h3>¿Cuándo viajás?</h3></div>
+      <div class="card booking-step-card" data-booking-step="when">
+        <button type="button" class="booking-step-toggle" data-step-toggle aria-expanded="false" aria-controls="booking-step-when">
+          <span class="booking-step-number" aria-hidden="true">02</span>
+          <span class="booking-step-heading"><strong>¿Cuándo viajás?</strong><small data-step-summary id="booking-step-summary-when">Fecha, hora y pasajeros</small></span>
+          <span data-step-check class="booking-step-check" hidden aria-hidden="true"></span>
+          <span class="booking-step-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="booking-step-when" class="booking-step-content" data-step-body hidden>
         <div class="quick-times" role="group" aria-label="Modalidad de reserva">
-          <button type="button" class="choice active" data-when="now">Ahora</button>
+          <button type="button" class="choice" data-when="now">Ahora</button>
           <button type="button" class="choice" data-when="10">En 10 min</button>
-          <button type="button" class="choice" data-when="schedule">Programar</button>
+          <button type="button" class="choice active" data-when="schedule">Programar</button>
         </div>
         <div class="two-cols" id="pickup-datetime-block">
-          <label>Fecha<input id="pickup-date" type="date" required></label>
-          <label>Hora<input id="pickup-time" type="time" required></label>
+          <label>Fecha<input id="pickup-date" type="date" lang="es-UY" required></label>
+          <label>Hora<input id="pickup-time" type="time" lang="es-UY" required></label>
         </div>
         <p id="pickup-mode-caption" class="pickup-mode-caption" aria-live="polite" hidden></p>
         <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
@@ -103,17 +121,27 @@
             <option value="1">1 pasajero</option><option value="2">2 pasajeros</option><option value="3">3 pasajeros</option><option value="4">4 pasajeros</option><option value="5">5 pasajeros</option><option value="6">6 pasajeros</option><option value="7">7 pasajeros</option><option value="8">8 pasajeros</option>
           </select>
         </label>
+        <button id="when-next" class="secondary full booking-step-next" type="button">CONTINUAR CON MIS DATOS <span aria-hidden="true">→</span></button>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="section-mini"><span>03</span><h3>Datos del pasajero</h3></div>
+      <div class="card booking-step-card" data-booking-step="passenger">
+        <button type="button" class="booking-step-toggle" data-step-toggle aria-expanded="false" aria-controls="booking-step-passenger">
+          <span class="booking-step-number" aria-hidden="true">03</span>
+          <span class="booking-step-heading"><strong>Datos del pasajero</strong><small data-step-summary id="booking-step-summary-passenger">Nombre y teléfono</small></span>
+          <span data-step-check class="booking-step-check" hidden aria-hidden="true"></span>
+          <span class="booking-step-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="booking-step-passenger" class="booking-step-content" data-step-body hidden>
         <div id="passenger-identification" class="two-cols">
           <label>Nombre y apellido<input id="person-name" autocomplete="name" placeholder="Ej.: Ana Rodríguez" maxlength="120"></label>
           <label>Teléfono<input id="person-phone" autocomplete="tel" inputmode="tel" placeholder="Ej.: 099 123 456"></label>
         </div>
         <label>Indicaciones (opcional)<textarea id="comments" rows="2" placeholder="N° de vuelo, equipaje, punto de encuentro o indicaciones…" maxlength="500"></textarea></label>
         
+        </div>
       </div>
+
       <div id="booking-preview" class="card preview" hidden></div>
       <button id="review-booking" type="button" class="primary full">REVISAR SOLICITUD <span>→</span></button>
       <a id="urgent-whatsapp" class="primary full urgent-booking-link" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer" hidden>CONSULTAR RECOGIDA URGENTE POR WHATSAPP ↗</a>
@@ -180,6 +208,7 @@
   <script src="./eta-engine.js?v=1" defer></script>
   <script src="./booking-contracts.js?v=1" defer></script>
   <script src="./rpc-client.js?v=1" defer></script>
-  <script src="./app.js?v=37" defer></script>
+  <script src="./booking-steps.js?v=1" defer></script>
+  <script src="./app.js?v=38" defer></script>
 </body>
 </html>
