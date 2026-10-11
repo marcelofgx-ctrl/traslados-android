@@ -783,3 +783,135 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   #view-reservar .booking-step-card .location-use-current,
   #view-reservar .booking-step-card .results button.result{transition:none;transform:none}
 }
+
+
+/* PWA v46 — reproducción del boceto aprobado: A/B y controles en una sola fila.
+ * El diseño de la v45 conservaba un buscador con texto y un GPS en otra línea;
+ * esto los convierte en las dos acciones compactas mostradas en el boceto.
+ * No cambia geocodificación ni flujos de reserva.
+ */
+#view-reservar .booking-step-card[data-booking-step="route"] .booking-step-content{
+  padding-left:16px;padding-right:16px;padding-bottom:13px
+}
+#view-reservar .booking-step-card .departments{
+  gap:6px;margin:2px 0 10px;
+}
+#view-reservar .booking-step-card .departments button{
+  min-height:40px;padding:7px 11px;border-radius:23px;
+  font-size:11px;letter-spacing:0
+}
+#view-reservar .booking-step-card .departments select{
+  min-height:40px;max-width:120px;padding:7px 30px 7px 12px;
+  font-size:11px;color:#d2e0d8;
+  background-color:transparent;border-color:transparent;
+  background-size:13px 13px;
+  background-position:right 8px center;
+}
+#view-reservar .booking-step-card .departments select:hover,
+#view-reservar .booking-step-card .departments select:focus{
+  border-color:rgba(231,203,133,.30);
+  background-color:rgba(4,42,50,.58);
+}
+#view-reservar .booking-step-card .departments select:has(option:checked:not([value=""])){
+  border-color:rgba(231,203,133,.68);
+  color:#f4d89b;background-color:rgba(213,180,109,.13)
+}
+#view-reservar .booking-step-card .loc-search,
+#view-reservar .booking-step-card .location-controls .loc-search{
+  display:grid;gap:7px;
+  grid-template-columns:minmax(0,1fr) 47px;
+  align-items:center;margin:0
+}
+#view-reservar .booking-step-card .loc-search.loc-search-origin,
+#view-reservar .booking-step-card .location-controls .loc-search.loc-search-origin{
+  grid-template-columns:minmax(0,1fr) 47px 47px;
+}
+#view-reservar .booking-step-card .loc-search input{
+  min-height:49px;height:49px;
+  margin:0;padding:0 13px;
+  background:rgba(3,32,40,.9);
+  border-radius:14px;font-size:13px;
+}
+#view-reservar .booking-step-card .loc-search .location-search-action,
+#view-reservar .booking-step-card .loc-search .location-use-current{
+  display:flex;align-items:center;justify-content:center;
+  width:47px;height:49px;min-width:47px;min-height:49px;
+  max-width:47px;margin:0;padding:0;
+  border-radius:14px;border:1px solid rgba(232,202,134,.58);
+  background:linear-gradient(135deg,rgba(19,73,76,.90),rgba(7,52,61,.96));
+  box-shadow:inset 0 1px 0 rgba(248,224,172,.09);
+  color:transparent;font-size:0!important;line-height:0!important;
+  white-space:nowrap;overflow:hidden;
+  transition:background .18s ease,border-color .18s ease,transform .14s ease
+}
+#view-reservar .booking-step-card .loc-search .location-search-action{
+  background:linear-gradient(125deg,#d3a34f,#edd394);
+  border-color:#f2dca5;
+  box-shadow:0 5px 15px rgba(196,152,66,.12);
+}
+#view-reservar .booking-step-card .loc-search .location-search-action::before,
+#view-reservar .booking-step-card .loc-search .location-use-current::before{
+  content:"";width:20px;height:20px;flex:0 0 20px;
+  display:block;background-position:center;
+  background-size:contain;background-repeat:no-repeat
+}
+#view-reservar .booking-step-card .loc-search .location-search-action::before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230e373e' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.7' cy='10.7' r='6.5'/%3E%3Cpath d='m15.8 15.8 5 5'/%3E%3C/svg%3E")
+}
+#view-reservar .booking-step-card .loc-search .location-use-current::before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f0d394' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2v3m0 14v3M2 12h3m14 0h3'/%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%23f0d394' stroke='none'/%3E%3C/svg%3E")
+}
+#view-reservar .booking-step-card .loc-search .location-search-action:hover{
+  background:linear-gradient(125deg,#e1b667,#f3dfa9);
+}
+#view-reservar .booking-step-card .loc-search .location-use-current:hover{
+  background:rgba(226,192,123,.14)
+}
+#view-reservar .booking-step-card .loc-search button:disabled{
+  opacity:.53;cursor:wait
+}
+#view-reservar .booking-step-card .loc-search button:focus-visible{
+  outline:2px solid #f1d9a1;outline-offset:3px
+}
+#view-reservar .booking-step-card .wayline{
+  height:21px;margin:3px 0 5px;padding:0 0 0 4px
+}
+#view-reservar .booking-step-card .wayline span{height:21px}
+#view-reservar .booking-step-card .wayline span::before{height:19px}
+#view-reservar .booking-step-card .wayline span::after{bottom:2px}
+#view-reservar .booking-step-card .location-title{margin:1px 0 7px}
+#view-reservar .booking-step-card .location-selected{margin-top:3px}
+@media(max-width:400px){
+  #view-reservar .booking-step-card[data-booking-step="route"] .booking-step-content{
+    padding-left:13px;padding-right:13px
+  }
+  #view-reservar .booking-step-card .loc-search,
+  #view-reservar .booking-step-card .location-controls .loc-search{
+    grid-template-columns:minmax(0,1fr) 44px;gap:6px
+  }
+  #view-reservar .booking-step-card .loc-search.loc-search-origin,
+  #view-reservar .booking-step-card .location-controls .loc-search.loc-search-origin{
+    grid-template-columns:minmax(0,1fr) 44px 44px
+  }
+  #view-reservar .booking-step-card .loc-search .location-search-action,
+  #view-reservar .booking-step-card .loc-search .location-use-current{
+    width:44px;min-width:44px;max-width:44px;min-height:47px;height:47px
+  }
+  #view-reservar .booking-step-card .loc-search input{
+    min-height:47px;height:47px;font-size:12.5px;padding:0 10px
+  }
+  #view-reservar .booking-step-card .departments button{padding:7px 9px}
+}
+@media(max-width:350px){
+  #view-reservar .booking-step-card .departments{gap:4px}
+  #view-reservar .booking-step-card .departments button{font-size:10px;padding:7px 7px}
+  #view-reservar .booking-step-card .departments select{
+    max-width:91px;font-size:10px;padding:7px 22px 7px 6px;
+    background-position:right 5px center
+  }
+  #view-reservar .booking-step-card .loc-search input::placeholder{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-reservar .booking-step-card .loc-search .location-search-action,
+  #view-reservar .booking-step-card .loc-search .location-use-current{transition:none}
+}
