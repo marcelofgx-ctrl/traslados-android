@@ -9,6 +9,7 @@ const root=path.resolve(__dirname,"..");
 const js=readFileSync(path.join(root,"app.js"),"utf8");
 const html=readFileSync(path.join(root,"index.html"),"utf8");
 const css=readFileSync(path.join(root,"styles.css"),"utf8");
+const routeSource=readFileSync(path.join(root,"route-engine.js"),"utf8");
 const begin=js.indexOf("function renderRouteSummary(){");
 const end=js.indexOf("\nlet originPicker,destPicker",begin);
 assert(begin>=0&&end>begin,"Route function not found");
@@ -41,6 +42,17 @@ const from={text:"Roque Saenz Peña 1711",lat:-34.83,lng:-55.95};
 const to={text:"Aeropuerto Internacional de Carrasco",lat:-34.83696,lng:-56.01638};
 const points=[from,to];
 let response={available:false,reason:"not_configured"};
+let cacheFallback={available:false};
+const routeWindow={};
+runInNewContext(routeSource,{
+  window:routeWindow,Number,Map,Date,AbortController,encodeURIComponent,setTimeout,clearTimeout,
+  fetch:async url=>{
+    const data=String(url).includes("/public_cached_route_preview_v1")?cacheFallback:response;
+    return {ok:data.available===true,json:async()=>data};
+  }
+});
+const roadEngine=routeWindow.TrasladosRoutes;
+assert(roadEngine?.verified&&roadEngine?.estimate,"Shared routing module must load");
 const ctx={
   Number,Map,AbortController,encodeURIComponent,
   setTimeout:()=>1,clearTimeout:()=>{},
@@ -53,11 +65,8 @@ const ctx={
   refreshPickupPresence:()=>{},
   mapsLinkFromBooking:()=>"https://www.google.com/maps/dir/?api=1",
   addRoadDiagram:()=>{},
-  roadCache:new Map(),
-  routeSequence:0,activeRouteKey:"",latestRoad:null,
-  SHARED_ROUTER:"https://example.invalid/route-estimate",
-  cachedRoadRoute:async()=>null,
-  fetch:async()=>response.available?{ok:true,json:async()=>response}:{ok:false,json:async()=>response}
+  roadEngine,
+  routeSequence:0,activeRouteKey:"",latestRoad:null
 };
 runInNewContext(js.slice(begin,end),ctx);
 function nodes(cls){return host.walk().filter(n=>n.className.split(" ").includes(cls));}
@@ -77,11 +86,11 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(ctx.latestRoad,null,"No fictional road data");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"A confirmar");
   // Existing Supabase ROAD route is reused only if Cloudflare did not provide a route.
-  ctx.cachedRoadRoute=async()=>({
+  cacheFallback=({
     available:true,source:"supabase_route_cache",distanceKm:18.1,durationMin:25,
     referenceFareUyu:720,geometry:[],calculatedAt:new Date().toISOString()
   });
-  ctx.roadCache.clear();ctx.renderRouteSummary();
+  roadEngine.invalidate();ctx.renderRouteSummary();
   await settle();
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"18,1 km");
   assert.equal(nodes("route-metric")[1].nodes[1].textContent,"25 min");
@@ -89,12 +98,12 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(ctx.latestRoad.data.source,"supabase_route_cache");
   // ORS remains the primary provider when it is available.
     response={available:true,source:"openrouteservice",distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};
-  ctx.roadCache.clear();ctx.renderRouteSummary();
+  roadEngine.invalidate();ctx.renderRouteSummary();
   await settle();
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"8 km");
   assert.equal(nodes("route-metric")[1].nodes[1].textContent,"14 min");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 320");
   assert(ctx.latestRoad&&ctx.latestRoad.data.referenceFareUyu===320);
-  assert(ctx.roadCache.get(ctx.activeRouteKey)?.expires>Date.now(),"Price cache must expire so driver tariff changes propagate");
+  assert(roadEngine.peek(ctx.activeRouteKey)?.referenceFareUyu===320,"Verified quote must be cached temporarily");
   console.log("PASS PWA compact summary: route results / ORS missing / price / no invented values");
 })().catch(e=>{console.error(e);process.exitCode=1;});
