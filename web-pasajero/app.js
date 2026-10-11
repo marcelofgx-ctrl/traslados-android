@@ -120,11 +120,11 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   const hasEstimate=Number.isFinite(km)&&km>=0&&Number.isFinite(minutes)&&minutes>=0;
   if(metrics)metrics.hidden=!hasEstimate;
   if(distance)distance.textContent=hasEstimate?km.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"";
-  if(eta)eta.textContent=hasEstimate?Math.round(minutes)+" min":"";
+  if(eta)eta.textContent=hasEstimate?window.TrasladosPickupCadence.arrivalLabel(minutes):"";
   if(note){note.textContent=estimateNote;note.hidden=!estimateNote;}
   if(meta)meta.textContent=checked;
   if(status)status.textContent=[title,subtitle,hasEstimate?km.toLocaleString("es-UY",{maximumFractionDigits:1})+
-    " km · "+Math.round(minutes)+" min aprox.":"",estimateNote,checked].filter(Boolean).join(" · ");
+    " km · "+window.TrasladosPickupCadence.arrivalLabel(minutes)+" aprox.":"",estimateNote,checked].filter(Boolean).join(" · ");
 }
 function latestPickupEstimate(key){
   return lastVerifiedEtaResult&&lastVerifiedEtaKey===key&&Date.now()-lastVerifiedEtaAt<=300000
@@ -204,7 +204,7 @@ async function refreshPickupPresence(force=false){
   const lastGood=latestPickupEstimate(key);
   // Mapa envía el último movimiento detectado; la web no obtiene velocidad
   // ni posición del conductor. Los períodos aplican en primer plano.
-  const etaInterval=driver.motionHint==="moving"?30000:60000;
+  const etaInterval=window.TrasladosPickupCadence.intervalMs(driver.motionHint);
   const showWaiting=(prefix)=>{
     if(lastGood){
       const estimateAge=Date.now()-lastVerifiedEtaAt;
@@ -221,8 +221,8 @@ async function refreshPickupPresence(force=false){
         checked:checkedLabel});
     }
   };
-  // La disponibilidad se comprueba cada 15 segundos, y la ruta
-  // cada 30 segundos al moverse o 60 detenido. No quemar cuotas por pestañas.
+  // Consulta de estado cada 15 s y ruta cada 25 s en movimiento / 45 s detenido.
+  // El límite SQL sigue vigente; nunca saltar el backoff ni cuotas existentes.
   if((etaRetryIdentity===identity&&Date.now()<etaRetryNotBefore) ||
       (key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval)){
     showWaiting("Estamos actualizando la llegada aproximada a tu origen.");
