@@ -42,8 +42,8 @@ const html=read("index.html"),app=read("app.js"),styles=read("styles.css"),sw=re
 assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
-assert(html.includes('src="./trip-board.js?v=3"'));
-assert(html.includes('app.js?v=54')&&html.includes('styles.css?v=54')&&sw.includes('traslados-cliente-pwa-v54'));
+assert(html.includes('src="./trip-board.js?v=4"'));
+assert(html.includes('app.js?v=55')&&html.includes('styles.css?v=55')&&sw.includes('traslados-cliente-pwa-v55'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
 assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
