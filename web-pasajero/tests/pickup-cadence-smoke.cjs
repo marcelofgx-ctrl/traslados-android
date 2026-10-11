@@ -18,7 +18,7 @@ assert.equal(p.arrivalLabel(5),"Hasta 5 min");
 assert.equal(p.arrivalLabel(10),"5–10 min");
 assert.equal(p.arrivalLabel(15),"10–15 min");
 assert.equal(p.arrivalLabel(null),"Por confirmar");
-const version=(index.match(/app\\.js\\?v=(\\d+)/)||[])[1];
+const version=index.split("app.js?v=")[1]?.split('"')[0];
 assert(version,"PWA version must be explicit");
 assert(index.indexOf("pickup-cadence.js")<index.indexOf("app.js?v="+version));
 assert(sw.includes("pickup-cadence.js")&&sw.includes("traslados-cliente-pwa-v"+version));
