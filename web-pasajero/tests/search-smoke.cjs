@@ -25,6 +25,22 @@ vm.runInNewContext(fs.readFileSync("web-pasajero/geo-search.js","utf8"),sandbox,
 });
 const geo=sandbox.window.TrasladosGeo;
 assert(geo,"motor no cargado");
+// Contrato geocodificador: no ofrecer un "Grande" lejano por una
+// consulta a Arenal Grande con una altura precisa de Montevideo.
+const appJs=fs.readFileSync("web-pasajero/app.js","utf8");
+const addressStart=appJs.indexOf("  const normalizeAddress=s=>");
+const addressEnd=appJs.indexOf("  function renderEntries(places,addresses,q){",addressStart);
+assert(addressStart>=0&&addressEnd>addressStart,"Filtro de direcciones IDE no disponible");
+const scoringContext={window:{TrasladosGeo:geo},dept:"Montevideo"};
+const scoreAddress=vm.runInNewContext(appJs.slice(addressStart,addressEnd)+"\naddressScore;",scoringContext);
+const sample=(address,departamento)=>({address,departamento,lat:-34.9,lng:-56.2});
+assert(scoreAddress(sample("Arenal Grande 2274, Montevideo","Montevideo"),"Arenal Grande 2274")>=0,"Debe aceptar dirección exacta");
+assert(scoreAddress(sample("Sarandí Grande, Florida","Florida"),"Arenal Grande 2274")<0,"No sugerir Florida");
+assert(scoreAddress(sample("Playa Grande, Maldonado","Maldonado"),"Arenal Grande 2274")<0,"No sugerir Maldonado");
+assert(scoreAddress(sample("Arenal Grande, Montevideo","Montevideo"),"Arenal Grande 2274")<0,"No fingir una altura faltante");
+assert(scoreAddress(sample("Arenal Grande 2275, Montevideo","Montevideo"),"Arenal Grande 2274")<0,"No reemplazar altura por otra");
+assert(scoreAddress(sample("Arenal Grande 2274, Canelones","Canelones"),"Arenal Grande 2274")<0,"Respetar departamento");
+console.log("PASS: IDE directions validate street, exact door number and selected department");
 (async()=>{
   const known=geo.immediate("Aeropuerto","Canelones");
   assert.equal(known[0]?.id,"uy-airport-carrasco","Carrasco debe estar primero sin red");
