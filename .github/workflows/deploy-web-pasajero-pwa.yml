@@ -68,7 +68,7 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/app.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/pickup-cadence.js
+          test -f web-pasajero/app.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/pickup-cadence.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
@@ -81,6 +81,7 @@ jobs:
           node --check web-pasajero/rpc-client.js
           node --check web-pasajero/booking-steps.js
           node --check web-pasajero/pickup-cadence.js
+          node --check web-pasajero/pickup-observability.js
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
@@ -101,6 +102,7 @@ jobs:
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
+          node web-pasajero/tests/pickup-health-v54-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
@@ -145,7 +147,7 @@ jobs:
           PYCHECK
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
-          (cd web-pasajero && sha256sum index.html app.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+          (cd web-pasajero && sha256sum index.html app.js pickup-observability.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
       - name: Export entire PWA even without GitHub Pages activated
         uses: actions/upload-artifact@v4
         with:
