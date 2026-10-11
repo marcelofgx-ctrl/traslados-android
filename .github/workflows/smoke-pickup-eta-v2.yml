@@ -35,7 +35,7 @@ jobs:
               assert isinstance(r.get('etaMin'),(int,float)) and r['etaMin']>=0
               assert r.get('approximate') is True and r.get('confirmationRequired') is True
               assert r.get('estimateType')=='coarse'
-              print('PASS: ETA anonimo km/min por zona, sin coordenadas')
+              print('PASS: ETA anonimo km/min por zona, sin coordenadas. km=',r.get('distanceKm'),'min=',r.get('etaMin'))
           else:
               print('PASS: servidor bloquea ETA sin disponibilidad verificable, motivo:',r.get('reason'))
           PY
