@@ -21,6 +21,7 @@ const nodes={
   "pickup-datetime-block":{hidden:false},
   "pickup-mode-caption":{hidden:true,textContent:""},
   "urgent-whatsapp":{hidden:true},
+  "booking-final":{hidden:false},
   "review-booking":{hidden:false},
   "booking-preview":{hidden:true},
   "submit-actions":{hidden:true},
@@ -48,6 +49,7 @@ assert.equal(nodes["pickup-datetime-block"].hidden,true);
 assert.equal(nodes["pickup-mode-caption"].hidden,false);
 assert.match(nodes["pickup-mode-caption"].textContent,/Ahora/);
 assert.equal(nodes["review-booking"].hidden,true);
+assert.equal(nodes["booking-final"].hidden,true);
 assert.equal(nodes["urgent-whatsapp"].hidden,false);
 assert.match(nodes.availability.textContent,/no se envía una reserva automática/);
 assert.equal(nodes["when-next"].hidden,true,"Do not show a non-working continue button for urgent trips");
@@ -59,6 +61,7 @@ setWhen("schedule");
 assert.equal(nodes["pickup-datetime-block"].hidden,false);
 assert.equal(nodes["pickup-mode-caption"].hidden,true);
 assert.equal(nodes["review-booking"].hidden,false);
+assert.equal(nodes["booking-final"].hidden,false);
 assert.equal(nodes["when-next"].hidden,false,"Scheduled trips may advance to contact details");
 assert.equal(nodes["urgent-whatsapp"].hidden,true);
 assert.match(nodes.availability.textContent,/Reserva programada/);
