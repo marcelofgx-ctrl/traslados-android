@@ -52,6 +52,11 @@ function currentUY(offsetMinutes=0){
 }
 let selectedPickupMode="schedule";
 let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaAt=0,lastPickupEtaMessage="";
+let lastPickupEtaIsEstimate=false,lastVerifiedEtaKey="",lastVerifiedEtaAt=0,lastVerifiedEtaMessage="";
+function forgetPickupEta(){
+  lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+  lastPickupEtaIsEstimate=false;lastVerifiedEtaKey="";lastVerifiedEtaAt=0;lastVerifiedEtaMessage="";
+}
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
 /** Public yes/no comes from Mapa's consented heartbeat through Supabase.
  * No login needed, and no GPS coordinates ever reach the browser.
@@ -106,7 +111,7 @@ async function refreshPickupPresence(force=false){
   const driver=await publicDriverAvailability(force);
   if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
   if(!driver){
-    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+    forgetPickupEta();
     status.textContent="No se pudo comprobar el estado actual del conductor. Consultá por WhatsApp.";
     host.dataset.presence="unknown";return;
   }
@@ -117,7 +122,7 @@ async function refreshPickupPresence(force=false){
     (elapsedCheck===null?" recientemente":" hace "+elapsedCheck+" s")+
     " · Puede cambiar mientras viajás.";
   if(!driver.available){
-    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
+    forgetPickupEta();
     status.textContent="Conductor no disponible para recogida ahora. "+checkedLabel;
     host.dataset.presence="offline";return;
   }
@@ -137,13 +142,17 @@ async function refreshPickupPresence(force=false){
   // Availability refreshes often, but location-based ETA is intentionally
   // rate-limited to avoid tracking a vehicle from successive public requests.
   const etaInterval=signedIn?190000:100000;
-  if(key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval&&lastPickupEtaMessage){
-    const elapsedEstimate=Math.max(0,Math.round((Date.now()-lastPickupEtaAt)/1000));
-    status.textContent=lastPickupEtaMessage+
-      " · Estimación de hace "+elapsedEstimate+" s. "+checkedLabel;
+  if(key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval){
+    const ageSec=Math.max(0,Math.round((Date.now()-lastPickupEtaAt)/1000));
+    const nextSec=Math.max(1,Math.ceil((etaInterval-(Date.now()-lastPickupEtaAt))/1000));
+    status.textContent=(lastPickupEtaMessage||
+      "Llegada consultada recientemente; aguardando respuesta del servicio.")+
+      " · "+(lastPickupEtaIsEstimate?"Ruta calculada":"Consulta realizada")+
+      " hace "+ageSec+" s · Próximo intento en aprox. "+nextSec+" s. "+checkedLabel;
     return;
   }
-  lastPickupEtaKey=key;lastPickupEtaAt=Date.now();lastPickupEtaMessage="";
+  lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
+  lastPickupEtaMessage="";lastPickupEtaIsEstimate=false;
   status.textContent="Disponibilidad comprobada · Calculando km y minutos hasta tu origen… "+checkedLabel;
   const ctrl=new AbortController(),abort=setTimeout(()=>ctrl.abort(),9000);
   fetch(API+"/functions/v1/pickup-eta",{
@@ -159,26 +168,36 @@ async function refreshPickupPresence(force=false){
   }).then(data=>{
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&Number.isFinite(data.etaMin)){
-      status.textContent=(selectedPickupMode==="10"
-        ?"Conductor disponible para consultar recogida en 10 min"
-        :"Conductor disponible para recogerte ahora")+" · A unos "+
+      status.textContent="Conductor disponible para recogida · A unos "+
         data.distanceKm.toLocaleString("es-UY")+" km · "+data.etaMin+
         " min de llegada aprox."+
         (data.estimateType==="coarse"?" (ubicación por zona).":"")+
         " Recogida sujeta a confirmación del conductor.";
       lastPickupEtaMessage=status.textContent;
+      lastPickupEtaIsEstimate=true;
+      lastVerifiedEtaKey=key;lastVerifiedEtaAt=Date.now();lastVerifiedEtaMessage=lastPickupEtaMessage;
       status.textContent=lastPickupEtaMessage+" "+checkedLabel;
     }else{
       const labels={
         login_required:"Conductor en actividad. Volvé a iniciar sesión para consultar la llegada.",
-        rate_limited:"Conductor en actividad. Podrás actualizar los km en unos minutos.",
+        rate_limited:"Conductor disponible. El servidor limita temporalmente los cálculos de llegada para proteger su ubicación. Se reintentará automáticamente.",
         occupied:"No disponible para recogida: tiene compromisos de agenda.",
         not_available:"Conductor no disponible para recogida en este momento.",
         route_unavailable:"Conductor en actividad; no se pudo calcular la ruta hasta tu origen.",
       };
       status.textContent=labels[data?.reason]||
         "Conductor en actividad; llegada aún no confirmada. Consultá por WhatsApp.";
+      // La cuota del servidor no significa vehículo detenido ni GPS inactivo.
+      // Mostrar como referencia la última ETA correcta solo si es reciente
+      // y pertenece exactamente al origen actual; nunca inventar una nueva.
+      if(data?.reason==="rate_limited"&&lastVerifiedEtaKey===key&&
+          Date.now()-lastVerifiedEtaAt<=300000){
+        const seconds=Math.round((Date.now()-lastVerifiedEtaAt)/1000);
+        status.textContent="Último cálculo (hace "+seconds+" s; puede haber cambiado): "+
+          lastVerifiedEtaMessage+" · Recálculo temporalmente limitado.";
+      }
       lastPickupEtaMessage=status.textContent;
+      lastPickupEtaIsEstimate=false;
       status.textContent=lastPickupEtaMessage+" "+checkedLabel;
     }
   }).catch(()=>{
@@ -190,9 +209,8 @@ async function refreshPickupPresence(force=false){
   }).finally(()=>clearTimeout(abort));
 }
 function setWhen(kind){
-  if(selectedPickupMode!==kind){
-    lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
-  }
+  // "Ahora" y "En 10 min" comparten el mismo origen: cambiar de pestaña
+  // no debe disparar nuevas ETA ni eludir la cuota de privacidad.
   selectedPickupMode=kind;
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
