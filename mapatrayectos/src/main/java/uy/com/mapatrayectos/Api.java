@@ -108,6 +108,13 @@ public final class Api {
     private static JSONObject cleanTrip(JSONObject s) throws JSONException {JSONObject o=new JSONObject();String[] keys={"trip_id","shift_id","started_at_ms","ended_at_ms","distance_m","moving_ms","stopped_ms","max_speed_kmh","avg_speed_kmh","start_zone","end_zone","start_lat","start_lon","end_lat","end_lon","start_address","end_address","trip_type","trip_status","amount_uyu"};for(String k:keys)if(s.has(k)&&!s.isNull(k))o.put(k,s.get(k));else o.put(k,"");return o;}
     private static JSONArray slicePoints(JSONArray src,int from,int to) throws JSONException {JSONArray out=new JSONArray();for(int i=from;i<to;i++){JSONObject p=src.getJSONObject(i);JSONObject o=new JSONObject();String[] keys={"point_id","recorded_at_ms","lat","lon","accuracy_m","speed_kmh","bearing_deg","zone"};for(String k:keys)if(p.has(k)&&!p.isNull(k))o.put(k,p.get(k));else o.put(k,"");out.put(o);}return out;}
 
+    /** Driver PIN is authenticated server-side. Never persist or log it here. */
+    public static JSONObject getSystemStatus(String pin) throws Exception {
+        if(pin==null||!pin.matches("[0-9]{4,10}"))throw new IllegalArgumentException("PIN requerido");
+        JSONObject b=new JSONObject();b.put("p_pin",pin);
+        return new JSONObject(postRpc("driver_system_status_v1",b));
+    }
+
     private static String postRpc(String fn,JSONObject body) throws Exception {HttpURLConnection c=(HttpURLConnection)new URL(BASE+"/rest/v1/rpc/"+fn).openConnection();c.setConnectTimeout(12000);c.setReadTimeout(25000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.setRequestProperty("Accept","application/json");c.setRequestProperty("X-Client-Info","mapa-trayectos-android/0.1-R6");try(OutputStream os=c.getOutputStream()){os.write(body.toString().getBytes(StandardCharsets.UTF_8));}int code=c.getResponseCode();InputStream is=code>=200&&code<300?c.getInputStream():c.getErrorStream();String text=readAll(is);c.disconnect();if(code<200||code>=300)throw new IOException("HTTP "+code+" "+text);return text;}
     private static String readAll(InputStream is) throws Exception {if(is==null)return "";StringBuilder sb=new StringBuilder();try(BufferedReader br=new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))){String l;while((l=br.readLine())!=null)sb.append(l);}return sb.toString();}
 }
