@@ -285,6 +285,7 @@ function setWhen(kind){
   const urgent=kind!=="schedule";
   // Solo las programadas tienen fecha/hora editables. Urgentes = consulta, no reserva.
   $("pickup-datetime-block").hidden=urgent;
+  $("when-next").hidden=urgent;
   $("pickup-mode-caption").hidden=!urgent;
   $("pickup-mode-caption").textContent=kind==="10"
     ?"Dentro de 10 minutos · Consultar disponibilidad y llegada"
@@ -633,6 +634,14 @@ function addRoadDiagram(parent,geometry){
 function renderRouteSummary(){
   const host=$("route-overview");
   if(!host)return;
+  // Una parada todavía sin dirección invalidaría cualquier presupuesto vial:
+  // jamás mostrar una cotización del trayecto anterior sin esa parada.
+  if(record.stops.some(stop=>!stop)){
+    activeRouteKey="";latestRoad=null;routeSequence++;
+    clear(host);host.hidden=false;
+    text(host,"p","Elegí la dirección de todas las paradas para calcular el recorrido y su valor orientativo.","route-status");
+    refreshBookingSteps();return;
+  }
   const points=selectedRoadPoints();
   clear(host);host.hidden=points.length<2;
   if(points.length<2){
@@ -716,7 +725,7 @@ function renderStops(){
   const host=$("stops");clear(host);stopPickers=[];
   for(let i=0;i<record.stops.length;i++){
     const row=document.createElement("div");row.className="stop-row";host.appendChild(row);
-    button(row,"Quitar","tiny-btn",()=>{record.stops.splice(i,1);renderStops();});
+    button(row,"Quitar","tiny-btn",()=>{record.stops.splice(i,1);renderStops();renderRouteSummary();refreshBookingSteps();});
     const mount=document.createElement("div");row.appendChild(mount);
     stopPickers[i]=picker("stop",mount,i);
   }
@@ -1148,7 +1157,7 @@ function init(){
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
   destPicker=picker("destination",$("destination-picker"),0);
-  $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();refreshBookingSteps();});
+  $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();renderRouteSummary();refreshBookingSteps();});
   for(const key of ["pickup-date","pickup-time","passengers","person-name","person-phone","comments"]){
     $(key).addEventListener("input",refreshBookingSteps);
     $(key).addEventListener("change",refreshBookingSteps);
