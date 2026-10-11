@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=51">
+  <link rel="stylesheet" href="./styles.css?v=52">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -207,7 +207,11 @@
             </select>
           </label>
         </div>
-        <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-vibrate"> Avisarme con una vibración cuando llegue un presupuesto, mientras tenga Traslados abierto</label>
+        <div class="trips-feedback-preferences" role="group" aria-label="Avisos cuando Traslados está abierto">
+          <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-vibrate"> Vibración para novedades</label>
+          <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-sound"> Sonido suave para novedades</label>
+        </div>
+        <p class="trips-push-disclaimer">Los avisos de esta versión funcionan con Traslados abierto. Las notificaciones con la app cerrada requieren activar el servicio push del dispositivo.</p>
         <p id="trips-status" class="trips-status" role="status" aria-live="polite"></p>
         <div id="trips-list" class="trips-list"></div>
       </div>
@@ -276,7 +280,7 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./trip-board.js?v=2" defer></script>
-  <script src="./app.js?v=51" defer></script>
+  <script src="./trip-board.js?v=3" defer></script>
+  <script src="./app.js?v=52" defer></script>
 </body>
 </html>
