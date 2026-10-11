@@ -27,7 +27,7 @@
 - Validar con pruebas móviles Samsung de 15+ min estacionado, otros 15+ min en movimiento y fondo, con el pasajero refrescando «Ahora». No declarar E2E físico hasta hacerlo.
 
 ## Validaciones
-- Tests PWA `public-driver-presence-smoke.cjs`, `presence-honest-v48-smoke.cjs` y regresiones; CI/Pages sujetos a comprobación de GitHub Actions.
+- PR [#42](https://github.com/marcelofgx-ctrl/traslados-android/pull/42) fusionada en main (`435fa829`), pruebas PWA [38113554107](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38113554107), revisión [38113554102](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38113554102), paridad Android DEBUG [38113554115](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38113554115) y Pages [38113622163](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38113622163): SUCCESS. Prueba en Samsung físico y causa raíz de GPS todavía pendientes.
 
 
 ## Incidencia adicional del envío de solicitud
