@@ -1,0 +1,54 @@
+name: Validate Cliente Premium v15 Android WebView parity
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cliente-premium/**'
+      - 'web-pasajero/**'
+      - '.github/workflows/validate-cliente-premium-v15.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  client-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify official URL, package, GPS privacy, and v15 native identifier
+        run: python3 cliente-premium/tests/check_premium_shell.py
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Install official brand asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s web-pasajero/icons/icon-512.png
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Compile Android DEBUG (same native screens and WebView)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cliente-premium
+          gradle :app:assembleDebug --no-daemon --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk

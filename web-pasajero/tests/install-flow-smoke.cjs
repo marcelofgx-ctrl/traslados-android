@@ -97,8 +97,13 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   assert.match(installable.elements["install-info"].textContent,/Confirmaste/);
   assert.equal(installable.apkClicks(),0,"Prefer PWA when Chrome offers installation");
   const nativeApk=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/14",apkAvailable:true});
+  const nativeV15=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/15",apkAvailable:true});
   await settled();
   assert.equal(nativeApk.elements["install-apk-option"].hidden,true,"Native Cliente must not offer re-installing itself");
+  assert.equal(nativeV15.elements["install-apk-option"].hidden,true,"Native v15 must display the same installed UX as v14");
+  assert.equal(nativeV15.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
+  await nativeV15.click();
+  assert.equal(nativeV15.view(),"viajes","Native v15 opens the same trip history");
   assert.equal(nativeApk.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
   await nativeApk.click();
   assert.equal(nativeApk.view(),"viajes","Native Cliente must open real trip history");
