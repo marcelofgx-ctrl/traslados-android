@@ -10,8 +10,8 @@ android {
         applicationId 'uy.com.traslados.cliente'
         minSdk 26
         targetSdk 35
-        versionCode 202
-        versionName '14.0-Premium'
+        versionCode 203
+        versionName '15.0-Premium'
         buildConfigField 'String', 'OFFICIAL_WEB_URL', '"https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/"'
     }
 
