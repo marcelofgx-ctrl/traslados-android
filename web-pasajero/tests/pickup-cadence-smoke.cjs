@@ -18,6 +18,6 @@ assert.equal(p.arrivalLabel(5),"Hasta 5 min");
 assert.equal(p.arrivalLabel(10),"5–10 min");
 assert.equal(p.arrivalLabel(15),"10–15 min");
 assert.equal(p.arrivalLabel(null),"Por confirmar");
-assert(index.indexOf("pickup-cadence.js")<index.indexOf("app.js?v=40"));
-assert(sw.includes("pickup-cadence.js")&&sw.includes("traslados-cliente-pwa-v40"));
+assert(index.indexOf("pickup-cadence.js")<index.indexOf("app.js?v=41"));
+assert(sw.includes("pickup-cadence.js")&&sw.includes("traslados-cliente-pwa-v41"));
 console.log("PASS pickup cadence 25/45s, honest five-minute ranges and offline PWA v40");
