@@ -14,8 +14,9 @@
       const content=node.querySelector("[data-step-body]");
       const summary=node.querySelector("[data-step-summary]");
       const check=node.querySelector("[data-step-check]");
+      const extra=node.querySelector("[data-step-extra]");
       if(!toggle||!content||!summary||!check)throw new Error("Faltan controles accesibles del formulario");
-      elements.set(key,{node,toggle,content,summary,check});
+      elements.set(key,{node,toggle,content,summary,check,extra});
     }
     if(elements.size!==ORDER.length)throw new Error("Faltan pasos del formulario");
     const progressText=documentRoot.getElementById("booking-progress-text");
@@ -52,10 +53,11 @@
       current=current===key?null:key;
       paint();
     }
-    function summary(key,description,done=false){
+    function summary(key,description,done=false,extraText=""){
       const parts=elements.get(key);
       if(!parts)return;
       parts.summary.textContent=String(description||"");
+      if(parts.extra){parts.extra.textContent=String(extraText||"");parts.extra.hidden=!extraText;}
       if(done)completed.add(key);else completed.delete(key);
       paint();
     }
