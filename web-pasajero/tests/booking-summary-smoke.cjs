@@ -17,7 +17,7 @@ assert(begin>=0&&end>begin,"Route function not found");
 assert(html.includes('id="route-overview"'),"Missing view target");
 assert(html.includes('id="pickup-presence-whatsapp"'),"Missing urgent consultation");
 assert(etaSource.includes('/functions/v1/pickup-eta')&&js.includes("window.TrasladosETA.pickup"),"Missing authenticated ETA integration");
-assert(js.includes('sessionToken:session.token'),"The customer session must be validated server-side");
+assert(js.includes('sessionToken:signedIn?session.token:null')&&etaSource.includes('sessionToken'),"The customer session must be validated server-side");
 assert(js.includes('Recogida sujeta a confirmación.')&&js.includes('Distancia y tiempo aproximados.'),"ETA must be shown as approximate and pending confirmation");
 assert(html.includes('id="pickup-presence-status"'),"Missing live status region");
 assert(css.includes(".route-summary-heading"),"Missing premium compact heading");
