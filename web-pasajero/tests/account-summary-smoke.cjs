@@ -14,7 +14,7 @@ assert(html.includes('id="urgent-actions"')&&html.includes('id="urgent-send"'));
 assert(!html.includes('id="urgent-whatsapp"')&&html.includes("ENVIAR SOLICITUD"));
 assert(html.includes("REVISAR Y CONFIRMAR"),"Programmed booking retains review");
 assert(css.includes(".passenger-account-summary")&&css.includes(".urgent-actions"));
-assert(html.includes("app.js?v=52")&&html.includes("styles.css?v=52")&&sw.includes("traslados-cliente-pwa-v52"));
+assert(html.includes("app.js?v=53")&&html.includes("styles.css?v=53")&&sw.includes("traslados-cliente-pwa-v53"));
 const start=js.indexOf("function authReady(){"),end=js.indexOf("\nfunction renderAccount()",start);
 assert(start>=0&&end>start);
 const nodes=Object.fromEntries([
