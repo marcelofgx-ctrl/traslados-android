@@ -30,6 +30,7 @@ jobs:
           node --check web-pasajero/booking-contracts.js
           node --check web-pasajero/booking-steps.js
           node --check web-pasajero/pickup-cadence.js
+          node --check web-pasajero/trip-board.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
@@ -44,6 +45,7 @@ jobs:
           node web-pasajero/tests/presence-honest-v48-smoke.cjs
           node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
           node web-pasajero/tests/urgent-request-v49-smoke.cjs
+          node web-pasajero/tests/trip-board-v50-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
@@ -79,6 +81,7 @@ jobs:
           assert 'booking-contracts.js' in html and 'booking-contracts.js' in sw
           assert 'booking-steps.js' in html and 'booking-steps.js' in sw
           assert 'pickup-cadence.js' in html and 'pickup-cadence.js' in sw
+          assert 'trip-board.js' in html and 'trip-board.js' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
           assert 'gen_random_bytes' not in html
