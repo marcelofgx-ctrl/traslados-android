@@ -13,7 +13,7 @@ const env={window:{}};
 vm.runInNewContext(moduleSrc,env,{filename:"booking-contracts.js"});
 const api=env.window.TrasladosBookingContracts;
 assert(Object.isFrozen(api),"Los contratos no deben cambiar desde UI");
-assert(html.indexOf("booking-contracts.js")<html.indexOf('app.js?v=36'),"Load contracts before app");
+assert(html.indexOf("booking-contracts.js")<html.indexOf('./app.js?v='),"Load contracts before app");
 assert(sw.includes("booking-contracts.js"),"Offline assets include contract code");
 assert(appSrc.includes('window.TrasladosBookingContracts.checkAvailability(session.token,p)'));
 assert(appSrc.includes('window.TrasladosBookingContracts.registeredReservation(session.token,p)'));
