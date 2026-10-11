@@ -6,12 +6,13 @@ const {strict:assert}=require("node:assert");
 const path=require("node:path");
 const base=path.join(__dirname,"..");
 const js=readFileSync(path.join(base,"app.js"),"utf8");
+const etaSource=readFileSync(path.join(base,"eta-engine.js"),"utf8");
 const html=readFileSync(path.join(base,"index.html"),"utf8");
 const css=readFileSync(path.join(base,"styles.css"),"utf8");
 assert(html.includes('id="pickup-datetime-block"')&&html.includes('id="pickup-mode-caption"'));
 assert(html.includes('id="pickup-presence"')&&html.includes('id="urgent-whatsapp"'));
 assert(css.includes("#pickup-datetime-block[hidden]"));
-assert(js.includes('public_driver_availability_v1'),"No perder el enlace con Mapa");
+assert(etaSource.includes('public_driver_availability_v1')&&js.includes("window.TrasladosETA.availability"),"No perder el enlace con Mapa");
 
 const start=js.indexOf("function setWhen(kind){");
 const end=js.indexOf("\nfunction shiftView(",start);
