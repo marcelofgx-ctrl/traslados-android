@@ -43,7 +43,7 @@ assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
 assert(html.includes('src="./trip-board.js?v=3"'));
-assert(html.includes('app.js?v=52')&&html.includes('styles.css?v=52')&&sw.includes('traslados-cliente-pwa-v52'));
+assert(html.includes('app.js?v=53')&&html.includes('styles.css?v=53')&&sw.includes('traslados-cliente-pwa-v53'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
 assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
