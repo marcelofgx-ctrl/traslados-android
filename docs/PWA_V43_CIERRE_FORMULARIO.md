@@ -29,6 +29,6 @@ Revisión solicitada a partir de captura real del Samsung en PWA v42: la flecha 
 
 ## Verificaciones y pendientes
 - Smoke nuevos de copia de acciones, acordeón, selects, revisión obsoleta, identidad visual y preservación de funciones críticas: `web-pasajero/tests/booking-finish-premium-smoke.cjs`.
-- Ejecución esperada de `Verify and package passenger PWA` y `Verify passenger PWA review screen` en pull request. **No declarar PASS ni publicación hasta consultar las ejecuciones reales de Actions/Pages.**
+- PR #36 integrada en `main` mediante `8e10f21`; pruebas SUCCESS: PWA `38110295478`, revisión `38110295436` y Android Cliente v15 DEBUG `38110295468`. GitHub Pages `38110356724` **SUCCESS**. Se mantiene la APK firmada v15 sin recompilar release.
 - Prueba visual y funcional física aún pendiente en Samsung: apertura/plegado, selector nativo, teclado y desplazamiento, datos completos e incompletos, modo urgente, vuelta a editar, pérdida de conectividad, envío real solamente con autorización para crear reserva.
 - No efectuar un envío de prueba en producción ni alterar datos reales sin autorización explícita.
