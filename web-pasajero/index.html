@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=27">
+  <link rel="stylesheet" href="./styles.css?v=28">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -76,6 +76,7 @@
         <p id="availability" class="hint">Horario sujeto a disponibilidad y confirmación del conductor.</p>
         <div id="pickup-presence" class="pickup-presence" hidden>
           <span id="pickup-presence-status" role="status" aria-live="polite">Consultando disponibilidad y tiempo de recogida…</span>
+          <button type="button" id="pickup-use-location" class="pickup-locate" hidden>⌖ Calcular llegada desde mi ubicación</button>
           <a id="pickup-presence-whatsapp" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">Consultar por WhatsApp ↗</a>
         </div>
         <label>Pasajeros
@@ -155,6 +156,6 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
-  <script src="./app.js?v=27" defer></script>
+  <script src="./app.js?v=28" defer></script>
 </body>
 </html>
