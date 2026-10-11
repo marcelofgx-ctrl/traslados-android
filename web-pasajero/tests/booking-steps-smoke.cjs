@@ -79,7 +79,7 @@ control.summary("route","Arenal Grande → Aeropuerto",true);
 assert.equal(steps.route.summary.textContent,"Arenal Grande → Aeropuerto");
 assert.equal(steps.route.check.hidden,false);
 assert.equal(bar.attrs["aria-valuenow"],"1");
-assert.equal(fill.style.width,(100/3)+"%");
+assert(Math.abs(parseFloat(fill.style.width)-(100/3))<0.00001,"Correctly show one third of progress");
 control.open("when",{scroll:true});
 assert.equal(control.active(),"when");
 assert.equal(steps.route.body.hidden,true);
