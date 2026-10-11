@@ -23,6 +23,11 @@
       return {label:status==="CANCELADA"?"Cancelada":"Rechazada",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
     }
     if(status==="EN_VIAJE")return {label:"En viaje",tone:"moving",icon:"navigation",rank:4,action:"Seguir viaje"};
+    // Fase informada explícitamente desde la APK Conductor y validada por PIN.
+    if(accepted.has(status)&&r?.pickup_phase==="EN_CAMINO")
+      return {label:"Conductor en camino",tone:"moving",icon:"car-front",rank:3,action:"Ver seguimiento"};
+    if(accepted.has(status)&&r?.pickup_phase==="EN_PUNTO")
+      return {label:"Conductor llegó",tone:"moving",icon:"map-pin-check",rank:3,action:"Ver detalle"};
     if(status==="EN_CAMINO")return {label:"Conductor en camino",tone:"moving",icon:"car-front",rank:3,action:"Ver llegada"};
     if(status==="EN_PUNTO")return {label:"Conductor llegó",tone:"moving",icon:"map-pin-check",rank:3,action:"Ver detalle"};
     if(accepted.has(status)||q==="ACEPTADO")return {label:"Confirmada",tone:"confirmed",icon:"check-circle-2",rank:2,action:"Ver detalle"};
@@ -77,7 +82,7 @@
     return out;
   }
   function signature(r){
-    return [r.status||"",r.quote_status||"",r.quote_sent_at||"",r.quote_final_total||"",
+    return [r.status||"",r.pickup_phase||"",r.pickup_phase_updated_at||"",r.quote_status||"",r.quote_sent_at||"",r.quote_final_total||"",
       r.updated_at||""].map(x=>String(x)).join("|");
   }
   function notifications(previous,items){
@@ -90,14 +95,14 @@
       const m=metadata(r);
       // A fresh quote merits a foreground alert; no push or GPS inference.
       if(m.tone==="attention"&&p.quoteSent!==r.quote_sent_at)changed.push({kind:"quote",row:r});
-      else if(["confirmed","moving","complete"].includes(m.tone)&&p.status!==r.status)
+      else if(["confirmed","moving","complete"].includes(m.tone)&&(p.status!==r.status||p.phase!==r.pickup_phase))
         changed.push({kind:"state",row:r});
     }
     return changed;
   }
   function snapshot(rows){
     return new Map((rows||[]).filter(r=>r.id||r.code).map(r=>[String(r.id||r.code),{
-      status:r.status,quoteSent:r.quote_sent_at,signature:signature(r)
+      status:r.status,phase:r.pickup_phase,quoteSent:r.quote_sent_at,signature:signature(r)
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
