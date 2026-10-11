@@ -29,12 +29,14 @@ jobs:
           node --check web-pasajero/eta-engine.js
           node --check web-pasajero/booking-contracts.js
           node --check web-pasajero/booking-steps.js
+          node --check web-pasajero/pickup-cadence.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
           node web-pasajero/tests/booking-steps-smoke.cjs
+          node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
@@ -68,6 +70,7 @@ jobs:
           assert 'eta-engine.js' in html and 'eta-engine.js' in sw
           assert 'booking-contracts.js' in html and 'booking-contracts.js' in sw
           assert 'booking-steps.js' in html and 'booking-steps.js' in sw
+          assert 'pickup-cadence.js' in html and 'pickup-cadence.js' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
           assert 'gen_random_bytes' not in html
