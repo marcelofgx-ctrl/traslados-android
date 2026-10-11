@@ -13,7 +13,9 @@ assert(fragment.indexOf('const driver=await publicDriverAvailability')<fragment.
   "Public status must be checked BEFORE customer login");
 assert(fragment.includes('estimateType==="coarse"'),"Anonymous ETA must be labeled coarse");
 assert(fragment.includes('checkedAt'),"Availability message must identify last server verification");
-assert(js.includes('},20000);'),"Refresh driver availability every 20 seconds while visible");
+assert(js.includes('},15000);'),"Refresh driver availability every 15 seconds while visible");
+assert(fragment.includes('driver.motionHint==="moving"?30000:60000'),"Adapt ETA to movement reported by Mapa");
+assert(!fragment.includes('driver.speed'),"Never expose a driver's raw speed");
 assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
   "No raw driver coordinates may be used by the passenger");
 assert(fragment.includes('sessionToken:session.token'),"Private ETA still requires a real customer session");
@@ -31,7 +33,7 @@ const els={
   "pickup-estimate-note":{textContent:"",hidden:true},
   "pickup-presence-meta":{textContent:""}
 };
-let published=true,limitedEta=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
+let published=true,moving=false,limitedEta=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
 const ctx={
   $:id=>els[id],API:"https://example.invalid",KEY:"publishable-test-key",
   session:null,record:{origin:{lat:-34.83,lng:-56.02,text:"Origen verificado"},
@@ -43,7 +45,8 @@ const ctx={
     if(url.includes("public_driver_availability_v1")){
       publicCalls++;
       return{ok:true,json:async()=>({available:published,
-        status:published?"available_for_requests":"not_available",checkedAt:new Date().toISOString(),confirmationRequired:true})};
+        status:published?"available_for_requests":"not_available",checkedAt:new Date().toISOString(),
+        motionHint:moving?"moving":"stationary",confirmationRequired:true})};
     }
     if(url.includes("pickup-eta")){
       const payload=JSON.parse(opts.body);
@@ -84,17 +87,32 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(guestEtaCalls,1,"Same origin and timing tabs must share a cached ETA");
   assert.match(els["pickup-presence-status"].textContent,/Estimación obtenida/);
   assert.equal(els["pickup-presence-metrics"].hidden,false);
+  // Detenido: antes de 60 segundos, no se solicita otra ruta.
+  runInContext("lastPickupEtaAt=Date.now()-31000;",ctx);
+  await ctx.refreshPickupPresence(true);await settled();
+  assert.equal(guestEtaCalls,1,"Stopped vehicle must wait 60 seconds for next route");
+  // Al recibir movimiento reciente, el período baja a 30 segundos.
+  moving=true;
+  await ctx.refreshPickupPresence(true);await settled();
+  assert.equal(guestEtaCalls,2,"Moving vehicle can update after 30 seconds");
+  assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
+  // La siguiente actualización en menos de 30 segundos reutiliza la ruta.
+  await ctx.refreshPickupPresence(true);await settled();
+  assert.equal(guestEtaCalls,2,"Moving ETA must not recalculate on every presence poll");
   // Simulamos una cuota agotada con una estimación anterior aún utilizable.
   limitedEta=true;
   runInContext("lastPickupEtaAt=Date.now()-101000;lastVerifiedEtaAt=Date.now()-65000;",ctx);
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(guestEtaCalls,2);
+  assert.equal(guestEtaCalls,3);
   assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
   assert.match(els["pickup-presence-status"].textContent,/Estamos actualizando tu tiempo de llegada/);
   assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
   assert(!/servidor|límite|rastreo|cuota/i.test(els["pickup-presence-status"].textContent));
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(guestEtaCalls,2,"Do not hammer pickup ETA again during local cooldown");
+  assert.equal(guestEtaCalls,3,"Do not hammer pickup ETA again during local cooldown");
+  runInContext("lastPickupEtaAt=Date.now()-101000;",ctx);
+  await ctx.refreshPickupPresence(true);await settled();
+  assert.equal(guestEtaCalls,3,"Server rate limit triggers 90-second conservative backoff");
 
   published=false;
   await ctx.refreshPickupPresence(true);await settled();
@@ -103,14 +121,14 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.match(els["pickup-presence-status"].textContent,/Disponibilidad verificada hace/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
   assert.equal(els["pickup-presence-metrics"].hidden,true,"No ETA when driver becomes busy");
-  assert.equal(guestEtaCalls,2);
+  assert.equal(guestEtaCalls,3);
   assert.equal(customerEtaCalls,0);
 
   published=true;
   ctx.session={token:"signed-in-customer-session-example"};
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(customerEtaCalls,1,"Signed-in customer uses private ETA");
-  assert.equal(guestEtaCalls,2,"Guest public request never borrows a customer session");
+  assert.equal(guestEtaCalls,3,"Guest public request never borrows a customer session");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/10 min/);
 
