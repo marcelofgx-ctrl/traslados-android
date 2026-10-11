@@ -1101,6 +1101,8 @@ function tripTimeline(parent,r){
   event("Solicitud registrada",r.created_at);
   event("Presupuesto enviado",r.quote_sent_at);
   event("Presupuesto aceptado",r.quote_accepted_at);
+  if(r.pickup_phase==="EN_CAMINO")event("Conductor en camino",r.pickup_phase_updated_at);
+  if(r.pickup_phase==="EN_PUNTO")event("Conductor llegó",r.pickup_phase_updated_at);
   if(r.confirmed_at&&r.confirmed_at!==r.quote_accepted_at)event("Traslado confirmado",r.confirmed_at);
   // No atribuir un horario a EN_VIAJE o FINALIZADA si la API no lo proporciona.
   if(["EN_VIAJE","FINALIZADA","CANCELADA","RECHAZADA"].includes(r.status))
@@ -1142,7 +1144,7 @@ function reservationView(r,guestToken){
   const guidance=meta.tone==="attention"?"El conductor te envió un presupuesto. Revisalo y respondé para continuar.":
     meta.tone==="pending"?"Solicitud recibida. Estamos esperando la respuesta del conductor.":
     meta.tone==="confirmed"?"Traslado aceptado. Revisá todos los detalles de tu viaje.":
-    meta.tone==="moving"?"El seguimiento se actualiza cuando el conductor registra un cambio de estado.":
+    meta.tone==="moving"?"El conductor registró este estado. El tiempo de llegada puede variar y no equivale a una posición GPS pública.":
     meta.tone==="complete"?"El traslado figura como finalizado.":meta.label;
   text(inner,"p",guidance,"trip-detail-note");
   text(inner,"p","PRESUPUESTO","trip-detail-heading trip-detail-section");
@@ -1230,11 +1232,11 @@ async function loadTrips({background=false}={}){
   try{
     let rows=[];
     if(authReady()){
-      const result=await rpc("customer_list_reservations_v12",{p_session_token:session.token});
+      const result=await rpc("customer_list_reservations_v13",{p_session_token:session.token});
       rows=Array.isArray(result)?result:[];
     }else{
       const guests=jsonStorage(GUEST_KEY,[]);
-      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token",{p_token:g.token})));
+      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v2",{p_token:g.token})));
       result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
     }
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];

@@ -41,7 +41,7 @@ public final class Api {
 
     public static JSONArray listActive(String pin) throws Exception {
         JSONObject b=new JSONObject(); b.put("p_pin",pin);
-        String raw=postRpc("driver_list_reservations_v2",b);
+        String raw=postRpc("driver_list_reservations_v3",b);
         return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
     }
 
@@ -54,6 +54,12 @@ public final class Api {
     public static JSONObject setStatus(String pin,String id,String status) throws Exception {
         JSONObject b=new JSONObject(); b.put("p_pin",pin); b.put("p_reservation_id",id); b.put("p_status",status);
         return new JSONObject(postRpc("driver_set_status_v2",b));
+    }
+
+    public static JSONObject setPickupPhase(String pin,String id,String phase) throws Exception {
+        JSONObject b=new JSONObject();
+        b.put("p_pin",pin);b.put("p_reservation_id",id);b.put("p_phase",phase);
+        return new JSONObject(postRpc("driver_set_pickup_phase_v1",b));
     }
 
     public static JSONObject sendQuote(String pin,String id,double km,int duration,double rate,double minimum,double tolls,double waiting,double pickup,double other,double reference,double total,String includes) throws Exception {

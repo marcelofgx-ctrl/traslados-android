@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.traslados.conductor'
         minSdk 26
         targetSdk 35
-        versionCode 124
-        versionName '11.5-R2'
+        versionCode 125
+        versionName '11.5-R3'
     }
 
     signingConfigs {
