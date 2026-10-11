@@ -65,6 +65,7 @@ const ctx={
   selectedRoadPoints:()=>points,
   routeKeyOf:p=>p.map(x=>x.lng.toFixed(6)+","+x.lat.toFixed(6)).join(";"),
   refreshPickupPresence:()=>{},
+  refreshBookingSteps:()=>{},
   mapsLinkFromBooking:()=>"https://www.google.com/maps/dir/?api=1",
   addRoadDiagram:()=>{},
   roadEngine,

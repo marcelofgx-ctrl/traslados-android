@@ -9,6 +9,55 @@ const DEPTS=["Montevideo","Canelones","Artigas","Cerro Largo","Colonia","Durazno
 const states={PENDIENTE:"Pendiente",PRESUPUESTO_ENVIADO:"Presupuesto enviado",ACEPTADA:"Aceptada",ACEPTADA_CLIENTE:"Aceptada por pasajero",CONFIRMADA:"Confirmada",EN_VIAJE:"En viaje",FINALIZADA:"Finalizada",CANCELADA:"Cancelada",RECHAZADA:"Rechazada",RECHAZADA_CLIENTE:"Rechazada por pasajero"};
 const $=(id)=>document.getElementById(id);
 const record={origin:null,destination:null,stops:[]};
+let bookingSteps=null,routeStepAutoAdvanced=false;
+// Las cabeceras del formulario son presentación, nunca estado de reserva.
+function stepSummaryName(place){
+  const label=String(place?.text||"").trim().split(",")[0];
+  return label.length>37?label.slice(0,34)+"…":label;
+}
+function refreshBookingSteps(){
+  if(!bookingSteps)return;
+  const routeComplete=Boolean(record.origin&&record.destination&&record.stops.every(Boolean));
+  let routeText=routeComplete?stepSummaryName(record.origin)+" → "+stepSummaryName(record.destination)
+    :record.origin?"Falta elegir destino":"Elegí origen y destino";
+  let routeMetrics="";
+  if(routeComplete&&latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
+      window.TrasladosRoutes.verified(latestRoad.data)){
+    const d=latestRoad.data;
+    routeMetrics=d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+d.durationMin+" min";
+    if(Number.isFinite(d.referenceFareUyu)&&d.referenceFareUyu>0)
+      routeMetrics+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0});
+  }
+  bookingSteps.summary("route",routeText,routeComplete,routeMetrics);
+  const p=Number($("passengers")?.value||1);
+  const passengerText=p===1?"1 pasajero":p+" pasajeros";
+  const d=$("pickup-date")?.value||"",t=$("pickup-time")?.value||"";
+  const scheduled=selectedPickupMode==="schedule";
+  let label=scheduled?(d&&t?d.slice(8,10)+"/"+d.slice(5,7)+" · "+t+" · "+passengerText:"Elegí fecha y hora"):
+    (selectedPickupMode==="10"?"En 10 min":"Ahora")+" · "+passengerText;
+  const validSchedule=Boolean(d&&t&&Date.parse(d+"T"+t+":00-03:00")>=Date.now()-20000);
+  bookingSteps.summary("when",label,p>=1&&p<=8&&(!scheduled||validSchedule));
+  const name=authReady()?session.customer?.full_name:$("person-name")?.value;
+  const phone=authReady()?session.customer?.phone:$("person-phone")?.value;
+  const ready=Boolean(name?.trim().length>=2&&String(phone||"").replace(/\D/g,"").length>=8);
+  bookingSteps.summary("passenger",ready?"Datos de contacto completos":authReady()?"Completá tus datos de cuenta":"Nombre y teléfono",ready);
+}
+function suggestBookingStep(error){
+  if(!bookingSteps)return;
+  const message=String(error?.message||"");
+  let step="passenger",target=authReady()?null:$("person-name");
+  if(/origen|destino|direcci|paradas|punto/i.test(message)){
+    step="route";target=record.origin?(record.destination?null:destPicker?.input):originPicker?.input;
+  }else if(/fecha|hora|horario|pasado/i.test(message)){
+    step="when";target=$("pickup-date");
+  }else if(!authReady()){
+    const name=$("person-name"),phone=$("person-phone");
+    target=name?.value?.trim().length>=2?phone:name;
+  }
+  bookingSteps.open(step,{scroll:true});
+  // Esperar al cambio de visibilidad antes de enfocar un campo plegado.
+  if(target)setTimeout(()=>target.focus?.({preventScroll:true}),60);
+}
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
 
@@ -255,12 +304,12 @@ function setWhen(kind){
       $("pickup-date").value=later.day;$("pickup-time").value=later.time;
     }
     $("availability").textContent="Reserva programada: los horarios disponibles se comprueban antes de enviar.";
-    refreshPickupPresence();return;
+    refreshBookingSteps();refreshPickupPresence();return;
   }
   const when=currentUY(kind==="10"?10:2);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
   $("availability").textContent="Consulta directa: no se envía una reserva automática. El conductor debe confirmar.";
-  refreshPickupPresence();
+  refreshBookingSteps();refreshPickupPresence();
 }
 function shiftView(name){
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
@@ -314,22 +363,26 @@ function picker(name,mount,position){
   for(const opt of ["Montevideo","Canelones"]){
     const btn=button(dep,opt,"",()=>chooseDept(opt));depButtons.push(btn);
   }
-  const select=document.createElement("select");select.setAttribute("aria-label","Elegir cualquiera de los 19 departamentos de Uruguay");
-  for(const d of DEPTS){
+  const select=document.createElement("select");select.setAttribute("aria-label","Otros departamentos de Uruguay");
+  const placeholder=document.createElement("option");
+  placeholder.value="";placeholder.textContent="Otros departamentos";
+  select.appendChild(placeholder);
+  for(const d of DEPTS.filter(x=>x!=="Montevideo"&&x!=="Canelones")){
     const item=document.createElement("option");item.value=d;item.textContent=d;select.appendChild(item);
   }
   dep.appendChild(select);
   function highlight(){
     for(const btn of depButtons)btn.classList.toggle("selected",btn.textContent===dept);
-    select.value=DEPTS.includes(dept)?dept:"Montevideo";
+    select.value=(dept==="Montevideo"||dept==="Canelones")?"":dept;
   }
   highlight();
   const row=text(controls,"div","","loc-search");
   const input=document.createElement("input");input.type="search";
-  input.placeholder="Lugar, comercio, aeropuerto, calle o número…";
+  input.placeholder="Calle, número o lugar…";
   input.autocomplete="off";input.setAttribute("aria-label","Lugar o dirección de "+name);
   row.appendChild(input);
-  const search=button(row,"Buscar","tiny-btn",()=>void lookup()); 
+  const search=button(row,"Buscar","tiny-btn location-search-action",()=>void lookup());
+  search.setAttribute("aria-label","Buscar dirección o lugar"); 
   const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn",()=>void useCurrent()):null;
   const gpsHelp=name==="origin"?text(controls,"div","","gps-permission-help"):null;
   if(gpsHelp){gpsHelp.hidden=true;gpsHelp.setAttribute("role","alert");}
@@ -357,6 +410,12 @@ function picker(name,mount,position){
     if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
     else record.stops[position]=selected;
     clear(results);repaint();renderRouteSummary();
+    if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
+       !routeStepAutoAdvanced&&bookingSteps?.active()==="route"){
+      routeStepAutoAdvanced=true;
+      bookingSteps.open("when",{scroll:true});
+      refreshBookingSteps();
+    }
   }
   function chooseDept(d){
     dept=d;depts[key]=d;highlight();
@@ -578,9 +637,9 @@ function renderRouteSummary(){
   clear(host);host.hidden=points.length<2;
   if(points.length<2){
     activeRouteKey="";latestRoad=null;routeSequence++;
-    refreshPickupPresence();return;
+    refreshBookingSteps();refreshPickupPresence();return;
   }
-  const key=routeKeyOf(points);activeRouteKey=key;refreshPickupPresence();
+  const key=routeKeyOf(points);activeRouteKey=key;refreshBookingSteps();refreshPickupPresence();
 
   // A and B are already displayed directly above, in their editable cards.
   // Do not repeat addresses inside a second giant card.
@@ -642,6 +701,7 @@ function renderRouteSummary(){
       detailCaption.textContent="El servicio principal de rutas necesita estar habilitado. La caché interna solo tiene recorridos ya verificados. No usamos distancias en línea recta para estimar precios.";
       clear(map);
     }
+    refreshBookingSteps();
   };
 
   const hit=roadEngine.peek(key);
@@ -671,7 +731,7 @@ function syncAuthUI(){
     $("person-name").value=session.customer.full_name||"";
     $("person-phone").value=session.customer.phone||"";
   }
-  renderAccount();renderStops();
+  renderAccount();renderStops();refreshBookingSteps();
 }
 function renderAccount(){
   const logged=authReady();
@@ -823,7 +883,7 @@ function showPreview(){
     }
     $("review-booking").hidden=true;$("submit-actions").hidden=false;
     target.scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(e){pendingReview=null;showError(e);}
+  }catch(e){pendingReview=null;suggestBookingStep(e);showError(e);}
 }
 function saveGuest(result){
   const old=jsonStorage(GUEST_KEY,[]).filter(x=>x.token!==result.public_token);
@@ -1073,6 +1133,7 @@ function installUI(){
 }
 function init(){
   session=jsonStorage(SESSION_KEY,null);
+  bookingSteps=window.TrasladosBookingSteps.mount(document);
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>shiftView(tab.dataset.view));
   document.querySelectorAll("[data-open-login]").forEach(x=>x.addEventListener("click",()=>shiftView("cuenta")));
   document.querySelectorAll("[data-when]").forEach(b=>b.addEventListener("click",()=>setWhen(b.dataset.when)));
@@ -1087,15 +1148,28 @@ function init(){
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
   destPicker=picker("destination",$("destination-picker"),0);
-  $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();});
+  $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();refreshBookingSteps();});
+  for(const key of ["pickup-date","pickup-time","passengers","person-name","person-phone","comments"]){
+    $(key).addEventListener("input",refreshBookingSteps);
+    $(key).addEventListener("change",refreshBookingSteps);
+  }
+  $("when-next").addEventListener("click",()=>{
+    if(selectedPickupMode!=="schedule")return;
+    const d=$("pickup-date").value,t=$("pickup-time").value;
+    if(!d||!t||Date.parse(d+"T"+t+":00-03:00")<Date.now()-20000){
+      tell("Elegí una fecha y hora futuras para continuar.");
+      bookingSteps.open("when");$("pickup-date").focus();return;
+    }
+    bookingSteps.open("passenger",{scroll:true});
+  });
   $("review-booking").addEventListener("click",showPreview);
-  $("edit-booking").addEventListener("click",()=>{pendingReview=null;$("booking-preview").hidden=true;$("review-booking").hidden=false;$("submit-actions").hidden=true;});
+  $("edit-booking").addEventListener("click",()=>{pendingReview=null;$("booking-preview").hidden=true;$("review-booking").hidden=false;$("submit-actions").hidden=true;bookingSteps.open("route",{scroll:true});});
   $("confirm-booking").addEventListener("click",()=>void submitBooking());
   $("refresh-trips").addEventListener("click",()=>void loadTrips());
   $("mode-login").addEventListener("click",()=>setAccountMode(false));
   $("mode-register").addEventListener("click",()=>setAccountMode(true));
   $("account-submit").addEventListener("click",()=>void accountSubmit());
   window.addEventListener("online",updateConnectivity);window.addEventListener("offline",updateConnectivity);
-  syncAuthUI();setAccountMode(false);updateConnectivity();installUI();
+  syncAuthUI();setAccountMode(false);updateConnectivity();refreshBookingSteps();installUI();
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
