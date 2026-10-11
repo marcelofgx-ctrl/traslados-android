@@ -559,40 +559,13 @@ function picker(name,mount,position){
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
   return {state:()=>selected,chooseDept,input,persist,box,useCurrent};
 }
-// Shared verified route service used by our customer interfaces.
-// Credentials remain exclusively server-side.
-const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
-const roadCache=new Map();
+// El motor vial no depende de la UI ni del estado de reservas.
+const roadEngine=window.TrasladosRoutes;
 let latestRoad=null,activeRouteKey="",routeSequence=0;
-
-/* The existing Supabase availability engine has a small ROAD-only cache.
- * Only retrieve already verified routes through a restricted, read-only RPC.
- * Never use OSRM's public DEMO for new commercial requests or bill estimates
- * from its ESTIMATED/haversine fallback.
- */
-async function cachedRoadRoute(points){
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),3500);
-  try{
-    const response=await fetch(API+"/rest/v1/rpc/public_cached_route_preview_v1",{
-      method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json","Accept":"application/json"},
-      body:JSON.stringify({p_points:points.map(p=>({lat:p.lat,lng:p.lng}))}),
-      signal:controller.signal,cache:"no-store"
-    });
-    if(!response.ok)return null;
-    const data=await response.json();
-    return data?.available===true&&data.source==="supabase_route_cache"
-      &&Number.isFinite(data.distanceKm)&&data.distanceKm>0
-      &&Number.isFinite(data.durationMin)&&data.durationMin>=0
-      ? data:null;
-  }catch{return null;}finally{clearTimeout(timeout);}
-}
 function selectedRoadPoints(){
   return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
 }
-function routeKeyOf(points){
-  return points.map(p=>p.lng.toFixed(6)+","+p.lat.toFixed(6)).join(";");
-}
+function routeKeyOf(points){return roadEngine.key(points);}
 function addRoadDiagram(parent,geometry){
   if(!Array.isArray(geometry)||geometry.length<2)return;
   const valid=geometry.filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite));
@@ -672,10 +645,7 @@ function renderRouteSummary(){
   const seq=++routeSequence;
   const finish=data=>{
     if(seq!==routeSequence||key!==activeRouteKey)return;
-    const valid=data?.available===true
-      &&Number.isFinite(data.distanceKm)&&data.distanceKm>0
-      &&Number.isFinite(data.durationMin)&&data.durationMin>=0
-      &&["openrouteservice","supabase_route_cache"].includes(data.source);
+    const valid=roadEngine.verified(data);
     if(valid){
       latestRoad={key,data};
       distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
@@ -702,28 +672,11 @@ function renderRouteSummary(){
     }
   };
 
-  const hit=roadCache.get(key);
-  if(hit&&hit.expires>Date.now()){finish(hit.data);return;}
-  if(hit)roadCache.delete(key);
+  const hit=roadEngine.peek(key);
+  if(hit){finish(hit);return;}
   latestRoad=null;
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),7500);
-  fetch(SHARED_ROUTER+"?points="+encodeURIComponent(key),{
-    headers:{Accept:"application/json"},signal:controller.signal,cache:"no-store",
-  }).then(async r=>{
-    if(!r.ok)return null;
-    const result=await r.json();
-    return result?.available?result:null;
-  }).catch(()=>null).then(async result=>{
-    if(!result)result=await cachedRoadRoute(points);
-    if(result){
-      // Keep published fare changes bounded: refreshing the form revalidates
-      // the driver's internal rate after at most five minutes.
-      roadCache.set(key,{data:result,expires:Date.now()+300000});
-      if(roadCache.size>65)roadCache.clear();
-    }
-    finish(result);
-  }).catch(()=>finish(null)).finally(()=>clearTimeout(timer));
+  roadEngine.estimate(points,{api:API,publishableKey:KEY})
+    .then(finish).catch(()=>finish(null));
 }
 
 let originPicker,destPicker,stopPickers=[];
