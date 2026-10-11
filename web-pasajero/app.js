@@ -19,7 +19,8 @@ function refreshBookingSteps(){
   if(!bookingSteps)return;
   const routeComplete=Boolean(record.origin&&record.destination&&record.stops.every(Boolean));
   let routeText=routeComplete?stepSummaryName(record.origin)+" → "+stepSummaryName(record.destination)
-    :record.origin?"Falta elegir destino":"Elegí origen y destino";
+    :!record.origin?"Elegí origen y destino"
+    :!record.destination?"Falta elegir destino":"Falta completar una parada";
   let routeMetrics="";
   if(routeComplete&&latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
       window.TrasladosRoutes.verified(latestRoad.data)){
