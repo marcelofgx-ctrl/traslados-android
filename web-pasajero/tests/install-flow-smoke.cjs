@@ -14,7 +14,8 @@ assert(start>=0&&end>start,"Function installUI must have explicit browser fallba
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
 const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
-assert(Number.isInteger(appVersion)&&appVersion>=28&&html.includes("./styles.css?v=28"));
+const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
+assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
 assert(sw.includes("traslados-cliente-pwa-v"+appVersion),"Service Worker and UI release must match");
 assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v14.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
