@@ -1,5 +1,14 @@
 # Traslados — arquitectura modular, escalabilidad y compilaciones eficientes
 
+## Cierre UI plegable — PWA v38 y corrección v39 (11/10/2026)
+
+- [PR #31](https://github.com/marcelofgx-ctrl/traslados-android/pull/31): `booking-steps.js` controla tres secciones expandibles de forma accesible, resúmenes de ruta, fecha y pasajero y barra de progreso sin borrar datos al plegar. Ajustes móviles/Montevideo-Canelones/resto del país; CSS premium v38 sin rehacer estética. Ambas suites PWA PASS; [Pages main v38 SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38107584523).
+- [PR #32](https://github.com/marcelofgx-ctrl/traslados-android/pull/32): PWA **v39**. Cuando hay una parada sin coordenadas verificadas, la antigua ruta deja de mostrarse y se invalida su respuesta; al quitar paradas, se recalcula. El encabezado indica claramente qué falta. En urgencias se oculta el botón sin acción «Continuar con mis datos»; `Ahora` / `En 10 min` siguen siendo consulta, nunca una reserva automática. Dos CI de PR PASS. **La paleta, texturas, CSS v38, backend y las APK existentes se conservaron.**
+- Verificación pendiente: prueba de interacción real desde Samsung y WebView Cliente, cambios entre modos, dirección exacta, paradas autenticadas, disponibilidad/ETA en vivo y confirmación conductor/pasajero; verificar Pages final del commit v39 antes de confirmar publicación. No confundir pruebas unitarias con E2E físico.
+
+---
+
+
 
 ## Fase completada — transporte RPC web reutilizable (PWA v37)
 
