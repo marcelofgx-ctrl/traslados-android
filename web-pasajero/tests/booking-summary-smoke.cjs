@@ -15,7 +15,7 @@ const begin=js.indexOf("function renderRouteSummary(){");
 const end=js.indexOf("\nlet originPicker,destPicker",begin);
 assert(begin>=0&&end>begin,"Route function not found");
 assert(html.includes('id="route-overview"'),"Missing view target");
-assert(html.includes('id="pickup-presence-whatsapp"'),"Missing urgent consultation");
+assert(html.includes('id="urgent-send"'),"Missing immediate backend request");
 assert(etaSource.includes('/functions/v1/pickup-eta')&&js.includes("window.TrasladosETA.pickup"),"Missing authenticated ETA integration");
 assert(js.includes('sessionToken:signedIn?session.token:null')&&etaSource.includes('sessionToken'),"The customer session must be validated server-side");
 assert(js.includes('Recogida sujeta a confirmación.')&&js.includes('Distancia y tiempo aproximados.'),"ETA must be shown as approximate and pending confirmation");
@@ -24,10 +24,10 @@ assert(css.includes(".route-summary-heading"),"Missing premium compact heading")
 assert(css.includes(".route-summary-indicator"),"Missing status styling");
 assert(!js.slice(begin,end).includes("route-compact-path"),"Do not repeat A/B already shown in selectors");
 assert(css.includes(".route-extra:not([open])"),"Route details must remain folded");
-assert(html.includes('id="urgent-whatsapp"'),"Urgent pickup CTA missing");
+assert(!html.includes('id="urgent-whatsapp"'),"Remove WhatsApp CTA from reservation form");
 assert(js.includes('selectedPickupMode!=="schedule"'),"Immediate booking must not use normal reservation RPC");
 assert(js.includes('La recogida urgente')||js.includes('Las recogidas urgentes'),"Urgent bookings need explicit human confirmation");
-assert(js.includes("const contact=\"https://wa.me/59897228175?text=\""),"WhatsApp must include origin and destination");
+assert(js.includes('rpc("customer_request_pickup_v1"'),"Urgent pickup must reach backend");
 
 
 class E{
