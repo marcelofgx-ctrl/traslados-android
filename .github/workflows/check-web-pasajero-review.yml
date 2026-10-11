@@ -51,9 +51,8 @@ jobs:
           assert 'preview-extra' in app and '.preview-place-name' in css
           assert 'ENVIAR SOLICITUD AL CONDUCTOR' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
-          import re
-          version=re.search(r'./app\\.js\\?v=(\\d+)',html)
-          assert version and ('traslados-cliente-pwa-v'+version.group(1)) in sw
+          version=html.split('./app.js?v=')[1].split('"')[0]
+          assert version.isdigit() and ('traslados-cliente-pwa-v'+version) in sw
           assert 'address-engine.js' in html and 'address-engine.js' in sw
           assert 'caches.open(CACHE).then(c=>c.put(r,copy))' in sw
           assert not any(s in app for s in ('sb_secret_','service_role'))
