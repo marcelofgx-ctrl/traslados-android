@@ -441,11 +441,22 @@ jobs:
           set -euo pipefail
           mkdir -p web-pasajero/downloads
           cp artifacts/Mapa_Trayectos_v0.1_R24_9_RELEASE.apk \
-            web-pasajero/downloads/mapa-trayectos-r24.8.apk
-          (cd web-pasajero/downloads && sha256sum mapa-trayectos-r24.8.apk > MAPA-R24.9-SHA256SUMS.txt)
+            web-pasajero/downloads/mapa-trayectos-r24.9.apk
+          (cd web-pasajero/downloads && sha256sum mapa-trayectos-r24.9.apk > MAPA-R24.9-SHA256SUMS.txt)
+          # R24.9 was once accidentally published over the R24.8 download name.
+          # Restore the immutable original R24.8 from a verified pre-R24.9 commit.
+          if ! (cd web-pasajero/downloads && sha256sum -c MAPA-R24.8-SHA256SUMS.txt); then
+            curl --fail --location --silent --show-error --retry 3 \
+              "https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/c198052b1cf6f184dce717a5a13d3558d1432955/web-pasajero/downloads/mapa-trayectos-r24.8.apk" \
+              -o web-pasajero/downloads/mapa-trayectos-r24.8.apk
+          fi
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R24.8-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R24.9-SHA256SUMS.txt)
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
           git add web-pasajero/downloads/mapa-trayectos-r24.8.apk \
+                  web-pasajero/downloads/mapa-trayectos-r24.9.apk \
+                  web-pasajero/downloads/MAPA-R24.8-SHA256SUMS.txt \
                   web-pasajero/downloads/MAPA-R24.9-SHA256SUMS.txt
           if git diff --cached --quiet; then
             echo 'APK Mapa R24.9 ya publicada sin alterar binario'
