@@ -197,7 +197,7 @@ async function refreshPickupPresence(force=false){
   // red, consentimiento u horarios. Evitar un falso diagnóstico al pasajero.
   const checkedLabel="Estado consultado"+
     (elapsedCheck===null?" recientemente":" hace "+elapsedCheck+" s")+
-    " · Actualización automática cada 15 s.";
+    " · Actualización automática cada 15 s. · Recogida sujeta a confirmación.";
   if(!driver.available){
     forgetPickupEta();
     paintPickupCard({presence:"unknown",title:"Recogida no confirmada por ahora",
