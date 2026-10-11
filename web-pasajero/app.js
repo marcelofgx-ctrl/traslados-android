@@ -23,7 +23,10 @@ function refreshBookingSteps(){
   if(routeComplete&&latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
       window.TrasladosRoutes.verified(latestRoad.data)){
     const d=latestRoad.data;
-    routeText+=" · "+d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+    routeText+=" · "+d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km"+
+      " · "+d.durationMin+" min";
+    if(Number.isFinite(d.referenceFareUyu)&&d.referenceFareUyu>0)
+      routeText+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0});
   }
   bookingSteps.summary("route",routeText,routeComplete);
   const p=Number($("passengers")?.value||1);
