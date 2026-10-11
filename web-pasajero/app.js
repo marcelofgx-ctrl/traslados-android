@@ -119,7 +119,7 @@ async function rpc(name,payload={}){
   guardConnection();
   return window.TrasladosRpc.call({api:API,publishableKey:KEY,name,payload});
 }
-function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;if(offline)tell("Sin conexión: no podés enviar reservas hasta reconectarte.");}
+function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;$("urgent-send").disabled=offline;if(offline)tell("Sin conexión: no podés enviar solicitudes hasta reconectarte.");}
 function currentUY(offsetMinutes=0){
   const dt=new Date(Date.now()+offsetMinutes*60000);
   const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"America/Montevideo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(dt).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
@@ -889,7 +889,7 @@ function previewLocation(parent,kind,address){
   text(contents,"strong",address,"preview-place-name");
 }
 function showPreview(){
-  if(selectedPickupMode!=="schedule"){tell("Para recogidas inmediatas, consultá por WhatsApp. No enviamos una reserva automática.");return;}
+  if(selectedPickupMode!=="schedule"){tell("Usá Enviar solicitud para pedir una recogida inmediata.");return;}
   clearBookingFeedback();
   try{
     pendingReview=bookingData();
@@ -1020,7 +1020,7 @@ async function submitUrgentPickup(){
 }
 
 async function submitBooking(){
-  if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
+  if(selectedPickupMode!=="schedule"){tell("Para ahora o en 10 minutos, tocá Enviar solicitud.");return;}
   if(busy||!pendingReview)return;
   clearBookingFeedback();
   // El resumen aprobado debe coincidir exactamente con los campos al enviar:
