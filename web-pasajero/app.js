@@ -100,23 +100,11 @@ async function publicDriverAvailability(force=false){
     return publicPresenceCache;
   if(publicPresencePending)return publicPresencePending;
   publicPresencePending=(async()=>{
-    const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),6000);
-    try{
-      const response=await fetch(API+"/rest/v1/rpc/public_driver_availability_v1",{
-        method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
-        headers:{"apikey":KEY,"Content-Type":"application/json"},
-        body:"{}"
-      });
-      if(!response.ok)return null;
-      const v=await response.json();
-      if(typeof v?.available!=="boolean"||!["available_for_requests","not_available"].includes(v.status))
-        return null;
-      publicPresenceCache={available:v.available,status:v.status,
-        checkedAt:v.checkedAt,
-        motionHint:v.motionHint==="moving"?"moving":"stationary"};
-      publicPresenceAt=Date.now();
-      return publicPresenceCache;
-    }catch{return null;}finally{clearTimeout(timeout);}
+    const v=await window.TrasladosETA.availability({api:API,publishableKey:KEY});
+    if(!v)return null;
+    publicPresenceCache=v;
+    publicPresenceAt=Date.now();
+    return publicPresenceCache;
   })();
   try{return await publicPresencePending;}
   finally{publicPresencePending=null;}
@@ -204,15 +192,10 @@ async function refreshPickupPresence(force=false){
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
   lastPickupEtaMessage="";lastPickupEtaIsEstimate=false;
   showWaiting("Calculando distancia y tiempo hasta tu origen…");
-  const ctrl=new AbortController(),abort=setTimeout(()=>ctrl.abort(),9000);
-  fetch(API+"/functions/v1/pickup-eta",{
-    method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,
-    headers:{"apikey":KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({
-      ...(signedIn?{sessionToken:session.token}:{}),
-      originLat:lat,originLng:lng
-    })
-  }).then(r=>r.json().catch(()=>({available:false,reason:"temporarily_unavailable"}))).then(data=>{
+  window.TrasladosETA.pickup({
+    api:API,publishableKey:KEY,originLat:lat,originLng:lng,
+    sessionToken:signedIn?session.token:null
+  }).then(data=>{
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&data.distanceKm>=0
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
@@ -253,7 +236,7 @@ async function refreshPickupPresence(force=false){
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     showWaiting("No pudimos actualizar el tiempo de llegada. Reintentaremos pronto.");
     lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
-  }).finally(()=>clearTimeout(abort));
+  });
 }
 
 function setWhen(kind){
