@@ -54,5 +54,14 @@
     if(!found)throw new Error("La dirección no tiene coordenadas verificables.");
     return {lat:Number(found.lat),lng:Number(found.lng)};
   }
-  root.TrasladosAddress=Object.freeze({score,find,resolve});
+  async function reverse(lat,lng){
+    if(!uy(Number(lat),Number(lng)))throw new Error("Punto fuera de Uruguay");
+    const response=await fetch(IDE+"/reverse?limit=1&latitud="+encodeURIComponent(lat)+
+      "&longitud="+encodeURIComponent(lng),{cache:"no-store"});
+    if(!response.ok)return null;
+    const rows=await response.json();
+    const first=Array.isArray(rows)?rows[0]:null;
+    return first?.address?{address:first.address,departamento:first.departamento}:null;
+  }
+  root.TrasladosAddress=Object.freeze({score,find,resolve,reverse});
 })(window);
