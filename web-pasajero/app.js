@@ -224,7 +224,7 @@ async function refreshPickupPresence(force=false){
     // Resultado REAL del backend: no enviar solicitud de ETA, que no puede
     // sustituir el bloqueo de agenda ni confirmar una recogida.
     paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
-      subtitle:"Por el momento no hay una recogida inmediata para ofrecer. Podés enviar tu solicitud y el conductor revisará si puede atenderte.",
+      subtitle:"Por el momento no hay una recogida inmediata para ofrecer. Podés enviar tu solicitud y el conductor revisará si puede atenderte. Volveremos a comprobar la disponibilidad automáticamente.",
       checked:checkedLabel,phase:"blocked"});
     return;
   }
