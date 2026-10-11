@@ -46,22 +46,25 @@ jobs:
           APP_VERSION="$(sed -nE 's@.*src="\\./app\\.js\\?v=([0-9]+)".*@\\1@p' /tmp/traslados.html | head -n 1)"
           test -n "$APP_VERSION"
           grep -q 'route-engine.js' /tmp/traslados.html
+          grep -q 'eta-engine.js' /tmp/traslados.html
           grep -q 'id="route-overview"' /tmp/traslados.html
           grep -q 'ENVIAR SOLICITUD AL CONDUCTOR' /tmp/traslados.html
           curl -fsSL --max-time 25 "$base/geo-search.js?v=3&ci=$GITHUB_RUN_ID" -o /tmp/geo.js
           curl -fsSL --max-time 25 "$base/app.js?v=$APP_VERSION&ci=$GITHUB_RUN_ID" -o /tmp/app.js
           curl -fsSL --max-time 25 "$base/route-engine.js?ci=$GITHUB_RUN_ID" -o /tmp/route-engine.js
+          curl -fsSL --max-time 25 "$base/eta-engine.js?ci=$GITHUB_RUN_ID" -o /tmp/eta-engine.js
           grep -q 'uy-airport-carrasco' /tmp/geo.js
           grep -q 'function renderRouteSummary()' /tmp/app.js
           grep -q 'route-estimate' /tmp/route-engine.js
           node --check /tmp/app.js
           node --check /tmp/route-engine.js
+          node --check /tmp/eta-engine.js
           grep -q 'referenceFareUyu' /tmp/app.js
           grep -q 'public_cached_route_preview_v1' /tmp/route-engine.js
           grep -q 'VALOR DE REFERENCIA' /tmp/app.js
           grep -q 'route-summary-heading' /tmp/app.js
-          grep -q 'functions/v1/pickup-eta' /tmp/app.js
-          grep -q 'public_driver_availability_v1' /tmp/app.js
+          grep -q 'functions/v1/pickup-eta' /tmp/eta-engine.js
+          grep -q 'public_driver_availability_v1' /tmp/eta-engine.js
           ! grep -q 'distance.textContent="Ver en Maps"' /tmp/app.js
           grep -q 'function showPreview()' /tmp/app.js
           grep -q 'function mapsLinkFromBooking(' /tmp/app.js
