@@ -79,6 +79,11 @@ jobs:
           grep -q 'driver_list_reservations_v3' "$D/Api.java"
           grep -q 'driver_set_pickup_phase_v1' "$D/Api.java"
           grep -q 'changePickupPhase' "$D/MainActivity.java"
+          grep -q 'driver_trip_chat_v1' "$D/Api.java"
+          grep -q 'driver_trip_chat_send_v1' "$D/Api.java"
+          grep -q 'driver_trip_chat_feed_v1' "$D/Api.java"
+          grep -q 'showReservationChat' "$D/MainActivity.java"
+          grep -q 'CHANNEL_CHAT' "$D/ReservationMonitorService.java"
           echo 'Código fuente Conductor 11.5-R4 comprobado (incluye corrección de teclado R24.3)'
 
       - name: Build Traslados Conductor DEBUG from repository source
