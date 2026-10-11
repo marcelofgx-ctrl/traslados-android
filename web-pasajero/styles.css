@@ -565,3 +565,221 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
   .passenger-account-status{font-size:9px}
   .urgent-actions .booking-main-cta{font-size:11px}
 }
+
+
+/* PWA v45 — edición visual del Paso 1 sobre la identidad aprobada.
+ * Solo presentación: los motores IDE/POI, ROAD, GPS, ETA y reservas son ajenos.
+ * En móvil priorizamos el campo de dirección, ritmo vertical y tactilidad.
+ */
+#view-reservar > .section-heading{margin:0 5px 20px}
+#view-reservar > .section-heading .eyebrow{
+  letter-spacing:.17em;font-size:10px;margin-bottom:9px
+}
+#view-reservar > .section-heading h2{
+  font-size:clamp(1.65rem,6vw,1.95rem);line-height:1.22;
+  margin-bottom:8px;letter-spacing:-.043em
+}
+#view-reservar > .section-heading p:last-child{
+  font-size:12.6px;line-height:1.58;max-width:570px;color:#c5d9d3
+}
+#view-reservar > .section-heading strong{font-weight:700;color:#f3e2b6}
+#view-reservar .booking-progress{margin:0 3px 15px;gap:12px}
+#view-reservar .booking-progress-text{font-size:10.7px;letter-spacing:-.008em}
+#view-reservar .booking-progress-track{
+  height:5px;background:rgba(230,201,139,.15);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.12)
+}
+#view-reservar .booking-step-card[data-booking-step="route"]{
+  border-color:rgba(225,198,133,.36);
+  background:linear-gradient(135deg,rgba(12,64,70,.98),rgba(8,47,56,.97))
+}
+#view-reservar .booking-step-card[data-booking-step="route"].is-open{
+  box-shadow:0 17px 38px rgba(0,0,0,.21),inset 0 1px 0 rgba(255,255,255,.025)
+}
+#view-reservar .booking-step-card[data-booking-step="route"] .booking-step-toggle{
+  min-height:73px;padding-bottom:11px
+}
+#view-reservar .booking-step-card[data-booking-step="route"] .booking-step-content{
+  padding-top:0;padding-bottom:13px
+}
+#view-reservar .booking-step-card #origin-picker,
+#view-reservar .booking-step-card #destination-picker{padding:0}
+#view-reservar .booking-step-card .location-widget{position:relative;min-width:0}
+#view-reservar .booking-step-card .location-title{
+  display:flex;align-items:center;gap:9px;
+  color:#efdaaa;font:800 11px/1.4 Manrope,"DM Sans",sans-serif;
+  letter-spacing:.14em;margin:2px 0 7px;
+}
+#view-reservar .location-widget .location-title::before{
+  content:"";display:inline-block;width:9px;height:9px;flex:0 0 9px;
+  background:var(--gold);border:2px solid #0c4148;
+  box-shadow:0 0 0 1px rgba(231,203,133,.6);border-radius:50%;
+}
+#view-reservar .location-widget[data-location-kind="destination"] .location-title::before{
+  width:8px;height:8px;flex-basis:8px;border:1px solid #f5dda1;
+  border-radius:2px;background:transparent;transform:rotate(45deg);
+  box-shadow:inset 0 0 0 2px rgba(222,190,122,.1)
+}
+#view-reservar .location-widget[data-location-kind="stop"] .location-title::before{
+  width:7px;height:7px;flex-basis:7px;background:#9dd1bb
+}
+#view-reservar .booking-step-card .departments{
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:4px 0 9px;
+}
+#view-reservar .booking-step-card .departments button{
+  flex:0 0 auto;min-height:39px;padding:7px 11px;
+  border:1px solid rgba(218,195,141,.30);border-radius:999px;
+  font-size:11px;font-weight:730;line-height:1.18;letter-spacing:.002em;
+  background:rgba(4,37,44,.20);color:#d5ded5;
+  transition:background .17s ease,border-color .17s ease,color .17s ease,transform .17s ease
+}
+#view-reservar .booking-step-card .departments button.selected{
+  border-color:rgba(240,211,143,.75);
+  color:#f7dda4;background:linear-gradient(120deg,rgba(231,194,122,.19),rgba(206,160,74,.08));
+  box-shadow:inset 0 1px 0 rgba(250,226,176,.10)
+}
+#view-reservar .booking-step-card .departments button:active{transform:scale(.98)}
+#view-reservar .booking-step-card .departments select{
+  width:auto;max-width:100%;min-width:0;min-height:39px;
+  flex:0 1 auto;margin:0;padding:7px 30px 7px 11px;
+  font-size:11px;font-weight:650;color:#f0eee1;
+  border-radius:13px;border-color:rgba(196,212,196,.32);
+  background-color:rgba(3,34,42,.76);background-size:14px 14px;
+  background-position:right 8px center;box-shadow:none
+}
+#view-reservar .booking-step-card .departments select:focus{
+  border-color:var(--gold);box-shadow:0 0 0 2px rgba(231,203,133,.14)
+}
+#view-reservar .booking-step-card .location-controls{min-width:0}
+#view-reservar .booking-step-card .loc-search,
+#view-reservar .booking-step-card .location-controls .loc-search{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,28%);
+  align-items:stretch;gap:8px;min-width:0;
+  flex-wrap:nowrap;margin:0
+}
+#view-reservar .booking-step-card .loc-search input{
+  display:block;min-width:0;min-height:50px;width:100%;
+  flex:auto;flex-basis:auto;margin:0;padding:0 12px;
+  border-radius:14px;font-size:13.5px;line-height:1.25;
+  border-color:rgba(168,210,205,.33);
+  background:rgba(2,31,39,.81)
+}
+#view-reservar .booking-step-card .loc-search input::placeholder{
+  color:#9dbab9;opacity:1
+}
+#view-reservar .booking-step-card .loc-search:focus-within input{
+  border-color:#eed094;box-shadow:0 0 0 3px rgba(231,203,133,.10)
+}
+#view-reservar .booking-step-card .loc-search .location-search-action{
+  width:100%;min-width:0;min-height:50px;height:auto;
+  align-self:stretch;display:flex;align-items:center;justify-content:center;
+  gap:7px;margin:0;padding:8px 7px;
+  font-size:12px;letter-spacing:.003em;font-weight:800;white-space:nowrap;
+  color:#f6dba4;border:1px solid rgba(233,204,138,.46);
+  border-radius:14px;background:linear-gradient(135deg,rgba(32,91,85,.65),rgba(8,58,67,.70));
+  transition:background .18s ease,box-shadow .18s ease,transform .14s ease
+}
+#view-reservar .booking-step-card .location-search-action::before{
+  content:"";width:15px;height:15px;flex:0 0 15px;display:block;
+  background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f4d795' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.8'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E")
+}
+#view-reservar .booking-step-card .location-search-action:active{transform:scale(.975)}
+#view-reservar .booking-step-card .location-search-action:hover{
+  background:linear-gradient(135deg,rgba(42,106,98,.87),rgba(10,69,77,.86));
+  box-shadow:0 0 0 1px rgba(234,199,127,.12)
+}
+#view-reservar .booking-step-card .location-use-current{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:auto;max-width:100%;min-height:37px;
+  margin:8px 0 0;padding:7px 12px;
+  background:rgba(12,61,65,.46);color:#e6ce96;
+  border:1px solid rgba(225,191,121,.37);border-radius:12px;
+  font-size:11.5px;letter-spacing:0;font-weight:700;
+  transition:background .18s ease,border-color .18s ease
+}
+#view-reservar .booking-step-card .location-use-current:hover{
+  background:rgba(226,192,123,.12);border-color:rgba(231,203,133,.67)
+}
+#view-reservar .booking-step-card .wayline{
+  display:flex;align-items:center;justify-content:flex-start;
+  height:27px;margin:4px 0 4px;padding:0 0 0 1px;color:#e9ca85
+}
+#view-reservar .booking-step-card .wayline span{
+  position:relative;display:grid;place-items:center;
+  width:23px;height:27px;font-size:0;line-height:0
+}
+#view-reservar .booking-step-card .wayline span::before{
+  content:"";height:23px;width:1px;background:linear-gradient(180deg,rgba(235,202,135,.72),rgba(235,202,135,.24))
+}
+#view-reservar .booking-step-card .wayline span::after{
+  content:"";position:absolute;left:9px;bottom:3px;
+  width:5px;height:5px;border-right:1.5px solid #eed193;border-bottom:1.5px solid #eed193;
+  transform:rotate(45deg)
+}
+#view-reservar .booking-step-card .location-selected{
+  min-height:60px;margin:4px 0 2px;padding:10px 11px;
+  background:linear-gradient(115deg,rgba(16,76,70,.55),rgba(7,50,54,.87));
+  border:1px solid rgba(142,218,172,.36);border-radius:14px;
+  box-shadow:inset 3px 0 0 rgba(146,215,167,.68);
+}
+#view-reservar .booking-step-card .location-selected-label{
+  font-size:13px;line-height:1.38;letter-spacing:-.008em
+}
+#view-reservar .booking-step-card .location-selected-hint{font-size:10px}
+#view-reservar .booking-step-card .location-edit{
+  border-color:rgba(232,206,143,.47);color:#f2d79c;
+  background:rgba(5,39,46,.76);border-radius:11px
+}
+#view-reservar .booking-step-card .results{gap:5px;margin:7px 0 0}
+#view-reservar .booking-step-card .results button.result{
+  position:relative;min-height:55px;padding:10px 34px 10px 12px!important;
+  border:1px solid rgba(218,190,127,.22);border-radius:13px!important;
+  background:rgba(5,39,46,.95);
+  transition:border-color .16s ease,background .16s ease,transform .16s ease
+}
+#view-reservar .booking-step-card .results button.result::after{
+  content:"";position:absolute;right:15px;top:50%;
+  width:7px;height:7px;border-top:1.5px solid #edcc87;
+  border-right:1.5px solid #edcc87;transform:translateY(-50%) rotate(45deg)
+}
+#view-reservar .booking-step-card .results button.result:active{transform:scale(.993)}
+#view-reservar .booking-step-card .results .result-title{font-size:12.8px}
+#view-reservar .booking-step-card .results .result-subtitle{font-size:10.6px}
+#view-reservar .booking-step-card .geo-feedback{font-size:11px;margin:7px 0 0}
+#view-reservar .booking-step-card .geo-attribution{font-size:10px;margin:6px 0 0}
+#view-reservar .booking-step-card .stops-signin-hint{
+  margin:10px 0 0;padding:8px 2px 0;font-size:11px;
+  border-top:1px solid rgba(231,203,133,.13)
+}
+#view-reservar .booking-step-card .stops-signin-hint .text-button{text-underline-offset:3px}
+#view-reservar .booking-step-card .route-overview{margin-top:10px}
+@media(max-width:520px){
+  #view-reservar > .section-heading{margin-bottom:17px}
+  #view-reservar > .section-heading h2{font-size:1.72rem}
+  #view-reservar .booking-step-card[data-booking-step="route"] .booking-step-toggle{min-height:67px;padding-bottom:9px}
+  #view-reservar .booking-step-card .departments{gap:6px;margin-bottom:8px}
+  #view-reservar .booking-step-card .departments button{min-height:38px;padding:6px 9px;font-size:10.8px}
+  #view-reservar .booking-step-card .departments select{min-height:38px;font-size:10.8px;padding-left:9px}
+  #view-reservar .booking-step-card .loc-search,
+  #view-reservar .booking-step-card .location-controls .loc-search{
+    grid-template-columns:minmax(0,1fr) minmax(98px,30%);gap:7px
+  }
+  #view-reservar .booking-step-card .loc-search input{min-height:49px;font-size:13px}
+  #view-reservar .booking-step-card .loc-search .location-search-action{min-height:49px;font-size:11.5px;gap:5px}
+  #view-reservar .booking-step-card .location-search-action::before{width:13px;height:13px;flex-basis:13px}
+}
+@media(max-width:355px){
+  #view-reservar .booking-step-card .departments button{padding:6px 8px;font-size:10px}
+  #view-reservar .booking-step-card .departments select{font-size:10px;max-width:142px}
+  #view-reservar .booking-step-card .loc-search,
+  #view-reservar .booking-step-card .location-controls .loc-search{
+    grid-template-columns:minmax(0,1fr) 93px;gap:6px
+  }
+  #view-reservar .booking-step-card .loc-search .location-search-action{font-size:11px;padding:7px 5px}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-reservar .booking-step-card .departments button,
+  #view-reservar .booking-step-card .location-search-action,
+  #view-reservar .booking-step-card .location-use-current,
+  #view-reservar .booking-step-card .results button.result{transition:none;transform:none}
+}

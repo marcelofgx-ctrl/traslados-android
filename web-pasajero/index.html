@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=44">
+  <link rel="stylesheet" href="./styles.css?v=45">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -46,7 +46,7 @@
       <div class="section-heading">
         <p class="eyebrow">SOLICITAR UN SERVICIO</p>
         <h2 id="reserva-title">Reservá tu traslado</h2>
-        <p>Elegí origen y destino para consultar kilómetros, minutos y valor orientativo. El conductor confirmará el presupuesto definitivo; <strong>la solicitud no equivale a un viaje confirmado.</strong></p>
+        <p>Elegí tu origen y destino. Consultá la distancia, el tiempo y un valor orientativo antes de solicitar el traslado. <strong>El conductor confirma el viaje.</strong></p>
       </div>
       <div class="booking-progress" aria-label="Avance de la solicitud">
         <span id="booking-progress-text" class="booking-progress-text" aria-live="polite">Paso 1 de 3</span>
@@ -62,7 +62,7 @@
         </button>
         <div id="booking-step-route" class="booking-step-content" data-step-body>
         <div id="origin-picker" class="location-pane"></div>
-        <div class="wayline"><span>↓</span></div>
+        <div class="wayline" aria-hidden="true"><span>↓</span></div>
         <div id="stop-wrap" class="stops-wrapper" hidden>
           <div class="between"><span class="caption">PARADAS INTERMEDIAS · HASTA 8</span><button id="add-stop" class="tiny-btn" type="button">+ Agregar</button></div>
           <div id="stops"></div>
@@ -241,6 +241,6 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./app.js?v=44" defer></script>
+  <script src="./app.js?v=45" defer></script>
 </body>
 </html>
