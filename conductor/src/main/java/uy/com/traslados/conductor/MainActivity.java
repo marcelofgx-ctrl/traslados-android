@@ -531,6 +531,12 @@ public class MainActivity extends Activity {
         String qs=r.optString("quote_status","SIN_PRESUPUESTO");
         if("ENVIADO".equals(qs)||"ACEPTADO".equals(qs)){addDetail(bodyBox,"ticket",qs.equals("ACEPTADO")?"PRESUPUESTO ACEPTADO":"PRESUPUESTO ENVIADO",formatMoney(r.optDouble("quote_final_total",0)));String inc=r.optString("quote_includes","").trim();if(!inc.isEmpty()&&!"null".equalsIgnoreCase(inc))addDetail(bodyBox,"info","INCLUYE",inc);double qkm=r.optDouble("route_distance_km",0),realKm=telemetry.optDouble("distance_km",0),pkm=driverPickupKm(r),op=(realKm>0?realKm:qkm)+pkm,total=r.optDouble("quote_final_total",0),rate=r.optDouble("quote_price_per_km",0),tolls=r.optDouble("quote_tolls",0);StringBuilder eco=new StringBuilder();if(qkm>0&&rate>0)eco.append(formatDistance(qkm)).append(" × ").append(formatMoney(rate)).append("/km");if(tolls>0)eco.append(eco.length()>0?" · ":"").append("peajes ").append(formatMoney(tolls));if(pkm>0)eco.append(eco.length()>0?" · ":"").append("+").append(formatDistance(pkm)).append(" hasta origen");if(total>0&&op>0)eco.append(" · ").append(formatMoney(total/op)).append(realKm>0?"/km operativo real":"/km operativo estimado");if(eco.length()>0)addDetail(bodyBox,"info","RESUMEN ECONÓMICO",eco.toString());}
         String com=r.optString("comments","");if(!com.isEmpty())addDetail(bodyBox,"comment","COMENTARIOS",com);
+        if(!"FINALIZADA".equals(status)&&!"CANCELADA".equals(status)&&!"RECHAZADA".equals(status)){
+            Button chat=secondaryButton("✉ MENSAJES DEL PASAJERO");
+            chat.setTextSize(12);
+            chat.setOnClickListener(v->showReservationChat(r));
+            bodyBox.addView(chat,lpMatch(dp(49),7,4));
+        }
 
         LinearLayout contact=new LinearLayout(this);contact.setOrientation(LinearLayout.HORIZONTAL);
         Button call=smallAction("LLAMAR"),wa=smallAction("WHATSAPP"),map=smallAction("RUTA");
@@ -846,6 +852,115 @@ public class MainActivity extends Activity {
                 });
             }catch(Exception e){
                 runOnUiThread(()->{driverStatusInFlight.remove("phase-"+id);toast("No pude actualizar la llegada: "+friendly(e));});
+            }
+        });
+    }
+
+
+    private void showReservationChat(JSONObject reservation){
+        final String id=reservation.optString("id","");
+        if(id.isEmpty()){toast("Esta solicitud no tiene identificador");return;}
+        final Dialog dialog=new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        final LinearLayout shell=driverDialogShell("MENSAJES DEL TRASLADO",
+            "Conversación privada para "+reservation.optString("code","esta reserva")+".");
+        final ScrollView scroll=new ScrollView(this);
+        scroll.setFillViewport(false);
+        final LinearLayout messages=new LinearLayout(this);
+        messages.setOrientation(LinearLayout.VERTICAL);
+        messages.setPadding(dp(7),dp(8),dp(7),dp(10));
+        scroll.addView(messages,new ScrollView.LayoutParams(-1,-2));
+        shell.addView(scroll,lpMatch(dp(285),5,7));
+        final EditText draft=new EditText(this);
+        draft.setTextColor(TEXT);
+        draft.setHintTextColor(MUTED);
+        draft.setHint("Escribí al pasajero…");
+        draft.setTextSize(13);
+        draft.setInputType(android.text.InputType.TYPE_CLASS_TEXT|
+            android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|
+            android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        draft.setSingleLine(false);
+        draft.setMinLines(2);
+        draft.setMaxLines(4);
+        draft.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(800)});
+        draft.setBackground(rounded(PANEL_2,GOLD_DARK,13));
+        draft.setPadding(dp(12),dp(8),dp(12),dp(8));
+        shell.addView(draft,lpMatch(-2,7,6));
+        final LinearLayout actions=new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        final Button refresh=secondaryButton("↻ ACTUALIZAR");
+        final Button send=primaryButton("ENVIAR");
+        actions.addView(refresh,new LinearLayout.LayoutParams(0,dp(48),1));
+        spacerH(actions,7);
+        actions.addView(send,new LinearLayout.LayoutParams(0,dp(48),1));
+        shell.addView(actions,lpMatch(dp(48),3,6));
+        final Button close=secondaryButton("CERRAR");
+        close.setOnClickListener(v->dialog.dismiss());
+        shell.addView(close,lpMatch(dp(44),6,0));
+        refresh.setOnClickListener(v->refreshReservationChat(id,messages,scroll));
+        final String[] pendingBody={""};
+        final String[] pendingId={""};
+        send.setOnClickListener(v->{
+            String body=draft.getText().toString().trim();
+            if(body.length()<1||body.length()>800){toast("Escribí un mensaje de hasta 800 caracteres");return;}
+            if(!body.equals(pendingBody[0])){
+                pendingBody[0]=body;pendingId[0]=java.util.UUID.randomUUID().toString();
+            }
+            send.setEnabled(false);
+            pool.execute(()->{
+                try{
+                    JSONObject result=Api.sendTripChat(pin,id,body,pendingId[0]);
+                    if(result.optLong("id",0)<1)throw new Exception("Sin confirmación del servidor");
+                    runOnUiThread(()->{
+                        if(!dialog.isShowing())return;
+                        pendingBody[0]="";pendingId[0]="";
+                        draft.setText("");
+                        send.setEnabled(true);
+                        toast("Mensaje enviado al pasajero");
+                        refreshReservationChat(id,messages,scroll);
+                    });
+                }catch(Exception error){
+                    runOnUiThread(()->{
+                        send.setEnabled(true);
+                        toast(Api.publicMessage("mensaje",error));
+                    });
+                }
+            });
+        });
+        showDriverDialog(dialog,shell,.94f,.86f);
+        refreshReservationChat(id,messages,scroll);
+    }
+
+    private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll){
+        list.removeAllViews();
+        list.addView(body("Actualizando conversación…",12,MUTED));
+        pool.execute(()->{
+            try{
+                JSONArray rows=Api.tripChat(pin,id);
+                runOnUiThread(()->{
+                    if(list.getParent()==null)return;
+                    list.removeAllViews();
+                    if(rows.length()==0){
+                        list.addView(body("Todavía no hay mensajes. El pasajero puede escribir desde Mis traslados.",12,MUTED));
+                    }
+                    for(int i=0;i<rows.length();i++){
+                        JSONObject item=rows.optJSONObject(i);if(item==null)continue;
+                        boolean own="driver".equals(item.optString("sender_role",""));
+                        TextView bubble=body((own?"VOS":"PASAJERO")+"\n"+item.optString("body",""),12,TEXT);
+                        bubble.setPadding(dp(11),dp(10),dp(11),dp(10));
+                        bubble.setBackground(rounded(own?Color.rgb(65,68,44):PANEL_2,
+                            own?GOLD_DARK:LINE,14));
+                        bubble.setGravity(Gravity.START);
+                        list.addView(bubble,lpMatch(-2,3,5));
+                    }
+                    scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    if(list.getParent()==null)return;
+                    list.removeAllViews();
+                    list.addView(body("No se pudo actualizar la conversación. Revisá Internet.",12,MUTED));
+                });
             }
         });
     }

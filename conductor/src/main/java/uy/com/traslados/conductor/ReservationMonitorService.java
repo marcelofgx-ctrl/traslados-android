@@ -29,6 +29,7 @@ public class ReservationMonitorService extends Service {
     public static final String CHANNEL_SERVICE="traslados_servicio_v91";
     public static final String CHANNEL_NEW="traslados_nuevas_v114_r9_visual";
     public static final String CHANNEL_TRIP="traslados_proximo_v114_r9_visual";
+    public static final String CHANNEL_CHAT="traslados_chat_v1";
     private volatile boolean running=true;
     private Thread worker;
     private final Set<String> known=new HashSet<>();
@@ -79,10 +80,45 @@ public class ReservationMonitorService extends Service {
                         if(!first&&!known.contains(id))notifyNew(r);
                     }
                     known.clear();known.addAll(now);first=false;
+                    try{checkDriverMessages(pin);}catch(Exception ignored){}
                 }
             }catch(Exception ignored){}
             try{Thread.sleep(15000);}catch(InterruptedException e){return;}
         }
+    }
+
+    private void checkDriverMessages(String pin) throws Exception {
+        android.content.SharedPreferences prefs=getSharedPreferences("driver_chat_monitor",MODE_PRIVATE);
+        long cursor=prefs.getLong("last_id",0);
+        JSONArray changes=Api.newCustomerMessages(pin,cursor);
+        long max=cursor;
+        for(int i=0;i<changes.length();i++){
+            JSONObject m=changes.optJSONObject(i);
+            if(m!=null)max=Math.max(max,m.optLong("id",0));
+        }
+        if(!prefs.getBoolean("initialized",false)){
+            prefs.edit().putBoolean("initialized",true).putLong("last_id",max).apply();
+            return; // No inundar de avisos por mensajes históricos.
+        }
+        for(int i=0;i<changes.length();i++){
+            JSONObject m=changes.optJSONObject(i);
+            if(m==null||m.optLong("id",0)<=cursor)continue;
+            Intent open=new Intent(this,MainActivity.class);
+            open.putExtra("open_requests",true);
+            open.putExtra("reservation_id",m.optString("reservation_id",""));
+            open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            int noteId=11000+(int)(m.optLong("id",0)%17000);
+            PendingIntent pending=PendingIntent.getActivity(this,noteId,open,
+                PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+            Notification note=new Notification.Builder(this,CHANNEL_CHAT)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle("Mensaje de un pasajero")
+                .setContentText("Reserva "+m.optString("code","")+" · Abrí Traslados para responder")
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setAutoCancel(true).setContentIntent(pending).build();
+            getSystemService(NotificationManager.class).notify("driver-chat",noteId,note);
+        }
+        if(max>cursor)prefs.edit().putLong("last_id",max).apply();
     }
 
     private void notifyNew(JSONObject r){
@@ -118,6 +154,12 @@ public class ReservationMonitorService extends Service {
         service.setDescription("Mantiene activo el monitor de Traslados Conductor");nm.createNotificationChannel(service);
         NotificationChannel fresh=new NotificationChannel(CHANNEL_NEW,"Nuevas reservas",NotificationManager.IMPORTANCE_HIGH);
         fresh.setDescription("Aviso visual de nuevas solicitudes; Traslados controla sonido y vibración directamente");fresh.enableVibration(false);fresh.setSound(null,null);nm.createNotificationChannel(fresh);
+        NotificationChannel chat=new NotificationChannel(CHANNEL_CHAT,
+                "Mensajes de pasajeros",NotificationManager.IMPORTANCE_HIGH);
+        chat.setDescription("Mensajes nuevos para responder dentro de la reserva");
+        chat.enableVibration(true);
+        chat.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        nm.createNotificationChannel(chat);
         NotificationChannel trip=new NotificationChannel(CHANNEL_TRIP,"Próximos viajes",NotificationManager.IMPORTANCE_HIGH);
         trip.setDescription("Aviso visual de próximos viajes; Traslados controla sonido y vibración directamente");trip.enableVibration(false);trip.setSound(null,null);nm.createNotificationChannel(trip);
     }

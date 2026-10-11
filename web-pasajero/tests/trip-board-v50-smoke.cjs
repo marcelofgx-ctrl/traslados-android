@@ -42,10 +42,10 @@ const html=read("index.html"),app=read("app.js"),styles=read("styles.css"),sw=re
 assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
-assert(html.includes('src="./trip-board.js?v=2"'));
-assert(html.includes('app.js?v=51')&&html.includes('styles.css?v=51')&&sw.includes('traslados-cliente-pwa-v51'));
+assert(html.includes('src="./trip-board.js?v=3"'));
+assert(html.includes('app.js?v=52')&&html.includes('styles.css?v=52')&&sw.includes('traslados-cliente-pwa-v52'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
-assert(app.includes('customer_list_reservations_v13')&&app.includes('get_reservation_by_token'));
+assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
 assert(app.includes('tripBoard.notifications(tripSnap,rows)'),"Change-based alerts only");
 assert(app.includes('document.visibilityState==="visible"'),"No polling while hidden");

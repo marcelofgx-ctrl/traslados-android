@@ -56,6 +56,30 @@ public final class Api {
         return new JSONObject(postRpc("driver_set_status_v2",b));
     }
 
+    public static JSONArray tripChat(String pin,String id) throws Exception {
+        JSONObject request=new JSONObject();
+        request.put("p_pin",pin);
+        request.put("p_reservation_id",id);
+        request.put("p_after_id",0);
+        String raw=postRpc("driver_trip_chat_v1",request);
+        return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
+    }
+    public static JSONObject sendTripChat(String pin,String id,String message,String requestId) throws Exception {
+        JSONObject request=new JSONObject();
+        request.put("p_pin",pin);
+        request.put("p_reservation_id",id);
+        request.put("p_body",message);
+        request.put("p_request_id",requestId);
+        return new JSONObject(postRpc("driver_trip_chat_send_v1",request));
+    }
+    public static JSONArray newCustomerMessages(String pin,long afterId) throws Exception {
+        JSONObject request=new JSONObject();
+        request.put("p_pin",pin);
+        request.put("p_after_id",afterId);
+        String raw=postRpc("driver_trip_chat_feed_v1",request);
+        return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
+    }
+
     public static JSONObject setPickupPhase(String pin,String id,String phase) throws Exception {
         JSONObject b=new JSONObject();
         b.put("p_pin",pin);b.put("p_reservation_id",id);b.put("p_phase",phase);

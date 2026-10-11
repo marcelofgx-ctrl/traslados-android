@@ -83,16 +83,20 @@
   }
   function signature(r){
     return [r.status||"",r.pickup_phase||"",r.pickup_phase_updated_at||"",r.quote_status||"",r.quote_sent_at||"",r.quote_final_total||"",
-      r.updated_at||""].map(x=>String(x)).join("|");
+      r.last_driver_message_id||"",r.updated_at||""].map(x=>String(x)).join("|");
   }
   function notifications(previous,items){
     const changed=[];
+    if(!previous||typeof previous.has!=="function")return changed;
     for(const r of items){
       const key=String(r.id||r.code||"");
       if(!key||!previous.has(key))continue; // first load is baseline
       const p=previous.get(key);
       if(p.signature===signature(r))continue;
       const m=metadata(r);
+      // Nuevos mensajes: solo si ya existía una línea base conocida.
+      if(r.last_driver_message_id&&p.lastDriverMessage!==r.last_driver_message_id)
+        changed.push({kind:"message",row:r});
       // A fresh quote merits a foreground alert; no push or GPS inference.
       if(m.tone==="attention"&&p.quoteSent!==r.quote_sent_at)changed.push({kind:"quote",row:r});
       else if(["confirmed","moving","complete"].includes(m.tone)&&(p.status!==r.status||p.phase!==r.pickup_phase))
@@ -102,7 +106,7 @@
   }
   function snapshot(rows){
     return new Map((rows||[]).filter(r=>r.id||r.code).map(r=>[String(r.id||r.code),{
-      status:r.status,phase:r.pickup_phase,quoteSent:r.quote_sent_at,signature:signature(r)
+      status:r.status,phase:r.pickup_phase,quoteSent:r.quote_sent_at,lastDriverMessage:r.last_driver_message_id,signature:signature(r)
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({

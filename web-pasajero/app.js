@@ -808,7 +808,7 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
-    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();
+    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();openTripChats.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
   });
@@ -1066,7 +1066,9 @@ async function submitBooking(){
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null;
 let tripsScope="upcoming",tripsGroupBy="day",tripsFilter="all",tripFocused=null,tripPreviouslyFocused=null;
-let openTripCards=new Set(),openTripGroups=new Set();
+let openTripCards=new Set(),openTripGroups=new Set(),openTripChats=new Set();
+const tripChatDrafts=new Map(),tripChatAttempts=new Map();
+let tripAlertAudio=null;
 function statusName(s){return states[s]||s||"Sin estado";}
 function tripMoney(n){return new Intl.NumberFormat("es-UY",{style:"currency",currency:"UYU",maximumFractionDigits:0}).format(n);}
 function tripDateTime(t){
@@ -1108,6 +1110,112 @@ function tripTimeline(parent,r){
   if(["EN_VIAJE","FINALIZADA","CANCELADA","RECHAZADA"].includes(r.status))
     text(events,"div","Estado actual: "+statusName(r.status),"trip-event");
 }
+
+function tripChatAuth(r,guestToken){
+  return {
+    p_reservation_id:r.id,
+    p_session_token:guestToken?null:session?.token||null,
+    p_public_token:guestToken||null
+  };
+}
+function mountTripChat(parent,r,guestToken){
+  if(!r.id)return;
+  const root=text(parent,"details","","trip-chat");
+  root.dataset.code=r.code||"";
+  root.open=openTripChats.has(r.code);
+  const header=text(root,"summary","","trip-chat-header");
+  text(header,"span","✉ Mensajes con el conductor");
+  text(header,"span","Abrir conversación","trip-chat-arrow");
+  const body=text(root,"div","","trip-chat-body");
+  const feed=text(body,"div","Abrí la conversación para ver los mensajes.","trip-chat-feed");
+  feed.setAttribute("role","log");feed.setAttribute("aria-live","polite");
+  const closed=["FINALIZADA","CANCELADA","RECHAZADA","RECHAZADA_CLIENTE"].includes(r.status);
+  const row=text(body,"div","","trip-chat-compose");
+  const input=text(row,"textarea","","trip-chat-input");
+  input.placeholder="Escribí una consulta breve…";input.maxLength=800;input.rows=2;
+  input.setAttribute("aria-label","Mensaje para el conductor");
+  input.value=tripChatDrafts.get(r.code)||"";
+  input.disabled=closed;
+  input.addEventListener("input",()=>tripChatDrafts.set(r.code,input.value));
+  const send=button(row,"Enviar","trip-chat-send",()=>void sendTripChat(r,guestToken,feed,input,send));
+  send.disabled=closed;
+  if(closed)text(body,"p","Esta conversación está archivada.","trip-chat-hint");
+  else text(body,"p","Mensajes vinculados a esta reserva. Las respuestas aparecen cuando se actualizan los datos.","trip-chat-hint");
+  root.addEventListener("toggle",()=>{
+    if(root.open){
+      openTripChats.add(r.code);
+      void loadTripChat(r,guestToken,feed);
+    }else openTripChats.delete(r.code);
+  });
+  if(root.open)void loadTripChat(r,guestToken,feed);
+}
+async function loadTripChat(r,guestToken,feed){
+  if(!feed?.isConnected||feed.dataset.loading==="1")return;
+  feed.dataset.loading="1";
+  try{
+    const messages=await rpc("customer_trip_chat_v1",{...tripChatAuth(r,guestToken),p_after_id:0});
+    if(!feed.isConnected)return;
+    clear(feed);
+    if(!Array.isArray(messages)||!messages.length){
+      text(feed,"p","Todavía no hay mensajes. Podés consultar los detalles de tu traslado.","trip-chat-empty");
+    }else{
+      for(const item of messages){
+        const bubble=text(feed,"div","","trip-chat-bubble");
+        bubble.classList.add(item.sender_role==="customer"?"from-customer":"from-driver");
+        text(bubble,"small",item.sender_role==="customer"?"Vos":"Conductor");
+        text(bubble,"span",item.body||"");
+        const when=tripDateTime(item.created_at);
+        if(when)text(bubble,"time",when);
+      }
+      feed.scrollTop=feed.scrollHeight;
+    }
+  }catch(e){if(feed.isConnected){clear(feed);text(feed,"p","No se pudieron actualizar los mensajes. Intentá nuevamente.","trip-chat-empty");}}
+  finally{feed.dataset.loading="0";}
+}
+async function sendTripChat(r,guestToken,feed,input,send){
+  const body=input.value.trim();
+  if(!body||body.length>800||send.disabled)return;
+  const key=r.code||r.id,attempt=tripChatAttempts.get(key);
+  const requestId=attempt?.body===body?attempt.id:newClientRequestId();
+  tripChatAttempts.set(key,{body,id:requestId});
+  send.disabled=true;
+  try{
+    const response=await rpc("customer_trip_chat_send_v1",{
+      ...tripChatAuth(r,guestToken),p_body:body,p_request_id:requestId
+    });
+    if(!response?.id)throw new Error("El servidor no confirmó el mensaje");
+    tripChatAttempts.delete(key);tripChatDrafts.delete(key);
+    input.value="";
+    tell("Mensaje enviado al conductor");
+    await loadTripChat(r,guestToken,feed);
+  }catch(e){showError(e);}
+  finally{send.disabled=false;}
+}
+function armTripSound(){
+  if(!$("trips-alert-sound").checked)return;
+  try{
+    const AudioClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioClass)return;
+    tripAlertAudio??=new AudioClass();
+    void tripAlertAudio.resume();
+  }catch{}
+}
+function playTripAlertSound(){
+  if(!$("trips-alert-sound").checked||!tripAlertAudio||tripAlertAudio.state!=="running")return;
+  try{
+    const ctx=tripAlertAudio;
+    for(const [n,frequency] of [[0,740],[1,980]]){
+      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),at=ctx.currentTime+n*.16;
+      oscillator.type="sine";oscillator.frequency.value=frequency;
+      gain.gain.setValueAtTime(.0001,at);
+      gain.gain.exponentialRampToValueAtTime(.055,at+.018);
+      gain.gain.exponentialRampToValueAtTime(.0001,at+.22);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(at);oscillator.stop(at+.23);
+    }
+  }catch{}
+}
+
 function reservationView(r,guestToken){
   const meta=tripBoard.metadata(r),price=Number(r.quote_final_total||0);
   const d=document.createElement("details");d.className="reservation trip-card";
@@ -1154,6 +1262,7 @@ function reservationView(r,guestToken){
     if(meta.tone==="attention")text(inner,"p","El presupuesto requiere tu confirmación.","trip-detail-note");
   }else text(inner,"p","Presupuesto pendiente de preparación por el conductor.","trip-detail-note");
   text(inner,"p","MOVIMIENTOS","trip-detail-heading trip-detail-section");tripTimeline(inner,r);
+  mountTripChat(inner,r,guestToken);
   const actions=text(inner,"div","","action-row");
   if(price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
     button(actions,"Aceptar presupuesto","primary",()=>void decideQuote(r.id,true,guestToken));
@@ -1189,20 +1298,22 @@ function closeTripNotice(){
 }
 function showTripNotice(change){
   if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden)return;
-  const quote=change.kind==="quote";
+  const quote=change.kind==="quote",message=change.kind==="message";
   tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
-  $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":"Tu traslado se actualizó";
+  $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":message?"Nuevo mensaje del conductor":"Tu traslado se actualizó";
   $("trip-alert-description").textContent=quote
     ?"El conductor envió un presupuesto de "+tripMoney(Number(change.row.quote_final_total))+". Revisalo y respondé desde tu reserva."
-    :"El estado de "+change.row.code+" cambió a "+tripBoard.metadata(change.row).label+".";
+    :message?"El conductor escribió en la reserva "+change.row.code+". Entrá para leer y responder.":"El estado de "+change.row.code+" cambió a "+tripBoard.metadata(change.row).label+".";
   $("trip-alert-overlay").hidden=false;$("trip-alert-close").focus();
   if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
+  playTripAlertSound();
 }
 function renderTripsBoard({reset=false}={}){
   const list=$("trips-list");
   if(!reset&&list.children.length){
     openTripGroups=new Set([...list.querySelectorAll(".trips-day[open]")].map(x=>x.dataset.key));
     openTripCards=new Set([...list.querySelectorAll(".trip-card[open]")].map(x=>x.dataset.tripCode));
+    openTripChats=new Set([...list.querySelectorAll(".trip-chat[open]")].map(x=>x.dataset.code));
   }
   clear(list);
   const attention=tripRows.filter(r=>tripBoard.metadata(r).tone==="attention").length;
@@ -1232,11 +1343,11 @@ async function loadTrips({background=false}={}){
   try{
     let rows=[];
     if(authReady()){
-      const result=await rpc("customer_list_reservations_v13",{p_session_token:session.token});
+      const result=await rpc("customer_list_reservations_v15",{p_session_token:session.token});
       rows=Array.isArray(result)?result:[];
     }else{
       const guests=jsonStorage(GUEST_KEY,[]);
-      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v2",{p_token:g.token})));
+      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
       result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
     }
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
@@ -1463,6 +1574,11 @@ function init(){
   $("trips-status-filter").addEventListener("change",()=>{tripsFilter=$("trips-status-filter").value;openTripGroups.clear();renderTripsBoard({reset:true});});
   $("trips-alert-vibrate").checked=jsonStorage("traslados.vibrate-prefs.v1",false)===true;
   $("trips-alert-vibrate").addEventListener("change",()=>saveStorage("traslados.vibrate-prefs.v1",$("trips-alert-vibrate").checked));
+  $("trips-alert-sound").checked=jsonStorage("traslados.sound-prefs.v1",false)===true;
+  $("trips-alert-sound").addEventListener("change",()=>{
+    saveStorage("traslados.sound-prefs.v1",$("trips-alert-sound").checked);
+    armTripSound();
+  });
   $("trip-alert-close").addEventListener("click",closeTripNotice);
   $("trip-alert-open").addEventListener("click",()=>{
     const target=tripFocused;closeTripNotice();
