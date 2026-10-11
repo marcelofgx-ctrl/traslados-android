@@ -12,9 +12,9 @@ for(const key of ["origin-picker","destination-picker","route-overview","stop-wr
 }
 assert(html.includes('id="pickup-presence"'),"Preserve live pickup");
 assert(html.includes('id="booking-final"'),"Preserve booking submit flow");
-assert(html.includes('src="./app.js?v=45"')&&html.includes('href="./styles.css?v=45"'),
+assert(html.includes('src="./app.js?v=46"')&&html.includes('href="./styles.css?v=46"'),
   "Both asset versions must be coherent");
-assert(sw.includes('traslados-cliente-pwa-v45'),"Refresh SW for embedded client");
+assert(sw.includes('traslados-cliente-pwa-v46'),"Refresh SW for embedded client");
 assert(html.includes("Elegí tu origen y destino."),"Intro should be scannable");
 assert(/class="wayline" aria-hidden="true"/.test(html),"Route connector is decorative");
 assert(js.includes('box.dataset.locationKind=name'),"Style origin vs destination without hardcoding location data");
@@ -32,11 +32,11 @@ assert(js.includes("getCurrentPosition(async p=>"),"Keep opt-in GPS");
 assert(js.includes("renderRouteSummary()")&&js.includes("window.TrasladosRoutes"),"Keep road estimates");
 assert(js.includes("window.TrasladosBookingContracts.registeredReservation")&&js.includes("window.TrasladosBookingContracts.guestReservation"),
   "Keep real booking RPCs");
-assert(css.includes('grid-template-columns:minmax(0,1fr) minmax(100px,28%)'),
+assert(css.includes('grid-template-columns:minmax(0,1fr) 47px 47px'),
   "Route field must be visibly larger than search");
-assert(css.includes('grid-template-columns:minmax(0,1fr) minmax(98px,30%)'),
+assert(css.includes('grid-template-columns:minmax(0,1fr) 44px 44px'),
   "Preserve narrow mobile layout");
-assert(css.includes('grid-template-columns:minmax(0,1fr) 93px'),
+assert(css.includes('grid-template-columns:minmax(0,1fr) 44px'),
   "Preserve 320px viewport");
 assert(css.includes('.location-widget[data-location-kind="destination"] .location-title::before'),
   "A/B need distinct understated markers");
@@ -48,4 +48,4 @@ assert(css.includes(".results button.result::after"),"Search suggestions need a 
 assert(css.includes("prefers-reduced-motion:reduce"),"Respect reduced motion");
 assert(css.includes("repeating-linear-gradient"),"Preserve premium texture");
 assert(!html.includes("CONDUCTOR DISPONIBLE SIEMPRE"),"Never fabricate availability");
-console.log("PASS v45 route premium: layout, accessibility, GPS, engines, responsive widths, no backend regression");
+console.log("PASS v46 route premium: layout, accessibility, GPS, engines, responsive widths, no backend regression");

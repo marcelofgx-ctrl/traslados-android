@@ -18,8 +18,8 @@ assert(css.includes(".booking-step-chevron::before"),"Chevron must be drawn usin
 assert(css.includes("appearance:none;-webkit-appearance:none"),"Replace OS default select arrow");
 assert(css.includes(".booking-cta-arrow")&&css.includes(".booking-final-note"),"Premium action details must remain");
 assert(css.includes("repeating-linear-gradient"),"Preserve approved card texture");
-assert(html.includes('styles.css?v=45')&&html.includes('app.js?v=45'));
-assert(sw.includes('traslados-cliente-pwa-v45'));
+assert(html.includes('styles.css?v=46')&&html.includes('app.js?v=46'));
+assert(sw.includes('traslados-cliente-pwa-v46'));
 assert(js.includes('$("booking-final").hidden=urgent'),"Urgent pickups must not show scheduled booking CTA");
 assert(js.includes('$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=false;'),"Only review unlocks submission");
 assert(js.includes('JSON.stringify(bookingData())!==JSON.stringify(pendingReview)'),"Guard against edited data after review");
