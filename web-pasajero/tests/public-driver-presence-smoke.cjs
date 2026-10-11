@@ -27,8 +27,8 @@ assert(fragment.includes('sessionToken:signedIn?session.token:null')&&etaSource.
 const host={hidden:false,dataset:{},removeAttribute(k){if(k==="data-presence")delete this.dataset.presence;}};
 const pickupLocationButton={hidden:true};
 const els={
-  "pickup-presence":host,"pickup-use-location":pickupLocationButton,"pickup-presence-whatsapp":{},
-  "urgent-whatsapp":{},"pickup-presence-status":{textContent:""},
+  "pickup-presence":host,"pickup-use-location":pickupLocationButton,
+  "pickup-presence-status":{textContent:""},
   "pickup-presence-title":{textContent:""},
   "pickup-presence-subtitle":{textContent:""},
   "pickup-presence-metrics":{hidden:true},

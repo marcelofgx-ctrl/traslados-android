@@ -68,6 +68,7 @@ function suggestBookingStep(error){
 }
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
+let urgentAttempt=null;
 
 function jsonStorage(key,defaultValue){try{return JSON.parse(localStorage.getItem(key)||"null")??defaultValue;}catch{return defaultValue;}}
 function saveStorage(key,v){try{localStorage.setItem(key,JSON.stringify(v));}catch{}}
@@ -96,7 +97,7 @@ function loading(el,value){
   el.textContent=value?"Procesando…":el.dataset.original;
 }
 function clearBookingFeedback(){
-  for(const id of ["booking-send-error","booking-when-error","booking-fix-when"]){
+  for(const id of ["booking-send-error","booking-when-error","booking-fix-when","urgent-send-error"]){
     const el=$(id);if(el)el.hidden=true;
   }
 }
@@ -118,7 +119,7 @@ async function rpc(name,payload={}){
   guardConnection();
   return window.TrasladosRpc.call({api:API,publishableKey:KEY,name,payload});
 }
-function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;if(offline)tell("Sin conexión: no podés enviar reservas hasta reconectarte.");}
+function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;$("urgent-send").disabled=offline;if(offline)tell("Sin conexión: no podés enviar solicitudes hasta reconectarte.");}
 function currentUY(offsetMinutes=0){
   const dt=new Date(Date.now()+offsetMinutes*60000);
   const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"America/Montevideo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(dt).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
@@ -192,15 +193,6 @@ async function refreshPickupPresence(force=false){
   const locationAction=$("pickup-use-location");
   if(locationAction)locationAction.hidden=!urgent||Boolean(record.origin);
   if(!urgent){pickupEtaRequestSeq++;host.removeAttribute("data-presence");return;}
-  const label=selectedPickupMode==="10"?"en 10 minutos":"lo antes posible";
-  const message=["Hola, quisiera consultar una recogida "+label+".",
-    record.origin?"Origen: "+record.origin.text:"",
-    record.destination?"Destino: "+record.destination.text:"",
-    "¿Estás libre y cuánto tardarías en llegar?"
-  ].filter(Boolean).join("\n");
-  const contact="https://wa.me/59897228175?text="+encodeURIComponent(message);
-  $("pickup-presence-whatsapp").href=contact;
-  $("urgent-whatsapp").href=contact;
   const seq=++pickupEtaRequestSeq;
   if(!host.dataset.presence||host.dataset.presence==="unknown"){
     paintPickupCard({presence:"checking",title:"Consultando disponibilidad",
@@ -211,7 +203,7 @@ async function refreshPickupPresence(force=false){
   if(!driver){
     forgetPickupEta();
     paintPickupCard({presence:"unknown",title:"No pudimos comprobar la disponibilidad",
-      subtitle:"Probá nuevamente en unos instantes o consultanos por WhatsApp."});
+      subtitle:"La consulta de disponibilidad se actualizará automáticamente. Igualmente podés enviar tu solicitud, sujeta a respuesta del conductor."});
     return;
   }
   const serverAge=Date.parse(driver.checkedAt||"");
@@ -327,15 +319,17 @@ function setWhen(kind){
   clearBookingFeedback();
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
-  // Solo las programadas tienen fecha/hora editables. Urgentes = consulta, no reserva.
+  // La fecha/hora inmediata se fija EXCLUSIVAMENTE en Supabase al enviar, no en el cliente.
   $("pickup-datetime-block").hidden=urgent;
   $("when-next").hidden=urgent;
   $("pickup-mode-caption").hidden=!urgent;
   $("pickup-mode-caption").textContent=kind==="10"
-    ?"Dentro de 10 minutos · Consultar disponibilidad y llegada"
-    :"Ahora · Consultar disponibilidad y llegada";
-  // De momento el backend solo admite reservas programadas: 30 min de antelación por defecto.
-  // No presentar «Ahora» y «En 10 min» como una reserva confirmable sin GPS/agenda real.
+    ?"Recogida en 10 minutos · Horario fijado por el servidor"
+    :"Recogida ahora · Horario fijado por el servidor";
+  $("urgent-actions-title").textContent=kind==="10"
+    ?"¿Te recogemos en 10 minutos?":"¿Necesitás viajar ahora?";
+  $("urgent-actions-description").textContent="Enviá tu recorrido al conductor. Recibirás un código para seguir la solicitud, que quedará pendiente de su confirmación.";
+  $("booking-success").hidden=true;
   $("urgent-actions").hidden=!urgent;
   $("booking-final").hidden=urgent;
   $("review-booking").hidden=urgent;
@@ -352,9 +346,9 @@ function setWhen(kind){
     $("availability").textContent="Reserva programada: los horarios disponibles se comprueban antes de enviar.";
     refreshBookingSteps();refreshPickupPresence();return;
   }
-  const when=currentUY(kind==="10"?10:2);
+  const when=currentUY(kind==="10"?10:0);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
-  $("availability").textContent="Consulta directa: no se envía una reserva automática. El conductor debe confirmar.";
+  $("availability").textContent="La hora se registra automáticamente al enviar. La solicitud queda pendiente de respuesta del conductor.";
   refreshBookingSteps();refreshPickupPresence();
 }
 function shiftView(name){
@@ -855,19 +849,21 @@ async function accountSubmit(){
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
 function bookingData(){
-  const date=$("pickup-date").value,time=$("pickup-time").value;
+  const scheduled=selectedPickupMode==="schedule";
+  const date=scheduled?$("pickup-date").value:null,time=scheduled?$("pickup-time").value:null;
   const passengers=Number($("passengers").value);
   const origin=record.origin,destination=record.destination;
   const name=authReady()?(session.customer.full_name||"").trim():$("person-name").value.trim();
   const phone=authReady()?(session.customer.phone||"").trim():$("person-phone").value.trim();
   if(!name||name.length<2||phone.replace(/\D/g,"").length<8)throw new Error("Faltan nombre o teléfono válidos.");
-  if(!date||!time)throw new Error("Elegí fecha y hora.");
-  if(new Date(date+"T"+time+":00-03:00").getTime()<Date.now()-20000)throw new Error("El horario elegido quedó en el pasado.");
+  if(scheduled&&(!date||!time))throw new Error("Elegí fecha y hora.");
+  if(scheduled&&new Date(date+"T"+time+":00-03:00").getTime()<Date.now()-20000)throw new Error("El horario elegido quedó en el pasado.");
+  if(!Number.isInteger(passengers)||passengers<1||passengers>8)throw new Error("Cantidad de pasajeros inválida.");
   if(!origin||!destination)throw new Error("Tenés que elegir direcciones verificadas para origen y destino.");
   if(origin.lat===destination.lat&&origin.lng===destination.lng)throw new Error("Origen y destino no pueden ser el mismo punto.");
   if(record.stops.some(s=>!s))throw new Error("Hay paradas sin dirección geográfica verificada.");
   if(record.stops.length&&!authReady())throw new Error("Para agregar paradas intermedias, ingresá a tu cuenta.");
-  return{date,time,passengers,origin,destination,name,phone,comments:$("comments").value.trim(),stops:[...record.stops]};
+  return{date,time,pickupMode:selectedPickupMode,passengers,origin,destination,name,phone,comments:$("comments").value.trim(),stops:[...record.stops]};
 }
 function reviewDate(date,time){
   const [year,month,day]=String(date).split("-").map(Number);
@@ -893,7 +889,7 @@ function previewLocation(parent,kind,address){
   text(contents,"strong",address,"preview-place-name");
 }
 function showPreview(){
-  if(selectedPickupMode!=="schedule"){tell("Para recogidas inmediatas, consultá por WhatsApp. No enviamos una reserva automática.");return;}
+  if(selectedPickupMode!=="schedule"){tell("Usá Enviar solicitud para pedir una recogida inmediata.");return;}
   clearBookingFeedback();
   try{
     pendingReview=bookingData();
@@ -963,8 +959,68 @@ function saveGuest(result){
   old.unshift({code:result.code,token:result.public_token,savedAt:Date.now()});
   saveStorage(GUEST_KEY,old.slice(0,18));
 }
+
+function newClientRequestId(){
+  const secure=window.crypto;
+  if(secure?.randomUUID)return secure.randomUUID();
+  if(!secure?.getRandomValues)throw new Error("No se pudo crear un identificador seguro. Abrí Traslados en Chrome actualizado.");
+  const bytes=new Uint8Array(16);secure.getRandomValues(bytes);
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("");
+  return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
+}
+function renderBookingSuccess(result,mode="schedule"){
+  const box=$("booking-success");clear(box);box.hidden=false;
+  text(box,"div","✓","mark");
+  text(box,"h2","Solicitud enviada");
+  const urgent=mode!=="schedule";
+  text(box,"p",urgent
+    ?"Recibimos tu pedido de recogida. El conductor debe responder; todavía no es un viaje confirmado."
+    :"El conductor debe revisar y confirmar el traslado. No es una aceptación automática.");
+  text(box,"div",result.code,"code");
+  if(urgent&&result.pickup_date&&result.pickup_time){
+    text(box,"p",mode==="10"
+      ?"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+"."
+      :"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+".");
+  }
+  text(box,"p","Podés seguir el estado en Mis traslados. No se realiza ningún cobro al enviar.");
+  button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
+  for(const id of ["booking-preview","booking-final","review-booking","submit-actions","urgent-actions"])
+    $(id).hidden=true;
+  pendingReview=null;
+  box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function submitUrgentPickup(){
+  if(selectedPickupMode==="schedule"||busy)return;
+  const notice=$("urgent-send-error");notice.hidden=true;
+  let p;
+  try{p=bookingData();}catch(e){suggestBookingStep(e);showError(e);return;}
+  // Reintentos tras una respuesta ambigua reutilizan el mismo UUID.
+  // Un cambio de datos o modalidad inicia otra solicitud, nunca reenvía la anterior.
+  const signature=JSON.stringify(p);
+  if(!urgentAttempt||urgentAttempt.signature!==signature)
+    urgentAttempt={signature,id:newClientRequestId()};
+  const btn=$("urgent-send");busy=true;loading(btn,true);
+  try{
+    guardConnection();
+    const result=await rpc("customer_request_pickup_v1",
+      window.TrasladosBookingContracts.immediatePickup(authReady()?session.token:null,p,urgentAttempt.id));
+    if(!result?.code)throw new Error("El servidor no devolvió un código. Revisá Mis traslados antes de repetir.");
+    if(result.public_token)saveGuest(result);
+    urgentAttempt=null;
+    renderBookingSuccess(result,p.pickupMode);
+  }catch(e){
+    const msg=String(e?.message||"");
+    notice.textContent=/solicitud reciente pendiente|Demasiadas solicitudes/i.test(msg)
+      ?"Ya existe una solicitud reciente o alcanzaste el límite. Revisá Mis traslados antes de enviar otra."
+      :"No pudimos comprobar el envío. Si reintentás sin cambiar los datos, el servidor reutilizará el mismo identificador y evitará duplicados.";
+    notice.hidden=false;
+    showError(e);
+  }finally{busy=false;loading(btn,false);}
+}
+
 async function submitBooking(){
-  if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
+  if(selectedPickupMode!=="schedule"){tell("Para ahora o en 10 minutos, tocá Enviar solicitud.");return;}
   if(busy||!pendingReview)return;
   clearBookingFeedback();
   // El resumen aprobado debe coincidir exactamente con los campos al enviar:
@@ -1001,15 +1057,7 @@ async function submitBooking(){
       if(result?.public_token)saveGuest(result);
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
-    clear($("booking-success"));
-    const box=$("booking-success");box.hidden=false;
-    text(box,"div","✓","mark");text(box,"h2","Solicitud enviada");
-    text(box,"p","El conductor debe revisar y confirmar el traslado. No es una aceptación automática.");
-    text(box,"div",result.code,"code");
-    text(box,"p","Guardamos el acceso a tu reserva en este dispositivo. Con cuenta también la verás desde otro teléfono.");
-    button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
-    $("booking-preview").hidden=true;$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=true;
-    pendingReview=null;box.scrollIntoView({behavior:"smooth"});
+    renderBookingSuccess(result,"schedule");
   }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
 }
 function statusName(s){return states[s]||s||"Sin estado";}
@@ -1246,12 +1294,7 @@ function init(){
     $(key).addEventListener("change",refreshBookingSteps);
   }
   $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
-  $("urgent-switch-scheduled").addEventListener("click",()=>{
-    // Este CTA NO envía solicitudes: únicamente abre fecha/hora programada.
-    setWhen("schedule");
-    bookingSteps.open("when",{scroll:true});
-    $("pickup-date").focus({preventScroll:true});
-  });
+  $("urgent-send").addEventListener("click",()=>void submitUrgentPickup());
   $("booking-fix-when").addEventListener("click",()=>{
     bookingSteps.open("when",{scroll:true});
     $("pickup-date").focus({preventScroll:true});
