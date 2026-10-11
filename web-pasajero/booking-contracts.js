@@ -39,7 +39,30 @@
       p_destination_lng:p.destination.lng
     };
   }
+  function immediatePickup(sessionToken,p,requestId){
+    if(!["now","10"].includes(p.pickupMode))throw new Error("Modalidad inmediata inválida");
+    return {
+      p_request_id:requestId,
+      p_mode:p.pickupMode,
+      p_session_token:sessionToken||null,
+      p_customer_name:sessionToken?null:p.name,
+      p_customer_phone:sessionToken?null:p.phone,
+      p_passengers:p.passengers,
+      p_comments:p.comments,
+      p_origin_text:p.origin.text,
+      p_origin_lat:p.origin.lat,
+      p_origin_lng:p.origin.lng,
+      p_origin_department:p.origin.department||null,
+      p_destination_text:p.destination.text,
+      p_destination_lat:p.destination.lat,
+      p_destination_lng:p.destination.lng,
+      p_destination_department:p.destination.department||null,
+      p_stops:p.stops.map((x,i)=>({
+        position:i+1,address_text:x.text,lat:x.lat,lng:x.lng,department:x.department
+      }))
+    };
+  }
   root.TrasladosBookingContracts=Object.freeze({
-    checkAvailability,registeredReservation,guestReservation
+    checkAvailability,registeredReservation,guestReservation,immediatePickup
   });
 })(window);
