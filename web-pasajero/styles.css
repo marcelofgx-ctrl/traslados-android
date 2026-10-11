@@ -1251,3 +1251,80 @@ html,body{
 @media(max-width:365px){
   .trips-controls{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* PWA v54 — comprobación de recogida con etapas reales, sin animar un GPS falso. */
+#pickup-presence{
+  border-color:rgba(218,191,128,.42);
+  background:linear-gradient(135deg,rgba(14,68,67,.93),rgba(5,45,52,.97));
+  box-shadow:inset 0 1px 0 rgba(239,214,158,.07);
+}
+#pickup-presence[data-presence="busy"]{
+  border-color:rgba(221,186,117,.47);
+  background:linear-gradient(125deg,rgba(53,69,54,.86),rgba(7,48,54,.97));
+}
+#pickup-presence[data-presence="busy"] .pickup-live-indicator{
+  background:#d9b877;
+  box-shadow:0 0 0 5px rgba(220,187,119,.09);
+}
+#pickup-presence[data-presence="checking"] .pickup-live-indicator::after,
+#pickup-presence[data-phase="routing"] .pickup-live-indicator::after{
+  content:"";position:absolute;inset:-7px;border-radius:50%;
+  border:1px solid rgba(235,208,143,.75);
+  animation:pickupCheckOrbit 2.1s ease-out infinite;
+}
+.pickup-route-animation{
+  display:flex;align-items:center;gap:11px;margin:14px 3px 0;
+  min-width:0;max-width:100%;opacity:.9;
+}
+.pickup-route-point{
+  flex:0 0 22px;width:22px;height:22px;display:grid;place-items:center;
+  border:1px solid rgba(235,211,152,.43);border-radius:50%;
+  color:#f5d694;background:rgba(11,53,58,.7);font-size:12px;line-height:1;
+}
+.pickup-route-line{
+  position:relative;flex:1;min-width:0;height:3px;border-radius:20px;
+  background:repeating-linear-gradient(to right,rgba(222,204,146,.65) 0 8px,transparent 8px 14px);
+}
+.pickup-route-car{
+  position:absolute;left:0;top:50%;display:grid;place-items:center;
+  width:20px;height:20px;border-radius:8px;
+  color:#122f34;background:linear-gradient(135deg,#e4ba67,#f3d999);
+  box-shadow:0 0 0 4px rgba(222,185,100,.12);
+  font-size:11px;transform:translateY(-50%);
+}
+#pickup-presence[data-phase="checking"] .pickup-route-car,
+#pickup-presence[data-phase="routing"] .pickup-route-car{
+  animation:pickupRouteTravel 2.8s ease-in-out infinite alternate;
+}
+#pickup-presence[data-phase="ready"] .pickup-route-car{left:calc(100% - 20px)}
+#pickup-presence[data-phase="blocked"] .pickup-route-car,
+#pickup-presence[data-phase="issue"] .pickup-route-car,
+#pickup-presence[data-phase="waiting"] .pickup-route-car{
+  left:0;opacity:.68;box-shadow:none;
+}
+.pickup-route-caption{
+  margin:5px 0 0 34px!important;font-size:10px!important;font-weight:720;
+  letter-spacing:.025em;color:#e3ce9f!important;
+}
+@keyframes pickupRouteTravel{
+  from{left:0}
+  to{left:calc(100% - 20px)}
+}
+@keyframes pickupCheckOrbit{
+  0%{transform:scale(.7);opacity:.75}
+  80%{transform:scale(1.4);opacity:0}
+  100%{transform:scale(1.4);opacity:0}
+}
+@media(max-width:420px){
+  .pickup-route-animation{margin-top:12px;gap:8px}
+  .pickup-route-caption{margin-left:31px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #pickup-presence .pickup-route-car,
+  #pickup-presence .pickup-live-indicator::after{
+    animation:none!important;
+  }
+  #pickup-presence[data-phase="checking"] .pickup-route-car,
+  #pickup-presence[data-phase="routing"] .pickup-route-car{left:42%}
+}

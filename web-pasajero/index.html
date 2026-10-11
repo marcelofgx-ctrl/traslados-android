@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=53">
+  <link rel="stylesheet" href="./styles.css?v=54">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -101,6 +101,12 @@
               <p id="pickup-presence-subtitle">Un momento, estamos comprobando tu recogida.</p>
             </div>
           </div>
+          <div class="pickup-route-animation" id="pickup-route-animation" aria-hidden="true">
+            <span class="pickup-route-point">⌖</span>
+            <span class="pickup-route-line"><span class="pickup-route-car">◆</span></span>
+            <span class="pickup-route-point">◎</span>
+          </div>
+          <p class="pickup-route-caption" id="pickup-route-caption">Comprobando disponibilidad</p>
           <div id="pickup-presence-metrics" class="pickup-presence-metrics" hidden>
             <div class="pickup-presence-metric">
               <span class="pickup-metric-label"><span aria-hidden="true">⌁</span> DISTANCIA</span>
@@ -279,8 +285,9 @@
   <script src="./booking-contracts.js?v=1" defer></script>
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
+  <script src="./pickup-observability.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
   <script src="./trip-board.js?v=3" defer></script>
-  <script src="./app.js?v=53" defer></script>
+  <script src="./app.js?v=54" defer></script>
 </body>
 </html>
