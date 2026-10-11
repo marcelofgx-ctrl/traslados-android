@@ -76,7 +76,18 @@ function showError(e,fallback="No se pudo completar la acción"){
     msg="Ese horario dejó de estar disponible. Elegí otra hora para tu traslado.";
   tell(msg);
 }
-function loading(el,value){if(!el)return;el.disabled=value;el.dataset.original??=el.textContent;if(value)el.textContent="Procesando…";else{el.textContent=el.dataset.original;}}
+function loading(el,value){
+  if(!el)return;
+  el.disabled=value;el.setAttribute("aria-busy",String(Boolean(value)));
+  const label=el.querySelector?.(".booking-cta-label");
+  if(label){
+    label.dataset.original??=label.textContent;
+    label.textContent=value?"Enviando solicitud…":label.dataset.original;
+    return;
+  }
+  el.dataset.original??=el.textContent;
+  el.textContent=value?"Procesando…":el.dataset.original;
+}
 function guardConnection(){if(!navigator.onLine)throw new Error("Estás sin Internet; no enviamos reservas offline.");}
 async function rpc(name,payload={}){
   guardConnection();
