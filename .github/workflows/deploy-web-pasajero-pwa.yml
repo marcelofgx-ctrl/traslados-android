@@ -68,7 +68,7 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/app.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js
+          test -f web-pasajero/app.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
@@ -78,11 +78,13 @@ jobs:
           node --check web-pasajero/route-engine.js
           node --check web-pasajero/eta-engine.js
           node --check web-pasajero/booking-contracts.js
+          node --check web-pasajero/rpc-client.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/rpc-client-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
@@ -113,6 +115,8 @@ jobs:
           assert 'booking-contracts.js' in (r/'index.html').read_text()
           assert 'booking-contracts.js' in (r/'sw.js').read_text()
           assert 'window.TrasladosBookingContracts' in js
+          assert 'window.TrasladosRpc.call' in js
+          assert 'rpc-client.js' in (r/'index.html').read_text() and 'rpc-client.js' in (r/'sw.js').read_text()
           assert 'beforeinstallprompt' in js and 'serviceWorker.register' in js
           assert not any(t in js for t in ['service_role','sb_secret_'])
           assert 'No se envían reservas offline' in (r/'offline.html').read_text()
@@ -120,7 +124,7 @@ jobs:
           PYCHECK
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
-          (cd web-pasajero && sha256sum index.html app.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+          (cd web-pasajero && sha256sum index.html app.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
       - name: Export entire PWA even without GitHub Pages activated
         uses: actions/upload-artifact@v4
         with:
