@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=48">
+  <link rel="stylesheet" href="./styles.css?v=49">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -115,7 +115,6 @@
           <p id="pickup-presence-meta" class="pickup-presence-meta"></p>
           <span id="pickup-presence-status" class="pickup-screen-reader-status" role="status" aria-live="polite">Consultando disponibilidad y tiempo de recogida…</span>
           <button type="button" id="pickup-use-location" class="pickup-locate" hidden>⌖ Calcular llegada desde mi ubicación</button>
-          <a id="pickup-presence-whatsapp" class="pickup-contact-action" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">Consultar recogida por WhatsApp <span aria-hidden="true">↗</span></a>
         </div>
         <label>Pasajeros
           <select id="passengers" class="booking-select">
@@ -165,12 +164,12 @@
       </div>
       <div id="booking-preview" class="card preview" hidden></div>
       <div id="urgent-actions" class="urgent-actions" hidden>
-        <p class="urgent-actions-eyebrow">RECOGIDA INMEDIATA</p>
-        <h3>¿Necesitás viajar ahora?</h3>
-        <p>Por el momento, las recogidas inmediatas se coordinan directamente con el conductor. No se registra una reserva en el sistema hasta que se acuerde.</p>
-        <a id="urgent-whatsapp" class="secondary full urgent-booking-link" href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">CONTACTAR POR WHATSAPP <span aria-hidden="true">↗</span></a>
-        <div class="urgent-actions-separator">Para una solicitud desde Traslados, elegí fecha y hora</div>
-        <button id="urgent-switch-scheduled" type="button" class="primary full booking-main-cta"><span>ELEGIR FECHA Y HORA</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
+        <p class="urgent-actions-eyebrow">SOLICITUD DE RECOGIDA</p>
+        <h3 id="urgent-actions-title">Tu viaje puede empezar acá.</h3>
+        <p id="urgent-actions-description">Enviá tu recorrido al conductor. Te responderá desde Traslados; la recogida requiere su aceptación.</p>
+        <p id="urgent-send-error" class="booking-send-error" role="alert" hidden></p>
+        <button id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
+        <p class="booking-final-note">Sin pago anticipado · Sujeto a confirmación del conductor</p>
       </div>
       <div id="submit-actions" hidden>
         <p id="booking-send-error" class="booking-send-error" role="alert" hidden></p>
@@ -231,7 +230,7 @@
 
     <footer class="footer">
       <strong>TRASLADOS <em>con Reserva</em></strong><p>Atención personal · Aeropuerto · Programados · Larga distancia</p>
-      <div><a href="tel:+59897228175">☎ +598 97 228 175</a><a href="https://wa.me/59897228175" target="_blank" rel="noopener noreferrer">WhatsApp ↗</a></div>
+      <div><a href="tel:+59897228175">☎ +598 97 228 175</a></div>
       <small>© 2026 · Uruguay · Servicio privado de traslados</small>
     </footer>
   </main>
@@ -244,6 +243,6 @@
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./app.js?v=48" defer></script>
+  <script src="./app.js?v=49" defer></script>
 </body>
 </html>
