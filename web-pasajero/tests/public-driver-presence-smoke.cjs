@@ -41,7 +41,7 @@ const ctx={
     if(url.includes("pickup-eta")){
       const payload=JSON.parse(opts.body);
       if(payload.sessionToken)customerEtaCalls++;else guestEtaCalls++;
-      if(limitedEta)return{ok:false,status:429,json:async()=>({available:false,reason:"rate_limited"})};
+      if(limitedEta&&!payload.sessionToken)return{ok:false,status:429,json:async()=>({available:false,reason:"rate_limited"})};
       return{ok:true,json:async()=>({available:true,distanceKm:3.5,etaMin:10,
         ...(payload.sessionToken?{}:{estimateType:"coarse"})})};
     }
