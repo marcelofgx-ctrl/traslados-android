@@ -123,8 +123,8 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
 
   published=false;
   await ctx.refreshPickupPresence(true);await settled();
-  assert.equal(host.dataset.presence,"unknown");
-  assert.match(els["pickup-presence-status"].textContent,/Recogida no confirmada por ahora/);
+  assert.equal(host.dataset.presence,"busy");
+  assert.match(els["pickup-presence-status"].textContent,/Recogida inmediata no disponible/);
   assert.match(els["pickup-presence-status"].textContent,/automáticamente/);
   assert.match(els["pickup-presence-status"].textContent,/Estado consultado hace/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
