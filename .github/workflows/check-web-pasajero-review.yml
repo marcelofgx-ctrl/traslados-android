@@ -30,6 +30,7 @@ jobs:
           node --check web-pasajero/booking-contracts.js
           node --check web-pasajero/booking-steps.js
           node --check web-pasajero/pickup-cadence.js
+          node --check web-pasajero/pickup-observability.js
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
@@ -49,6 +50,7 @@ jobs:
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
+          node web-pasajero/tests/pickup-health-v54-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
