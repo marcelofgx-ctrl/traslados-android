@@ -141,9 +141,11 @@ function forgetPickupEta(){
  * El lector de pantalla recibe un único resumen; nunca se muestra información
  * del servidor ni coordenadas del conductor.
  */
-function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estimateNote="",checked=""}){
+function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estimateNote="",checked="",phase="idle"}){
   const host=$("pickup-presence");
-  if(host)host.dataset.presence=presence;
+  if(host){host.dataset.presence=presence;host.dataset.phase=phase;}
+  const routeCaption=$("pickup-route-caption");
+  if(routeCaption)routeCaption.textContent=({checking:"Comprobando disponibilidad",routing:"Calculando tiempo de llegada",ready:"Estimación actualizada",blocked:"Disponibilidad revisada",waiting:"Esperando próxima actualización",issue:"Reconectando la consulta",origin:"Punto de partida pendiente"})[phase]||"Estado actualizado";
   const main=$("pickup-presence-title");
   const sub=$("pickup-presence-subtitle");
   const metrics=$("pickup-presence-metrics");
@@ -176,7 +178,9 @@ async function publicDriverAvailability(force=false){
     return publicPresenceCache;
   if(publicPresencePending)return publicPresencePending;
   publicPresencePending=(async()=>{
+    const started=Date.now();
     const v=await window.TrasladosETA.availability({api:API,publishableKey:KEY});
+    window.TrasladosPickupHealth?.record?.("availability",v?(v.available?"available":"unavailable"):"network_error",Date.now()-started);
     if(!v)return null;
     publicPresenceCache=v;
     publicPresenceAt=Date.now();
@@ -196,14 +200,14 @@ async function refreshPickupPresence(force=false){
   const seq=++pickupEtaRequestSeq;
   if(!host.dataset.presence||host.dataset.presence==="unknown"){
     paintPickupCard({presence:"checking",title:"Consultando disponibilidad",
-      subtitle:"Un momento, estamos comprobando la próxima recogida."});
+      subtitle:"Consultamos el estado del conductor y su agenda.",phase:"checking"});
   }
   const driver=await publicDriverAvailability(force);
   if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
   if(!driver){
     forgetPickupEta();
     paintPickupCard({presence:"unknown",title:"No pudimos comprobar la disponibilidad",
-      subtitle:"La consulta de disponibilidad se actualizará automáticamente. Igualmente podés enviar tu solicitud, sujeta a respuesta del conductor."});
+      subtitle:"Por ahora no podemos verificar el estado. La consulta se repetirá automáticamente; podés enviar tu solicitud.",phase:"issue"});
     return;
   }
   const serverAge=Date.parse(driver.checkedAt||"");
@@ -217,15 +221,17 @@ async function refreshPickupPresence(force=false){
     " · Actualización automática cada 15 s. · Recogida sujeta a confirmación.";
   if(!driver.available){
     forgetPickupEta();
-    paintPickupCard({presence:"unknown",title:"Recogida no confirmada por ahora",
-      subtitle:"Estamos comprobando si el conductor puede recibirte. El estado puede variar por GPS, conexión o agenda; reintentaremos automáticamente.",
-      checked:checkedLabel});
+    // Resultado REAL del backend: no enviar solicitud de ETA, que no puede
+    // sustituir el bloqueo de agenda ni confirmar una recogida.
+    paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
+      subtitle:"Por el momento no hay una recogida inmediata para ofrecer. Podés enviar tu solicitud y el conductor revisará si puede atenderte.",
+      checked:checkedLabel,phase:"blocked"});
     return;
   }
   if(!record.origin){
     paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
       subtitle:"Elegí tu punto de partida para conocer la distancia y el tiempo de llegada.",
-      checked:checkedLabel});
+      checked:checkedLabel,phase:"origin"});
     return;
   }
   const signedIn=authReady();
@@ -236,7 +242,7 @@ async function refreshPickupPresence(force=false){
   // Mapa envía el último movimiento detectado; la web no obtiene velocidad
   // ni posición del conductor. Los períodos aplican en primer plano.
   const etaInterval=window.TrasladosPickupCadence.intervalMs(driver.motionHint);
-  const showWaiting=(prefix)=>{
+  const showWaiting=(prefix,requestActive=false)=>{
     if(lastGood){
       const estimateAge=Date.now()-lastVerifiedEtaAt;
       const freshEstimate=estimateAge<etaInterval+5000;
@@ -245,11 +251,11 @@ async function refreshPickupPresence(force=false){
           "Estamos actualizando tu tiempo de llegada.",
         km:lastGood.km,minutes:lastGood.minutes,
         estimateNote:(freshEstimate?"Estimación obtenida ":"Última estimación ")+
-          elapsedShort(estimateAge)+" · La llegada puede variar.",checked:checkedLabel});
+          elapsedShort(estimateAge)+" · La llegada puede variar.",checked:checkedLabel,phase:freshEstimate?"ready":requestActive?"routing":"waiting"});
     }else{
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:prefix||"Estamos actualizando la llegada aproximada a tu origen.",
-        checked:checkedLabel});
+        checked:checkedLabel,phase:requestActive?"routing":"waiting"});
     }
   };
   // Consulta de estado cada 15 s y ruta cada 25 s en movimiento / 45 s detenido.
@@ -261,11 +267,13 @@ async function refreshPickupPresence(force=false){
   }
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
   lastPickupEtaMessage="";lastPickupEtaIsEstimate=false;
-  showWaiting("Calculando distancia y tiempo hasta tu origen…");
+  showWaiting("Calculando distancia y tiempo hasta tu origen…",true);
+  const etaStart=Date.now();
   window.TrasladosETA.pickup({
     api:API,publishableKey:KEY,originLat:lat,originLng:lng,
     sessionToken:signedIn?session.token:null
   }).then(data=>{
+    window.TrasladosPickupHealth?.record?.("eta",data?.available?"success":String(data?.reason||"other"),Date.now()-etaStart);
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&data.distanceKm>=0
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
@@ -277,7 +285,7 @@ async function refreshPickupPresence(force=false){
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:"Llegada estimada hasta tu punto de partida.",
         km,minutes,estimateNote:data.estimateType==="coarse"?"Distancia y tiempo aproximados.":"Tiempo y distancia aproximados.",
-        checked:checkedLabel});
+        checked:checkedLabel,phase:"ready"});
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }else{
       const reason=data?.reason;
@@ -286,9 +294,9 @@ async function refreshPickupPresence(force=false){
         // La consulta ETA puede perder la frescura del GPS entre la lectura
         // de disponibilidad y la petición de ruta. No atribuirlo a desconexión.
         publicPresenceCache=null;publicPresenceAt=0;
-        paintPickupCard({presence:"unknown",title:"Recogida no confirmada por ahora",
-          subtitle:"La comprobación de llegada necesita información actualizada. Volveremos a consultar el estado automáticamente.",
-          checked:checkedLabel});
+        paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
+          subtitle:"El estado cambió durante el cálculo. Revisaremos la disponibilidad antes de volver a estimar la llegada.",
+          checked:checkedLabel,phase:"blocked"});
         return;
       }
       if(reason==="rate_limited"){
@@ -306,6 +314,7 @@ async function refreshPickupPresence(force=false){
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }
   }).catch(()=>{
+    window.TrasladosPickupHealth?.record?.("eta","network_error",Date.now()-etaStart);
     if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
     showWaiting("No pudimos actualizar el tiempo de llegada. Reintentaremos pronto.");
     lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
