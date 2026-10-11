@@ -85,6 +85,8 @@ async function refreshPickupPresence(force=false){
   if(!host)return;
   const urgent=selectedPickupMode!=="schedule";
   host.hidden=!urgent;
+  const locationAction=$("pickup-use-location");
+  if(locationAction)locationAction.hidden=!urgent||Boolean(record.origin);
   if(!urgent){
     pickupEtaRequestSeq++;host.removeAttribute("data-presence");return;
   }
@@ -508,7 +510,7 @@ function picker(name,mount,position){
     },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   }
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
-  return {state:()=>selected,chooseDept,input,persist,box};
+  return {state:()=>selected,chooseDept,input,persist,box,useCurrent};
 }
 // Shared verified route service used by our customer interfaces.
 // Credentials remain exclusively server-side.
@@ -1125,6 +1127,8 @@ function init(){
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
+  // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
+  $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
   destPicker=picker("destination",$("destination-picker"),0);
   $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();});
   $("review-booking").addEventListener("click",showPreview);
