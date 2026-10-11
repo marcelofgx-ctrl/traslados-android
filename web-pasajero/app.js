@@ -543,12 +543,9 @@ function picker(name,mount,position){
         }
         let address="Ubicación actual (GPS)",selectedDept=dept;
         try{
-          const r=await fetch(IDE+"/reverse?limit=1&latitud="+lat+"&longitud="+lng);
-          if(r.ok){
-            const arr=await r.json();
-            if(Array.isArray(arr)&&arr[0]?.address){
-              address=arr[0].address;selectedDept=arr[0].departamento||dept;
-            }
+          const result=await window.TrasladosAddress.reverse(lat,lng);
+          if(result?.address){
+            address=result.address;selectedDept=result.departamento||dept;
           }
         }catch{/* Las coordenadas GPS siguen siendo válidas sin geocodificación. */}
         persist({text:address,lat,lng,department:selectedDept});
