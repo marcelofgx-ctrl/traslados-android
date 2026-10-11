@@ -20,15 +20,15 @@ function refreshBookingSteps(){
   const routeComplete=Boolean(record.origin&&record.destination&&record.stops.every(Boolean));
   let routeText=routeComplete?stepSummaryName(record.origin)+" → "+stepSummaryName(record.destination)
     :record.origin?"Falta elegir destino":"Elegí origen y destino";
+  let routeMetrics="";
   if(routeComplete&&latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
       window.TrasladosRoutes.verified(latestRoad.data)){
     const d=latestRoad.data;
-    routeText+=" · "+d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km"+
-      " · "+d.durationMin+" min";
+    routeMetrics=d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+d.durationMin+" min";
     if(Number.isFinite(d.referenceFareUyu)&&d.referenceFareUyu>0)
-      routeText+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0});
+      routeMetrics+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0});
   }
-  bookingSteps.summary("route",routeText,routeComplete);
+  bookingSteps.summary("route",routeText,routeComplete,routeMetrics);
   const p=Number($("passengers")?.value||1);
   const passengerText=p===1?"1 pasajero":p+" pasajeros";
   const d=$("pickup-date")?.value||"",t=$("pickup-time")?.value||"";
