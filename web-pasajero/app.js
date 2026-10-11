@@ -366,8 +366,8 @@ function locationPermissionGuidance(errorCode){
 }
 function picker(name,mount,position){
   const key=name==="origin"||name==="destination"?name:"stop"+position;
-  const box=document.createElement("section");box.className="location-widget";mount.appendChild(box);
-  const caption=text(box,"div",name==="origin"?"◉ ORIGEN":name==="destination"?"◆ DESTINO":"● PARADA "+(position+1),"location-title");
+  const box=document.createElement("section");box.className="location-widget";box.dataset.locationKind=name;mount.appendChild(box);
+  const caption=text(box,"div",name==="origin"?"ORIGEN":name==="destination"?"DESTINO":"PARADA "+(position+1),"location-title");
   const selectedBox=text(box,"div","","location-selected");selectedBox.hidden=true;
   const controls=text(box,"div","","location-controls");
   const dep=text(controls,"div","","departments");
@@ -393,17 +393,21 @@ function picker(name,mount,position){
   const row=text(controls,"div","","loc-search");
   const input=document.createElement("input");input.type="search";
   input.placeholder="Calle, número o lugar…";
-  input.autocomplete="off";input.setAttribute("aria-label","Lugar o dirección de "+name);
+  input.autocomplete="off";input.enterKeyHint="search";
+  input.setAttribute("aria-label",name==="origin"?"Dirección de origen":name==="destination"?"Dirección de destino":"Dirección de la parada "+(position+1));
   row.appendChild(input);
   const search=button(row,"Buscar","tiny-btn location-search-action",()=>void lookup());
   search.setAttribute("aria-label","Buscar dirección o lugar"); 
-  const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn",()=>void useCurrent()):null;
+  const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn location-use-current",()=>void useCurrent()):null;
   const gpsHelp=name==="origin"?text(controls,"div","","gps-permission-help"):null;
   if(gpsHelp){gpsHelp.hidden=true;gpsHelp.setAttribute("role","alert");}
   const results=text(controls,"div","","results");
+  results.id="location-results-"+key;
+  input.setAttribute("aria-controls",results.id);
   const feedback=text(controls,"p","","geo-feedback");feedback.hidden=true;
   const source=text(controls,"p","","geo-attribution");source.hidden=true;
   function repaint(){
+    box.classList.toggle("is-selected",Boolean(selected));
     clear(selectedBox);
     if(!selected){selectedBox.hidden=true;controls.hidden=false;return;}
     selectedBox.hidden=false;controls.hidden=true;
