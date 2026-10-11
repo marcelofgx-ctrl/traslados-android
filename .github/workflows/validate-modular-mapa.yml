@@ -60,6 +60,49 @@ jobs:
       - name: Validate core build and native Mapa integration
         shell: bash
         run: |
-          set -euo pipefail
+          # Mantiene la misma compilación DEBUG. La telemetría nunca firma
+          # ni reemplaza las APK RELEASE que usan los pasajeros y conductor.
+          set -uo pipefail
+          started=$SECONDS
           gradle :core-reservations:classes :mapatrayectos:assembleDebug \
-            --build-cache --stacktrace --no-daemon
+            --build-cache --stacktrace --no-daemon --console=plain --profile \
+            2>&1 | tee "$RUNNER_TEMP/mapa-gradle-build.log"
+          result=${PIPESTATUS[0]}
+          echo "GRADLE_BUILD_SECONDS=$((SECONDS-started))" >> "$GITHUB_ENV"
+          echo "GRADLE_BUILD_EXIT=$result" >> "$GITHUB_ENV"
+          exit "$result"
+      - name: Summarize Gradle build duration and cache reuse
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/mapa-gradle-build.log"
+          {
+            echo "### Mapa modular — compilación de validación"
+            echo ""
+            echo "| Indicador | Resultado |"
+            echo "|---|---|"
+            echo "| Tipo de build | DEBUG sin firma ni publicación |"
+            echo "| Tiempo de Gradle | ${GRADLE_BUILD_SECONDS:-no medido} s |"
+            echo "| Código de salida | ${GRADLE_BUILD_EXIT:-no disponible} |"
+            if [ -s "$log" ]; then
+              total="$(grep -c '^> Task ' "$log" || true)"
+              reused="$(grep -c ' FROM-CACHE' "$log" || true)"
+              uptodate="$(grep -c ' UP-TO-DATE' "$log" || true)"
+              echo "| Tareas informadas | $total |"
+              echo "| Desde caché | $reused |"
+              echo "| Sin cambios (UP-TO-DATE) | $uptodate |"
+            fi
+            echo ""
+            echo "La duración total de GitHub Actions incluye preparación del SDK y checkout; no debe confundirse con Gradle ni con una compilación incremental local."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain short-lived Gradle performance profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapa-modular-gradle-profile
+          path: |
+            build/reports/profile/*.html
+            mapatrayectos/build/reports/profile/*.html
+          if-no-files-found: warn
+          retention-days: 7
