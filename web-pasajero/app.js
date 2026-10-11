@@ -68,6 +68,7 @@ function suggestBookingStep(error){
 }
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
+let urgentAttempt=null;
 
 function jsonStorage(key,defaultValue){try{return JSON.parse(localStorage.getItem(key)||"null")??defaultValue;}catch{return defaultValue;}}
 function saveStorage(key,v){try{localStorage.setItem(key,JSON.stringify(v));}catch{}}
@@ -96,7 +97,7 @@ function loading(el,value){
   el.textContent=value?"Procesando…":el.dataset.original;
 }
 function clearBookingFeedback(){
-  for(const id of ["booking-send-error","booking-when-error","booking-fix-when"]){
+  for(const id of ["booking-send-error","booking-when-error","booking-fix-when","urgent-send-error"]){
     const el=$(id);if(el)el.hidden=true;
   }
 }
@@ -958,6 +959,66 @@ function saveGuest(result){
   old.unshift({code:result.code,token:result.public_token,savedAt:Date.now()});
   saveStorage(GUEST_KEY,old.slice(0,18));
 }
+
+function newClientRequestId(){
+  const secure=window.crypto;
+  if(secure?.randomUUID)return secure.randomUUID();
+  if(!secure?.getRandomValues)throw new Error("No se pudo crear un identificador seguro. Abrí Traslados en Chrome actualizado.");
+  const bytes=new Uint8Array(16);secure.getRandomValues(bytes);
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("");
+  return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
+}
+function renderBookingSuccess(result,mode="schedule"){
+  const box=$("booking-success");clear(box);box.hidden=false;
+  text(box,"div","✓","mark");
+  text(box,"h2","Solicitud enviada");
+  const urgent=mode!=="schedule";
+  text(box,"p",urgent
+    ?"Recibimos tu pedido de recogida. El conductor debe responder; todavía no es un viaje confirmado."
+    :"El conductor debe revisar y confirmar el traslado. No es una aceptación automática.");
+  text(box,"div",result.code,"code");
+  if(urgent&&result.pickup_date&&result.pickup_time){
+    text(box,"p",mode==="10"
+      ?"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+"."
+      :"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+".");
+  }
+  text(box,"p","Podés seguir el estado en Mis traslados. No se realiza ningún cobro al enviar.");
+  button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
+  for(const id of ["booking-preview","booking-final","review-booking","submit-actions","urgent-actions"])
+    $(id).hidden=true;
+  pendingReview=null;
+  box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function submitUrgentPickup(){
+  if(selectedPickupMode==="schedule"||busy)return;
+  const notice=$("urgent-send-error");notice.hidden=true;
+  let p;
+  try{p=bookingData();}catch(e){suggestBookingStep(e);showError(e);return;}
+  // Reintentos tras una respuesta ambigua reutilizan el mismo UUID.
+  // Un cambio de datos o modalidad inicia otra solicitud, nunca reenvía la anterior.
+  const signature=JSON.stringify(p);
+  if(!urgentAttempt||urgentAttempt.signature!==signature)
+    urgentAttempt={signature,id:newClientRequestId()};
+  const btn=$("urgent-send");busy=true;loading(btn,true);
+  try{
+    guardConnection();
+    const result=await rpc("customer_request_pickup_v1",
+      window.TrasladosBookingContracts.immediatePickup(authReady()?session.token:null,p,urgentAttempt.id));
+    if(!result?.code)throw new Error("El servidor no devolvió un código. Revisá Mis traslados antes de repetir.");
+    if(result.public_token)saveGuest(result);
+    urgentAttempt=null;
+    renderBookingSuccess(result,p.pickupMode);
+  }catch(e){
+    const msg=String(e?.message||"");
+    notice.textContent=/solicitud reciente pendiente|Demasiadas solicitudes/i.test(msg)
+      ?"Ya existe una solicitud reciente o alcanzaste el límite. Revisá Mis traslados antes de enviar otra."
+      :"No pudimos comprobar el envío. Si reintentás sin cambiar los datos, el servidor reutilizará el mismo identificador y evitará duplicados.";
+    notice.hidden=false;
+    showError(e);
+  }finally{busy=false;loading(btn,false);}
+}
+
 async function submitBooking(){
   if(selectedPickupMode!=="schedule"){tell("Las recogidas urgentes se coordinan primero con el conductor.");return;}
   if(busy||!pendingReview)return;
@@ -996,15 +1057,7 @@ async function submitBooking(){
       if(result?.public_token)saveGuest(result);
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
-    clear($("booking-success"));
-    const box=$("booking-success");box.hidden=false;
-    text(box,"div","✓","mark");text(box,"h2","Solicitud enviada");
-    text(box,"p","El conductor debe revisar y confirmar el traslado. No es una aceptación automática.");
-    text(box,"div",result.code,"code");
-    text(box,"p","Guardamos el acceso a tu reserva en este dispositivo. Con cuenta también la verás desde otro teléfono.");
-    button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
-    $("booking-preview").hidden=true;$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=true;
-    pendingReview=null;box.scrollIntoView({behavior:"smooth"});
+    renderBookingSuccess(result,"schedule");
   }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
 }
 function statusName(s){return states[s]||s||"Sin estado";}
