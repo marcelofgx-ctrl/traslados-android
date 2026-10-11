@@ -379,7 +379,7 @@ function picker(name,mount,position){
   }
   const select=document.createElement("select");select.setAttribute("aria-label","Otros departamentos de Uruguay");
   const placeholder=document.createElement("option");
-  placeholder.value="";placeholder.textContent="Otros departamentos";
+  placeholder.value="";placeholder.textContent="Otros";
   select.appendChild(placeholder);
   for(const d of DEPTS.filter(x=>x!=="Montevideo"&&x!=="Canelones")){
     const item=document.createElement("option");item.value=d;item.textContent=d;select.appendChild(item);
@@ -397,8 +397,13 @@ function picker(name,mount,position){
   input.setAttribute("aria-label",name==="origin"?"Dirección de origen":name==="destination"?"Dirección de destino":"Dirección de la parada "+(position+1));
   row.appendChild(input);
   const search=button(row,"Buscar","tiny-btn location-search-action",()=>void lookup());
-  search.setAttribute("aria-label","Buscar dirección o lugar"); 
-  const geo=name==="origin"?button(controls,"⌖ Usar ubicación actual","tiny-btn location-use-current",()=>void useCurrent()):null;
+  search.setAttribute("aria-label","Buscar dirección o lugar");
+  search.title="Buscar dirección";
+  const geo=name==="origin"?button(row,"⌖ Usar ubicación actual","tiny-btn location-use-current",()=>void useCurrent()):null;
+  if(geo){
+    geo.setAttribute("aria-label","Usar mi ubicación actual como origen");
+    geo.title="Usar ubicación actual";
+  }
   const gpsHelp=name==="origin"?text(controls,"div","","gps-permission-help"):null;
   if(gpsHelp){gpsHelp.hidden=true;gpsHelp.setAttribute("role","alert");}
   const results=text(controls,"div","","results");
@@ -509,6 +514,13 @@ function picker(name,mount,position){
     })();
     await Promise.allSettled([placesTask,streetTask]);
   };
+  input.addEventListener("keydown",event=>{
+    if(event.key==="Enter"){
+      event.preventDefault();
+      clearTimeout(debounce);
+      void lookup();
+    }
+  });
   input.addEventListener("input",()=>{
     ++sequence;clearTimeout(debounce);clear(results);feedback.hidden=true;
     const q=input.value.trim();
