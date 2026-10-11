@@ -13,8 +13,9 @@ const end=js.indexOf("\nfunction init(){",start);
 assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 assert(css.includes(".install-guide[hidden]"));
-assert(html.includes("./app.js?v=28")&&html.includes("./styles.css?v=28"));
-assert(sw.includes("traslados-cliente-pwa-v28"));
+const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
+assert(Number.isInteger(appVersion)&&appVersion>=28&&html.includes("./styles.css?v=28"));
+assert(sw.includes("traslados-cliente-pwa-v"+appVersion),"Service Worker and UI release must match");
 assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v14.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
