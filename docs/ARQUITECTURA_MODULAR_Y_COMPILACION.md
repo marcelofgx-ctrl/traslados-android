@@ -1,5 +1,32 @@
 # Traslados — arquitectura modular, escalabilidad y compilaciones eficientes
 
+
+## Estado vigente — PWA v36 y medición Android (10/10/2026)
+
+**Prioridad: código verificado en `main` frente a apuntes históricos de v33.** Las fases iniciales de modularización se ampliaron de forma incremental en cuatro PR adicionales.
+
+| Fase | Integración | Evidencia |
+|---|---|---|
+| Direcciones | `web-pasajero/address-engine.js`, POI en `geo-search.js` | [PR #24](https://github.com/marcelofgx-ctrl/traslados-android/pull/24) |
+| Reserva Android | Biblioteca Java `:core-reservations`; Mapa la consume sin modificar paquete Java | [PR #25](https://github.com/marcelofgx-ctrl/traslados-android/pull/25), [Mapa RELEASE firmada](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38105641839) |
+| Rutas/precios PWA v34 | `route-engine.js` (Worker ORS, respaldo cache ROAD, validación vial, cotización orientativa TTL 5 min) | [PR #26](https://github.com/marcelofgx-ctrl/traslados-android/pull/26), [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106169110) |
+| Disponibilidad/ETA PWA v35 | `eta-engine.js` (cliente HTTP de Supabase; lógica 15 s estado, 30/60 s ETA y cuota permanece en `app.js`) | [PR #27](https://github.com/marcelofgx-ctrl/traslados-android/pull/27), [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106334485) |
+| Reservas PWA v36 | `booking-contracts.js` (datos puros para verificar agenda y crear reservas con/sin sesión; UI y RPC sin cambio) | [PR #28](https://github.com/marcelofgx-ctrl/traslados-android/pull/28), [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106507081) |
+| Rendimiento CI Android | `validate-modular-mapa.yml` cronometra Gradle, tareas cacheadas y publica perfil temporal, sin APK firmada | [PR #29](https://github.com/marcelofgx-ctrl/traslados-android/pull/29), [Java y Mapa DEBUG SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38106564106) |
+
+**Medición inicial del workflow Android nuevo:** Gradle `assembleDebug` + `:core-reservations:classes` tardó **45 s** en la ejecución citada (Gradle imprimió «BUILD SUCCESSFUL in 44s»). Reutilizó desde caché `:core-reservations:compileJava`, `:mapatrayectos:prepareEmbeddedConductor` y `:mapatrayectos:compileDebugJavaWithJavac`. Es una medición DEBUG puntual, no comparar directamente contra RELEASE ni anunciar aceleraciones porcentuales. El workflow guarda un perfil Gradle como artefacto por siete días. La firma release de Mapa no se modificó en las fases web ni en la instrumentación de CI.
+
+**Estado de interfaces:** el CSS, la estructura HTML premium, los textos del resumen, los flujos de reservas, la PWA oficial Pages y la APK Cliente Premium v14 (WebView de Pages) se mantienen. Los módulos JavaScript son scripts locales precargados en el service worker; `app.js` sigue coordinando UI, sesión, GPS del pasajero, cuotas, estado y acciones. Ni los contratos de backend ni la infraestructura Supabase/Cloudflare se migraron. No se crearon reservas de prueba reales.
+
+**Pendiente antes de declarar equivalencia operativa completa:** instalación y pruebas físicas en Samsung de la PWA v36 y Cliente Premium v14, búsquedas IDE reales de Montevideo/Canelones, pasajero→conductor→respuesta, GPS/ETA estacionado/en movimiento, notificaciones/MP3 nativos, persistencia de datos al actualizar APK, firma y flujos Uber/Cabify. Las suites sintéticas y CI no sustituyen estas comprobaciones.
+
+**Próximas fases:**
+1. Continuar dividiendo `app.js` por responsabilidades reales cuando haya pruebas equivalentes; no crear módulos minúsculos por estética. Proteger especialmente calendario, autenticación y renderizado.
+2. Tomar **3–5 ejecuciones comparables** de Gradle/CI y revisar dónde se consume el tiempo antes de activar paralelismo o reconstruir dependencias. Conservar `prepareEmbeddedConductor` mientras se define y prueba el reemplazo por Android Library `:feature:driver`. **No efectuar migración nativa masiva ni actualizar APK operativa sin equivalencia funcional, recursos, firma y pruebas reales.**
+3. Mensajería/paquetería como dominio propio, separado de pasajeros, reutilizando motores de búsqueda, rutas y ETA solo cuando exista contrato claro y pruebas.
+
+---
+
 **Decisión de arquitectura, 10/10/2026.**
 **Estado:** fases iniciales implementadas y validadas en GitHub; el resto permanece planificado. No se considera terminada toda la modularización.
 
