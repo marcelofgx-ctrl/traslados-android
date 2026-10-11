@@ -71,6 +71,9 @@ tasks.register('prepareEmbeddedConductor') {
     inputs.dir file('../conductor/src/main/res')
     outputs.dir embeddedConductorJavaDir
     outputs.dir embeddedConductorResDir
+    // The generated Java/resource transformation is deterministic for these inputs.
+    // Cache this custom task so CI can reuse it across unchanged builds.
+    outputs.cacheIf("Reproducible embedded Conductor source generation") { true }
     doLast {
         delete embeddedConductorJavaDir, embeddedConductorResDir
         def srcRoot = file('../conductor/src/main/java')
