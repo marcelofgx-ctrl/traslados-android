@@ -80,8 +80,14 @@ function showError(e,fallback="No se pudo completar la acción"){
   let msg=e instanceof Error?e.message:fallback;
   if(/gen_random_bytes|function .*does not exist|SQLSTATE|permission denied for schema/i.test(msg))
     msg="No pudimos registrar la solicitud por un problema técnico. Revisá Mis traslados antes de volver a enviarla.";
-  else if(/HORARIO_NO_DISPONIBLE/i.test(msg))
-    msg="Ese horario dejó de estar disponible. Elegí otra hora para tu traslado.";
+  else if(/HORARIO_YA_NO_DISPONIBLE|HORARIO_NO_DISPONIBLE/i.test(msg))
+    msg="Ese horario ya no está disponible. Elegí una nueva fecha y hora para solicitar el traslado.";
+  else if(/La solicitud inmediata venci[oó]/i.test(msg))
+    msg="Esta solicitud inmediata venció. Para viajar, enviá una nueva solicitud desde Reservar.";
+  else if(/No hay un presupuesto pendiente|presupuesto ya recibi[oó] una respuesta/i.test(msg))
+    msg="Este presupuesto ya no admite esa respuesta. Actualizá Mis traslados para ver su estado.";
+  else if(/^[A-Z][A-Z0-9_]{5,}$/.test(msg))
+    msg="No pudimos completar la operación. Actualizá Mis traslados antes de volver a intentar.";
   tell(msg);
 }
 function loading(el,value){
@@ -1227,6 +1233,7 @@ function playTripAlertSound(){
 
 function reservationView(r,guestToken){
   const meta=tripBoard.metadata(r),price=Number(r.quote_final_total||0);
+  const expired=tripBoard.expiredQuote(r);
   const d=document.createElement("details");d.className="reservation trip-card";
   d.dataset.tripCode=r.code||"";d.dataset.tone=meta.tone;d.open=openTripCards.has(r.code);
   d.addEventListener("toggle",()=>{if(d.open)openTripCards.add(r.code);else openTripCards.delete(r.code);});
@@ -1258,22 +1265,27 @@ function reservationView(r,guestToken){
   if(r.comments)tripLine(inner,"✎",r.comments);
   text(inner,"p","ETAPA DEL TRASLADO","trip-detail-heading trip-detail-section");
   tripProgress(inner,meta);
-  const guidance=meta.tone==="attention"?"El conductor te envió un presupuesto. Revisalo y respondé para continuar.":
+  const guidance=meta.tone==="expired"?"El horario solicitado ya pasó. El presupuesto permanece registrado, pero no debe aceptarse para esa recogida. La solicitud aún figura pendiente de cierre.":
+    meta.tone==="attention"?"El conductor te envió un presupuesto. Revisalo y respondé para continuar.":
     meta.tone==="pending"?"Solicitud recibida. Estamos esperando la respuesta del conductor.":
     meta.tone==="confirmed"?"Traslado aceptado. Revisá todos los detalles de tu viaje.":
     meta.tone==="moving"?"El conductor registró este estado. El tiempo de llegada puede variar y no equivale a una posición GPS pública.":
     meta.tone==="complete"?"El traslado figura como finalizado.":meta.label;
   text(inner,"p",guidance,"trip-detail-note");
-  text(inner,"p","PRESUPUESTO","trip-detail-heading trip-detail-section");
+  text(inner,"p",expired?"PRESUPUESTO ORIGINAL":"PRESUPUESTO","trip-detail-heading trip-detail-section");
   if(price>0){
     text(inner,"div",tripMoney(price),"trip-detail-price");
-    if(r.quote_includes)text(inner,"p","Incluye: "+r.quote_includes,"trip-detail-note");
+    const includes=String(r.quote_includes??"").trim();
+    if(includes&&!/^(null|undefined|n\/a|-)$/i.test(includes))
+      text(inner,"p","Incluye: "+includes,"trip-detail-note");
     if(meta.tone==="attention")text(inner,"p","El presupuesto requiere tu confirmación.","trip-detail-note");
   }else text(inner,"p","Presupuesto pendiente de preparación por el conductor.","trip-detail-note");
+  if(expired)text(inner,"p","⌛ Este horario venció. El presupuesto se conserva como referencia, pero necesitás solicitar una nueva recogida.","trip-expired-note");
   text(inner,"p","MOVIMIENTOS","trip-detail-heading trip-detail-section");tripTimeline(inner,r);
   mountTripChat(inner,r,guestToken);
   const actions=text(inner,"div","","action-row");
-  if(price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
+  if(expired)button(actions,"Solicitar nuevo traslado","primary",()=>shiftView("reservar"));
+  if(!expired&&price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
     button(actions,"Aceptar presupuesto","primary",()=>void decideQuote(r.id,true,guestToken));
     button(actions,"Rechazar","secondary",()=>void decideQuote(r.id,false,guestToken));
   }
@@ -1298,7 +1310,7 @@ async function decideQuote(id,accept,guestToken=null){
     if(!result?.code)throw new Error("No recibimos confirmación de la respuesta. Actualizá Mis traslados.");
     tell(accept?"Presupuesto aceptado. Tu traslado quedó confirmado.":"Presupuesto rechazado.");
     await loadTrips();
-  }catch(e){showError(e);}
+  }catch(e){showError(e);await loadTrips();}
 }
 function closeTripNotice(){
   $("trip-alert-overlay").hidden=true;

@@ -47,6 +47,7 @@ jobs:
           node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
           node web-pasajero/tests/urgent-request-v49-smoke.cjs
           node web-pasajero/tests/trip-board-v50-smoke.cjs
+          node web-pasajero/tests/expired-quotes-v55-smoke.cjs
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
