@@ -52,13 +52,13 @@ function element(){
 }
 const steps={};
 for(const key of ["route","when","passenger"]){
-  const item=element(),toggle=element(),body=element(),summary=element(),check=element();
+  const item=element(),toggle=element(),body=element(),summary=element(),check=element(),extra=element();
   item.dataset.bookingStep=key;
   item.querySelector=sel=>({
     "[data-step-toggle]":toggle,"[data-step-body]":body,
-    "[data-step-summary]":summary,"[data-step-check]":check
+    "[data-step-summary]":summary,"[data-step-check]":check,"[data-step-extra]":key==="route"?extra:null
   })[sel];
-  steps[key]={item,toggle,body,summary,check};
+  steps[key]={item,toggle,body,summary,check,extra};
 }
 const text=element(),bar=element(),fill=element();
 const documentRoot={
@@ -75,7 +75,9 @@ assert.equal(steps.route.body.hidden,false);
 assert.equal(steps.when.body.hidden,true);
 assert.equal(steps.passenger.toggle.attrs["aria-expanded"],"false");
 const mockField={value:"Arenal Grande 2274"};
-control.summary("route","Arenal Grande → Aeropuerto",true);
+control.summary("route","Arenal Grande → Aeropuerto",true,"18,3 km · 28 min · $ 720");
+assert.equal(steps.route.extra.textContent,"18,3 km · 28 min · $ 720");
+assert.equal(steps.route.extra.hidden,false,"Show road-based metrics only when verified");
 assert.equal(steps.route.summary.textContent,"Arenal Grande → Aeropuerto");
 assert.equal(steps.route.check.hidden,false);
 assert.equal(bar.attrs["aria-valuenow"],"1");
@@ -99,6 +101,7 @@ assert.equal(fill.style.width,"100%");
 assert(steps.passenger.item.classes.has("is-complete"));
 control.open("route");
 control.summary("route","Elegí origen y destino",false);
+assert.equal(steps.route.extra.hidden,true,"Never retain stale km or price after route change");
 assert.equal(steps.route.check.hidden,true,"Editing the route must invalidate its green check");
 assert.equal(mockField.value,"Arenal Grande 2274");
 console.log("PASS premium accordion v38: accessibility, folding, mobile styles, summaries, edit and state persistence");
