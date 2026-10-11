@@ -23,5 +23,5 @@ La captura Samsung mostraba un formulario de origen/destino demasiado alto, un �
 
 ## Validación
 - Smoke específico `web-pasajero/tests/route-premium-v45-smoke.cjs` y regresiones existentes, más compilación de compatibilidad Cliente v15.
-- CI y Pages pendientes hasta consultar el resultado real del PR.
+- PR [#39](https://github.com/marcelofgx-ctrl/traslados-android/pull/39) integrada en main (`d5699aa`). CI PWA [38111565165](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38111565165), revisión [38111565174](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38111565174), compatibilidad Android v15 DEBUG [38111565155](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38111565155) y GitHub Pages [38111623715](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38111623715): **SUCCESS**. Se mantiene la APK v15 firmada original.
 - QA físico aún pendiente: Samsung 320–430 dp, zoom/fuente grande, resultados IDE y POI, GPS con y sin permiso, selección y edición A/B, plegado, entrada de paradas, consulta urgente, confirmación y actualización de WebView.
