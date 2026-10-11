@@ -1328,3 +1328,19 @@ html,body{
   #pickup-presence[data-phase="checking"] .pickup-route-car,
   #pickup-presence[data-phase="routing"] .pickup-route-car{left:42%}
 }
+
+/* PWA v55 — cotizaciones históricas no accionables; compacto y coherente. */
+.trip-card[data-tone="expired"]{border-color:rgba(220,182,117,.32)!important}
+.trip-card[data-tone="expired"] .trip-status{
+  color:#e4c58a;background:rgba(169,129,69,.10);border-color:rgba(231,196,134,.36);
+}
+.trip-expired-note{
+  padding:11px 13px;margin:10px 0!important;border-radius:12px;
+  background:rgba(223,181,108,.085);border:1px solid rgba(223,181,108,.31);
+  color:#eddaaa!important;font-size:11.5px!important;line-height:1.55!important;
+}
+@media(max-width:520px){
+  .trip-card[data-tone="expired"] .action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .trip-card[data-tone="expired"] .action-row button{min-width:0;font-size:11px}
+  .toast{width:min(90vw,385px);font-size:13px;line-height:1.45;padding:12px 16px}
+}
