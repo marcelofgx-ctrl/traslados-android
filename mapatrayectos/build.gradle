@@ -48,6 +48,7 @@ android {
 }
 
 dependencies {
+    implementation project(':core-reservations')
     implementation 'org.maplibre.gl:android-sdk:13.6.1'
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.core:core:1.15.0'
