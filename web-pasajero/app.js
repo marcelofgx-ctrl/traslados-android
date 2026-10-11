@@ -808,6 +808,7 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
+    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
   });
@@ -833,6 +834,7 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
+    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();
     lastPickupEtaAt=0;refreshPickupPresence(true);
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
     // Claim existing guest bookings in this browser so they become visible
@@ -845,7 +847,7 @@ async function accountSubmit(){
       });}catch{unclaimed.push(prior);}
     }
     saveStorage(GUEST_KEY,unclaimed);
-    syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView("reservar");
+    syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView("reservar");void loadTrips({background:true});
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
 function bookingData(){
@@ -1194,9 +1196,9 @@ function showTripNotice(change){
   $("trip-alert-overlay").hidden=false;$("trip-alert-close").focus();
   if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
 }
-function renderTripsBoard(){
+function renderTripsBoard({reset=false}={}){
   const list=$("trips-list");
-  if(list.children.length){
+  if(!reset&&list.children.length){
     openTripGroups=new Set([...list.querySelectorAll(".trips-day[open]")].map(x=>x.dataset.key));
     openTripCards=new Set([...list.querySelectorAll(".trip-card[open]")].map(x=>x.dataset.tripCode));
   }
@@ -1453,10 +1455,10 @@ function init(){
     for(const el of document.querySelectorAll("[data-trips-scope]")){
       const active=el===tab;el.classList.toggle("active",active);el.setAttribute("aria-pressed",String(active));
     }
-    openTripGroups.clear();renderTripsBoard();
+    openTripGroups.clear();renderTripsBoard({reset:true});
   });
-  $("trips-group-by").addEventListener("change",()=>{tripsGroupBy=$("trips-group-by").value;openTripGroups.clear();renderTripsBoard();});
-  $("trips-status-filter").addEventListener("change",()=>{tripsFilter=$("trips-status-filter").value;openTripGroups.clear();renderTripsBoard();});
+  $("trips-group-by").addEventListener("change",()=>{tripsGroupBy=$("trips-group-by").value;openTripGroups.clear();renderTripsBoard({reset:true});});
+  $("trips-status-filter").addEventListener("change",()=>{tripsFilter=$("trips-status-filter").value;openTripGroups.clear();renderTripsBoard({reset:true});});
   $("trips-alert-vibrate").checked=jsonStorage("traslados.vibrate-prefs.v1",false)===true;
   $("trips-alert-vibrate").addEventListener("change",()=>saveStorage("traslados.vibrate-prefs.v1",$("trips-alert-vibrate").checked));
   $("trip-alert-close").addEventListener("click",closeTripNotice);
@@ -1466,7 +1468,7 @@ function init(){
     for(const tab of document.querySelectorAll("[data-trips-scope]")){
       const yes=tab.dataset.tripsScope==="all";tab.classList.toggle("active",yes);tab.setAttribute("aria-pressed",String(yes));
     }
-    openTripGroups.clear();openTripCards.add(target);shiftView("viajes");renderTripsBoard();
+    openTripGroups.clear();openTripCards.add(target);shiftView("viajes");renderTripsBoard({reset:true});
     const card=[...document.querySelectorAll("#trips-list .trip-card")].find(x=>x.dataset.tripCode===target);
     if(card){card.closest(".trips-day").open=true;card.open=true;card.scrollIntoView({block:"center",behavior:"smooth"});}
   });
@@ -1480,5 +1482,6 @@ function init(){
   $("account-submit").addEventListener("click",()=>void accountSubmit());
   window.addEventListener("online",updateConnectivity);window.addEventListener("offline",updateConnectivity);
   syncAuthUI();setAccountMode(false);updateConnectivity();refreshBookingSteps();installUI();
+  if(authReady()||jsonStorage(GUEST_KEY,[]).length)void loadTrips({background:true});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
