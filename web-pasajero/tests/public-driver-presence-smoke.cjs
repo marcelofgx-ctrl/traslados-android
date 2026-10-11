@@ -19,8 +19,9 @@ assert(!fragment.includes('driverLat')&&!fragment.includes('driverLng'),
 assert(fragment.includes('sessionToken:session.token'),"Private ETA still requires a real customer session");
 
 const host={hidden:false,dataset:{},removeAttribute(k){if(k==="data-presence")delete this.dataset.presence;}};
+const pickupLocationButton={hidden:true};
 const els={
-  "pickup-presence":host,"pickup-presence-whatsapp":{},
+  "pickup-presence":host,"pickup-use-location":pickupLocationButton,"pickup-presence-whatsapp":{},
   "urgent-whatsapp":{},"pickup-presence-status":{textContent:""}
 };
 let published=true,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
@@ -53,6 +54,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
 (async()=>{
   await ctx.refreshPickupPresence(true);await settled();
   assert(host.hidden===false);
+  assert.equal(pickupLocationButton.hidden,true,"Selected origin hides location CTA");
   assert.equal(guestEtaCalls,1,"Guest should get a privacy-coarsened ETA without login");
   assert.equal(customerEtaCalls,0,"No customer session required for guest");
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
