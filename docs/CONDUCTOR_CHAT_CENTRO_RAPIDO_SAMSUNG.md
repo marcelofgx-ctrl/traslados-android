@@ -1,6 +1,6 @@
 # Traslados · Conversación desde globito, aviso y respuestas rápidas
 
-**Fecha:** 11/10/2026 UYT · **Estado:** rama `feat/conductor-chat-from-bubble`, NO integrada ni publicada. PWA v58 y PR #59 no se modifican.
+**Estado actualizado 12/10/2026:** PR #60 FUSIONADO y RELEASE Conductor 11.5-R5 / Mapa 0.1-R25.0 PUBLICADAS con firma original. PWA v59 vía PR #59. **QA real Samsung continúa pendiente**; guía de descarga, rollback y prueba: [RELEASE_TRASLADOS_20261012_PWA59_MAPA25_CONDUCTOR_R5.md](RELEASE_TRASLADOS_20261012_PWA59_MAPA25_CONDUCTOR_R5.md).
 
 ## Diagnóstico desde capturas reales Samsung
 - Chat del pasajero en Chrome: reserva `PENDIENTE`, mensaje `Hola` enviado.
