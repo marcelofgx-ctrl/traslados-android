@@ -882,7 +882,9 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
-    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();openTripChats.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
+    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
   });
@@ -908,7 +910,9 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
-    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();
+    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
+    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     lastPickupEtaAt=0;refreshPickupPresence(true);
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
     // Claim existing guest bookings in this browser so they become visible
@@ -1405,7 +1409,8 @@ function closeTripNotice(){
   tripPreviouslyFocused?.focus?.();tripPreviouslyFocused=null;
 }
 function showTripNotice(change){
-  if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden)return;
+  if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden||
+      !$("trip-chat-sheet").hidden)return;
   const quote=change.kind==="quote",message=change.kind==="message";
   tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
   $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":message?"Nuevo mensaje del conductor":"Tu traslado se actualizó";
@@ -1485,6 +1490,10 @@ async function loadTrips({background=false}={}){
       if(newest){
         const closed=["FINALIZADA","CANCELADA","RECHAZADA","RECHAZADA_CLIENTE"].includes(newest.status);
         if(closed!==activeTripChat.closed)openTripChat(newest,newest.__guestToken||null,tripChatPreviouslyFocused);
+        else if(updates.some(change=>change.kind==="message"&&change.row.id===newest.id)){
+          const feed=$("trip-chat-dialog-content")?.querySelector(".trip-chat-feed");
+          if(feed)void loadTripChat(newest,newest.__guestToken||null,feed);
+        }
       }
     }
     renderTripsBoard();
@@ -1700,6 +1709,7 @@ function init(){
   $("refresh-trips").addEventListener("click",()=>void loadTrips());
   for(const tab of document.querySelectorAll("[data-trips-scope]"))tab.addEventListener("click",()=>{
     tripsScope=tab.dataset.tripsScope;tripsScopeChosen=true;
+    tripsFilter="all";$("trips-status-filter").value="all";
     for(const el of document.querySelectorAll("[data-trips-scope]")){
       const active=el===tab;el.classList.toggle("active",active);el.setAttribute("aria-pressed",String(active));
     }
@@ -1732,8 +1742,15 @@ function init(){
   $("trip-chat-dialog-close").addEventListener("click",closeTripChat);
   $("trip-chat-sheet").addEventListener("click",e=>{if(e.target===$("trip-chat-sheet"))closeTripChat();});
   document.addEventListener("keydown",e=>{
-    if(e.key!=="Escape")return;
-    if(!$("trip-chat-sheet").hidden){e.preventDefault();closeTripChat();}
+    const sheet=$("trip-chat-sheet");
+    if(sheet.hidden)return;
+    if(e.key==="Escape"){e.preventDefault();closeTripChat();return;}
+    if(e.key!=="Tab")return;
+    const controls=[...sheet.querySelectorAll("button:not([disabled]),textarea:not([disabled])")];
+    if(!controls.length)return;
+    const first=controls[0],last=controls[controls.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   });
   $("trip-alert-overlay").addEventListener("click",e=>{if(e.target===$("trip-alert-overlay"))closeTripNotice();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("trip-alert-overlay").hidden)closeTripNotice();});
