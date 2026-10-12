@@ -4,6 +4,10 @@ on:
   push:
     paths: ['.github/workflows/qa-public-road-routing.yml']
     branches: [main]
+  pull_request:
+    paths:
+      - 'web-pasajero/route-engine.js'
+      - '.github/workflows/qa-public-road-routing.yml'
 permissions:
   contents: read
 jobs:
@@ -16,23 +20,25 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,urllib.parse,urllib.request,urllib.error
+          import json,urllib.parse,urllib.request,urllib.error,time
           base="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate"
           cases=[
             ("Carrasco-CiudadVieja","-56.01638,-34.83696;-56.207,-34.906"),
             ("Centro-PuntaCarretas","-56.165,-34.902;-56.159,-34.926"),
+            ("Centro-Aeropuerto","-56.180,-34.900;-56.01638,-34.83696"),
           ]
           for name,points in cases:
             url=base+"?"+urllib.parse.urlencode({"points":points})
             req=urllib.request.Request(url,headers={"Accept":"application/json","Origin":"https://marcelofgx-ctrl.github.io","User-Agent":"Mozilla/5.0 Traslados-Passenger-QA/1.0"})
+            started=time.monotonic()
             try:
               with urllib.request.urlopen(req,timeout=18) as r:
-                body=json.load(r);print(name,"HTTP",r.status, {k:body.get(k) for k in ("available","source","reason","distanceKm","durationMin")})
+                body=json.load(r);print(name,"HTTP",r.status,"elapsed_s",round(time.monotonic()-started,2), {k:body.get(k) for k in ("available","source","reason","distanceKm","durationMin")})
             except urllib.error.HTTPError as e:
               raw=e.read().decode("utf-8","replace")
               try: body=json.loads(raw)
               except: body={}
-              print(name,"HTTP",e.code, "server",e.headers.get("server"),"ct",e.headers.get("Content-Type"),"body",raw[:480],
+              print(name,"HTTP",e.code,"elapsed_s",round(time.monotonic()-started,2), "server",e.headers.get("server"),"ct",e.headers.get("Content-Type"),"body",raw[:480],
                     {k:body.get(k) for k in ("available","source","reason","distanceKm","durationMin")})
             except Exception as ex:
               print(name,"NETWORK_ERROR",str(ex)[:160])
