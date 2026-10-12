@@ -37,8 +37,9 @@ assert(app.includes('tripsScope=actionable?"attention":upcoming?"upcoming":"hist
   "When only historical trips exist, show them instead of an empty upcoming tab");
 assert(app.includes('tripsFilter="all";$("trips-status-filter").value="all"'),
   "Quick tab changes must not be silently constrained by old advanced filters");
-assert(app.includes('function closeTripChat()')&&app.includes('closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null'),
-  "Account changes must close personal conversation data");
+assert(app.includes('function closeTripChat()')&&
+  (app.match(/closeTripChat\(\);\$\("trip-chat-dialog-content"\)\.replaceChildren\(\);tripQueryEpoch\+\+;tripsLoading=false;tripRows=\[\];tripLoaded=false;tripSnap=null/g)||[]).length===2,
+  "Login and logout must close conversations and invalidate prior responses");
 assert(app.includes('if(activeTripChat.closed){')&&app.includes('tripChatDrafts.delete(r.code)'),
   "A closed chat is read-only; even an old draft must be deleted");
 assert(app.includes('if(closed!==activeTripChat.closed)openTripChat'),
@@ -55,8 +56,8 @@ assert(css.includes('.trip-chat-sheet')&&css.includes('.trip-chat-archived')&&
   css.includes('.trip-detail-disclosure'));
 assert(css.includes('.trip-card:not([open]) .trip-route-label')&&
   css.includes('-webkit-line-clamp:unset'),"Long airport destinations must remain readable");
-assert(html.includes("app.js?v=58")&&html.includes("styles.css?v=58")&&
-  sw.includes("traslados-cliente-pwa-v58"),"Release must bust stale Samsung caches");
+assert(html.includes("app.js?v=59")&&html.includes("styles.css?v=59")&&
+  sw.includes("traslados-cliente-pwa-v59"),"Release must bust stale Samsung caches");
 assert(!/serviceWorker\.ready\.then\(reg=>reg\.pushManager\.subscribe/.test(app),
   "No fake push with app closed");
 console.log("PASS PWA v58: passenger states, smart initial tab, closed chat, on-demand details and contracts");

@@ -2,6 +2,8 @@
 **Fecha de consolidación:** 11–12/10/2026 · **Rama:** `feat/pwa-v58-guided-passenger-journey`
 **Responsabilidad:** documento de referencia para futuras sesiones y cambios. A partir de ahora NO proponer cambios de una pantalla sin comprobar sus efectos sobre el flujo global.
 
+> **Estado de verificación 11/10 ~22:30 UYT:** PR #58 fusionado en `main` (`a6d4c89`); PWA CI [38191119097](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38191119097) y Pages [38191118475](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38191118475) SUCCESS. **No hay QA física Samsung v58 completada**. Matriz y pasos: [QA_SAMSUNG_PWA_V58_ESTABILIDAD.md](QA_SAMSUNG_PWA_V58_ESTABILIDAD.md). PR [#59](https://github.com/marcelofgx-ctrl/traslados-android/pull/59) es **DRAFT, NO DESPLEGADO**: preserva detalles durante refresco, omite rerender sin novedades, invalida consultas previas al cambiar de cuenta y borra chat sensible del DOM; pruebas CI agregadas. No fusionar antes de QA/gestión de caché.
+
 ## 1. Qué estamos construyendo
 Traslados es un servicio privado de transporte de **un conductor** y sus pasajeros. No es un clon multi-conductor de Uber. El sistema debe responder, con el menor número de decisiones visibles posible:
 1. **¿Qué está pasando con mi traslado?**

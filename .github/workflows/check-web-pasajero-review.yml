@@ -56,6 +56,7 @@ jobs:
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
+          node web-pasajero/tests/stable-refresh-v58-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs

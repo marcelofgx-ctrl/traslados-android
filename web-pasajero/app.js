@@ -882,8 +882,14 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
-    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
-    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+    $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
+    $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
+    for(const tab of document.querySelectorAll("[data-trips-scope]")){
+      const selected=tab.dataset.tripsScope==="upcoming";
+      tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
+    }
+    openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
@@ -910,8 +916,14 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
-    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
-    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+    $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
+    $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
+    for(const tab of document.querySelectorAll("[data-trips-scope]")){
+      const selected=tab.dataset.tripsScope==="upcoming";
+      tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
+    }
+    openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     lastPickupEtaAt=0;refreshPickupPresence(true);
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
@@ -1143,8 +1155,19 @@ async function submitBooking(){
 
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null;
+let tripQueryEpoch=0,tripRenderedSignature=null;
+// A 20-second response may arrive after logout/login: discard that old account's result.
+function tripDisplayKey(rows){
+  return JSON.stringify(rows.map(r=>[
+    r.id,r.code,r.status,r.pickup_date,r.pickup_time,r.origin_text,r.destination_text,
+    r.stops,r.comments,r.passengers,r.quote_status,r.quote_final_total,r.quote_sent_at,
+    r.quote_accepted_at,r.quote_includes,r.pickup_phase,r.pickup_phase_updated_at,
+    r.confirmed_at,r.created_at,r.updated_at,r.last_driver_message_id,
+    tripBoard.metadata(r).tone
+  ]));
+}
 let tripsScope="upcoming",tripsGroupBy="day",tripsFilter="all",tripFocused=null,tripPreviouslyFocused=null;
-let tripsScopeChosen=false,openTripCards=new Set(),openTripGroups=new Set();
+let tripsScopeChosen=false,openTripCards=new Set(),openTripGroups=new Set(),openTripDetails=new Set();
 let activeTripChat=null,tripChatPreviouslyFocused=null;
 const tripChatDrafts=new Map(),tripChatAttempts=new Map();
 let tripAlertAudio=null;
@@ -1358,6 +1381,7 @@ function reservationView(r,guestToken){
   if(!actions.children.length)actions.remove();
 
   const info=text(inner,"details","","trip-detail-disclosure");
+  info.open=openTripDetails.has(String(r.code||"")+":info");
   text(info,"summary","Datos del traslado","trip-disclosure-head");
   const infoBody=text(info,"div","","trip-disclosure-body");
   tripLine(infoBody,"◉",r.origin_text||"Origen");
@@ -1372,6 +1396,7 @@ function reservationView(r,guestToken){
   if(!price)text(infoBody,"p","El importe todavía no fue confirmado por el conductor.","trip-detail-note");
 
   const historical=text(inner,"details","","trip-detail-disclosure trip-history-disclosure");
+  historical.open=openTripDetails.has(String(r.code||"")+":history");
   text(historical,"summary","Historial y etapas del viaje","trip-disclosure-head");
   const historyBody=text(historical,"div","","trip-disclosure-body");
   tripProgress(historyBody,meta);
@@ -1426,6 +1451,11 @@ function renderTripsBoard({reset=false}={}){
   if(!reset&&list.children.length){
     openTripGroups=new Set([...list.querySelectorAll(".trips-day[open]")].map(x=>x.dataset.key));
     openTripCards=new Set([...list.querySelectorAll(".trip-card[open]")].map(x=>x.dataset.tripCode));
+    openTripDetails=new Set([...list.querySelectorAll(".trip-card .trip-detail-disclosure[open]")].map(x=>{
+      const code=x.closest(".trip-card")?.dataset.tripCode;
+      if(!code)return null;
+      return code+":"+(x.classList.contains("trip-history-disclosure")?"history":"info");
+    }).filter(Boolean));
   }
   clear(list);
   const attention=tripRows.filter(r=>tripBoard.metadata(r).tone==="attention").length;
@@ -1458,20 +1488,25 @@ function renderTripsBoard({reset=false}={}){
 }
 async function loadTrips({background=false}={}){
   if(tripsLoading||!navigator.onLine)return;
+  const requestEpoch=tripQueryEpoch,requestSession=authReady()?session.token:null;
   tripsLoading=true;
   const status=$("trips-status");if(!background&&!tripLoaded)status.textContent="Consultando tus traslados…";
   try{
     let rows=[];
-    if(authReady()){
-      const result=await rpc("customer_list_reservations_v15",{p_session_token:session.token});
+    if(requestSession){
+      const result=await rpc("customer_list_reservations_v15",{p_session_token:requestSession});
       rows=Array.isArray(result)?result:[];
     }else{
       const guests=jsonStorage(GUEST_KEY,[]);
       const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
       result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
     }
+    if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
+    const nextRenderKey=tripDisplayKey(rows);
+    const needsRender=!tripLoaded||nextRenderKey!==tripRenderedSignature;
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
     tripRows=rows;tripLoaded=true;tripSnap=tripBoard.snapshot(rows);
+    tripRenderedSignature=nextRenderKey;
     if(!tripsScopeChosen&&rows.length){
       const actionable=rows.some(r=>tripBoard.metadata(r).tone==="attention");
       const upcoming=rows.some(r=>!tripBoard.isHistory(r));
@@ -1496,14 +1531,15 @@ async function loadTrips({background=false}={}){
         }
       }
     }
-    renderTripsBoard();
+    if(needsRender)renderTripsBoard();
     status.textContent=rows.length+" traslado(s) · actualizado a las "+
       new Date().toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})+".";
     if(updates.length)showTripNotice(updates[0]);
   }catch(e){
+    if(requestEpoch!==tripQueryEpoch)return;
     status.textContent="No se pudo actualizar. Conservamos la última información.";
     if(!background)showError(e);
-  }finally{tripsLoading=false;}
+  }finally{if(requestEpoch===tripQueryEpoch)tripsLoading=false;}
 }
 
 // La instalación automática depende del navegador: no hay API para abrir su menú
