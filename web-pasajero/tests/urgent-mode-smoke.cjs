@@ -18,6 +18,7 @@ const start=js.indexOf("function setWhen(kind){");
 const end=js.indexOf("\nfunction shiftView(",start);
 assert(start>=0&&end>start);
 const nodes={
+  "booking-service-caption":{textContent:""},
   "pickup-datetime-block":{hidden:false},
   "pickup-mode-caption":{hidden:true,textContent:""},
   "urgent-actions":{hidden:true},
@@ -49,6 +50,7 @@ const ctx={
 };
 const setWhen=runInNewContext("let selectedPickupMode='schedule';\n"+js.slice(start,end)+"\nsetWhen;",ctx);
 setWhen("now");
+assert.equal(nodes["booking-service-caption"].textContent,"RECOGIDA AHORA");
 assert.equal(nodes["pickup-datetime-block"].hidden,true);
 assert.equal(nodes["pickup-mode-caption"].hidden,false);
 assert.match(nodes["pickup-mode-caption"].textContent,/ahora/i);
@@ -58,10 +60,12 @@ assert.equal(nodes["urgent-actions"].hidden,false);
 assert.match(nodes.availability.textContent,/pendiente de respuesta/);
 assert.equal(nodes["when-next"].hidden,true,"Do not show a non-working continue button for urgent trips");
 setWhen("10");
+assert.equal(nodes["booking-service-caption"].textContent,"RECOGIDA EN 10 MIN");
 assert.equal(nodes["pickup-datetime-block"].hidden,true);
 assert.match(nodes["pickup-mode-caption"].textContent,/10 minutos/);
 assert.equal(nodes["when-next"].hidden,true);
 setWhen("schedule");
+assert.equal(nodes["booking-service-caption"].textContent,"VIAJE PROGRAMADO");
 assert.equal(nodes["pickup-datetime-block"].hidden,false);
 assert.equal(nodes["pickup-mode-caption"].hidden,true);
 assert.equal(nodes["review-booking"].hidden,false);

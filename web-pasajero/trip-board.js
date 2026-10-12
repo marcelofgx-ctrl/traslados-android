@@ -58,6 +58,26 @@
     if(q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
     return {label:"Pendiente",tone:"pending",icon:"clock-3",rank:0,action:"Ver detalle"};
   }
+  // Mensaje único y contextual según la fase confirmada por el servidor.
+  // Nunca inferir una llegada, GPS ni aceptación a partir de una estimación anterior.
+  function guidance(r){
+    const meta=metadata(r);
+    if(meta.tone==="expired")return "Este horario ya pasó. Para viajar, enviá una nueva solicitud.";
+    if(meta.tone==="attention")return "Tenés un presupuesto para responder. Revisá el importe y elegí si lo aceptás.";
+    if(meta.tone==="pending")return "Recibimos tu solicitud. El conductor la revisará.";
+    if(meta.tone==="confirmed")return "Tu traslado está confirmado. Podés escribirle al conductor.";
+    if(meta.tone==="moving"){
+      if(r?.status==="EN_VIAJE")return "Tu traslado está en curso.";
+      if(r?.pickup_phase==="EN_PUNTO"||r?.status==="EN_PUNTO")
+        return "El conductor llegó al punto de recogida.";
+      if(r?.pickup_phase==="EN_CAMINO"||r?.status==="EN_CAMINO")
+        return "El conductor está en camino a tu origen.";
+      return "El conductor actualizó el estado de tu traslado.";
+    }
+    if(meta.tone==="complete")return "El viaje terminó. Podés consultar sus detalles y mensajes.";
+    if(meta.tone==="muted")return "Esta solicitud está cerrada. Sus datos y mensajes siguen disponibles.";
+    return meta.label;
+  }
   function isHistory(r){return terminal.has(r?.status)||expiredQuote(r);}
   function dateLabel(day,groupBy){
     const d=localDate(day);
@@ -133,6 +153,6 @@
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
-    metadata,isHistory,expiredQuote,compactDay,groupReservations,notifications,snapshot,signature
+    metadata,guidance,isHistory,expiredQuote,compactDay,groupReservations,notifications,snapshot,signature
   });
 })(window);
