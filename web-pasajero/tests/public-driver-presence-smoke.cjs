@@ -79,7 +79,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.match(els["pickup-presence-status"].textContent,/3,5 km/);
   assert.match(els["pickup-presence-status"].textContent,/Distancia y tiempo aproximados/);
   assert.match(els["pickup-presence-status"].textContent,/Conductor disponible para recogerte/);
-  assert.match(els["pickup-presence-status"].textContent,/Estado consultado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Actualizado ahora/);
   assert.equal(els["pickup-presence-metrics"].hidden,false);
   assert.equal(els["pickup-distance"].textContent,"3,5 km");
   assert.equal(els["pickup-minutes"].textContent,"5–10 min");
@@ -113,8 +113,8 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,3);
   assert.match(els["pickup-presence-status"].textContent,/Última estimación/);
-  assert.match(els["pickup-presence-status"].textContent,/Estamos actualizando tu tiempo de llegada/);
-  assert.match(els["pickup-presence-status"].textContent,/Estado consultado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Actualizando la llegada a tu origen/);
+  assert.match(els["pickup-presence-status"].textContent,/Actualizado ahora/);
   assert(!/servidor|límite|rastreo|cuota/i.test(els["pickup-presence-status"].textContent));
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(guestEtaCalls,3,"Do not hammer pickup ETA again during local cooldown");
@@ -127,8 +127,8 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(host.dataset.presence,"busy");
   assert.equal(host.dataset.phase,"blocked","Agenda bloqueada must show a stable non-animated state");
   assert.match(els["pickup-presence-status"].textContent,/Recogida inmediata no disponible/);
-  assert.match(els["pickup-presence-status"].textContent,/automáticamente/);
-  assert.match(els["pickup-presence-status"].textContent,/Estado consultado hace/);
+  assert.match(els["pickup-presence-status"].textContent,/Se actualiza solo/);
+  assert.match(els["pickup-presence-status"].textContent,/Actualizado ahora/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
   assert.equal(els["pickup-presence-metrics"].hidden,true,"No ETA when driver becomes busy");
   assert.equal(guestEtaCalls,3);
