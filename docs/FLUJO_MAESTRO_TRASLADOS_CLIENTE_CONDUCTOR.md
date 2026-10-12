@@ -1,4 +1,6 @@
 # TRASLADOS — Mapa maestro del producto y flujo integral
+> **12/10/2026 · ESTADO VIGENTE DE PRODUCCIÓN:** PR #59 + #60 + #61 **FUSIONADOS**; PWA **v59**, Conductor independiente firmado **11.5-R5 / versionCode 127**, Mapa Trayectos integrado firmado **0.1-R25.0 / versionCode 52**, Cliente Premium WebView **v15** compatible. RELEASE y certificados SHA-256 verificados, APK en descargas directas Pages conservando R24.8/R24.9. Conversación abierta desde avisos y centro rápido del globito, respuestas rápidas editables solo con Enviar explícito, polling 15 s Conductor foreground, sin push FCM real para Cliente cerrado. **Prueba táctil Samsung y extremo a extremo pendiente**. Documento canónico con enlaces, hashes, rollback y QA: [RELEASE_TRASLADOS_20261012_PWA59_MAPA25_CONDUCTOR_R5.md](RELEASE_TRASLADOS_20261012_PWA59_MAPA25_CONDUCTOR_R5.md). Las notas anteriores v58/PR borrador son HISTÓRICAS y quedaron reemplazadas por este estado.
+
 **Fecha de consolidación:** 11–12/10/2026 · **Rama:** `feat/pwa-v58-guided-passenger-journey`
 **Responsabilidad:** documento de referencia para futuras sesiones y cambios. A partir de ahora NO proponer cambios de una pantalla sin comprobar sus efectos sobre el flujo global.
 
