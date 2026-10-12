@@ -51,4 +51,15 @@ context.paintPickupCard({presence:"unknown",title:"No pudimos comprobar la dispo
  subtitle:"Reintentaremos la consulta.",phase:"issue"});
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
 assert(!screenreader.textContent.includes("5–10 min"));
+const browser={};vm.runInNewContext(read("trip-board.js"),{window:browser,Map,Set,Date,Number,Array,String});
+const board=browser.TrasladosTripBoard;
+const confirmed={status:"ACEPTADA",quote_status:"ACEPTADO",pickup_phase:"SIN_INICIAR"};
+assert.match(board.guidance(confirmed),/confirmado/);
+assert.match(board.guidance({...confirmed,pickup_phase:"EN_CAMINO"}),/en camino a tu origen/);
+assert.match(board.guidance({...confirmed,pickup_phase:"EN_PUNTO"}),/llegó al punto de recogida/);
+assert.equal(board.guidance({...confirmed,pickup_phase:"EN_CAMINO",status:"EN_VIAJE"}),"Tu traslado está en curso.","In-ride must override stale pickup phase");
+assert.match(board.guidance({status:"PENDIENTE",quote_status:"ENVIADO",quote_final_total:490,pickup_date:"2026-12-12",pickup_time:"11:00:00"}),/presupuesto para responder/);
+assert(!/min|km|GPS/.test(board.guidance({...confirmed,pickup_phase:"EN_CAMINO"})),
+  "Do not invent a GPS or arrival time for an unverified reservation stage");
+assert(app.includes("const guidance=tripBoard.guidance(r);"),"Reservation view must use modular real-phase guidance");
 console.log("PASS v60 contextual pickup, one-time accessibility announcement, stale ETA removal, CSS and cache");
