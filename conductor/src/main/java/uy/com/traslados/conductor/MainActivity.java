@@ -899,6 +899,37 @@ public class MainActivity extends Activity {
         draft.setBackground(rounded(PANEL_2,GOLD_DARK,13));
         draft.setPadding(dp(12),dp(8),dp(12),dp(8));
         shell.addView(draft,lpMatch(-2,7,6));
+        final String status=reservation.optString("status","");
+        final boolean archived="FINALIZADA".equals(status)||"CANCELADA".equals(status)
+            ||"RECHAZADA".equals(status)||"RECHAZADA_CLIENTE".equals(status);
+        if(archived){
+            draft.setVisibility(View.GONE);
+            shell.addView(body("Conversación archivada · solo lectura.",12,MUTED),lpMatch(-2,5,7));
+        }else{
+            shell.addView(body("RESPUESTAS RÁPIDAS · elegí, revisá y tocá Enviar",10,GOLD),lpMatch(-2,5,4));
+            HorizontalScrollView quickScroll=new HorizontalScrollView(this);
+            quickScroll.setHorizontalScrollBarEnabled(false);
+            LinearLayout quickChoices=new LinearLayout(this);
+            quickChoices.setOrientation(LinearLayout.HORIZONTAL);
+            for(String template:new String[]{
+                "Recibí tu mensaje. En breve te respondo.",
+                "Estoy revisando tu solicitud. Te confirmo en breve.",
+                "¿Podés darme algún detalle más?"
+            }){
+                Button choice=secondaryButton(template);
+                choice.setAllCaps(false);
+                choice.setTextSize(11);
+                choice.setOnClickListener(v->{
+                    draft.setText(template);
+                    draft.setSelection(draft.length());
+                });
+                LinearLayout.LayoutParams choiceLp=new LinearLayout.LayoutParams(-2,dp(42));
+                choiceLp.rightMargin=dp(7);
+                quickChoices.addView(choice,choiceLp);
+            }
+            quickScroll.addView(quickChoices);
+            shell.addView(quickScroll,lpMatch(dp(45),2,6));
+        }
         final LinearLayout actions=new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         final Button refresh=secondaryButton("↻ ACTUALIZAR");
@@ -907,6 +938,7 @@ public class MainActivity extends Activity {
         spacerH(actions,7);
         actions.addView(send,new LinearLayout.LayoutParams(0,dp(48),1));
         shell.addView(actions,lpMatch(dp(48),3,6));
+        if(archived)send.setVisibility(View.GONE);
         final Button close=secondaryButton("CERRAR");
         close.setOnClickListener(v->dialog.dismiss());
         shell.addView(close,lpMatch(dp(44),6,0));
@@ -1009,7 +1041,17 @@ public class MainActivity extends Activity {
 
         LinearLayout labelRow=new LinearLayout(this);labelRow.setGravity(Gravity.CENTER_VERTICAL);TextView label=body("NUEVA SOLICITUD",11,GOLD);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);label.setLetterSpacing(.08f);label.setGravity(Gravity.CENTER);label.setPadding(dp(12),0,dp(12),0);label.setBackground(rounded(Color.argb(32,224,193,111),GOLD_DARK,16));labelRow.addView(label,new LinearLayout.LayoutParams(-2,dp(32)));TextView code=body(r.optString("code"),11,MUTED);code.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);LinearLayout.LayoutParams codeLp=new LinearLayout.LayoutParams(0,dp(32),1);codeLp.setMargins(dp(10),0,0,0);labelRow.addView(code,codeLp);content.addView(labelRow);
         TextView customer=heading(r.optString("customer_name"),23);content.addView(customer,lpMatch(-2,10,2));String dt=prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time"))+" · "+r.optInt("passengers",1)+" pasajero(s)";content.addView(body(dt,13,GOLD),lpMatch(-2,0,9));
-        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","");if(!com.isEmpty())addDetail(content,"comment","COMENTARIOS",com);
+        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(content,"comment","COMENTARIOS",com);
+        Button openChat=secondaryButton("✉  CONVERSAR CON EL PASAJERO");
+        openChat.setTextSize(11);
+        content.addView(openChat,lpMatch(dp(46),5,5));
+        openChat.setOnClickListener(v->{
+            ackDriverAlert(r);
+            dialog.dismiss();
+            expandedId=r.optString("id","");
+            showReservationChat(r);
+            showNextDriverAlertIfAny();
+        });
 
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton("PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
         list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
