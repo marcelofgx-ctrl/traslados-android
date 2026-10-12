@@ -251,18 +251,18 @@ async function refreshPickupPresence(force=false){
   const seq=++pickupEtaRequestSeq;
   // A request owned by this signed-in customer (or this browser's guest token)
   // must never be mistaken for a new unavailable driver or resubmitted.
-  const own=window.TrasladosOwnedPickup.match(tripRows,record.origin,record.destination,record.stops);
+  const own=window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops);
   if(ownedAction)ownedAction.hidden=!own;
   if(own){
     const view=window.TrasladosOwnedPickup.presentation(own);
     if(ownedAction){ownedAction.dataset.code=own.code;ownedAction.firstChild.textContent=view.action+" ";}
-    if($("booking-success").hidden)$("urgent-actions").hidden=true;
+    if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=true;
     forgetPickupEta();
     paintPickupCard({presence:"owned",title:view.title,subtitle:view.description,
       checked:"Solicitud "+own.code+" · Consultá Mis traslados",phase:"owned"});
     return;
   }
-  if($("booking-success").hidden)$("urgent-actions").hidden=false;
+  if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=false;
   if(!host.dataset.presence||host.dataset.presence==="unknown"){
     paintPickupCard({presence:"checking",title:"Consultando disponibilidad",
       subtitle:"Estamos comprobando si puede pasar a buscarte.",phase:"checking"});
@@ -1109,7 +1109,7 @@ function renderBookingSuccess(result,mode="schedule"){
 async function submitUrgentPickup(){
   if(selectedPickupMode==="schedule"||busy)return;
   const notice=$("urgent-send-error");notice.hidden=true;
-  const same=window.TrasladosOwnedPickup.match(tripRows,record.origin,record.destination,record.stops);
+  const same=window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops);
   if(same){
     notice.textContent="Este recorrido ya tiene una solicitud registrada. Revisá Mis traslados antes de enviar otra.";
     notice.hidden=false;refreshPickupPresence();
