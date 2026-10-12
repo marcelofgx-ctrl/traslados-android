@@ -32,6 +32,8 @@
         notice.hidden=true;
         const parcel=doc.querySelector('[data-service="delivery"]');
         parcel?.setAttribute?.("aria-expanded","false");
+        const arrow=parcel?.querySelector?.(".service-card-arrow");
+        if(arrow)arrow.textContent="＋";
         select(kind);
       });
     }
