@@ -24,11 +24,11 @@ assert.equal(health.summary().length,30,"Short, bounded in-memory diagnostic his
 const html=file("index.html"),css=file("styles.css"),js=file("app.js"),sw=file("sw.js");
 assert(html.includes('id="pickup-route-animation"')&&html.includes('id="pickup-route-caption"'));
 assert(html.includes('pickup-observability.js?v=1'));
-assert(html.includes("app.js?v=64")&&html.includes("styles.css?v=64"));
-assert(sw.includes("traslados-cliente-pwa-v64")&&sw.includes("pickup-observability.js"));
+assert(html.includes("app.js?v=65")&&html.includes("styles.css?v=65"));
+assert(sw.includes("traslados-cliente-pwa-v65")&&sw.includes("pickup-observability.js"));
 assert(js.includes('window.TrasladosPickupHealth?.record?.("availability"'));
 assert(js.includes('window.TrasladosPickupHealth?.record?.("eta"'));
-assert(js.includes('presence:"busy",title:"Recogida inmediata no disponible"'));
+assert(js.includes('presence:"busy",title:"Recogida inmediata sin confirmar"'));
 assert(js.includes('phase:"blocked"')&&js.includes('phase:"checking"'));
 assert(js.includes('phase:"ready"')&&js.includes('phase:"issue"'));
 assert(js.includes('if(!driver.available){')&&js.includes("forgetPickupEta()"));

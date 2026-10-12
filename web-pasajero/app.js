@@ -242,8 +242,27 @@ async function refreshPickupPresence(force=false){
   host.hidden=!urgent;
   const locationAction=$("pickup-use-location");
   if(locationAction)locationAction.hidden=!urgent||Boolean(record.origin);
-  if(!urgent){pickupEtaRequestSeq++;host.removeAttribute("data-presence");return;}
+  const ownedAction=$("pickup-existing-open");
+  if(!urgent){
+    pickupEtaRequestSeq++;host.removeAttribute("data-presence");
+    if(ownedAction)ownedAction.hidden=true;
+    return;
+  }
   const seq=++pickupEtaRequestSeq;
+  // A request owned by this signed-in customer (or this browser's guest token)
+  // must never be mistaken for a new unavailable driver or resubmitted.
+  const own=window.TrasladosOwnedPickup.match(tripRows,record.origin,record.destination,record.stops);
+  if(ownedAction)ownedAction.hidden=!own;
+  if(own){
+    const view=window.TrasladosOwnedPickup.presentation(own);
+    if(ownedAction){ownedAction.dataset.code=own.code;ownedAction.firstChild.textContent=view.action+" ";}
+    if($("booking-success").hidden)$("urgent-actions").hidden=true;
+    forgetPickupEta();
+    paintPickupCard({presence:"owned",title:view.title,subtitle:view.description,
+      checked:"Solicitud "+own.code+" · Consultá Mis traslados",phase:"owned"});
+    return;
+  }
+  if($("booking-success").hidden)$("urgent-actions").hidden=false;
   if(!host.dataset.presence||host.dataset.presence==="unknown"){
     paintPickupCard({presence:"checking",title:"Consultando disponibilidad",
       subtitle:"Estamos comprobando si puede pasar a buscarte.",phase:"checking"});
@@ -267,10 +286,10 @@ async function refreshPickupPresence(force=false){
     " · Se actualiza solo";
   if(!driver.available){
     forgetPickupEta();
-    // Resultado REAL del backend: no enviar solicitud de ETA, que no puede
-    // sustituir el bloqueo de agenda ni confirmar una recogida.
-    paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
-      subtitle:"Por ahora no hay recogida inmediata. Podés enviar tu solicitud para que el conductor la revise.",
+    // Backend confirms only a combined public yes/no. Its cause is private and
+    // may be agenda, activity, GPS or a request temporarily holding a slot.
+    paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
+      subtitle:"No podemos asegurar una recogida ahora. Podés enviar una solicitud para que el conductor la revise; no confirma el viaje.",
       checked:checkedLabel,phase:"blocked"});
     return;
   }
@@ -340,8 +359,8 @@ async function refreshPickupPresence(force=false){
         // La consulta ETA puede perder la frescura del GPS entre la lectura
         // de disponibilidad y la petición de ruta. No atribuirlo a desconexión.
         publicPresenceCache=null;publicPresenceAt=0;
-        paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
-          subtitle:"La disponibilidad cambió. Podés enviar tu solicitud para que el conductor la revise.",
+        paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
+          subtitle:"No podemos confirmar la recogida en este momento. Podés enviar una solicitud para revisión.",
           checked:checkedLabel,phase:"blocked"});
         return;
       }
@@ -1090,6 +1109,12 @@ function renderBookingSuccess(result,mode="schedule"){
 async function submitUrgentPickup(){
   if(selectedPickupMode==="schedule"||busy)return;
   const notice=$("urgent-send-error");notice.hidden=true;
+  const same=window.TrasladosOwnedPickup.match(tripRows,record.origin,record.destination,record.stops);
+  if(same){
+    notice.textContent="Este recorrido ya tiene una solicitud registrada. Revisá Mis traslados antes de enviar otra.";
+    notice.hidden=false;refreshPickupPresence();
+    return;
+  }
   let p;
   try{p=bookingData();}catch(e){suggestBookingStep(e);showError(e);return;}
   // Reintentos tras una respuesta ambigua reutilizan el mismo UUID.
@@ -1532,6 +1557,7 @@ async function loadTrips({background=false}={}){
       }
     }
     if(needsRender)renderTripsBoard();
+    if(selectedPickupMode!=="schedule")void refreshPickupPresence();
     status.textContent=rows.length+" traslado(s) · actualizado a las "+
       new Date().toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})+".";
     if(updates.length)showTripNotice(updates[0]);
@@ -1729,6 +1755,21 @@ function init(){
   }
   $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
   $("urgent-send").addEventListener("click",()=>void submitUrgentPickup());
+  $("pickup-existing-open").addEventListener("click",()=>{
+    const code=$("pickup-existing-open").dataset.code;
+    if(!code)return;
+    tripsScope="all";tripsFilter="all";tripsScopeChosen=true;
+    $("trips-status-filter").value="all";
+    for(const tab of document.querySelectorAll("[data-trips-scope]")){
+      const active=tab.dataset.tripsScope==="all";
+      tab.classList.toggle("active",active);tab.setAttribute("aria-pressed",String(active));
+    }
+    openTripGroups.clear();openTripCards.add(code);
+    shiftView("viajes");
+    if(tripLoaded)renderTripsBoard({reset:true});
+    const card=[...document.querySelectorAll("#trips-list .trip-card")].find(x=>x.dataset.tripCode===code);
+    if(card){card.closest(".trips-day").open=true;card.open=true;}
+  });
   $("booking-fix-when").addEventListener("click",()=>{
     bookingSteps.open("when",{scroll:true});
     $("pickup-date").focus({preventScroll:true});

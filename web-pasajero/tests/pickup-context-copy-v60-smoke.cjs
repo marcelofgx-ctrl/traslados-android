@@ -4,8 +4,8 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=f=>fs.readFileSync(path.join(root,f),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),sw=read("sw.js");
-assert(html.includes("app.js?v=64")&&html.includes("styles.css?v=64"));
-assert(sw.includes("traslados-cliente-pwa-v64"));
+assert(html.includes("app.js?v=65")&&html.includes("styles.css?v=65"));
+assert(sw.includes("traslados-cliente-pwa-v65"));
 assert(html.includes("DISTANCIA AL ORIGEN")&&html.includes("LLEGADA ESTIMADA"));
 assert(css.includes('not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation'));
 assert(!app.includes("Actualización automática cada 15 s."));
@@ -41,7 +41,7 @@ assert.equal(nodes["pickup-route-caption"].textContent,"Animación ilustrativa �
 assert(screenreader.textContent.includes("La recogida requiere confirmación"));
 context.paintPickupCard(online);
 assert.equal(announcements,1,"Do not reannounce unchanged passenger status on each poll");
-context.paintPickupCard({presence:"busy",title:"Recogida inmediata no disponible",
+context.paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
  subtitle:"Podés enviar tu solicitud para que el conductor la revise.",
  checked:"Actualizado ahora · Se actualiza solo",phase:"blocked"});
 assert.equal(nodes["pickup-presence-metrics"].hidden,true,"Hide previous ETA when unavailable");
