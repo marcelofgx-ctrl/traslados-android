@@ -1366,7 +1366,9 @@ function playTripAlertSound(){
 
 function reservationView(r,guestToken){
   const meta=tripBoard.metadata(r),price=Number(r.quote_final_total||0);
-  const expired=tripBoard.expiredQuote(r);
+  const quoteExpired=tripBoard.expiredQuote(r);
+  const immediateExpired=tripBoard.expiredImmediate(r);
+  const expired=quoteExpired||immediateExpired;
   const d=document.createElement("details");d.className="reservation trip-card";
   d.dataset.tripCode=r.code||"";d.dataset.tone=meta.tone;d.open=openTripCards.has(r.code);
   d.addEventListener("toggle",()=>{if(d.open)openTripCards.add(r.code);else openTripCards.delete(r.code);});
@@ -1394,11 +1396,16 @@ function reservationView(r,guestToken){
   const inner=text(d,"div","","trip-detail");
   const guidance=tripBoard.guidance(r);
   text(inner,"p",guidance,"trip-focus-message");
-  if(expired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
+  if(quoteExpired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
+  else if(immediateExpired)text(inner,"p","⌛ El horario de esta solicitud inmediata ya venció sin confirmación. Si necesitás viajar, pedí una nueva recogida.","trip-expired-note");
 
   // One meaningful decision at a time, before secondary history and details.
   const actions=text(inner,"div","","action-row trip-primary-actions");
-  if(expired)button(actions,"Solicitar nuevo traslado","primary",()=>shiftView("reservar"));
+  if(expired)button(actions,"Solicitar nuevo traslado","primary",()=>{
+    // Always prepare the form; never create the replacement automatically.
+    setWhen(tripBoard.isImmediateRequest(r)?"now":"schedule");
+    shiftView("reservar");bookingSteps.open("when",{scroll:true});
+  });
   if(!expired&&price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
     button(actions,"Aceptar "+tripMoney(price),"primary",()=>void decideQuote(r.id,true,guestToken));
     button(actions,"Rechazar presupuesto","secondary",()=>void decideQuote(r.id,false,guestToken));
