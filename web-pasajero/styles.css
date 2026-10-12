@@ -1805,6 +1805,10 @@ body.trip-chat-modal-open{overflow:hidden}
   /* One persistent navigation row, not two layers covering the page content. */
   .header{position:relative;top:auto}
   .tabs{position:sticky;top:0}
+  /* Samsung: the independent Mapa floating bubble lives at top right, beyond CSS z-index.
+     Put the conversation close control at top left, never beneath that Android overlay. */
+  .trip-chat-dialog-header{flex-direction:row-reverse}
+  .trip-chat-dialog-header>div{flex:1 1 auto;min-width:0}
   .trip-chat-sheet{padding:0;align-items:flex-end}
   .trip-chat-dialog{
     width:100%;height:calc(100dvh - 16px);max-height:none;
