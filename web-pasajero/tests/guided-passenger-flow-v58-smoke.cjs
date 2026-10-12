@@ -37,8 +37,9 @@ assert(app.includes('tripsScope=actionable?"attention":upcoming?"upcoming":"hist
   "When only historical trips exist, show them instead of an empty upcoming tab");
 assert(app.includes('tripsFilter="all";$("trips-status-filter").value="all"'),
   "Quick tab changes must not be silently constrained by old advanced filters");
-assert(app.includes('function closeTripChat()')&&app.includes('closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null'),
-  "Account changes must close personal conversation data");
+assert(app.includes('function closeTripChat()')&&
+  (app.match(/closeTripChat\(\);tripQueryEpoch\+\+;tripsLoading=false;tripRows=\[\];tripLoaded=false;tripSnap=null/g)||[]).length===2,
+  "Login and logout must close conversations and invalidate prior responses");
 assert(app.includes('if(activeTripChat.closed){')&&app.includes('tripChatDrafts.delete(r.code)'),
   "A closed chat is read-only; even an old draft must be deleted");
 assert(app.includes('if(closed!==activeTripChat.closed)openTripChat'),
