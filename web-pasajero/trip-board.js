@@ -22,15 +22,29 @@
     const ms=Date.parse(day+"T"+clock.slice(0,5)+":00-03:00");
     return Number.isFinite(ms)?ms:null;
   }
+  function isImmediateRequest(r){
+    const mode=String(r?.pickup_mode||"");
+    if(mode==="now"||mode==="10")return true;
+    if(mode==="schedule")return false;
+    // Legacy authorized v15 / guest v4 JSON omits pickup_mode. An urgent
+    // pickup is timestamped by Supabase now or now + 10m; scheduled slots
+    // are >=30m after creation. Never classify missing timestamps as urgent.
+    const pickup=pickupTimeMs(r),created=Date.parse(String(r?.created_at||""));
+    return pickup!==null&&Number.isFinite(created)&&
+      pickup-created>=-120000&&pickup-created<=12*60000;
+  }
+  function expiredImmediate(r,at=Date.now()){
+    if(r?.status!=="PENDIENTE"||!isImmediateRequest(r))return false;
+    const created=Date.parse(String(r.created_at||""));
+    return Number.isFinite(created)&&at-created>=QUOTE_WINDOW_MS;
+  }
   function expiredQuote(r,at=Date.now()){
     if(r?.status!=="PENDIENTE"||r?.quote_status!=="ENVIADO")return false;
-    const pickup=pickupTimeMs(r),created=Date.parse(String(r.created_at||""));
-    const mode=String(r.pickup_mode||"");
-    if((mode==="now"||mode==="10")&&Number.isFinite(created))
-      return at-created>=QUOTE_WINDOW_MS; // límite vigente en RPC v13
+    const pickup=pickupTimeMs(r),mode=String(r.pickup_mode||"");
+    if(expiredImmediate(r,at))return true; // v13 backend's strict 90-min deadline
+    if(mode==="now"||mode==="10")return false;
     if(mode==="schedule"&&pickup!==null)return at>=pickup;
-    // Las API de listado v15/invitado v4 antiguas omiten pickup_mode.
-    // Solo apartar una cotización inequívocamente pasada (>90 min).
+    // Unknown legacy booking: the original conservative behavior remains.
     return pickup!==null&&at-pickup>=QUOTE_WINDOW_MS;
   }
   function metadata(r){
@@ -39,12 +53,14 @@
     const total=Number(r?.quote_final_total||0);
     const quotePending=q==="ENVIADO"&&total>0&&status==="PENDIENTE";
     const quoteExpired=quotePending&&expiredQuote(r);
+    const urgentExpired=expiredImmediate(r);
     if(terminal.has(status)){
       if(status==="FINALIZADA")return {label:"Finalizada",tone:"complete",icon:"check-circle",rank:5,action:"Ver detalle"};
       if(status==="RECHAZADA_CLIENTE")return {label:"Presupuesto rechazado",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
       return {label:status==="CANCELADA"?"Cancelada":"Rechazada",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
     }
     if(quoteExpired)return {label:"Horario vencido",tone:"expired",icon:"clock-alert",rank:1,action:"Ver detalle"};
+    if(urgentExpired)return {label:"Solicitud vencida",tone:"expired",icon:"clock-alert",rank:1,action:"Solicitar de nuevo"};
     if(status==="EN_VIAJE")return {label:"En viaje",tone:"moving",icon:"navigation",rank:4,action:"Seguir viaje"};
     // Fase informada explícitamente desde la APK Conductor y validada por PIN.
     if(accepted.has(status)&&r?.pickup_phase==="EN_CAMINO")
@@ -62,7 +78,7 @@
   // Nunca inferir una llegada, GPS ni aceptación a partir de una estimación anterior.
   function guidance(r){
     const meta=metadata(r);
-    if(meta.tone==="expired")return "Este horario ya pasó. Para viajar, enviá una nueva solicitud.";
+    if(meta.tone==="expired")return "La hora prevista ya pasó sin confirmación. Podés solicitar otro traslado; esta reserva no se cancela automáticamente.";
     if(meta.tone==="attention")return "Tenés un presupuesto para responder. Revisá el importe y elegí si lo aceptás.";
     if(meta.tone==="pending")return "Recibimos tu solicitud. El conductor la revisará.";
     if(meta.tone==="confirmed")return "Tu traslado está confirmado. Podés escribirle al conductor.";
@@ -78,7 +94,7 @@
     if(meta.tone==="muted")return "Esta solicitud está cerrada. Sus datos y mensajes siguen disponibles.";
     return meta.label;
   }
-  function isHistory(r){return terminal.has(r?.status)||expiredQuote(r);}
+  function isHistory(r){return terminal.has(r?.status)||expiredQuote(r)||expiredImmediate(r);}
   function dateLabel(day,groupBy){
     const d=localDate(day);
     if(!d)return "Sin fecha";
@@ -153,6 +169,6 @@
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
-    metadata,guidance,isHistory,expiredQuote,compactDay,groupReservations,notifications,snapshot,signature
+    metadata,guidance,isHistory,expiredQuote,expiredImmediate,isImmediateRequest,compactDay,groupReservations,notifications,snapshot,signature
   });
 })(window);
