@@ -17,8 +17,12 @@ Las RPC autorizadas de lista Cliente v15 e invitado v4 no incluyen `pickup_mode`
 
 ## Límites
 
-El estado `PENDIENTE` del servidor permanece como estaba; esta mejora únicamente clasifica el vencimiento en la vista del pasajero. La APK **Conductor 11.5-R5** continúa leyendo el estado operativo real y puede requerir una mejora posterior de advertencia de vencimiento al preparar presupuestos. **No se modificó ni recompiló la APK firmada**, tampoco Mapa R25.0, Cliente Premium v15 WebView, ni RPC o GPS.
+El estado `PENDIENTE` del servidor permanece como estaba; esta mejora únicamente clasifica el vencimiento en la vista del pasajero. La APK **Conductor 11.5-R5** continúa leyendo el estado operativo real. Como mejora posterior, conviene advertir antes de abrir el formulario de presupuestos vencidos; el backend ahora impide efectivamente enviar ese presupuesto. **No se modificó ni recompiló la APK firmada**, tampoco Mapa R25.0, Cliente Premium v15 WebView, ni RPC o GPS.
 
 ## QA Samsung
 
 Ver una reserva inmediata sin respuesta de más de 90 minutos: «Solicitud vencida» en Historial; «Solicitar nuevo traslado» abre Reservar con origen/destino anteriores, sin producir un pedido nuevo hasta tocar Enviar. Comprobar una inmediata de menos de 90 minutos y una programada futura; asegurar que no se muestren vencidas. Las pruebas físicas todavía no están completadas. Las notificaciones con Cliente completamente cerrado siguen pendientes de FCM.
+
+## Guard backend posterior — aplicado a producción
+
+[Traslados Web PR #13](https://github.com/marcelofgx-ctrl/traslados-web/pull/13), commit `54980bcb`, [CI SUCCESS](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38286594077). Se aplicó sin cambios de datos `supabase/migrations/20261012_driver_quote_expiration_guard.sql` en `zetaudvvutlouiqxopvg`. Ambas RPC de envío (`driver_send_quote_v10` y `driver_send_quote_v10_7`) rechazan una cotización de solicitud inmediata `now/10` pendiente con más de 90 minutos de antigüedad. Se verificó su código activo por `pg_get_functiondef`, así como sus permisos `SECURITY DEFINER` y su `search_path`. No se sustituyó ni firmó ninguna APK. Un Conductor R5 que intente enviarla verá el error del backend en la acción, no un presupuesto inutilizable en el cliente. Prueba extrema a extrema real en Samsung todavía pendiente.
