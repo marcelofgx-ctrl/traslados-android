@@ -1000,16 +1000,18 @@ public class MainActivity extends Activity {
     }
 
     private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll,boolean silent){
+        final String requestPin=pin;
+        if(requestPin==null||requestPin.isEmpty())return;
         if(!silent&&list.getTag()==null){
             list.removeAllViews();
             list.addView(body("Actualizando conversación…",12,MUTED));
         }
         pool.execute(()->{
             try{
-                JSONArray rows=Api.tripChat(pin,id);
+                JSONArray rows=Api.tripChat(requestPin,id);
                 String signature=rows.toString();
                 runOnUiThread(()->{
-                    if(list.getParent()==null)return;
+                    if(!list.isAttachedToWindow()||!requestPin.equals(pin))return;
                     if(signature.equals(list.getTag()))return; // No flicker or scroll jump on unchanged response.
                     boolean first=list.getTag()==null;
                     int priorY=scroll.getScrollY();
@@ -1037,7 +1039,7 @@ public class MainActivity extends Activity {
             }catch(Exception e){
                 if(silent)return; // Keep the last valid conversation visible on transient network loss.
                 runOnUiThread(()->{
-                    if(list.getParent()==null||list.getTag()!=null)return;
+                    if(!list.isAttachedToWindow()||!requestPin.equals(pin)||list.getTag()!=null)return;
                     list.removeAllViews();
                     list.addView(body("No se pudo actualizar la conversación. Revisá Internet.",12,MUTED));
                 });
