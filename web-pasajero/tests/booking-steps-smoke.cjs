@@ -17,7 +17,7 @@ for(const step of ["route","when","passenger"]){
 }
 assert(html.includes('id="booking-progress-text"'));
 assert(html.includes('id="when-next"'));
-const appVersion=html.match(/app\\.js\\?v=(\\d+)/)?.[1];
+const appVersion=html.match(/app\.js\?v=(\d+)/)?.[1];
 assert(appVersion&&html.indexOf('booking-steps.js?v=1')<html.indexOf('app.js?v='+appVersion),
   "Accordion loads before the application");
 assert(sw.includes('traslados-cliente-pwa-v'+appVersion)&&sw.includes('booking-steps.js'),
