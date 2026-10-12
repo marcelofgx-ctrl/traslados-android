@@ -40,7 +40,7 @@ const els=Object.fromEntries([
 for(const id of ["urgent-route-recap","scheduled-route-recap"]){
   const children=Object.fromEntries(["distance","duration","fare"].map(k=>[k,make()]));
   els[id].querySelector=(sel)=>{
-    const key=sel.match(/^\\[data-final-route-(distance|duration|fare)\\]$/)?.[1];
+    const key=sel.startsWith("[data-final-route-")?sel.slice("[data-final-route-".length,-1):null;
     if(!key)throw new Error("Unexpected selector "+sel);
     return children[key];
   };
