@@ -96,7 +96,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},55);
         }
-        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.4 iniciado","{}"));
+        pool.execute(()->Api.logEvent("app_start","Conductor v11.5 R4 iniciado","{}"));
         checkSetup();
     }
 
@@ -1049,8 +1049,7 @@ public class MainActivity extends Activity {
             ackDriverAlert(r);
             dialog.dismiss();
             expandedId=r.optString("id","");
-            showReservationChat(r);
-            showNextDriverAlertIfAny();
+            showReservationChat(r); // Do not cover this conversation with another alert.
         });
 
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton("PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
@@ -1213,8 +1212,7 @@ public class MainActivity extends Activity {
             if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
             driverBubbleOpenRequested=false;
             if(!pendingChatReservationId.isEmpty())openRequestedPassengerChatIfReady();
-            if(!pendingChatReservationId.isEmpty())loadActive(true);
-            else renderRows(false);
+            loadActive(true); // Preserve existing refresh when opening from the bubble.
         }
     }
 
