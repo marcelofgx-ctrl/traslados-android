@@ -1823,3 +1823,26 @@ body.trip-chat-modal-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .trip-chat-dialog-content .trip-chat-feed{scroll-behavior:auto}
 }
+
+/* PWA v60 — llegada contextual: estado primero, kilometraje y ETA después.
+ * El esquema premium sigue igual; los diagnósticos quedan en memoria interna. */
+#pickup-presence{padding:14px 15px 12px;gap:6px}
+#pickup-presence .pickup-card-heading strong{font-size:17px;line-height:1.3}
+#pickup-presence .pickup-card-heading p{margin:4px 0 0;line-height:1.42;font-size:12.5px}
+#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]) .pickup-route-animation,
+#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]) .pickup-route-caption{display:none!important}
+#pickup-presence .pickup-route-caption:empty{display:none!important}
+#pickup-presence .pickup-presence-metrics{margin:12px 0 6px;gap:8px}
+#pickup-presence .pickup-presence-metric{min-height:67px;padding:11px 12px;border-radius:12px}
+#pickup-presence .pickup-metric-label{font-size:9px;letter-spacing:.05em;line-height:1.3}
+#pickup-presence .pickup-presence-metric strong{font-size:23px;margin-top:6px}
+#pickup-presence .pickup-estimate-note{margin:4px 0;color:#e7dcbf;font-size:11px;line-height:1.4}
+#pickup-presence .pickup-presence-meta{margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(211,222,195,.16);font-size:10.5px;line-height:1.35;color:#bfd7cf}
+#pickup-presence .pickup-presence-meta:empty{display:none}
+@media(max-width:420px){
+  #pickup-presence{padding:13px 12px 11px}
+  #pickup-presence .pickup-card-heading strong{font-size:16px}
+  #pickup-presence .pickup-presence-metric{min-height:65px;padding:10px 9px}
+  #pickup-presence .pickup-presence-metric strong{font-size:21px}
+  #pickup-presence .pickup-metric-label{font-size:8.5px}
+}
