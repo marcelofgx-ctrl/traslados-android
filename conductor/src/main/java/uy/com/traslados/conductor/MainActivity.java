@@ -982,18 +982,39 @@ public class MainActivity extends Activity {
                 }
             });
         });
+        // Poll only while this conversation is actually visible. No FCM/push claims.
+        final Runnable[] activeChatRefresh=new Runnable[1];
+        activeChatRefresh[0]=()->{
+            if(!dialog.isShowing())return;
+            refreshReservationChat(id,messages,scroll,true);
+            handler.postDelayed(activeChatRefresh[0],15000L);
+        };
+        dialog.setOnDismissListener(v->handler.removeCallbacks(activeChatRefresh[0]));
         showDriverDialog(dialog,shell,.94f,.86f);
         refreshReservationChat(id,messages,scroll);
+        handler.postDelayed(activeChatRefresh[0],15000L);
     }
 
     private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll){
-        list.removeAllViews();
-        list.addView(body("Actualizando conversación…",12,MUTED));
+        refreshReservationChat(id,list,scroll,false);
+    }
+
+    private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll,boolean silent){
+        if(!silent&&list.getTag()==null){
+            list.removeAllViews();
+            list.addView(body("Actualizando conversación…",12,MUTED));
+        }
         pool.execute(()->{
             try{
                 JSONArray rows=Api.tripChat(pin,id);
+                String signature=rows.toString();
                 runOnUiThread(()->{
                     if(list.getParent()==null)return;
+                    if(signature.equals(list.getTag()))return; // No flicker or scroll jump on unchanged response.
+                    boolean first=list.getTag()==null;
+                    int priorY=scroll.getScrollY();
+                    boolean nearEnd=first||priorY+scroll.getHeight()>=list.getHeight()-dp(26);
+                    list.setTag(signature);
                     list.removeAllViews();
                     if(rows.length()==0){
                         list.addView(body("Todavía no hay mensajes. El pasajero puede escribir desde Mis traslados.",12,MUTED));
@@ -1008,11 +1029,15 @@ public class MainActivity extends Activity {
                         bubble.setGravity(Gravity.START);
                         list.addView(bubble,lpMatch(-2,3,5));
                     }
-                    scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));
+                    scroll.post(()->{
+                        if(nearEnd)scroll.fullScroll(View.FOCUS_DOWN);
+                        else scroll.scrollTo(0,priorY);
+                    });
                 });
             }catch(Exception e){
+                if(silent)return; // Keep the last valid conversation visible on transient network loss.
                 runOnUiThread(()->{
-                    if(list.getParent()==null)return;
+                    if(list.getParent()==null||list.getTag()!=null)return;
                     list.removeAllViews();
                     list.addView(body("No se pudo actualizar la conversación. Revisá Internet.",12,MUTED));
                 });
