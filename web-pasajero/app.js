@@ -882,7 +882,9 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
-    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();openTripChats.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
+    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
   });
@@ -908,7 +910,9 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
-    tripRows=[];tripLoaded=false;tripSnap=null;openTripCards.clear();openTripGroups.clear();
+    closeTripChat();tripRows=[];tripLoaded=false;tripSnap=null;
+    openTripCards.clear();openTripGroups.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+    tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     lastPickupEtaAt=0;refreshPickupPresence(true);
     saveStorage(SESSION_KEY,session);$("login-pin").value="";
     // Claim existing guest bookings in this browser so they become visible
@@ -1140,7 +1144,8 @@ async function submitBooking(){
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null;
 let tripsScope="upcoming",tripsGroupBy="day",tripsFilter="all",tripFocused=null,tripPreviouslyFocused=null;
-let openTripCards=new Set(),openTripGroups=new Set(),openTripChats=new Set();
+let tripsScopeChosen=false,openTripCards=new Set(),openTripGroups=new Set();
+let activeTripChat=null,tripChatPreviouslyFocused=null;
 const tripChatDrafts=new Map(),tripChatAttempts=new Map();
 let tripAlertAudio=null;
 function statusName(s){return states[s]||s||"Sin estado";}
@@ -1192,36 +1197,52 @@ function tripChatAuth(r,guestToken){
     p_public_token:guestToken||null
   };
 }
+function closeTripChat(){
+  const sheet=$("trip-chat-sheet");
+  if(!sheet||sheet.hidden)return;
+  sheet.hidden=true;document.body.classList.remove("trip-chat-modal-open");
+  activeTripChat=null;
+  const prev=tripChatPreviouslyFocused;tripChatPreviouslyFocused=null;
+  if(prev?.isConnected)prev.focus();
+}
+function openTripChat(r,guestToken,trigger){
+  if(!r.id)return;
+  const sheet=$("trip-chat-sheet"),content=$("trip-chat-dialog-content");
+  if(!sheet||!content)return;
+  if(sheet.hidden)tripChatPreviouslyFocused=trigger||document.activeElement;
+  activeTripChat={id:r.id,code:r.code,token:guestToken||null,closed:["FINALIZADA","CANCELADA","RECHAZADA","RECHAZADA_CLIENTE"].includes(r.status)};
+  $("trip-chat-dialog-status").textContent="Solicitud "+String(r.code||"")+" · "+statusName(r.status);
+  clear(content);
+  const feed=text(content,"div","Cargando mensajes…","trip-chat-feed");
+  feed.setAttribute("role","log");feed.setAttribute("aria-live","polite");
+  if(activeTripChat.closed){
+    const archived=text(content,"p","Esta conversación finalizó. Podés consultar los mensajes anteriores.","trip-chat-archived");
+    archived.setAttribute("role","status");
+    tripChatDrafts.delete(r.code);
+  }else{
+    const row=text(content,"div","","trip-chat-compose");
+    const input=text(row,"textarea","","trip-chat-input");
+    input.placeholder="Escribí al conductor…";input.maxLength=800;input.rows=2;
+    input.setAttribute("aria-label","Mensaje para el conductor");
+    input.value=tripChatDrafts.get(r.code)||"";
+    input.addEventListener("input",()=>tripChatDrafts.set(r.code,input.value));
+    const send=button(row,"Enviar","trip-chat-send",()=>void sendTripChat(r,guestToken,feed,input,send));
+    text(content,"p","Los mensajes se actualizan mientras Traslados está abierto.","trip-chat-hint");
+  }
+  sheet.hidden=false;document.body.classList.add("trip-chat-modal-open");
+  $("trip-chat-dialog-close").focus();
+  void loadTripChat(r,guestToken,feed);
+}
 function mountTripChat(parent,r,guestToken){
   if(!r.id)return;
-  const root=text(parent,"details","","trip-chat");
-  root.dataset.code=r.code||"";
-  root.open=openTripChats.has(r.code);
-  const header=text(root,"summary","","trip-chat-header");
-  text(header,"span","✉ Mensajes con el conductor");
-  text(header,"span","Abrir conversación","trip-chat-arrow");
-  const body=text(root,"div","","trip-chat-body");
-  const feed=text(body,"div","Abrí la conversación para ver los mensajes.","trip-chat-feed");
-  feed.setAttribute("role","log");feed.setAttribute("aria-live","polite");
   const closed=["FINALIZADA","CANCELADA","RECHAZADA","RECHAZADA_CLIENTE"].includes(r.status);
-  const row=text(body,"div","","trip-chat-compose");
-  const input=text(row,"textarea","","trip-chat-input");
-  input.placeholder="Escribí una consulta breve…";input.maxLength=800;input.rows=2;
-  input.setAttribute("aria-label","Mensaje para el conductor");
-  input.value=tripChatDrafts.get(r.code)||"";
-  input.disabled=closed;
-  input.addEventListener("input",()=>tripChatDrafts.set(r.code,input.value));
-  const send=button(row,"Enviar","trip-chat-send",()=>void sendTripChat(r,guestToken,feed,input,send));
-  send.disabled=closed;
-  if(closed)text(body,"p","Esta conversación está archivada.","trip-chat-hint");
-  else text(body,"p","Mensajes vinculados a esta reserva. Las respuestas aparecen cuando se actualizan los datos.","trip-chat-hint");
-  root.addEventListener("toggle",()=>{
-    if(root.open){
-      openTripChats.add(r.code);
-      void loadTripChat(r,guestToken,feed);
-    }else openTripChats.delete(r.code);
+  const root=text(parent,"div","","trip-chat");
+  root.dataset.code=r.code||"";
+  const trigger=button(root,closed?"✉ Ver mensajes archivados":"✉ Conversar con el conductor","trip-chat-open",()=>{
+    openTripChat(r,guestToken,trigger);
   });
-  if(root.open)void loadTripChat(r,guestToken,feed);
+  const annotation=text(root,"span",closed?"Solo lectura":"Mensajes privados","trip-chat-arrow");
+  annotation.setAttribute("aria-hidden","true");
 }
 async function loadTripChat(r,guestToken,feed){
   if(!feed?.isConnected||feed.dataset.loading==="1")return;
@@ -1299,63 +1320,74 @@ function reservationView(r,guestToken){
   const top=text(d,"summary"),head=text(top,"div","","trip-head");
   const date=text(head,"div","","trip-date-wrap");
   text(date,"span","▣","trip-date-badge").setAttribute("aria-hidden","true");
-  const v=text(date,"div");text(v,"strong",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5));
+  const v=text(date,"div");
+  text(v,"strong",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5));
   text(v,"small",r.code||"Solicitud");
   const badge=text(head,"span","","trip-status");text(badge,"span","","trip-status-dot");text(badge,"span",meta.label);
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
     const row=text(route,"div","","trip-route-stop");
     text(row,"span",icon,"trip-route-icon").setAttribute("aria-hidden","true");
-    const name=String(value||"");
-    text(row,"span",name.length>58?name.slice(0,55)+"…":name,"trip-route-label");
+    text(row,"span",String(value||""),"trip-route-label");
   }
   stop("◉",r.origin_text||"Origen");
   stop(/aeropuerto/i.test(r.destination_text||"")?"✈":"◆",r.destination_text||"Destino");
   const foot=text(top,"div","","trip-card-footer");
-  text(foot,"span",price>0?tripMoney(price):meta.action,price>0?"trip-card-quote":"trip-card-prompt");
-  text(foot,"span",meta.tone==="attention"?"Responder":"Ver detalle","trip-card-open");
+  const amount=text(foot,"span",price>0?tripMoney(price):"Importe pendiente",price>0?"trip-card-quote":"trip-card-prompt");
+  if(price>0)amount.setAttribute("aria-label","Presupuesto "+tripMoney(price));
+  const affordance=meta.tone==="attention"?"Responder presupuesto":meta.tone==="moving"?"Ver seguimiento":"Ver detalles";
+  text(foot,"span",affordance,"trip-card-open");
+
   const inner=text(d,"div","","trip-detail");
-  text(inner,"p","RECORRIDO","trip-detail-heading trip-detail-section");
-  tripLine(inner,"◉",r.origin_text||"Origen");
-  for(const s of Array.isArray(r.stops)?r.stops:[])tripLine(inner,"•",s.address_text||"Parada");
-  tripLine(inner,"◆",r.destination_text||"Destino");
-  tripLine(inner,"◷",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5)+" h");
-  tripLine(inner,"♙",Number(r.passengers||1)+" pasajero(s)");
-  if(r.comments)tripLine(inner,"✎",r.comments);
-  text(inner,"p","ETAPA DEL TRASLADO","trip-detail-heading trip-detail-section");
-  tripProgress(inner,meta);
-  const guidance=meta.tone==="expired"?"El horario solicitado ya pasó. El presupuesto permanece registrado, pero no debe aceptarse para esa recogida. La solicitud aún figura pendiente de cierre.":
-    meta.tone==="attention"?"El conductor te envió un presupuesto. Revisalo y respondé para continuar.":
-    meta.tone==="pending"?"Solicitud recibida. Estamos esperando la respuesta del conductor.":
-    meta.tone==="confirmed"?"Traslado aceptado. Revisá todos los detalles de tu viaje.":
-    meta.tone==="moving"?"El conductor registró este estado. El tiempo de llegada puede variar y no equivale a una posición GPS pública.":
-    meta.tone==="complete"?"El traslado figura como finalizado.":meta.label;
-  text(inner,"p",guidance,"trip-detail-note");
-  text(inner,"p",expired?"PRESUPUESTO ORIGINAL":"PRESUPUESTO","trip-detail-heading trip-detail-section");
-  if(price>0){
-    text(inner,"div",tripMoney(price),"trip-detail-price");
-    const includes=String(r.quote_includes??"").trim();
-    if(includes&&!/^(null|undefined|n\/a|-)$/i.test(includes))
-      text(inner,"p","Incluye: "+includes,"trip-detail-note");
-    if(meta.tone==="attention")text(inner,"p","El presupuesto requiere tu confirmación.","trip-detail-note");
-  }else text(inner,"p","Presupuesto pendiente de preparación por el conductor.","trip-detail-note");
-  if(expired)text(inner,"p","⌛ Este horario venció. El presupuesto se conserva como referencia, pero necesitás solicitar una nueva recogida.","trip-expired-note");
-  text(inner,"p","MOVIMIENTOS","trip-detail-heading trip-detail-section");tripTimeline(inner,r);
-  mountTripChat(inner,r,guestToken);
-  const actions=text(inner,"div","","action-row");
+  const guidance=meta.tone==="expired"?"El horario solicitado ya pasó. Este presupuesto se conserva como referencia; para viajar necesitás una nueva solicitud.":
+    meta.tone==="attention"?"Tu conductor envió un presupuesto. Revisá el valor y elegí si lo aceptás.":
+    meta.tone==="pending"?"Recibimos tu solicitud. Falta que el conductor la revise.":
+    meta.tone==="confirmed"?"Tu traslado está confirmado. Podés consultar la información y escribirle al conductor.":
+    meta.tone==="moving"?"El conductor actualizó el estado del servicio. La llegada estimada se muestra únicamente cuando tenemos datos válidos.":
+    meta.tone==="complete"?"Este traslado terminó. El historial y los mensajes siguen disponibles para consulta.":meta.label;
+  text(inner,"p",guidance,"trip-focus-message");
+  if(expired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
+
+  // One meaningful decision at a time, before secondary history and details.
+  const actions=text(inner,"div","","action-row trip-primary-actions");
   if(expired)button(actions,"Solicitar nuevo traslado","primary",()=>shiftView("reservar"));
   if(!expired&&price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
-    button(actions,"Aceptar presupuesto","primary",()=>void decideQuote(r.id,true,guestToken));
-    button(actions,"Rechazar","secondary",()=>void decideQuote(r.id,false,guestToken));
+    button(actions,"Aceptar "+tripMoney(price),"primary",()=>void decideQuote(r.id,true,guestToken));
+    button(actions,"Rechazar presupuesto","secondary",()=>void decideQuote(r.id,false,guestToken));
   }
-  if(guestToken&&["PENDIENTE","ACEPTADA"].includes(r.status))button(actions,"Cancelar solicitud","secondary",async()=>{
-    if(!confirm("¿Cancelar esta solicitud?"))return;
-    try{await rpc("cancel_reservation_by_token",{p_token:guestToken});tell("Solicitud cancelada");void loadTrips();}catch(e){showError(e);}
-  });
-  if(authReady()&&r.id&&["PENDIENTE","ACEPTADA"].includes(r.status))button(actions,"Cancelar solicitud","secondary",async()=>{
-    if(!confirm("¿Cancelar esta solicitud?"))return;
-    try{await rpc("customer_cancel_reservation",{p_session_token:session.token,p_reservation_id:r.id});tell("Solicitud cancelada");void loadTrips();}catch(e){showError(e);}
-  });
+  if(!actions.children.length)actions.remove();
+
+  const info=text(inner,"details","","trip-detail-disclosure");
+  text(info,"summary","Datos del traslado","trip-disclosure-head");
+  const infoBody=text(info,"div","","trip-disclosure-body");
+  tripLine(infoBody,"◉",r.origin_text||"Origen");
+  for(const s of Array.isArray(r.stops)?r.stops:[])tripLine(infoBody,"•",s.address_text||"Parada");
+  tripLine(infoBody,"◆",r.destination_text||"Destino");
+  tripLine(infoBody,"◷",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5)+" h");
+  tripLine(infoBody,"♙",Number(r.passengers||1)+" pasajero(s)");
+  if(r.comments)tripLine(infoBody,"✎",r.comments);
+  const includes=String(r.quote_includes??"").trim();
+  if(includes&&!/^(null|undefined|n\/a|-)$/i.test(includes))
+    text(infoBody,"p","Incluye: "+includes,"trip-detail-note");
+  if(!price)text(infoBody,"p","El importe todavía no fue confirmado por el conductor.","trip-detail-note");
+
+  const historical=text(inner,"details","","trip-detail-disclosure trip-history-disclosure");
+  text(historical,"summary","Historial y etapas del viaje","trip-disclosure-head");
+  const historyBody=text(historical,"div","","trip-disclosure-body");
+  tripProgress(historyBody,meta);
+  tripTimeline(historyBody,r);
+  mountTripChat(inner,r,guestToken);
+
+  if(guestToken&&["PENDIENTE","ACEPTADA"].includes(r.status))
+    button(inner,"Cancelar solicitud","trip-cancel-action",async()=>{
+      if(!confirm("¿Cancelar esta solicitud?"))return;
+      try{await rpc("cancel_reservation_by_token",{p_token:guestToken});tell("Solicitud cancelada");void loadTrips();}catch(e){showError(e);}
+    });
+  if(authReady()&&r.id&&["PENDIENTE","ACEPTADA"].includes(r.status))
+    button(inner,"Cancelar solicitud","trip-cancel-action",async()=>{
+      if(!confirm("¿Cancelar esta solicitud?"))return;
+      try{await rpc("customer_cancel_reservation",{p_session_token:session.token,p_reservation_id:r.id});tell("Solicitud cancelada");void loadTrips();}catch(e){showError(e);}
+    });
   return d;
 }
 async function decideQuote(id,accept,guestToken=null){
@@ -1377,7 +1409,8 @@ function closeTripNotice(){
   tripPreviouslyFocused?.focus?.();tripPreviouslyFocused=null;
 }
 function showTripNotice(change){
-  if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden)return;
+  if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden||
+      !$("trip-chat-sheet").hidden)return;
   const quote=change.kind==="quote",message=change.kind==="message";
   tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
   $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":message?"Nuevo mensaje del conductor":"Tu traslado se actualizó";
@@ -1393,11 +1426,18 @@ function renderTripsBoard({reset=false}={}){
   if(!reset&&list.children.length){
     openTripGroups=new Set([...list.querySelectorAll(".trips-day[open]")].map(x=>x.dataset.key));
     openTripCards=new Set([...list.querySelectorAll(".trip-card[open]")].map(x=>x.dataset.tripCode));
-    openTripChats=new Set([...list.querySelectorAll(".trip-chat[open]")].map(x=>x.dataset.code));
   }
   clear(list);
   const attention=tripRows.filter(r=>tripBoard.metadata(r).tone==="attention").length;
   $("trips-attention-count").hidden=attention===0;$("trips-attention-count").textContent=String(attention);
+  const focus=$("trips-focus");
+  if(focus){
+    focus.textContent=attention>0
+      ?"Tenés "+attention+" presupuesto"+(attention===1?"":"s")+" para responder. Entrá en Responder para continuar."
+      :tripsScope==="history"?"Historial de servicios. Abrí un traslado si necesitás consultar sus detalles."
+      :tripsScope==="all"?"Viendo todos tus traslados, incluidos los finalizados."
+      :"Tus próximas recogidas y solicitudes pendientes se muestran aquí.";
+  }
   const groups=tripBoard.groupReservations(tripRows,{scope:tripsScope,groupBy:tripsGroupBy,status:tripsFilter});
   if(!groups.length){
     text(list,"div",tripRows.length?"No hay traslados que coincidan con estos filtros.":"Todavía no hay reservas para mostrar.","trip-empty");return;
@@ -1432,6 +1472,30 @@ async function loadTrips({background=false}={}){
     }
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
     tripRows=rows;tripLoaded=true;tripSnap=tripBoard.snapshot(rows);
+    if(!tripsScopeChosen&&rows.length){
+      const actionable=rows.some(r=>tripBoard.metadata(r).tone==="attention");
+      const upcoming=rows.some(r=>!tripBoard.isHistory(r));
+      tripsScope=actionable?"attention":upcoming?"upcoming":"history";
+      for(const tab of document.querySelectorAll("[data-trips-scope]")){
+        const active=tab.dataset.tripsScope===tripsScope;
+        tab.classList.toggle("active",active);tab.setAttribute("aria-pressed",String(active));
+      }
+      if(actionable&&!openTripCards.size){
+        const wanted=rows.find(r=>tripBoard.metadata(r).tone==="attention");
+        if(wanted?.code)openTripCards.add(wanted.code);
+      }
+    }
+    if(activeTripChat){
+      const newest=rows.find(x=>x.id===activeTripChat.id);
+      if(newest){
+        const closed=["FINALIZADA","CANCELADA","RECHAZADA","RECHAZADA_CLIENTE"].includes(newest.status);
+        if(closed!==activeTripChat.closed)openTripChat(newest,newest.__guestToken||null,tripChatPreviouslyFocused);
+        else if(updates.some(change=>change.kind==="message"&&change.row.id===newest.id)){
+          const feed=$("trip-chat-dialog-content")?.querySelector(".trip-chat-feed");
+          if(feed)void loadTripChat(newest,newest.__guestToken||null,feed);
+        }
+      }
+    }
     renderTripsBoard();
     status.textContent=rows.length+" traslado(s) · actualizado a las "+
       new Date().toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})+".";
@@ -1644,7 +1708,8 @@ function init(){
   $("confirm-booking").addEventListener("click",()=>void submitBooking());
   $("refresh-trips").addEventListener("click",()=>void loadTrips());
   for(const tab of document.querySelectorAll("[data-trips-scope]"))tab.addEventListener("click",()=>{
-    tripsScope=tab.dataset.tripsScope;
+    tripsScope=tab.dataset.tripsScope;tripsScopeChosen=true;
+    tripsFilter="all";$("trips-status-filter").value="all";
     for(const el of document.querySelectorAll("[data-trips-scope]")){
       const active=el===tab;el.classList.toggle("active",active);el.setAttribute("aria-pressed",String(active));
     }
@@ -1673,6 +1738,19 @@ function init(){
     openTripGroups.clear();openTripCards.add(target);shiftView("viajes");renderTripsBoard({reset:true});
     const card=[...document.querySelectorAll("#trips-list .trip-card")].find(x=>x.dataset.tripCode===target);
     if(card){card.closest(".trips-day").open=true;card.open=true;card.scrollIntoView({block:"center",behavior:"smooth"});}
+  });
+  $("trip-chat-dialog-close").addEventListener("click",closeTripChat);
+  $("trip-chat-sheet").addEventListener("click",e=>{if(e.target===$("trip-chat-sheet"))closeTripChat();});
+  document.addEventListener("keydown",e=>{
+    const sheet=$("trip-chat-sheet");
+    if(sheet.hidden)return;
+    if(e.key==="Escape"){e.preventDefault();closeTripChat();return;}
+    if(e.key!=="Tab")return;
+    const controls=[...sheet.querySelectorAll("button:not([disabled]),textarea:not([disabled])")];
+    if(!controls.length)return;
+    const first=controls[0],last=controls[controls.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   });
   $("trip-alert-overlay").addEventListener("click",e=>{if(e.target===$("trip-alert-overlay"))closeTripNotice();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("trip-alert-overlay").hidden)closeTripNotice();});

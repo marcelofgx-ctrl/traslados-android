@@ -1597,3 +1597,225 @@ html,body{
   #view-reservar .booking-step-card[data-booking-step="route"] .route-folded-preview,
   #view-reservar .booking-main-cta{animation:none;transition:none}
 }
+
+/* PWA v58 · Passenger journey: one primary action, details on demand.
+ * Preserves all server workflows. No personal data/coordinates in style or logs.
+ */
+#view-viajes .trip-intro{margin:9px 5px 7px}
+#view-viajes .trip-intro h2{font-size:19px;line-height:1.2;letter-spacing:-.04em}
+#view-viajes .trips-board{
+  padding:17px 15px;border-radius:21px;
+  background:linear-gradient(144deg,rgba(12,65,72,.98),rgba(6,45,55,.97));
+  border-color:rgba(233,201,135,.31)
+}
+#view-viajes .trips-board-heading{gap:8px}
+#view-viajes .trips-board-heading h3{
+  font-size:18px;letter-spacing:-.027em
+}
+#view-viajes .trips-refresh{
+  min-height:40px;padding:10px 12px;font-size:11px;white-space:nowrap
+}
+#view-viajes .trips-tabs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;margin:17px 0 11px;overflow:visible;padding:0
+}
+#view-viajes .trips-tab{
+  min-height:43px;min-width:0;white-space:normal;
+  font-size:11.2px;line-height:1.3;padding:8px 5px;
+  border-radius:12px;text-align:center;
+  overflow-wrap:break-word
+}
+#view-viajes .trips-tab.active{
+  box-shadow:inset 0 1px 0 rgba(255,245,206,.35),0 6px 15px rgba(0,29,31,.17)
+}
+#view-viajes .trips-focus{
+  margin:0 0 11px;padding:10px 12px;
+  background:rgba(6,42,47,.54);border:1px solid rgba(231,203,133,.17);
+  border-radius:12px;font-size:11px;line-height:1.52;color:#cde2d7
+}
+#view-viajes .trips-advanced{margin:5px 1px 10px}
+#view-viajes .trips-advanced>summary{
+  cursor:pointer;list-style:none;padding:9px 12px;
+  display:flex;justify-content:space-between;align-items:center;
+  gap:8px;border-radius:11px;min-height:39px;
+  color:#ead2a0;font-size:11px;font-weight:760;
+  border:1px solid rgba(226,196,136,.23);background:rgba(1,31,41,.24)
+}
+#view-viajes .trips-advanced>summary::-webkit-details-marker{display:none}
+#view-viajes .trips-advanced[open]>summary span{transform:rotate(180deg)}
+#view-viajes .trips-advanced-body{
+  margin-top:8px;padding:12px;border:1px solid rgba(225,199,142,.18);
+  background:rgba(4,35,43,.54);border-radius:13px;display:grid;gap:11px
+}
+#view-viajes .trips-advanced-body .trips-show-all{
+  width:100%;min-height:39px;display:block;box-shadow:none
+}
+#view-viajes .trips-controls{margin:0;gap:8px}
+#view-viajes .trips-feedback-preferences{padding:0;gap:5px}
+#view-viajes .trips-feedback-preferences .trips-alert-optin{margin:0}
+#view-viajes .trips-push-disclaimer{margin:0 2px;font-size:10px;line-height:1.5}
+#view-viajes .trips-status{margin:10px 2px 12px;color:#aaccc3;font-size:10.6px}
+
+#view-viajes .trips-day{border-color:rgba(232,203,141,.25);border-radius:16px}
+#view-viajes .trips-day>summary{padding:12px 11px}
+#view-viajes .trips-day-content{padding:8px;gap:8px}
+#view-viajes .reservation.trip-card{
+  background:linear-gradient(140deg,rgba(5,43,50,.96),rgba(4,34,43,.99));
+  border-radius:14px;border-color:rgba(231,203,133,.27)
+}
+#view-viajes .reservation.trip-card>summary{padding:13px 13px 11px}
+#view-viajes .trip-date-badge{width:33px;height:33px;flex-basis:33px;font-size:15px}
+#view-viajes .trip-date-wrap strong{font-size:12.2px}
+#view-viajes .trip-status{max-width:52%;border-radius:999px}
+#view-viajes .trip-route{margin:12px 0 10px;gap:9px}
+#view-viajes .trip-route-stop{align-items:flex-start;gap:8px}
+#view-viajes .trip-route-icon{padding-top:1px}
+#view-viajes .trip-route-label,
+#view-viajes .trip-card:not([open]) .trip-route-label{
+  display:block;-webkit-line-clamp:unset;-webkit-box-orient:initial;
+  overflow:visible;overflow-wrap:anywhere;white-space:normal;
+  line-height:1.47;font-size:11.4px;color:#f1f1e4
+}
+#view-viajes .trip-card-footer{padding-top:11px;margin-top:10px}
+#view-viajes .trip-card-quote{font-size:18px;letter-spacing:-.025em;color:#efd08a}
+#view-viajes .trip-card-open{font-size:10.6px}
+#view-viajes .trip-detail{padding:12px 13px 15px}
+#view-viajes .trip-focus-message{
+  margin:0 0 11px;font-size:11.5px;color:#d0e2d8;
+  line-height:1.6
+}
+#view-viajes .trip-card[data-tone="attention"] .trip-focus-message{
+  background:rgba(221,172,90,.115);border-left:3px solid #eac880;
+  padding:10px;border-radius:6px 10px 10px 6px
+}
+#view-viajes .trip-detail .trip-primary-actions{
+  display:flex;gap:8px;margin:9px 0 12px;flex-wrap:wrap
+}
+#view-viajes .trip-detail .trip-primary-actions button{
+  flex:1 1 135px;min-height:44px;font-weight:820;font-size:11.2px;
+  line-height:1.35;letter-spacing:0;border-radius:11px;padding:9px 10px
+}
+#view-viajes .trip-detail-disclosure{
+  border:1px solid rgba(225,196,135,.25);
+  border-radius:12px;margin:9px 0 0;
+  background:rgba(5,43,51,.53);overflow:hidden
+}
+#view-viajes .trip-detail-disclosure>summary{
+  position:relative;list-style:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 13px;min-height:44px;
+  font-size:11.8px;font-weight:750;color:#f1d7a0
+}
+#view-viajes .trip-detail-disclosure>summary::-webkit-details-marker{display:none}
+#view-viajes .trip-detail-disclosure>summary::after{
+  content:"";width:7px;height:7px;border:solid #e8c983;border-width:0 1.8px 1.8px 0;
+  transform:rotate(45deg);flex:0 0 7px
+}
+#view-viajes .trip-detail-disclosure[open]>summary::after{transform:rotate(225deg)}
+#view-viajes .trip-disclosure-body{
+  padding:8px 13px 14px;border-top:1px solid rgba(231,203,133,.14)
+}
+#view-viajes .trip-history-disclosure .trip-steps{margin:12px 0}
+#view-viajes .trip-history-disclosure .trip-events{margin:12px 0 3px}
+#view-viajes .trip-chat{
+  display:flex;align-items:center;gap:8px;justify-content:space-between;
+  margin:12px 0 4px;min-height:46px;padding:0 12px;
+  border-radius:12px;background:rgba(7,49,56,.65)
+}
+#view-viajes .trip-chat-open{
+  flex:1 1 auto;text-align:left;min-height:45px;
+  background:none;border:0;color:#f1d396;font-size:11.7px;
+  font-weight:820;padding:9px 0
+}
+#view-viajes .trip-chat-arrow{font-size:10px;white-space:normal;text-align:right}
+#view-viajes .trip-cancel-action{
+  margin:13px 2px 0;display:block;background:none;border:0;
+  color:#d7bbb1;text-decoration:underline;text-underline-offset:3px;
+  font-size:10.7px;min-height:40px;padding:6px 0
+}
+
+/* Separate, private conversation. No edit field exists in archived conversations. */
+.trip-chat-sheet{
+  position:fixed;inset:0;z-index:320;
+  background:rgba(0,16,22,.82);backdrop-filter:blur(9px);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;overflow:hidden
+}
+.trip-chat-sheet[hidden]{display:none!important}
+body.trip-chat-modal-open{overflow:hidden}
+.trip-chat-dialog{
+  display:flex;flex-direction:column;
+  width:min(100%,510px);height:min(650px,calc(100dvh - 32px));min-height:0;
+  background:linear-gradient(160deg,#0d4149,#062d38);
+  border:1px solid rgba(232,205,144,.55);
+  border-radius:23px;box-shadow:0 26px 90px rgba(0,0,0,.58);
+  overflow:hidden;outline:none
+}
+.trip-chat-dialog-header{
+  flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:17px 16px 15px;border-bottom:1px solid rgba(229,197,139,.24)
+}
+.trip-chat-dialog-header .trips-eyebrow{margin:0 0 4px;font-size:9px}
+.trip-chat-dialog-header h2{margin:0;font-size:16px;line-height:1.35;color:#fff3e1}
+.trip-chat-dialog-status{font-size:10.6px;color:#b3d0c5;margin:5px 0 0}
+#trip-chat-dialog-close{
+  flex:0 0 41px;width:41px;height:41px;border-radius:12px;
+  border:1px solid rgba(227,197,135,.4);
+  background:rgba(5,34,42,.6);color:#edd49a;font-size:28px
+}
+.trip-chat-dialog-content{
+  min-height:0;flex:1 1 auto;display:flex;flex-direction:column;
+  padding:12px 15px max(14px,env(safe-area-inset-bottom))
+}
+.trip-chat-dialog-content .trip-chat-feed{
+  flex:1 1 auto;min-height:0;max-height:none;
+  overflow-y:auto;padding:13px 4px 17px;
+  overscroll-behavior:contain;scroll-behavior:smooth
+}
+.trip-chat-dialog-content .trip-chat-compose{
+  flex:none;display:grid;grid-template-columns:minmax(0,1fr) 77px;gap:8px;
+  align-items:stretch;padding-top:11px;
+  border-top:1px solid rgba(229,197,139,.23)
+}
+.trip-chat-dialog-content .trip-chat-input{
+  display:block;min-height:49px;max-height:120px;
+  padding:11px;font-size:12.5px;margin:0;
+  border-radius:12px;background:rgba(0,25,34,.77);color:#f8f0e4
+}
+.trip-chat-dialog-content .trip-chat-send{
+  min-width:0;min-height:49px;padding:9px 8px;
+  border:1px solid #f3d99a;border-radius:12px;
+  background:linear-gradient(115deg,#d4a75b,#f1d89a);
+  color:#16373b;font-size:11.5px;font-weight:820
+}
+.trip-chat-dialog-content .trip-chat-send:disabled{opacity:.52}
+.trip-chat-dialog-content .trip-chat-hint{margin:8px 1px 0}
+.trip-chat-dialog-content .trip-chat-archived{
+  margin:11px 2px 2px;padding:12px;
+  background:rgba(152,189,167,.11);border:1px solid rgba(160,201,171,.24);
+  border-radius:12px;color:#d0e2d7;
+  font-size:11.3px;line-height:1.55
+}
+@media(max-width:520px){
+  #view-viajes .trip-intro{display:none}
+  #view-viajes .trips-board{padding:14px 11px;margin-top:8px}
+  #view-viajes .trips-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #view-viajes .trips-tab{font-size:10.3px;min-height:42px}
+  #view-viajes .trips-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* One persistent navigation row, not two layers covering the page content. */
+  .header{position:relative;top:auto}
+  .tabs{position:sticky;top:0}
+  .trip-chat-sheet{padding:0;align-items:flex-end}
+  .trip-chat-dialog{
+    width:100%;height:calc(100dvh - 16px);max-height:none;
+    border-radius:21px 21px 0 0;border-bottom:0
+  }
+}
+@media(max-width:365px){
+  #view-viajes .trips-controls{grid-template-columns:minmax(0,1fr)}
+  #view-viajes .trip-chat-arrow{font-size:9px}
+  .trip-chat-dialog-content .trip-chat-compose{grid-template-columns:minmax(0,1fr) 67px}
+}
+@media(prefers-reduced-motion:reduce){
+  .trip-chat-dialog-content .trip-chat-feed{scroll-behavior:auto}
+}

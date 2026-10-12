@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=57">
+  <link rel="stylesheet" href="./styles.css?v=58">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -222,35 +222,41 @@
     </section>
 
     <section id="view-viajes" class="view" aria-labelledby="mis-title">
-      <div class="section-heading trip-intro"><p class="eyebrow">TU ESPACIO DE VIAJES</p><h2 id="mis-title">Mis traslados</h2><p>Todo en un solo lugar: próximas recogidas, presupuestos y seguimiento de tus solicitudes.</p></div>
+      <div class="section-heading trip-intro"><h2 id="mis-title">Mis traslados</h2></div>
       <div class="card trips-board">
         <div class="trips-board-heading">
-          <div><p class="trips-eyebrow">SEGUIMIENTO PERSONAL</p><h3>Tu agenda de traslados</h3></div>
-          <button id="refresh-trips" type="button" class="tiny-btn trips-refresh">↻ Actualizar</button>
+          <div><p class="trips-eyebrow">TU AGENDA PERSONAL</p><h3>Tus traslados</h3></div>
+          <button id="refresh-trips" type="button" class="tiny-btn trips-refresh" aria-label="Actualizar mis traslados">↻ Actualizar</button>
         </div>
-        <div class="trips-tabs" role="group" aria-label="Ver reservas">
+        <div class="trips-tabs" role="group" aria-label="Qué traslados mostrar">
           <button class="trips-tab active" type="button" data-trips-scope="upcoming" aria-pressed="true">Próximos</button>
-          <button class="trips-tab" type="button" data-trips-scope="attention" aria-pressed="false">Por responder <span id="trips-attention-count" class="trips-tab-count" hidden></span></button>
+          <button class="trips-tab" type="button" data-trips-scope="attention" aria-pressed="false">Responder <span id="trips-attention-count" class="trips-tab-count" hidden></span></button>
           <button class="trips-tab" type="button" data-trips-scope="history" aria-pressed="false">Historial</button>
-          <button class="trips-tab" type="button" data-trips-scope="all" aria-pressed="false">Todos</button>
         </div>
-        <div class="trips-controls">
-          <label class="trips-filter-label">Agrupar por
-            <select id="trips-group-by" aria-label="Agrupar reservas"><option value="day">Día</option><option value="month">Mes</option></select>
-          </label>
-          <label class="trips-filter-label">Estado
-            <select id="trips-status-filter" aria-label="Filtrar reservas por estado">
-              <option value="all">Todos los estados</option><option value="pending">Pendientes</option>
-              <option value="quote">Presupuestos</option><option value="confirmed">Confirmadas</option>
-              <option value="moving">En curso</option><option value="finished">Finalizadas y cerradas</option>
-            </select>
-          </label>
-        </div>
-        <div class="trips-feedback-preferences" role="group" aria-label="Avisos cuando Traslados está abierto">
-          <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-vibrate"> Vibración para novedades</label>
-          <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-sound"> Sonido suave para novedades</label>
-        </div>
-        <p class="trips-push-disclaimer">Los avisos de esta versión funcionan con Traslados abierto. Las notificaciones con la app cerrada requieren activar el servicio push del dispositivo.</p>
+        <p id="trips-focus" class="trips-focus" role="status" aria-live="polite"></p>
+        <details class="trips-advanced" id="trips-advanced">
+          <summary>Más filtros y avisos <span aria-hidden="true">⌄</span></summary>
+          <div class="trips-advanced-body">
+            <button class="trips-tab trips-show-all" type="button" data-trips-scope="all" aria-pressed="false">Ver absolutamente todos los traslados</button>
+            <div class="trips-controls">
+              <label class="trips-filter-label">Agrupar por
+                <select id="trips-group-by" aria-label="Agrupar reservas"><option value="day">Día</option><option value="month">Mes</option></select>
+              </label>
+              <label class="trips-filter-label">Estado
+                <select id="trips-status-filter" aria-label="Filtrar reservas por estado">
+                  <option value="all">Todos los estados</option><option value="pending">Pendientes</option>
+                  <option value="quote">Presupuestos</option><option value="confirmed">Confirmadas</option>
+                  <option value="moving">En curso</option><option value="finished">Finalizadas y cerradas</option>
+                </select>
+              </label>
+            </div>
+            <div class="trips-feedback-preferences" role="group" aria-label="Avisos cuando Traslados está abierto">
+              <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-vibrate"> Vibración para novedades</label>
+              <label class="trips-alert-optin"><input type="checkbox" id="trips-alert-sound"> Sonido suave para novedades</label>
+            </div>
+            <p class="trips-push-disclaimer">Estos avisos funcionan mientras Traslados está abierto. Las notificaciones con la aplicación cerrada todavía no están activadas.</p>
+          </div>
+        </details>
         <p id="trips-status" class="trips-status" role="status" aria-live="polite"></p>
         <div id="trips-list" class="trips-list"></div>
       </div>
@@ -310,6 +316,15 @@
       <p class="trip-alert-footnote">También podés consultarlo desde Mis traslados.</p>
     </div>
   </div>
+  <div id="trip-chat-sheet" class="trip-chat-sheet" hidden>
+    <div class="trip-chat-dialog" role="dialog" aria-modal="true" aria-labelledby="trip-chat-dialog-title" tabindex="-1">
+      <header class="trip-chat-dialog-header">
+        <div><p class="trips-eyebrow">MENSAJES DEL TRASLADO</p><h2 id="trip-chat-dialog-title">Conversación con el conductor</h2><p id="trip-chat-dialog-status" class="trip-chat-dialog-status"></p></div>
+        <button id="trip-chat-dialog-close" type="button" aria-label="Cerrar conversación">×</button>
+      </header>
+      <div id="trip-chat-dialog-content" class="trip-chat-dialog-content"></div>
+    </div>
+  </div>
   <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
   <script src="./geo-search.js?v=3" defer></script>
   <script src="./address-engine.js?v=1" defer></script>
@@ -321,6 +336,6 @@
   <script src="./pickup-observability.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
   <script src="./trip-board.js?v=4" defer></script>
-  <script src="./app.js?v=57" defer></script>
+  <script src="./app.js?v=58" defer></script>
 </body>
 </html>
