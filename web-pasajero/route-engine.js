@@ -4,7 +4,10 @@
  */
 (function(root){
   const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
-  const TTL=300000,cache=new Map();
+  const TTL=300000,cache=new Map(),failures=new Map();
+  const reasons=new Set(["not_configured","temporarily_unavailable","no_route","invalid_points"]);
+  function reason(value){return reasons.has(value)?value:"unverified_response";}
+  function diagnostic(routeKey){return failures.get(routeKey)||null;}
   function key(points){
     if(!Array.isArray(points)||points.length<2||
        points.some(p=>!Number.isFinite(p?.lat)||!Number.isFinite(p?.lng)))
@@ -24,7 +27,7 @@
     return null;
   }
   function invalidate(routeKey){
-    if(routeKey)cache.delete(routeKey);else cache.clear();
+    if(routeKey){cache.delete(routeKey);failures.delete(routeKey);}else{cache.clear();failures.clear();}
   }
   async function cachedRoadRoute(points,api,publishableKey,request){
     const controller=new AbortController();
@@ -46,24 +49,32 @@
     if(hit)return hit;
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),7500);
-    let data=null;
+    let data=null,problem="network_error";
     try{
       const response=await request(SHARED_ROUTER+"?points="+encodeURIComponent(routeKey),{
         headers:{Accept:"application/json"},signal:controller.signal,cache:"no-store"
       });
-      if(response.ok){
-        const candidate=await response.json();
-        if(verified(candidate))data=candidate;
-      }
-    }catch{
-      // Sin distancia ficticia si el proveedor falla.
+      let candidate=null;
+      // A 503 from Cloudflare often includes a safe machine-readable reason.
+      try{candidate=await response.json();}catch{}
+      if(response.ok && verified(candidate))data=candidate;
+      else if(candidate && typeof candidate==="object" && typeof candidate.reason==="string")
+        problem=reason(candidate.reason);
+      else problem=response.ok?"unverified_response":"http_error";
+    }catch(e){
+      problem=e?.name==="AbortError"?"timeout":"network_error";
     }finally{clearTimeout(timer);}
     if(!data)data=await cachedRoadRoute(points,api,publishableKey,request);
     if(data){
+      failures.delete(routeKey);
       cache.set(routeKey,{data,expires:Date.now()+TTL});
       if(cache.size>65)cache.clear();
+    }else{
+      // Never store coordinates, identifiers or API responses in diagnostics.
+      failures.set(routeKey,{reason:problem,checkedAt:Date.now()});
+      if(failures.size>65)failures.clear();
     }
     return data;
   }
-  root.TrasladosRoutes=Object.freeze({key,verified,peek,invalidate,estimate});
+  root.TrasladosRoutes=Object.freeze({key,verified,peek,invalidate,diagnostic,estimate});
 })(window);

@@ -218,6 +218,14 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 .route-footer{padding:8px 0 0;margin:0;gap:8px;flex-wrap:wrap}
 .route-footer .route-status{font-size:10.5px;line-height:1.45;flex:1 1 180px;margin:0;color:#c6d9d0}
 .route-footer .route-google{font-size:10.5px;padding:7px 10px;min-height:35px;border-radius:10px;white-space:nowrap}
+.route-retry{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:35px;
+  padding:7px 11px;border-radius:11px;border:1px solid rgba(235,203,138,.68);
+  background:linear-gradient(130deg,rgba(244,210,143,.22),rgba(14,62,67,.45));
+  color:#ffe5b1;font-size:11px;font-weight:700;line-height:1.35;letter-spacing:.01em;cursor:pointer;
+  max-width:100%;white-space:normal;text-align:center}
+.route-retry[hidden]{display:none!important}
+.route-retry:focus-visible{outline:2px solid #ffe2a2;outline-offset:3px}
+.route-retry:active{transform:scale(.985)}
 .route-extra{margin-top:8px;padding-top:5px}
 .route-extra summary{font-size:10.5px;min-height:30px;padding-top:6px}
 .route-extra .route-map-caption{font-size:10.5px;margin:6px 0}

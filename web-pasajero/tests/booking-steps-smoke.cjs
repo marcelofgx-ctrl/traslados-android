@@ -17,9 +17,10 @@ for(const step of ["route","when","passenger"]){
 }
 assert(html.includes('id="booking-progress-text"'));
 assert(html.includes('id="when-next"'));
-assert(html.indexOf('booking-steps.js?v=1')<html.indexOf('app.js?v=55'),
+const appVersion=html.match(/app\.js\?v=(\d+)/)?.[1];
+assert(appVersion&&html.indexOf('booking-steps.js?v=1')<html.indexOf('app.js?v='+appVersion),
   "Accordion loads before the application");
-assert(sw.includes('traslados-cliente-pwa-v55')&&sw.includes('booking-steps.js'),
+assert(sw.includes('traslados-cliente-pwa-v'+appVersion)&&sw.includes('booking-steps.js'),
   "Offline install must include the new accordion script");
 assert(css.includes("booking-step-content[hidden]"));
 assert(css.includes("prefers-reduced-motion"));
