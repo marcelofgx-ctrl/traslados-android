@@ -42,7 +42,7 @@ const html=read("index.html"),app=read("app.js"),styles=read("styles.css"),sw=re
 assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
-assert(html.includes('src="./trip-board.js?v=4"'));
+assert(html.includes('src="./trip-board.js?v=5"'));
 assert(html.includes('app.js?v=60')&&html.includes('styles.css?v=60')&&sw.includes('traslados-cliente-pwa-v60'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
 assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token'));
