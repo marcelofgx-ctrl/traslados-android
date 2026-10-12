@@ -4,8 +4,8 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=f=>fs.readFileSync(path.join(root,f),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),sw=read("sw.js");
-assert(html.includes("app.js?v=61")&&html.includes("styles.css?v=61"));
-assert(sw.includes("traslados-cliente-pwa-v61"));
+assert(html.includes("app.js?v=62")&&html.includes("styles.css?v=62"));
+assert(sw.includes("traslados-cliente-pwa-v62"));
 assert(html.includes("DISTANCIA AL ORIGEN")&&html.includes("LLEGADA ESTIMADA"));
 assert(css.includes('not([data-phase="checking"]):not([data-phase="routing"]) .pickup-route-animation'));
 assert(!app.includes("Actualización automática cada 15 s."));
