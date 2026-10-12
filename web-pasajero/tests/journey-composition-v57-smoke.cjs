@@ -59,7 +59,7 @@ const out=[];
 const ctx={
   Number,Date,
   $:id=>els[id]||null,
-  record,routeKeyOf,
+  record,routeKeyOf,stepSummaryName:place=>String(place?.text||"").split(",")[0],
   latestRoad:{key,data:{available:true,source:"openrouteservice",
     distanceKm:19.8,durationMin:29,referenceFareUyu:790}},
   bookingSteps:{summary:(...args)=>out.push(args)},
