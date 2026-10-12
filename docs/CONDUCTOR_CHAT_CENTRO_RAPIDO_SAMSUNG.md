@@ -9,10 +9,10 @@
 - «COMENTARIOS null» aparecía porque se imprimía `null` serializado como texto. Se filtra, sin alterar dato remoto.
 
 ## Cambio funcional propuesto
-1. **Aviso de nueva solicitud:** botón «✉ CONVERSAR CON EL PASAJERO» abre el diálogo nativo ya existente (sin presupuesto, sin enviar nada al tocar el botón), mantiene VER LISTA y PREPARAR PRESUPUESTO.
+1. **Aviso de nueva solicitud:** ventana compacta adaptada al contenido (sin altura vacía fija), con detalles desplazables y botones principales anclados. Botón «✉ CONVERSAR CON EL PASAJERO» abre el diálogo nativo ya existente (sin presupuesto, sin enviar nada al tocar el botón), mantiene VER LISTA y PREPARAR PRESUPUESTO.
 2. **Centro rápido del único globito Mapa:** en una reserva expandida, «✉ CONVERSACIÓN DEL TRASLADO» abre la actividad Conductor **integrada** directamente sobre esa reserva. Si Mapa detecta conducción, pide detenerse primero.
 3. **Notificación Android de nuevo mensaje:** al tocar, pasa `open_chat=true` y el ID de la reserva, navegando a la conversación correcta, no solo a la lista.
-4. **Chat Conductor:** chips horizontales con tres mensajes sugeridos **editables**. Elegir un chip **solo llena el cuadro**; es imprescindible pulsar «Enviar» para ejecutar `driver_trip_chat_send_v1`. RPC idempotente y PIN siguen siendo los existentes. Botón «Actualizar» conservado. Si la reserva está archivada, mostrar chat de solo lectura sin composición.
+4. **Chat Conductor:** chips horizontales con tres mensajes sugeridos **editables**. Elegir un chip **solo llena el cuadro**; es imprescindible pulsar «Enviar» para ejecutar `driver_trip_chat_send_v1`. RPC idempotente y PIN siguen siendo los existentes. Botón «Actualizar» conservado. Mientras el diálogo permanezca visible, refresco limitado a **15 s**, sin notificaciones push simuladas y sin repintar ni desplazar la conversación si no cambió; se detiene al cerrarse, y se descartan respuestas después de logout/cambio de PIN. Si la reserva está archivada, mostrar chat de solo lectura sin composición.
 5. **WhatsApp no es el chat interno:** accesos anteriores se renombran «WHATSAPP · …» para evitar confundir el envío externo con el chat Supabase.
 
 ## Arquitectura y guardas
