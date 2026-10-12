@@ -1,0 +1,40 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
+const root=path.join(__dirname,".."),read=n=>fs.readFileSync(path.join(root,n),"utf8");
+const context={window:{},Set,Date,String};
+vm.runInNewContext(read("owned-pickup.js"),context);
+const owned=context.window.TrasladosOwnedPickup;
+assert(Object.isFrozen(owned));
+const origin={text:"Arenal Grande 2274"},destination={text:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros"};
+const now=Date.parse("2026-10-12T17:48:00Z");
+const recent={code:"TR-SAMPLE",status:"PENDIENTE",quote_status:"SIN_PRESUPUESTO",
+  pickup_date:"2026-10-12",pickup_time:"13:38:37.279746",created_at:"2026-10-12T16:38:37Z",
+  origin_text:"ARENAL GRANDE 2274",destination_text:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros"};
+assert.equal(owned.match([recent],origin,destination,[],now).code,"TR-SAMPLE");
+assert.equal(owned.match([{...recent,pickup_time:"13:48:37"}],origin,destination,[],now).code,"TR-SAMPLE");
+assert.equal(owned.match([{...recent,pickup_time:"14:08:37"}],origin,destination,[],now),null,
+  "Scheduled +30min reservation must not appear as an immediate request");
+assert.equal(owned.match([{...recent,pickup_mode:"schedule"}],origin,destination,[],now),null);
+assert.match(owned.presentation(recent).title,/solicitud/);
+assert.match(owned.presentation({...recent,quote_status:"ENVIADO"}).action,/presupuesto/);
+assert.match(owned.presentation({...recent,status:"ACEPTADA"}).title,/confirmado/);
+assert.equal(owned.match([recent],origin,{text:"Otro lugar"},[],now),null);
+assert.equal(owned.match([recent],origin,destination,[{text:"Parada"}],now),null);
+assert.equal(owned.match([{...recent,status:"FINALIZADA"}],origin,destination,[],now),null);
+assert.equal(owned.match([{...recent,created_at:"2026-10-12T15:00:00Z"}],origin,destination,[],now),null);
+assert.equal(owned.match([{...recent,created_at:"invalid"}],origin,destination,[],now),null);
+assert.equal(owned.match([{...recent,stops:[{text:"Parada"}]}],origin,destination,[],now),null);
+assert.equal(owned.match([],origin,destination,[],now),null);
+assert.equal(owned.match([{...recent,pickup_mode:"schedule"}],origin,destination,[],now),null);
+const html=read("index.html"),app=read("app.js"),sw=read("sw.js"),css=read("styles.css");
+assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")<html.indexOf("app.js?v=65"));
+assert(sw.includes("traslados-cliente-pwa-v65")&&sw.includes("./owned-pickup.js"));
+assert(html.includes('styles.css?v=65')&&html.includes('app.js?v=65'));
+assert(html.includes('id="pickup-existing-open"'));
+assert(app.includes("window.TrasladosOwnedPickup?.match?.(tripRows"));
+assert(app.includes('if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=true'));
+assert(app.includes("if(same){"),"Direct submit must guard against duplicate own request");
+assert(app.includes('phase:"owned"')&&app.includes('title:"Recogida inmediata sin confirmar"'));
+assert(css.includes('#pickup-presence[data-presence="owned"]'));
+assert(!read("owned-pickup.js").includes("fetch(")&&!read("owned-pickup.js").includes("rpc("));
+console.log("PASS v65: owned receipt, immutable server status, no duplicate, safe general availability and WebView parity");
