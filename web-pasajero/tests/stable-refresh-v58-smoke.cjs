@@ -4,6 +4,7 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const app=fs.readFileSync(path.join(__dirname,"../app.js"),"utf8");
+const css=fs.readFileSync(path.join(__dirname,"../styles.css"),"utf8");
 const block=app.match(/function tripDisplayKey\(rows\)\{[\s\S]*?\n\}/);
 assert(block,"The board needs a stable display fingerprint");
 const ctx={tripBoard:{metadata:r=>({tone:r.expired?"expired":"pending"})}};
@@ -30,4 +31,6 @@ assert.equal((app.match(/if\(requestEpoch!==tripQueryEpoch\)return;/g)||[]).leng
   "Old response and old error cannot mutate visible state");
 assert(app.includes("if(requestEpoch===tripQueryEpoch)tripsLoading=false"),
   "Stale request cannot unlock a newer request");
+assert(css.includes(".trip-chat-dialog-header{flex-direction:row-reverse}"),
+  "Samsung passenger chat close must be on the left, away from the native bubble");
 console.log("PASS stable Samsung agenda refresh, preserved disclosures and private account switching");
