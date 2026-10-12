@@ -1,6 +1,6 @@
 # PWA v66 · Solicitudes inmediatas sin confirmación vencidas
 
-**12 de octubre de 2026 · rama en revisión.** Continuidad del caso Arenal Grande → Aeropuerto, solicitud creada a las 13:38.
+**12 de octubre de 2026 · PUBLICADA EN MAIN.** PR #67 `f10d8149`; [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38285882452), [PWA CI SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38285883342), interfaz y WebView v15 correctas. QA físico Samsung pendiente. Continuidad del caso Arenal Grande → Aeropuerto, solicitud creada a las 13:38.
 
 ## Problema verificado
 

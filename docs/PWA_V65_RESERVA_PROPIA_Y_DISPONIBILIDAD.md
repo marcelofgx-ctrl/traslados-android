@@ -1,6 +1,6 @@
 # PWA v65 — Solicitud ya registrada y disponibilidad contextual
 
-**12/10/2026, 14:24 UYT · Cambio en revisión.**
+**12/10/2026 · PUBLICADA EN MAIN.** PR #66 `2e244634`; [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38284937301), suite PWA y compatibilidad WebView v15 correctas. Versión histórica desde v66; pruebas físicas Samsung pendientes.
 
 ## Hallazgo verificado en la base operativa de Traslados
 
