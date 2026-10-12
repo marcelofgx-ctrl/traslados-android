@@ -97,8 +97,9 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
     available:true,source:"supabase_route_cache",distanceKm:18.1,durationMin:25,
     referenceFareUyu:720,geometry:[],calculatedAt:new Date().toISOString()
   });
-  roadEngine.invalidate();ctx.renderRouteSummary();
+  nodes("route-retry")[0].onclick();
   await settle();
+  assert.equal(nodes("route-retry")[0].hidden,true,"A verified route hides the retry control");
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"18,1 km");
   assert.equal(nodes("route-metric")[1].nodes[1].textContent,"25 min");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 720");
