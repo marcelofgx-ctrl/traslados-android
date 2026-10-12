@@ -15,6 +15,40 @@ function stepSummaryName(place){
   const label=String(place?.text||"").trim().split(",")[0];
   return label.length>37?label.slice(0,34)+"…":label;
 }
+// A condensed itinerary must preserve both full addresses, not truncate them.
+function refreshJourneyComposition(routeComplete,roadVerified){
+  const preview=$("route-folded-preview");
+  if(preview){
+    preview.hidden=!routeComplete;
+    if(routeComplete){
+      $("route-folded-origin").textContent=record.origin.text;
+      $("route-folded-destination").textContent=record.destination.text;
+      const stopBadge=$("route-folded-stops");
+      stopBadge.hidden=record.stops.length===0;
+      stopBadge.textContent=record.stops.length+" parada"+(record.stops.length===1?"":"s")+" intermedia"+(record.stops.length===1?"":"s");
+      $("route-folded-km").textContent=roadVerified
+        ?latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"—";
+      $("route-folded-minutes").textContent=roadVerified?latestRoad.data.durationMin+" min":"—";
+      $("route-folded-fare").textContent=roadVerified&&Number.isFinite(latestRoad.data.referenceFareUyu)&&latestRoad.data.referenceFareUyu>0
+        ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+        :"A confirmar";
+    }
+  }
+  for(const name of ["urgent","scheduled"]){
+    const recap=$(name+"-route-recap");
+    if(!recap)continue;
+    recap.hidden=!routeComplete;
+    if(!routeComplete)continue;
+    recap.querySelector("[data-final-route-distance]").textContent=roadVerified
+      ?latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"—";
+    recap.querySelector("[data-final-route-duration]").textContent=roadVerified
+      ?latestRoad.data.durationMin+" min":"—";
+    recap.querySelector("[data-final-route-fare]").textContent=roadVerified&&
+      Number.isFinite(latestRoad.data.referenceFareUyu)&&latestRoad.data.referenceFareUyu>0
+      ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+      :"A confirmar";
+  }
+}
 function refreshBookingSteps(){
   if(!bookingSteps)return;
   const routeComplete=Boolean(record.origin&&record.destination&&record.stops.every(Boolean));
@@ -22,8 +56,11 @@ function refreshBookingSteps(){
     :!record.origin?"Elegí origen y destino"
     :!record.destination?"Falta elegir destino":"Falta completar una parada";
   let routeMetrics="";
-  if(routeComplete&&latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
-      window.TrasladosRoutes.verified(latestRoad.data)){
+  const verified=Boolean(routeComplete&&
+    latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
+    window.TrasladosRoutes.verified(latestRoad.data));
+  refreshJourneyComposition(routeComplete,verified);
+  if(verified){
     const d=latestRoad.data;
     routeMetrics=d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+d.durationMin+" min";
     if(Number.isFinite(d.referenceFareUyu)&&d.referenceFareUyu>0)
