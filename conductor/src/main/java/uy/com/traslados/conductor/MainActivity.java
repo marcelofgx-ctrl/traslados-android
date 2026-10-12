@@ -856,6 +856,16 @@ public class MainActivity extends Activity {
     }
 
 
+    private String installedConductorVersion(){
+        try{
+            android.content.pm.PackageInfo app=getPackageManager().getPackageInfo(getPackageName(),0);
+            long code=Build.VERSION.SDK_INT>=28?app.getLongVersionCode():app.versionCode;
+            String label="uy.com.mapatrayectos".equals(getPackageName())
+                ?"Conductor integrado · Mapa ":"Conductor ";
+            return label+app.versionName+" · build "+code;
+        }catch(Exception ignored){return "Conductor integrado";}
+    }
+
     private void openRequestedPassengerChatIfReady(){
         if(pendingChatReservationId.isEmpty()||pin.isEmpty()||historyMode)return;
         for(JSONObject row:currentRows){
@@ -1126,7 +1136,7 @@ public class MainActivity extends Activity {
         TextView brand=heading("Traslados Conductor",22);col.addView(brand);
         TextView privateLine=body("Acceso privado del conductor",11,MUTED);col.addView(privateLine,lpMatch(-2,1,0));
         TextView serviceLine=body("Aeropuerto · Programados · Larga distancia",10,GOLD);col.addView(serviceLine);
-        TextView versionLine=body("v11.4 · R10.4 · build 122",9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
+        TextView versionLine=body(installedConductorVersion(),9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
         hero.addView(row);
 
         LinearLayout meta=new LinearLayout(this);meta.setGravity(Gravity.CENTER_VERTICAL);meta.setPadding(0,dp(8),0,0);
