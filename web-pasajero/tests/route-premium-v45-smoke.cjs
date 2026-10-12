@@ -15,7 +15,7 @@ assert(html.includes('id="booking-final"'),"Preserve booking submit flow");
 assert(html.includes('src="./app.js?v=61"')&&html.includes('href="./styles.css?v=61"'),
   "Both asset versions must be coherent");
 assert(sw.includes('traslados-cliente-pwa-v61'),"Refresh SW for embedded client");
-assert(html.includes("Elegí tu origen y destino."),"Intro should be scannable");
+assert(html.includes("Elegí el recorrido, revisá la estimación"),"Booking intro should be brief and contextual");
 assert(/class="wayline" aria-hidden="true"/.test(html),"Route connector is decorative");
 assert(js.includes('box.dataset.locationKind=name'),"Style origin vs destination without hardcoding location data");
 assert(js.includes('name==="origin"?"ORIGEN":name==="destination"?"DESTINO"'),
