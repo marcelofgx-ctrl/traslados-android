@@ -265,6 +265,14 @@ public final class TransferQuickPanel {
             button(card,"MENSAJE: YA LLEGUÉ",()->whatsapp(phone,"Hola, ya llegué al punto de encuentro de tu traslado."));
         }
         String idFinal=id;
+        button(card,"✉  CONVERSACIÓN DEL TRASLADO",()->{
+            if(isDriving()){
+                new AlertDialog.Builder(a).setTitle("Modo conducción")
+                    .setMessage("Para responder mensajes detené el vehículo en un lugar seguro.")
+                    .setPositiveButton("ENTENDIDO",null).show();return;
+            }
+            openConductorChat(idFinal);
+        });
         button(card,"GESTIONAR / PRESUPUESTAR   ↗",()->{
             if(isDriving()){
                 new AlertDialog.Builder(a).setTitle("Modo conducción")
@@ -354,12 +362,16 @@ public final class TransferQuickPanel {
         try{a.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));}
         catch(Exception e){Toast.makeText(a,"No se pudo abrir el enlace",Toast.LENGTH_SHORT).show();}
     }
-    private void openConductor(String id){
+    private void openConductorChat(String id){openConductor(id,true);}
+    private void openConductor(String id){openConductor(id,false);}
+    private void openConductor(String id,boolean chat){
         popup.dismiss();
         Intent i=new Intent(a,uy.com.traslados.conductor.MainActivity.class);
         if(id!=null&&!id.isEmpty()){
             i.putExtra("open_requests",true).putExtra("reservation_id",id);
+            if(chat)i.putExtra("open_chat",true);
         }
+        if(chat)i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
         try{a.startActivity(i);}catch(Exception e){
             Toast.makeText(a,"No se pudo abrir Traslados Conductor",Toast.LENGTH_LONG).show();
         }
