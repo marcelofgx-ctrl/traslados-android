@@ -747,6 +747,16 @@ function renderRouteSummary(){
   const a=text(footer,"a","Abrir en Maps ↗","route-google");
   a.href=mapsLinkFromBooking({origin:points[0],destination:points[points.length-1],stops:points.slice(1,-1)});
   a.target="_blank";a.rel="noopener noreferrer";
+  const retry=document.createElement("button");
+  retry.type="button";
+  retry.className="route-retry";
+  retry.textContent="↻ Reintentar cálculo";
+  retry.hidden=true;
+  retry.onclick=()=>{
+    roadEngine.invalidate(key);
+    renderRouteSummary();
+  };
+  footer.appendChild(retry);
 
   const details=document.createElement("details");
   details.className="route-extra";host.appendChild(details);
@@ -764,6 +774,7 @@ function renderRouteSummary(){
       reference.textContent=Number.isFinite(data.referenceFareUyu)&&data.referenceFareUyu>0
         ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
         : "A confirmar";
+      retry.hidden=true;
       indicator.textContent="Ruta verificada";
       indicator.classList.add("is-verified");
       note.textContent="Valor orientativo según kilómetros del viaje. No incluye el recorrido del conductor hasta recogerte, peajes ni extras; el conductor confirma el precio final.";
@@ -775,10 +786,21 @@ function renderRouteSummary(){
     }else{
       latestRoad=null;
       distance.textContent="—";duration.textContent="—";reference.textContent="A confirmar";
-      indicator.textContent="Cálculo pendiente";
+      indicator.textContent="Sin cálculo por ahora";
       indicator.classList.remove("is-verified");
-      note.textContent="El cálculo automático aún no está disponible para este recorrido. Podés ver la ruta en Maps.";
-      detailCaption.textContent="El servicio principal de rutas necesita estar habilitado. La caché interna solo tiene recorridos ya verificados. No usamos distancias en línea recta para estimar precios.";
+      retry.hidden=false;
+      const reason=roadEngine.diagnostic?.(key)?.reason||"unverified_response";
+      const messages={
+        not_configured:"El servicio de rutas necesita habilitación en el servidor. El recorrido sigue seleccionado; podés reintentar más tarde.",
+        temporarily_unavailable:"El servicio de rutas está temporalmente ocupado. Tocá Reintentar cálculo en unos instantes.",
+        no_route:"No encontramos una ruta por carretera para estos puntos. Revisá las direcciones o probá nuevamente.",
+        invalid_points:"Una dirección no tiene coordenadas válidas. Probá editarla y seleccionarla otra vez.",
+        timeout:"El cálculo demoró demasiado. Tocá Reintentar cálculo cuando tengas buena conexión.",
+        network_error:"No pudimos conectar con el servicio de rutas. Revisá Internet y tocá Reintentar cálculo.",
+        http_error:"El servicio de rutas no respondió correctamente. Podés reintentar sin cambiar las direcciones."
+      };
+      note.textContent=messages[reason]||"No pudimos verificar la ruta en este momento. Tocá Reintentar cálculo.";
+      detailCaption.textContent="Estado del motor: "+reason+". Sin ruta vial verificada no mostramos kilómetros, minutos ni tarifa inventados. Podés usar Maps mientras se restablece el cálculo.";
       clear(map);
     }
     refreshBookingSteps();
