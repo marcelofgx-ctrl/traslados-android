@@ -1322,10 +1322,6 @@ html,body{
 #pickup-presence[data-phase="issue"] .pickup-route-car{
   left:0;opacity:.68;box-shadow:none;
 }
-.pickup-route-caption{
-  margin:5px 0 0 34px!important;font-size:10px!important;font-weight:720;
-  letter-spacing:.025em;color:#e3ce9f!important;
-}
 @keyframes pickupRouteTravel{
   from{left:0}
   to{left:calc(100% - 20px)}
@@ -1337,7 +1333,6 @@ html,body{
 }
 @media(max-width:420px){
   .pickup-route-animation{margin-top:12px;gap:8px}
-  .pickup-route-caption{margin-left:31px!important}
 }
 @media(prefers-reduced-motion:reduce){
   #pickup-presence .pickup-route-car,
@@ -1844,9 +1839,7 @@ body.trip-chat-modal-open{overflow:hidden}
 #pickup-presence{padding:14px 15px 12px;gap:6px}
 #pickup-presence .pickup-card-heading strong{font-size:17px;line-height:1.3}
 #pickup-presence .pickup-card-heading p{margin:4px 0 0;line-height:1.42;font-size:12.5px}
-#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]):not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation,
-#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]):not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-caption{display:none!important}
-#pickup-presence .pickup-route-caption:empty{display:none!important}
+#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]):not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation{display:none!important}
 #pickup-presence .pickup-presence-metrics{margin:12px 0 6px;gap:8px}
 #pickup-presence .pickup-presence-metric{min-height:67px;padding:11px 12px;border-radius:12px}
 #pickup-presence .pickup-metric-label{font-size:9px;letter-spacing:.05em;line-height:1.3}

@@ -4,9 +4,10 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.join(__dirname,".."),read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const html=read("index.html"),css=read("styles.css"),app=read("app.js"),sw=read("sw.js");
-assert(html.includes('app.js?v=66')&&html.includes('styles.css?v=66'));
-assert(sw.includes("traslados-cliente-pwa-v66"));
+assert(html.includes('app.js?v=67')&&html.includes('styles.css?v=67'));
+assert(sw.includes("traslados-cliente-pwa-v67"));
 assert(html.includes('id="pickup-route-animation"')&&html.includes('class="pickup-route-car"><svg'));
+assert(!html.includes('id="pickup-route-caption"'));
 assert(html.includes('aria-hidden="true" focusable="false"'));
 assert(css.includes('#pickup-presence[data-phase="waiting"] .pickup-route-car'));
 assert(css.includes('#pickup-presence[data-phase="ready"] .pickup-route-car'));
@@ -22,7 +23,7 @@ assert(begin!==-1&&end>begin);
 let notices=0;
 const status={_value:"",get textContent(){return this._value;},set textContent(v){this._value=v;notices++;}};
 const nodes={
-  "pickup-presence":{dataset:{}},"pickup-route-caption":{textContent:""},
+  "pickup-presence":{dataset:{}},
   "pickup-presence-title":{textContent:""},"pickup-presence-subtitle":{textContent:""},
   "pickup-presence-metrics":{hidden:true},"pickup-distance":{textContent:""},
   "pickup-minutes":{textContent:""},"pickup-estimate-note":{textContent:"",hidden:true},
@@ -33,14 +34,11 @@ vm.createContext(ctx);vm.runInContext(app.slice(begin,end),ctx);
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Actualizando la llegada…",
   checked:"Se actualiza solo",phase:"waiting"});
 assert.equal(nodes["pickup-presence"].dataset.phase,"waiting");
-assert.match(nodes["pickup-route-caption"].textContent,/ilustrativa/);
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
 assert.equal(nodes["pickup-distance"].textContent,"");
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Calculando llegada…",phase:"routing"});
-assert.match(nodes["pickup-route-caption"].textContent,/Calculando/);
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Llegada aproximada",
   km:3.4,minutes:8,phase:"ready",checked:"Se actualiza solo"});
-assert.match(nodes["pickup-route-caption"].textContent,/No es seguimiento en vivo/);
 assert.equal(nodes["pickup-presence-metrics"].hidden,false);
 assert.equal(nodes["pickup-distance"].textContent,"3,4 km");
 const count=notices;
@@ -48,10 +46,8 @@ ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Ll
   km:3.4,minutes:8,phase:"ready",checked:"Se actualiza solo"});
 assert.equal(notices,count,"No aria-live announcement on identical updates");
 ctx.paintPickupCard({presence:"busy",title:"No disponible",phase:"blocked"});
-assert.equal(nodes["pickup-route-caption"].textContent,"");
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
 assert.equal(nodes["pickup-distance"].textContent,"");
 ctx.paintPickupCard({presence:"unknown",title:"No se pudo comprobar",phase:"issue"});
-assert.equal(nodes["pickup-route-caption"].textContent,"");
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
 console.log("PASS v64 illustrative green route visible while waiting/ready; honest availability, reduced motion, no GPS leak");

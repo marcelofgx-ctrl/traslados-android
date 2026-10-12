@@ -62,6 +62,7 @@ jobs:
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/pickup-context-copy-v60-smoke.cjs
           node web-pasajero/tests/pickup-motion-v64-smoke.cjs
+          node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
           node web-pasajero/tests/owned-pickup-v65-smoke.cjs
           node web-pasajero/tests/expired-urgent-v66-smoke.cjs
           node web-pasajero/tests/service-home-v61-smoke.cjs

@@ -4,8 +4,8 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=f=>fs.readFileSync(path.join(root,f),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),sw=read("sw.js");
-assert(html.includes("app.js?v=66")&&html.includes("styles.css?v=66"));
-assert(sw.includes("traslados-cliente-pwa-v66"));
+assert(html.includes("app.js?v=67")&&html.includes("styles.css?v=67"));
+assert(sw.includes("traslados-cliente-pwa-v67"));
 assert(html.includes("DISTANCIA AL ORIGEN")&&html.includes("LLEGADA ESTIMADA"));
 assert(css.includes('not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation'));
 assert(!app.includes("Actualización automática cada 15 s."));
@@ -20,7 +20,7 @@ let announcements=0;
 const screenreader={_value:"",get textContent(){return this._value;},
   set textContent(value){this._value=value;announcements++;}};
 const nodes={
- "pickup-presence":{dataset:{}}, "pickup-route-caption":{textContent:""},
+ "pickup-presence":{dataset:{}},
  "pickup-presence-title":{textContent:""}, "pickup-presence-subtitle":{textContent:""},
  "pickup-presence-metrics":{hidden:true},"pickup-distance":{textContent:""},
  "pickup-minutes":{textContent:""},"pickup-estimate-note":{textContent:"",hidden:true},
@@ -37,7 +37,7 @@ context.paintPickupCard(online);
 assert.equal(nodes["pickup-distance"].textContent,"3,5 km");
 assert.equal(nodes["pickup-minutes"].textContent,"5–10 min");
 assert.equal(nodes["pickup-presence-metrics"].hidden,false);
-assert.equal(nodes["pickup-route-caption"].textContent,"Animación ilustrativa · No es seguimiento en vivo");
+assert(!html.includes('id="pickup-route-caption"'));
 assert(screenreader.textContent.includes("La recogida requiere confirmación"));
 context.paintPickupCard(online);
 assert.equal(announcements,1,"Do not reannounce unchanged passenger status on each poll");

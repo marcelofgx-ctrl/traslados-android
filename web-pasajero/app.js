@@ -173,11 +173,25 @@ let pickupEtaTimer=null,pickupEtaRequestSeq=0,lastPickupEtaKey="",lastPickupEtaA
 let lastPickupEtaIsEstimate=false,lastVerifiedEtaKey="",lastVerifiedEtaAt=0,lastVerifiedEtaMessage="";
 let lastVerifiedEtaResult=null;
 let etaRetryNotBefore=0,etaRetryIdentity="";
+let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
+function pickupIdentityKey(){
+  if(selectedPickupMode==="schedule"||!record.origin)return "";
+  const {lat,lng}=record.origin;
+  if(!Number.isFinite(lat)||!Number.isFinite(lng))return "";
+  return (authReady()?session.token:"visitante")+"|"+lat.toFixed(5)+","+lng.toFixed(5);
+}
+function etaResultStillApplies(key){
+  // An availability refresh must not invalidate an ETA response for the same
+  // origin and session; switching account, origin or view still must.
+  return pickupIdentityKey()===key&&lastPickupEtaKey===key&&
+    publicPresenceCache?.available===true;
+}
 function forgetPickupEta(){
   lastPickupEtaKey="";lastPickupEtaAt=0;lastPickupEtaMessage="";
   lastPickupEtaIsEstimate=false;lastVerifiedEtaKey="";lastVerifiedEtaAt=0;lastVerifiedEtaMessage="";
   lastVerifiedEtaResult=null;
+  lastEtaFailureKey="";lastEtaFailureMessage="";
   // El enfriamiento de cuota pertenece al visitante, no al origen.
 }
 /** Una tarjeta con jerarquía visual: disponibilidad, km, minutos, información secundaria.
@@ -187,8 +201,8 @@ function forgetPickupEta(){
 function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estimateNote="",checked="",phase="idle"}){
   const host=$("pickup-presence");
   if(host){host.dataset.presence=presence;host.dataset.phase=phase;}
-  const routeCaption=$("pickup-route-caption");
-  if(routeCaption)routeCaption.textContent=({checking:"Comprobando disponibilidad…",routing:"Calculando llegada a tu origen…",waiting:"Animación ilustrativa · No es seguimiento en vivo",ready:"Animación ilustrativa · No es seguimiento en vivo"})[phase]||"";
+/* Recorrido decorativo sin leyenda redundante; la información operativa
+   * sigue en el título, el subtítulo y las métricas verificadas. */
   const main=$("pickup-presence-title");
   const sub=$("pickup-presence-subtitle");
   const metrics=$("pickup-presence-metrics");
@@ -302,7 +316,7 @@ async function refreshPickupPresence(force=false){
   const signedIn=authReady();
   const lat=record.origin.lat,lng=record.origin.lng;
   const identity=signedIn?session.token:"visitante";
-  const key=identity+"|"+lat.toFixed(5)+","+lng.toFixed(5);
+  const key=pickupIdentityKey();
   const lastGood=latestPickupEstimate(key);
   // Mapa envía el último movimiento detectado; la web no obtiene velocidad
   // ni posición del conductor. Los períodos aplican en primer plano.
@@ -325,21 +339,30 @@ async function refreshPickupPresence(force=false){
   };
   // Consulta de estado cada 15 s y ruta cada 25 s en movimiento / 45 s detenido.
   // El límite SQL sigue vigente; nunca saltar el backoff ni cuotas existentes.
-  if((etaRetryIdentity===identity&&Date.now()<etaRetryNotBefore) ||
-      (key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval)){
-    showWaiting("Actualizando la llegada…");
+  // The routing Edge can take longer than a 15-second presence tick.
+  // Never duplicate an in-flight request or lose its eventual result.
+  if(pickupEtaPendingKey===key){
+    showWaiting("Calculando llegada aproximada…",true);
+    return;
+  }
+  const cooling=etaRetryIdentity===identity&&Date.now()<etaRetryNotBefore;
+  const cadence=key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval;
+  if(cooling||cadence){
+    showWaiting(lastEtaFailureKey===key?lastEtaFailureMessage:"Actualizando la llegada…");
     return;
   }
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
   lastPickupEtaMessage="";lastPickupEtaIsEstimate=false;
-  showWaiting("Calculando llegada a tu origen…",true);
+  lastEtaFailureKey="";lastEtaFailureMessage="";
+  pickupEtaPendingKey=key;
+  showWaiting("Calculando llegada aproximada…",true);
   const etaStart=Date.now();
   window.TrasladosETA.pickup({
     api:API,publishableKey:KEY,originLat:lat,originLng:lng,
     sessionToken:signedIn?session.token:null
   }).then(data=>{
     window.TrasladosPickupHealth?.record?.("eta",data?.available?"success":String(data?.reason||"other"),Date.now()-etaStart);
-    if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
+    if(!etaResultStillApplies(key))return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&data.distanceKm>=0
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
       const km=data.distanceKm,minutes=data.etaMin;
@@ -368,21 +391,23 @@ async function refreshPickupPresence(force=false){
         // Espera prudente para no insistir sobre una cuota aún agotada.
         etaRetryIdentity=identity;
         etaRetryNotBefore=Math.max(etaRetryNotBefore,Date.now()+90000);
-        showWaiting("Actualizando la llegada…");
-      }else if(reason==="login_required"){
-        showWaiting("Iniciá sesión para consultar la llegada.");
-      }else if(reason==="route_unavailable"){
-        showWaiting("Por ahora no hay tiempo de llegada para ese origen.");
-      }else{
-        showWaiting("La llegada todavía no está disponible. Reintentaremos.");
       }
+      const text=reason==="rate_limited"?"La llegada se actualizará en breve.":
+        reason==="login_required"?"Iniciá sesión para consultar la llegada.":
+        reason==="route_unavailable"?"Por ahora no hay tiempo estimado de llegada. Reintentaremos.":
+        "No pudimos calcular la llegada. Reintentaremos.";
+      lastEtaFailureKey=key;lastEtaFailureMessage=text;
+      showWaiting(text);
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }
   }).catch(()=>{
     window.TrasladosPickupHealth?.record?.("eta","network_error",Date.now()-etaStart);
-    if(seq!==pickupEtaRequestSeq||selectedPickupMode==="schedule")return;
-    showWaiting("No se pudo actualizar la llegada. Reintentaremos.");
+    if(!etaResultStillApplies(key))return;
+    lastEtaFailureKey=key;lastEtaFailureMessage="No pudimos calcular la llegada. Reintentaremos.";
+    showWaiting(lastEtaFailureMessage);
     lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
+  }).finally(()=>{
+    if(pickupEtaPendingKey===key)pickupEtaPendingKey="";
   });
 }
 
