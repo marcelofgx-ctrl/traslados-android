@@ -1,5 +1,5 @@
 "use strict";
-/* PWA v62: service home is pure presentation/navigation.
+/* PWA v63: service home is pure presentation/navigation.
  * No GPS, Supabase, reservation creation, or geocoding lives here.
  */
 (function(root){
@@ -15,14 +15,25 @@
         const kind=button.dataset.service;
         if(kind==="delivery"){
           // The preview is an accessible disclosure, never a reservation request.
-          notice.hidden=!notice.hidden;
-          button.setAttribute?.("aria-expanded",String(!notice.hidden));
+          const opening=notice.hidden;
+          notice.hidden=!opening;
+          button.setAttribute?.("aria-expanded",String(opening));
+          // On short mobile screens the explanation sits below three cards.
+          // Reveal it without trapping focus or triggering a fake booking.
+          const arrow=button.querySelector?.(".service-card-arrow");
+          if(arrow)arrow.textContent=opening?"−":"＋";
+          if(opening){
+            const reduced=Boolean(root.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+            notice.scrollIntoView?.({block:"nearest",behavior:reduced?"auto":"smooth"});
+          }
           return;
         }
         if(!choices.has(kind))return;
         notice.hidden=true;
         const parcel=doc.querySelector('[data-service="delivery"]');
         parcel?.setAttribute?.("aria-expanded","false");
+        const arrow=parcel?.querySelector?.(".service-card-arrow");
+        if(arrow)arrow.textContent="＋";
         select(kind);
       });
     }

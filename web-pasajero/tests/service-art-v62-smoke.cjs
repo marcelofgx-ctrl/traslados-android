@@ -1,5 +1,5 @@
 "use strict";
-/* PWA v62 art regression: real source, no screenshots, no network, no bookings. */
+/* PWA v63 continuity of v62 art regression: real source, no screenshots, no network, no bookings. */
 const assert=require("node:assert/strict");
 const {readFileSync}=require("node:fs");
 const path=require("node:path");
@@ -25,7 +25,7 @@ assert(css.includes(".service-card:focus-visible")&&css.includes("outline:3px so
 assert(css.includes("@media(max-width:365px)")&&css.includes("grid-template-columns:69px minmax(0,1fr)"));
 assert(css.includes("@media(prefers-reduced-motion:reduce)")&&css.includes(".service-card-icon"));
 assert(!/fetch\(|createReservation|rpc\(|navigator\.geolocation/.test(home),"Homepage must never reach back-end/GPS");
-assert(html.includes('styles.css?v=62')&&html.includes('app.js?v=62')&&html.includes('service-home.js?v=2'));
-assert(sw.includes('traslados-cliente-pwa-v62')&&sw.includes("./service-home.js"));
+assert(html.includes('styles.css?v=63')&&html.includes('app.js?v=63')&&html.includes('service-home.js?v=3'));
+assert(sw.includes('traslados-cliente-pwa-v63')&&sw.includes("./service-home.js"));
 assert(html.includes('id="view-reservar"')&&html.includes('id="trip-chat-sheet"'),"Operational screens remain intact");
-console.log("PASS PWA v62: 3 bespoke orbital emblems, short card copy, disclosure, responsive accessible design and stable contracts");
+console.log("PASS PWA v63: 3 bespoke orbital emblems, short card copy, disclosure, responsive accessible design and stable contracts");
