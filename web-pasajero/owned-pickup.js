@@ -9,7 +9,17 @@
     if(!Array.isArray(rows)||!origin?.text||!destination?.text||stops?.length)return null;
     const a=norm(origin.text),b=norm(destination.text);
     const eligible=rows.filter(row=>{
-      if(!OPEN.has(row?.status)||!["now","10"].includes(row.pickup_mode))return false;
+      if(!OPEN.has(row?.status))return false;
+      // Existing v15/v4 secure list RPCs omit pickup_mode. Server-created
+      // urgent slots equal creation time or +10 minutes; scheduled bookings
+      // must be >=30 min ahead and are never folded into an urgent request.
+      const created=Date.parse(row.created_at||"");
+      const pickupStamp=Date.parse(String(row.pickup_date||"")+"T"+
+        String(row.pickup_time||"").slice(0,8)+"-03:00");
+      const urgentFromServer=Number.isFinite(created)&&Number.isFinite(pickupStamp)&&
+        pickupStamp-created>=-120000&&pickupStamp-created<=12*60000;
+      if(row.pickup_mode==="schedule"||
+        (!["now","10"].includes(row.pickup_mode)&&!urgentFromServer))return false;
       // Never collapse a genuinely different multi-stop booking into this route.
       const savedStops=row.stops;
       if(Array.isArray(savedStops)&&savedStops.length)return false;
