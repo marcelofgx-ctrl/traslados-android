@@ -31,8 +31,8 @@ assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")
 assert(sw.includes("traslados-cliente-pwa-v65")&&sw.includes("./owned-pickup.js"));
 assert(html.includes('styles.css?v=65')&&html.includes('app.js?v=65'));
 assert(html.includes('id="pickup-existing-open"'));
-assert(app.includes("window.TrasladosOwnedPickup.match(tripRows"));
-assert(app.includes('if($("booking-success").hidden)$("urgent-actions").hidden=true'));
+assert(app.includes("window.TrasladosOwnedPickup?.match?.(tripRows"));
+assert(app.includes('if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=true'));
 assert(app.includes("if(same){"),"Direct submit must guard against duplicate own request");
 assert(app.includes('phase:"owned"')&&app.includes('title:"Recogida inmediata sin confirmar"'));
 assert(css.includes('#pickup-presence[data-presence="owned"]'));
