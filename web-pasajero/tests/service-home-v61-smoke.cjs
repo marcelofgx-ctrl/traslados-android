@@ -1,5 +1,5 @@
 "use strict";
-/* PWA v61 home smoke: navigation-only services, preserve backend flow and WebView. */
+/* PWA v62 home smoke: navigation-only services, preserve backend flow and WebView. */
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.join(__dirname,".."),read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const html=read("index.html"),app=read("app.js"),css=read("styles.css"),sw=read("sw.js");
@@ -10,10 +10,10 @@ assert(html.includes('data-view="inicio"')&&html.includes('data-view="reservar"'
 assert(html.includes('data-view="viajes"')&&html.includes('data-view="cuenta"'));
 assert(html.includes('data-service="now"')&&html.includes('data-service="schedule"')&&html.includes('data-service="delivery"'));
 assert(html.includes('data-open-view="instalar"')&&html.includes('id="view-instalar"'));
-assert(html.includes('id="service-coming-soon"')&&html.includes("Próximamente"));
-assert(html.includes('src="./service-home.js?v=1"')&&html.indexOf('service-home.js?v=1')<html.indexOf("app.js?v=61"));
-assert(html.includes('styles.css?v=61')&&html.includes('app.js?v=61'));
-assert(sw.includes('traslados-cliente-pwa-v61')&&sw.includes('./service-home.js'));
+assert(html.includes('id="service-coming-soon"')&&html.includes("PRÓXIMAMENTE"));
+assert(html.includes('src="./service-home.js?v=2"')&&html.indexOf('service-home.js?v=1')<html.indexOf("app.js?v=62"));
+assert(html.includes('styles.css?v=62')&&html.includes('app.js?v=62'));
+assert(sw.includes('traslados-cliente-pwa-v62')&&sw.includes('./service-home.js'));
 assert(css.includes(".service-card")&&css.includes(".home-hero")&&css.includes(".booking-back-services"));
 assert(app.includes('window.TrasladosServiceHome.mount(document,{'));
 assert(app.includes('onSelect:kind=>{')&&app.includes('setWhen(kind);')&&app.includes('bookingSteps.open("route");'));
@@ -30,7 +30,8 @@ const routes=["viajes","instalar","inicio"].map(name=>({
 }));
 const doc={
  getElementById:id=>id==="service-coming-soon"?notice:null,
- querySelectorAll:selector=>selector==="[data-service]"?choices:selector==="[data-open-view]"?routes:[]
+ querySelectorAll:selector=>selector==="[data-service]"?choices:selector==="[data-open-view]"?routes:[],
+ querySelector:selector=>selector==='[data-service="delivery"]'?choices[2]:null
 };
 const ctx={window:{},Set,Error};
 vm.runInNewContext(read("service-home.js"),ctx);
@@ -40,6 +41,10 @@ assert(Object.isFrozen(mounted));
 listeners.get("service:delivery")();
 assert.equal(notice.hidden,false);
 assert.deepEqual(selected,[],"Delivery preview must not start booking or route");
+listeners.get("service:delivery")();
+assert.equal(notice.hidden,true,"Second tap collapses the information without a request");
+listeners.get("service:delivery")();
+assert.equal(notice.hidden,false,"Delivery can be reopened");
 listeners.get("service:now")();
 listeners.get("service:schedule")();
 assert.equal(notice.hidden,true);
@@ -47,4 +52,4 @@ assert.deepEqual(selected,["now","schedule"]);
 listeners.get("navigate:instalar")();
 listeners.get("navigate:inicio")();
 assert.deepEqual(visited,["instalar","inicio"]);
-console.log("PASS PWA v61 home: service selector, pending parcel preview, booking modes, navigation and WebView cache");
+console.log("PASS PWA v62 home: service selector, pending parcel preview, booking modes, navigation and WebView cache");
