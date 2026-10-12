@@ -1,6 +1,6 @@
 # PWA v67 — ETA de recogida resiliente y tarjeta sin leyendas
 
-**12 de octubre de 2026 · pendiente de revisión y pruebas.**
+**12 de octubre de 2026 · PUBLICADA EN MAIN.** PR #68 (`e7b2f74c`), [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38308613485), [PWA CI SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38308613906), revisión UI y compatibilidad Android WebView v15 correctas. **Prueba táctil Samsung pendiente.**
 
 ## Diagnóstico con captura de Samsung (17:57)
 - El pasajero ve «Conductor disponible para recogerte», origen Avenida Italia 5359 y una animación verde de recogida; la llegada permanece «Actualizando…», sin kilómetros/minutos.
