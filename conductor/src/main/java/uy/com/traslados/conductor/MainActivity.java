@@ -529,7 +529,7 @@ public class MainActivity extends Activity {
         }
         String qs=r.optString("quote_status","SIN_PRESUPUESTO");
         if("ENVIADO".equals(qs)||"ACEPTADO".equals(qs)){addDetail(bodyBox,"ticket",qs.equals("ACEPTADO")?"PRESUPUESTO ACEPTADO":"PRESUPUESTO ENVIADO",formatMoney(r.optDouble("quote_final_total",0)));String inc=r.optString("quote_includes","").trim();if(!inc.isEmpty()&&!"null".equalsIgnoreCase(inc))addDetail(bodyBox,"info","INCLUYE",inc);double qkm=r.optDouble("route_distance_km",0),realKm=telemetry.optDouble("distance_km",0),pkm=driverPickupKm(r),op=(realKm>0?realKm:qkm)+pkm,total=r.optDouble("quote_final_total",0),rate=r.optDouble("quote_price_per_km",0),tolls=r.optDouble("quote_tolls",0);StringBuilder eco=new StringBuilder();if(qkm>0&&rate>0)eco.append(formatDistance(qkm)).append(" × ").append(formatMoney(rate)).append("/km");if(tolls>0)eco.append(eco.length()>0?" · ":"").append("peajes ").append(formatMoney(tolls));if(pkm>0)eco.append(eco.length()>0?" · ":"").append("+").append(formatDistance(pkm)).append(" hasta origen");if(total>0&&op>0)eco.append(" · ").append(formatMoney(total/op)).append(realKm>0?"/km operativo real":"/km operativo estimado");if(eco.length()>0)addDetail(bodyBox,"info","RESUMEN ECONÓMICO",eco.toString());}
-        String com=r.optString("comments","");if(!com.isEmpty())addDetail(bodyBox,"comment","COMENTARIOS",com);
+        String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(bodyBox,"comment","COMENTARIOS",com);
         if(!"FINALIZADA".equals(status)&&!"CANCELADA".equals(status)&&!"RECHAZADA".equals(status)){
             Button chat=secondaryButton("✉ MENSAJES DEL PASAJERO");
             chat.setTextSize(12);
