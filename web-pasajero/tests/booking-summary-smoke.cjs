@@ -89,6 +89,9 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(nodes("route-extra")[0].attributes.open,undefined);
   assert.equal(ctx.latestRoad,null,"No fictional road data");
   assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"A confirmar");
+  assert.equal(nodes("route-retry").length,1,"Retry is visible when no verified route exists");
+  assert.equal(nodes("route-retry")[0].hidden,false);
+  assert.match(val("route-status").join(" "),/habilitación/,"Unconfigured server should be explained without inventing a road estimate");
   // Existing Supabase ROAD route is reused only if Cloudflare did not provide a route.
   cacheFallback=({
     available:true,source:"supabase_route_cache",distanceKm:18.1,durationMin:25,
