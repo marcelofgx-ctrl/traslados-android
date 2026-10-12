@@ -29,6 +29,7 @@ jobs:
           node --check web-pasajero/eta-engine.js
           node --check web-pasajero/booking-contracts.js
           node --check web-pasajero/booking-steps.js
+          node --check web-pasajero/service-home.js
           node --check web-pasajero/pickup-cadence.js
           node --check web-pasajero/pickup-observability.js
           node --check web-pasajero/trip-board.js
@@ -59,6 +60,7 @@ jobs:
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/pickup-context-copy-v60-smoke.cjs
+          node web-pasajero/tests/service-home-v61-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs
           node web-pasajero/tests/install-flow-smoke.cjs
