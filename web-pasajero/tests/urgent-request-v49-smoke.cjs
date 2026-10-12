@@ -41,8 +41,8 @@ assert.throws(()=>contracts.immediatePickup(null,{...p,pickupMode:"schedule"},uu
 assert(html.includes('id="urgent-send"'),"Actual submit CTA");
 assert(!html.includes('href="https://wa.me/'),"WhatsApp removed from public booking interface");
 assert(!html.includes('id="urgent-switch-scheduled"'),"Urgent no longer reroutes to programming");
-assert(html.includes('app.js?v=61')&&html.includes('styles.css?v=61'));
-assert(sw.includes('traslados-cliente-pwa-v61'));
+assert(html.includes('app.js?v=62')&&html.includes('styles.css?v=62'));
+assert(sw.includes('traslados-cliente-pwa-v62'));
 assert(src.includes('rpc("customer_request_pickup_v1"'),"New backend RPC connected");
 assert(src.includes("window.TrasladosBookingContracts.immediatePickup"));
 assert(src.includes('renderBookingSuccess(result,p.pickupMode)'),"Real receipt");
