@@ -37,7 +37,7 @@ assert(app.includes('const includes=String(r.quote_includes??"").trim()'));
 assert(app.includes('/^(null|undefined|n\\/a|-)$/i.test(includes)'),"Literal null stays invisible");
 assert(app.includes('HORARIO_YA_NO_DISPONIBLE|HORARIO_NO_DISPONIBLE'));
 assert(app.includes('La solicitud inmediata venci[oó]'));
-assert(html.includes("app.js?v=60")&&html.includes("styles.css?v=60")&&html.includes("trip-board.js?v=4"));
+assert(html.includes("app.js?v=60")&&html.includes("styles.css?v=60")&&html.includes("trip-board.js?v=5"));
 assert(sw.includes("traslados-cliente-pwa-v60"));
 assert(css.includes('.trip-card[data-tone="expired"]'));
 assert(css.includes('.trip-expired-note'));
