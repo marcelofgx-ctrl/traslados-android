@@ -57,6 +57,11 @@ assert.throws(()=>routes.key([{lat:NaN,lng:1},b]));
   fallback={available:true,source:"supabase_route_cache",distanceKm:-7,durationMin:18,referenceFareUyu:1};
   assert.equal(await routes.estimate(points,{api:"https://example.invalid",publishableKey:"test-public"}),null,
     "Missing verified road data must not invent km, minutes or price");
+  assert.equal(routes.diagnostic(routes.key(points)).reason,"unverified_response",
+    "Missing route must preserve safe diagnostic code without exposing addresses");
+  routes.invalidate();
+  assert.equal(routes.diagnostic(routes.key(points)),null,
+    "Reattempt should clear old diagnostic state");
 
   routes.invalidate();
   primary={available:true,source:"openrouteservice",distanceKm:11,durationMin:21,referenceFareUyu:440};
