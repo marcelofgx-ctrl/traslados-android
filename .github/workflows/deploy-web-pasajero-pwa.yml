@@ -68,7 +68,7 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/app.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/pickup-cadence.js
+          test -f web-pasajero/app.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/service-home.js && test -f web-pasajero/pickup-cadence.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
@@ -80,6 +80,7 @@ jobs:
           node --check web-pasajero/booking-contracts.js
           node --check web-pasajero/rpc-client.js
           node --check web-pasajero/booking-steps.js
+          node --check web-pasajero/service-home.js
           node --check web-pasajero/pickup-cadence.js
           node --check web-pasajero/pickup-observability.js
           node --check web-pasajero/trip-board.js
@@ -111,6 +112,7 @@ jobs:
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/pickup-context-copy-v60-smoke.cjs
+          node web-pasajero/tests/service-home-v61-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs
