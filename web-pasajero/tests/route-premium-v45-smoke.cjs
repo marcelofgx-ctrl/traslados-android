@@ -12,9 +12,9 @@ for(const key of ["origin-picker","destination-picker","route-overview","stop-wr
 }
 assert(html.includes('id="pickup-presence"'),"Preserve live pickup");
 assert(html.includes('id="booking-final"'),"Preserve booking submit flow");
-assert(html.includes('src="./app.js?v=60"')&&html.includes('href="./styles.css?v=60"'),
+assert(html.includes('src="./app.js?v=61"')&&html.includes('href="./styles.css?v=61"'),
   "Both asset versions must be coherent");
-assert(sw.includes('traslados-cliente-pwa-v60'),"Refresh SW for embedded client");
+assert(sw.includes('traslados-cliente-pwa-v61'),"Refresh SW for embedded client");
 assert(html.includes("Elegí tu origen y destino."),"Intro should be scannable");
 assert(/class="wayline" aria-hidden="true"/.test(html),"Route connector is decorative");
 assert(js.includes('box.dataset.locationKind=name'),"Style origin vs destination without hardcoding location data");
