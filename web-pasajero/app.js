@@ -1365,12 +1365,7 @@ function reservationView(r,guestToken){
   text(foot,"span",affordance,"trip-card-open");
 
   const inner=text(d,"div","","trip-detail");
-  const guidance=meta.tone==="expired"?"El horario solicitado ya pasó. Este presupuesto se conserva como referencia; para viajar necesitás una nueva solicitud.":
-    meta.tone==="attention"?"Tu conductor envió un presupuesto. Revisá el valor y elegí si lo aceptás.":
-    meta.tone==="pending"?"Recibimos tu solicitud. Falta que el conductor la revise.":
-    meta.tone==="confirmed"?"Tu traslado está confirmado. Podés consultar la información y escribirle al conductor.":
-    meta.tone==="moving"?"El conductor actualizó el estado del servicio. La llegada estimada se muestra únicamente cuando tenemos datos válidos.":
-    meta.tone==="complete"?"Este traslado terminó. El historial y los mensajes siguen disponibles para consulta.":meta.label;
+  const guidance=tripBoard.guidance(r);
   text(inner,"p",guidance,"trip-focus-message");
   if(expired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
 
