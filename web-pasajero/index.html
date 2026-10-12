@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=61">
+  <link rel="stylesheet" href="./styles.css?v=62">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -38,28 +38,73 @@
     <section id="view-inicio" class="view active home-screen" aria-labelledby="home-title">
       <div class="home-hero">
         <p class="eyebrow"><span class="star" aria-hidden="true">✦</span> TRASLADOS CON RESERVA · URUGUAY</p>
-        <h1 id="home-title">Tu próximo viaje,<br><em>más simple.</em></h1>
-        <p>Un servicio personal para moverte con tranquilidad. Elegí qué necesitás y nosotros nos encargamos del resto.</p>
+        <h1 id="home-title">Tu viaje,<br><em>bien llevado.</em></h1>
+        <p>Reservá, coordiná y seguí tu servicio con atención personal en Uruguay.</p>
       </div>
       <div class="home-section-heading">
         <div><p class="eyebrow">EMPEZÁ POR ACÁ</p><h2>¿Qué necesitás hoy?</h2></div>
         <p>Elegí tu servicio para continuar.</p>
       </div>
       <div class="service-list" aria-label="Servicios de Traslados">
-        <button type="button" class="service-card service-card-featured" data-service="now">
-          <span class="service-card-icon" aria-hidden="true">↗</span>
-          <span class="service-card-body"><strong>Viajar ahora</strong><small>Recogida inmediata o en 10 minutos, según disponibilidad.</small><span class="service-card-tag">A pedido</span></span>
+        <button type="button" class="service-card service-card-featured" data-service="now" aria-label="Tu viaje. Viajar ahora o en diez minutos, sujeto a disponibilidad">
+          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-journey" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs><path id="service-arc-journey" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
+              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
+              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
+              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
+              <text class="emblem-lettering"><textPath href="#service-arc-journey" startOffset="50%" text-anchor="middle">TU VIAJE</textPath></text>
+              <path d="M35 68C29 49 45 42 53 54C61 66 71 56 69 43" class="emblem-drawing"/>
+              <circle cx="35" cy="68" r="4.3" class="emblem-dot"/>
+              <path d="M63 44L69 38L75 44M69 38V49" class="emblem-drawing"/>
+              <path d="M78 66l2.5 5 5 2.5-5 2.5-2.5 5-2.5-5-5-2.5 5-2.5z" class="emblem-glint"/>
+            </svg></span>
+          <span class="service-card-body">
+            <span class="service-card-kicker">RECOGIDAS A PEDIDO</span>
+            <strong class="service-card-name">Tu <em>viaje</em></strong>
+            <small class="service-card-description">Viajá ahora o en 10 minutos, con atención directa.</small>
+            <span class="service-card-action">Solicitar viaje <span aria-hidden="true">↗</span></span>
+          </span>
           <span class="service-card-arrow" aria-hidden="true">→</span>
         </button>
-        <button type="button" class="service-card" data-service="schedule">
-          <span class="service-card-icon" aria-hidden="true">◷</span>
-          <span class="service-card-body"><strong>Programar un viaje</strong><small>Aeropuerto, eventos y puerta a puerta. Elegí fecha y hora.</small></span>
+        <button type="button" class="service-card service-card-scheduled" data-service="schedule" aria-label="Tu reserva. Programar un viaje para la fecha y hora que elijas">
+          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-calendar" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs><path id="service-arc-calendar" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
+              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
+              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
+              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
+              <text class="emblem-lettering"><textPath href="#service-arc-calendar" startOffset="50%" text-anchor="middle">TU RESERVA</textPath></text>
+              <rect x="35" y="42" width="34" height="30" rx="5" class="emblem-drawing"/>
+              <path d="M35 51H69M43 37v9M61 37v9" class="emblem-drawing"/>
+              <circle cx="54" cy="61" r="7" class="emblem-clock"/>
+              <path d="M54 57v4l3 2" class="emblem-drawing"/>
+              <circle cx="77" cy="72" r="2.3" class="emblem-glint"/>
+            </svg></span>
+          <span class="service-card-body">
+            <span class="service-card-kicker">PLANIFICÁ CON TIEMPO</span>
+            <strong class="service-card-name">Tu <em>reserva</em></strong>
+            <small class="service-card-description">Aeropuerto, eventos y puerta a puerta, a tu ritmo.</small>
+            <span class="service-card-action">Programar viaje <span aria-hidden="true">↗</span></span>
+          </span>
           <span class="service-card-arrow" aria-hidden="true">→</span>
         </button>
-        <button type="button" class="service-card service-card-soon" data-service="delivery" aria-describedby="service-coming-soon">
-          <span class="service-card-icon" aria-hidden="true">▣</span>
-          <span class="service-card-body"><span class="service-card-heading"><strong>Mensajería y paquetería</strong><span class="service-card-tag service-tag-soon">Próximamente</span></span><small>Envíos de documentos y pequeños paquetes.</small></span>
-          <span class="service-card-arrow" aria-hidden="true">↗</span>
+        <button type="button" class="service-card service-card-soon" data-service="delivery" aria-controls="service-coming-soon" aria-expanded="false" aria-label="Tu paquete. Mensajería y paquetería próximamente">
+          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-parcel" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs><path id="service-arc-parcel" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
+              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
+              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
+              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
+              <text class="emblem-lettering"><textPath href="#service-arc-parcel" startOffset="50%" text-anchor="middle">TU PAQUETE</textPath></text>
+              <path d="M35 48L52 39L69 48V66L52 76L35 66V48Z" class="emblem-drawing"/>
+              <path d="M35 48L52 58L69 48M52 58V76M44 43L61 53M43 62L47 64" class="emblem-drawing"/>
+              <path d="M75 71c5-2 9-5 10-9M81 61l4 1 1 4" class="emblem-route"/>
+            </svg></span>
+          <span class="service-card-body">
+            <span class="service-card-kicker">MENSAJERÍA Y PAQUETERÍA</span>
+            <strong class="service-card-name">Tu <em>paquete</em></strong>
+            <small class="service-card-description">Documentos y pequeños envíos, muy pronto.</small>
+            <span class="service-card-tag service-tag-soon">PRÓXIMAMENTE</span>
+          </span>
+          <span class="service-card-arrow" aria-hidden="true">＋</span>
         </button>
       </div>
       <p id="service-coming-soon" class="service-coming-soon" role="status" aria-live="polite" hidden>Estamos preparando el servicio de mensajería y paquetería. Todavía no se pueden solicitar envíos.</p>
@@ -369,7 +414,7 @@
   <script src="./pickup-observability.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
   <script src="./trip-board.js?v=5" defer></script>
-  <script src="./service-home.js?v=1" defer></script>
-  <script src="./app.js?v=61" defer></script>
+  <script src="./service-home.js?v=2" defer></script>
+  <script src="./app.js?v=62" defer></script>
 </body>
 </html>
