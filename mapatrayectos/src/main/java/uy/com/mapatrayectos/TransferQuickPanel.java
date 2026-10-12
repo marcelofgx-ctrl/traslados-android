@@ -261,8 +261,8 @@ public final class TransferQuickPanel {
             smallButton(contacts,"LLAMAR",()->dial(phone));
             smallButton(contacts,"WHATSAPP",()->whatsapp(phone,null));
             card.addView(contacts,new LinearLayout.LayoutParams(-1,dp(44)));
-            button(card,"MENSAJE: ESTOY EN CAMINO",()->whatsapp(phone,"Hola, estoy en camino al punto de recogida de tu traslado."));
-            button(card,"MENSAJE: YA LLEGUÉ",()->whatsapp(phone,"Hola, ya llegué al punto de encuentro de tu traslado."));
+            button(card,"WHATSAPP · ESTOY EN CAMINO",()->whatsapp(phone,"Hola, estoy en camino al punto de recogida de tu traslado."));
+            button(card,"WHATSAPP · YA LLEGUÉ",()->whatsapp(phone,"Hola, ya llegué al punto de encuentro de tu traslado."));
         }
         String idFinal=id;
         button(card,"✉  CONVERSACIÓN DEL TRASLADO",()->{
