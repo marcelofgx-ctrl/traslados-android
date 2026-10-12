@@ -884,6 +884,11 @@ function renderAccount(){
     session=null;localStorage.removeItem(SESSION_KEY);
     closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
     $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
+    $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
+    for(const tab of document.querySelectorAll("[data-trips-scope]")){
+      const selected=tab.dataset.tripsScope==="upcoming";
+      tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
+    }
     openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     $("person-name").value="";$("person-phone").value="";
@@ -913,6 +918,11 @@ async function accountSubmit(){
     session={token:result.session_token,customer:result.customer};
     closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
     $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
+    $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
+    for(const tab of document.querySelectorAll("[data-trips-scope]")){
+      const selected=tab.dataset.tripsScope==="upcoming";
+      tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
+    }
     openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     lastPickupEtaAt=0;refreshPickupPresence(true);
