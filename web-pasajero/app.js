@@ -882,8 +882,8 @@ function renderAccount(){
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
     session=null;localStorage.removeItem(SESSION_KEY);
-    closeTripChat();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
-    $("trips-list").replaceChildren();
+    closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+    $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
     openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     $("person-name").value="";$("person-phone").value="";
@@ -911,8 +911,8 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
-    closeTripChat();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
-    $("trips-list").replaceChildren();
+    closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+    $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
     openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
     tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
     lastPickupEtaAt=0;refreshPickupPresence(true);
