@@ -106,6 +106,7 @@ public class ReservationMonitorService extends Service {
             Intent open=new Intent(this,MainActivity.class);
             open.putExtra("open_requests",true);
             open.putExtra("reservation_id",m.optString("reservation_id",""));
+            open.putExtra("open_chat",true); // notification tap opens the authenticated conversation
             open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
             int noteId=11000+(int)(m.optLong("id",0)%17000);
             PendingIntent pending=PendingIntent.getActivity(this,noteId,open,

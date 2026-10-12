@@ -23,6 +23,8 @@ public class MainActivity extends Activity {
     // v10.5: estado del globito del conductor.
     private boolean driverBubbleOpenRequested=false;
     private String driverBubbleReservationId="";
+    // The driver explicitly requested a conversation; never auto-send replies.
+    private String pendingChatReservationId="";
     // v10.7: cola visual de nuevas solicitudes; una sola caja, navegable y con acciones siempre visibles.
     private final ArrayList<JSONObject> driverAlertQueue=new ArrayList<>();
     private final HashSet<String> driverAlertQueuedIds=new HashSet<>();
@@ -94,7 +96,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},55);
         }
-        pool.execute(()->Api.logEvent("app_start","Conductor v11.4 R10.4 iniciado","{}"));
+        pool.execute(()->Api.logEvent("app_start","Conductor v11.5 R4 iniciado","{}"));
         checkSetup();
     }
 
@@ -217,13 +219,9 @@ public class MainActivity extends Activity {
 
     private void enterDashboard(){
         maybeAskDriverBubblePermission();
-        if(driverBubbleOpenRequested){
-  historyMode=false;
-  if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
-  driverBubbleOpenRequested=false;
-        }
-
-        dashboardVisible=true; historyMode=false; expandedId=""; firstLoad=true; seenPending.clear(); currentRows.clear();
+        String requestedId=driverBubbleOpenRequested?driverBubbleReservationId:"";
+        driverBubbleOpenRequested=false;
+        dashboardVisible=true; historyMode=false; expandedId=requestedId; firstLoad=true; seenPending.clear(); currentRows.clear();
         startMonitor(); buildDashboard(false); loadActive(true);
     }
 
@@ -331,6 +329,7 @@ public class MainActivity extends Activity {
                     currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();ensureTelemetryForActiveTrip(rows);
                     if(changed||showLoading||listBox==null||listBox.getChildCount()==0)renderRows(false);else refreshPassiveDashboard();
                     for(JSONObject r:fresh)alertNew(r);
+                    openRequestedPassengerChatIfReady();
                 });
             }catch(Exception e){runOnUiThread(()->{activeSyncInFlight=false;if(!historyMode)showLoadError(e,false);});}
         });
@@ -530,7 +529,7 @@ public class MainActivity extends Activity {
         }
         String qs=r.optString("quote_status","SIN_PRESUPUESTO");
         if("ENVIADO".equals(qs)||"ACEPTADO".equals(qs)){addDetail(bodyBox,"ticket",qs.equals("ACEPTADO")?"PRESUPUESTO ACEPTADO":"PRESUPUESTO ENVIADO",formatMoney(r.optDouble("quote_final_total",0)));String inc=r.optString("quote_includes","").trim();if(!inc.isEmpty()&&!"null".equalsIgnoreCase(inc))addDetail(bodyBox,"info","INCLUYE",inc);double qkm=r.optDouble("route_distance_km",0),realKm=telemetry.optDouble("distance_km",0),pkm=driverPickupKm(r),op=(realKm>0?realKm:qkm)+pkm,total=r.optDouble("quote_final_total",0),rate=r.optDouble("quote_price_per_km",0),tolls=r.optDouble("quote_tolls",0);StringBuilder eco=new StringBuilder();if(qkm>0&&rate>0)eco.append(formatDistance(qkm)).append(" × ").append(formatMoney(rate)).append("/km");if(tolls>0)eco.append(eco.length()>0?" · ":"").append("peajes ").append(formatMoney(tolls));if(pkm>0)eco.append(eco.length()>0?" · ":"").append("+").append(formatDistance(pkm)).append(" hasta origen");if(total>0&&op>0)eco.append(" · ").append(formatMoney(total/op)).append(realKm>0?"/km operativo real":"/km operativo estimado");if(eco.length()>0)addDetail(bodyBox,"info","RESUMEN ECONÓMICO",eco.toString());}
-        String com=r.optString("comments","");if(!com.isEmpty())addDetail(bodyBox,"comment","COMENTARIOS",com);
+        String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(bodyBox,"comment","COMENTARIOS",com);
         if(!"FINALIZADA".equals(status)&&!"CANCELADA".equals(status)&&!"RECHAZADA".equals(status)){
             Button chat=secondaryButton("✉ MENSAJES DEL PASAJERO");
             chat.setTextSize(12);
@@ -857,6 +856,30 @@ public class MainActivity extends Activity {
     }
 
 
+    private String installedConductorVersion(){
+        try{
+            android.content.pm.PackageInfo app=getPackageManager().getPackageInfo(getPackageName(),0);
+            long code=Build.VERSION.SDK_INT>=28?app.getLongVersionCode():app.versionCode;
+            String label="uy.com.mapatrayectos".equals(getPackageName())
+                ?"Conductor integrado · Mapa ":"Conductor ";
+            return label+app.versionName+" · build "+code;
+        }catch(Exception ignored){return "Conductor integrado";}
+    }
+
+    private void openRequestedPassengerChatIfReady(){
+        if(pendingChatReservationId.isEmpty()||pin.isEmpty()||historyMode)return;
+        for(JSONObject row:currentRows){
+            if(!pendingChatReservationId.equals(row.optString("id","")))continue;
+            String target=pendingChatReservationId;
+            pendingChatReservationId="";
+            expandedId=target;
+            if(driverAlertDialog!=null&&driverAlertDialog.isShowing())driverAlertDialog.dismiss();
+            showReservationChat(row);
+            return;
+        }
+        // Unknown or unauthorized reservation: never synthesize a chat.
+    }
+
     private void showReservationChat(JSONObject reservation){
         final String id=reservation.optString("id","");
         if(id.isEmpty()){toast("Esta solicitud no tiene identificador");return;}
@@ -886,6 +909,37 @@ public class MainActivity extends Activity {
         draft.setBackground(rounded(PANEL_2,GOLD_DARK,13));
         draft.setPadding(dp(12),dp(8),dp(12),dp(8));
         shell.addView(draft,lpMatch(-2,7,6));
+        final String status=reservation.optString("status","");
+        final boolean archived="FINALIZADA".equals(status)||"CANCELADA".equals(status)
+            ||"RECHAZADA".equals(status)||"RECHAZADA_CLIENTE".equals(status);
+        if(archived){
+            draft.setVisibility(View.GONE);
+            shell.addView(body("Conversación archivada · solo lectura.",12,MUTED),lpMatch(-2,5,7));
+        }else{
+            shell.addView(body("RESPUESTAS RÁPIDAS · elegí, revisá y tocá Enviar",10,GOLD),lpMatch(-2,5,4));
+            HorizontalScrollView quickScroll=new HorizontalScrollView(this);
+            quickScroll.setHorizontalScrollBarEnabled(false);
+            LinearLayout quickChoices=new LinearLayout(this);
+            quickChoices.setOrientation(LinearLayout.HORIZONTAL);
+            for(String template:new String[]{
+                "Recibí tu mensaje. En breve te respondo.",
+                "Estoy revisando tu solicitud. Te confirmo en breve.",
+                "¿Podés darme algún detalle más?"
+            }){
+                Button choice=secondaryButton(template);
+                choice.setAllCaps(false);
+                choice.setTextSize(11);
+                choice.setOnClickListener(v->{
+                    draft.setText(template);
+                    draft.setSelection(draft.length());
+                });
+                LinearLayout.LayoutParams choiceLp=new LinearLayout.LayoutParams(-2,dp(42));
+                choiceLp.rightMargin=dp(7);
+                quickChoices.addView(choice,choiceLp);
+            }
+            quickScroll.addView(quickChoices);
+            shell.addView(quickScroll,lpMatch(dp(45),2,6));
+        }
         final LinearLayout actions=new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         final Button refresh=secondaryButton("↻ ACTUALIZAR");
@@ -894,6 +948,7 @@ public class MainActivity extends Activity {
         spacerH(actions,7);
         actions.addView(send,new LinearLayout.LayoutParams(0,dp(48),1));
         shell.addView(actions,lpMatch(dp(48),3,6));
+        if(archived)send.setVisibility(View.GONE);
         final Button close=secondaryButton("CERRAR");
         close.setOnClickListener(v->dialog.dismiss());
         shell.addView(close,lpMatch(dp(44),6,0));
@@ -927,18 +982,41 @@ public class MainActivity extends Activity {
                 }
             });
         });
+        // Poll only while this conversation is actually visible. No FCM/push claims.
+        final Runnable[] activeChatRefresh=new Runnable[1];
+        activeChatRefresh[0]=()->{
+            if(!dialog.isShowing())return;
+            refreshReservationChat(id,messages,scroll,true);
+            handler.postDelayed(activeChatRefresh[0],15000L);
+        };
+        dialog.setOnDismissListener(v->handler.removeCallbacks(activeChatRefresh[0]));
         showDriverDialog(dialog,shell,.94f,.86f);
         refreshReservationChat(id,messages,scroll);
+        handler.postDelayed(activeChatRefresh[0],15000L);
     }
 
     private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll){
-        list.removeAllViews();
-        list.addView(body("Actualizando conversación…",12,MUTED));
+        refreshReservationChat(id,list,scroll,false);
+    }
+
+    private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll,boolean silent){
+        final String requestPin=pin;
+        if(requestPin==null||requestPin.isEmpty())return;
+        if(!silent&&list.getTag()==null){
+            list.removeAllViews();
+            list.addView(body("Actualizando conversación…",12,MUTED));
+        }
         pool.execute(()->{
             try{
-                JSONArray rows=Api.tripChat(pin,id);
+                JSONArray rows=Api.tripChat(requestPin,id);
+                String signature=rows.toString();
                 runOnUiThread(()->{
-                    if(list.getParent()==null)return;
+                    if(!list.isAttachedToWindow()||!requestPin.equals(pin))return;
+                    if(signature.equals(list.getTag()))return; // No flicker or scroll jump on unchanged response.
+                    boolean first=list.getTag()==null;
+                    int priorY=scroll.getScrollY();
+                    boolean nearEnd=first||priorY+scroll.getHeight()>=list.getHeight()-dp(26);
+                    list.setTag(signature);
                     list.removeAllViews();
                     if(rows.length()==0){
                         list.addView(body("Todavía no hay mensajes. El pasajero puede escribir desde Mis traslados.",12,MUTED));
@@ -953,11 +1031,15 @@ public class MainActivity extends Activity {
                         bubble.setGravity(Gravity.START);
                         list.addView(bubble,lpMatch(-2,3,5));
                     }
-                    scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));
+                    scroll.post(()->{
+                        if(nearEnd)scroll.fullScroll(View.FOCUS_DOWN);
+                        else scroll.scrollTo(0,priorY);
+                    });
                 });
             }catch(Exception e){
+                if(silent)return; // Keep the last valid conversation visible on transient network loss.
                 runOnUiThread(()->{
-                    if(list.getParent()==null)return;
+                    if(!list.isAttachedToWindow()||!requestPin.equals(pin)||list.getTag()!=null)return;
                     list.removeAllViews();
                     list.addView(body("No se pudo actualizar la conversación. Revisá Internet.",12,MUTED));
                 });
@@ -990,19 +1072,36 @@ public class MainActivity extends Activity {
         prev.setAlpha(prev.isEnabled()?1f:.35f);next.setAlpha(next.isEnabled()?1f:.35f);
         prev.setOnClickListener(v->showDriverAlertAt(driverAlertIndex-1));next.setOnClickListener(v->showDriverAlertAt(driverAlertIndex+1));
 
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.setClipToPadding(false);
+        // Size to content instead of filling 74% of the screen with an empty panel.
+        // Long routes and comments still scroll, while the actions stay visible below.
+        ScrollView scroll=new ScrollView(this){
+            @Override protected void onMeasure(int widthSpec,int heightSpec){
+                int max=(int)(getResources().getDisplayMetrics().heightPixels*.54f);
+                super.onMeasure(widthSpec,View.MeasureSpec.makeMeasureSpec(max,View.MeasureSpec.AT_MOST));
+            }
+        };
+        scroll.setFillViewport(false);scroll.setClipToPadding(false);
         LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(2),dp(6),dp(2),dp(18));scroll.addView(content,new ScrollView.LayoutParams(-1,-2));
-        shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        shell.addView(scroll,new LinearLayout.LayoutParams(-1,-2));
 
         LinearLayout labelRow=new LinearLayout(this);labelRow.setGravity(Gravity.CENTER_VERTICAL);TextView label=body("NUEVA SOLICITUD",11,GOLD);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);label.setLetterSpacing(.08f);label.setGravity(Gravity.CENTER);label.setPadding(dp(12),0,dp(12),0);label.setBackground(rounded(Color.argb(32,224,193,111),GOLD_DARK,16));labelRow.addView(label,new LinearLayout.LayoutParams(-2,dp(32)));TextView code=body(r.optString("code"),11,MUTED);code.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);LinearLayout.LayoutParams codeLp=new LinearLayout.LayoutParams(0,dp(32),1);codeLp.setMargins(dp(10),0,0,0);labelRow.addView(code,codeLp);content.addView(labelRow);
         TextView customer=heading(r.optString("customer_name"),23);content.addView(customer,lpMatch(-2,10,2));String dt=prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time"))+" · "+r.optInt("passengers",1)+" pasajero(s)";content.addView(body(dt,13,GOLD),lpMatch(-2,0,9));
-        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","");if(!com.isEmpty())addDetail(content,"comment","COMENTARIOS",com);
+        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(content,"comment","COMENTARIOS",com);
+        Button openChat=secondaryButton("✉  CONVERSAR CON EL PASAJERO");
+        openChat.setTextSize(11);
+        content.addView(openChat,lpMatch(dp(46),5,5));
+        openChat.setOnClickListener(v->{
+            ackDriverAlert(r);
+            dialog.dismiss();
+            expandedId=r.optString("id","");
+            showReservationChat(r); // Do not cover this conversation with another alert.
+        });
 
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton("PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
         list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
         quote.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");showQuoteDialog(r);showNextDriverAlertIfAny();});
         dialog.setOnDismissListener(x->{if(driverAlertDialog==dialog)driverAlertDialog=null;});dialog.setContentView(shell);
-        dialog.setOnShowListener(d->{Window dw=dialog.getWindow();if(dw!=null){dw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));dw.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);WindowManager.LayoutParams a=dw.getAttributes();a.dimAmount=.68f;dw.setAttributes(a);int width=(int)(getResources().getDisplayMetrics().widthPixels*.92f);int height=(int)(getResources().getDisplayMetrics().heightPixels*.74f);dw.setLayout(width,height);dw.setGravity(Gravity.CENTER);}});dialog.show();
+        dialog.setOnShowListener(d->{Window dw=dialog.getWindow();if(dw!=null){dw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));dw.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);WindowManager.LayoutParams a=dw.getAttributes();a.dimAmount=.68f;dw.setAttributes(a);int width=(int)(getResources().getDisplayMetrics().widthPixels*.92f);dw.setLayout(width,WindowManager.LayoutParams.WRAP_CONTENT);dw.setGravity(Gravity.CENTER);}});dialog.show();
     }
 
     private void ackDriverAlert(JSONObject r){String id=r.optString("id",r.optString("code",""));for(int i=driverAlertQueue.size()-1;i>=0;i--){JSONObject x=driverAlertQueue.get(i);String k=x.optString("id",x.optString("code",""));if(id.equals(k)){driverAlertQueue.remove(i);driverAlertQueuedIds.remove(k);if(i<driverAlertIndex)driverAlertIndex--;break;}}if(driverAlertIndex>=driverAlertQueue.size())driverAlertIndex=Math.max(0,driverAlertQueue.size()-1);}
@@ -1072,7 +1171,7 @@ public class MainActivity extends Activity {
         TextView brand=heading("Traslados Conductor",22);col.addView(brand);
         TextView privateLine=body("Acceso privado del conductor",11,MUTED);col.addView(privateLine,lpMatch(-2,1,0));
         TextView serviceLine=body("Aeropuerto · Programados · Larga distancia",10,GOLD);col.addView(serviceLine);
-        TextView versionLine=body("v11.4 · R10.4 · build 122",9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
+        TextView versionLine=body(installedConductorVersion(),9,MUTED);col.addView(versionLine,lpMatch(-2,2,0));
         hero.addView(row);
 
         LinearLayout meta=new LinearLayout(this);meta.setGravity(Gravity.CENTER_VERTICAL);meta.setPadding(0,dp(8),0,0);
@@ -1154,10 +1253,11 @@ public class MainActivity extends Activity {
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);captureDriverBubbleIntent(intent);
         if(driverBubbleOpenRequested&&!pin.isEmpty()){
-  historyMode=false;
-  if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
-  driverBubbleOpenRequested=false;
-  loadActive(true);
+            historyMode=false;
+            if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
+            driverBubbleOpenRequested=false;
+            if(!pendingChatReservationId.isEmpty())openRequestedPassengerChatIfReady();
+            loadActive(true); // Preserve existing refresh when opening from the bubble.
         }
     }
 
@@ -1166,6 +1266,8 @@ public class MainActivity extends Activity {
         if(intent.getBooleanExtra("open_requests",false)){
   driverBubbleOpenRequested=true;
   driverBubbleReservationId=intent.getStringExtra("reservation_id")==null?"":intent.getStringExtra("reservation_id");
+            pendingChatReservationId=intent.getBooleanExtra("open_chat",false)
+                ?driverBubbleReservationId:"";
         }
     }
 
@@ -1483,7 +1585,7 @@ public class MainActivity extends Activity {
     private void shareDriverReservation(JSONObject r){try{String text="Traslado "+r.optString("code","")+"\n"+prettyDate(r.optString("pickup_date",""))+" · "+trimTime(r.optString("pickup_time",""))+"\n"+r.optString("origin_text","")+" → "+r.optString("destination_text","");double total=r.optDouble("quote_final_total",0);if(total>0)text+="\nPrecio acordado: "+formatMoney(total);Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_TEXT,text);startActivity(Intent.createChooser(i,"Compartir traslado"));}catch(Exception e){toast("No pude compartir la reserva");}}
     private void addDriverReservationToCalendar(JSONObject r){try{Calendar c=Calendar.getInstance();java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.US);c.setTime(f.parse(r.optString("pickup_date","")+" "+trimTime(r.optString("pickup_time",""))));long start=c.getTimeInMillis();int mins=Math.max(30,r.optInt("route_duration_min",60));Intent i=new Intent(Intent.ACTION_INSERT);i.setData(CalendarContract.Events.CONTENT_URI);i.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME,start);i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME,start+mins*60000L);i.putExtra(CalendarContract.Events.TITLE,"Traslado · "+r.optString("customer_name","Cliente"));i.putExtra(CalendarContract.Events.DESCRIPTION,r.optString("origin_text","")+" → "+r.optString("destination_text","")+"\nReserva "+r.optString("code",""));i.putExtra(CalendarContract.Events.EVENT_LOCATION,r.optString("origin_text",""));startActivity(i);}catch(Exception e){toast("No pude abrir el calendario");}}
     private void showDiagnostics(){final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("DIAGNÓSTICO","Estado técnico de esta instalación. No muestra PIN ni credenciales.");TextView status=body(driverDiagnosticsText("COMPROBANDO"),12,TEXT);status.setPadding(dp(10),dp(10),dp(10),dp(10));status.setBackground(rounded(PANEL,LINE,14));shell.addView(status,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button copy=secondaryButton("COPIAR"),logs=secondaryButton("ENVIAR LOGS"),close=primaryButton("CERRAR");actions.addView(copy,new LinearLayout.LayoutParams(0,dp(48),1));spacerH(actions,5);actions.addView(logs,new LinearLayout.LayoutParams(0,dp(48),1));spacerH(actions,5);actions.addView(close,new LinearLayout.LayoutParams(0,dp(48),1));shell.addView(actions,lpMatch(dp(52),8,0));copy.setOnClickListener(v->{android.content.ClipboardManager cm=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(cm!=null)cm.setPrimaryClip(android.content.ClipData.newPlainText("Diagnóstico Traslados",status.getText()));toast("Diagnóstico copiado");});logs.setOnClickListener(v->{Api.flushQueuedLogs();toast("Reintentando envío de diagnósticos");handler.postDelayed(()->status.setText(driverDiagnosticsText("REINTENTADO")),900);});close.setOnClickListener(v->d.dismiss());showDriverDialog(d,shell,.94f,.72f);pool.execute(()->{String back="OK";try{Api.getAvailabilitySettings(pin);}catch(Exception e){back="ERROR · "+Api.publicMessage("diagnostic",e);}final String b=back;runOnUiThread(()->status.setText(driverDiagnosticsText(b)));});}
-    private String driverDiagnosticsText(String backend){boolean fine=checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;boolean enabled=false;try{android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);enabled=lm!=null&&(lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)||lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER));}catch(Exception ignored){}boolean overlay=android.provider.Settings.canDrawOverlays(this);android.content.SharedPreferences ad=getSharedPreferences("driver_alert_delivery",MODE_PRIVATE);long at=ad.getLong("last_at",0);String last=at>0?new java.text.SimpleDateFormat("HH:mm:ss",new Locale("es","UY")).format(new Date(at))+" · sonido "+(ad.getBoolean("last_sound",false)?"✓":"—")+" · vibración "+(ad.getBoolean("last_vibrate",false)?"✓":"—")+" · "+ad.getString("last_source",""):"sin prueba todavía";return "Traslados Conductor · v11.4 R10\nBackend: Supabase propio · "+backend+"\nInternet: "+(isNetworkAvailable()?"OK":"SIN CONEXIÓN")+"\nGPS preciso: "+(fine?"PERMITIDO":"FALTA PERMISO")+" · ubicación: "+(enabled?"ACTIVA":"DESACTIVADA")+"\nGlobito: "+(overlay?"PERMITIDO":"SIN PERMISO")+"\nÚltimo aviso: "+last+"\nLogs pendientes: "+Api.queuedLogCount()+"\nRecordatorio inteligente: "+(getSharedPreferences("driver_alert_settings",MODE_PRIVATE).getBoolean("trip_reminder",true)?"ACTIVO":"DESACTIVADO");}
+    private String driverDiagnosticsText(String backend){boolean fine=checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;boolean enabled=false;try{android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);enabled=lm!=null&&(lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)||lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER));}catch(Exception ignored){}boolean overlay=android.provider.Settings.canDrawOverlays(this);android.content.SharedPreferences ad=getSharedPreferences("driver_alert_delivery",MODE_PRIVATE);long at=ad.getLong("last_at",0);String last=at>0?new java.text.SimpleDateFormat("HH:mm:ss",new Locale("es","UY")).format(new Date(at))+" · sonido "+(ad.getBoolean("last_sound",false)?"✓":"—")+" · vibración "+(ad.getBoolean("last_vibrate",false)?"✓":"—")+" · "+ad.getString("last_source",""):"sin prueba todavía";return installedConductorVersion()+"\nBackend: Supabase propio · "+backend+"\nInternet: "+(isNetworkAvailable()?"OK":"SIN CONEXIÓN")+"\nGPS preciso: "+(fine?"PERMITIDO":"FALTA PERMISO")+" · ubicación: "+(enabled?"ACTIVA":"DESACTIVADA")+"\nGlobito: "+(overlay?"PERMITIDO":"SIN PERMISO")+"\nÚltimo aviso: "+last+"\nLogs pendientes: "+Api.queuedLogCount()+"\nRecordatorio inteligente: "+(getSharedPreferences("driver_alert_settings",MODE_PRIVATE).getBoolean("trip_reminder",true)?"ACTIVO":"DESACTIVADO");}
     private void showTestMode(){final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("MODO PRUEBA","Simula señales visuales y sonoras sin crear ni modificar reservas reales.");String[] names={"NUEVA SOLICITUD","PRÓXIMO VIAJE","HORA DE SALIR","GPS SIN SEÑAL"};for(String n:names){Button b=secondaryButton(n);b.setTextSize(11);shell.addView(b,lpMatch(dp(48),3,3));b.setOnClickListener(v->{if("PRÓXIMO VIAJE".equals(n)||"HORA DE SALIR".equals(n)){triggerTripReminderTest("HORA DE SALIR".equals(n));}else if("NUEVA SOLICITUD".equals(n)){playDriverTestCue(false);showDriverPreview("NUEVA SOLICITUD","Cliente de prueba · Ciudad de la Costa → Aeropuerto");}else showDriverPreview("GPS SIN SEÑAL","El viaje seguiría visible y ofrecería REINTENTAR GPS. Esto es solo una simulación.");});}Button close=primaryButton("CERRAR");close.setOnClickListener(v->d.dismiss());shell.addView(close,lpMatch(dp(50),8,0));showDriverDialog(d,shell,.90f,.72f);}
     private void playDriverTestCue(boolean urgent){try{MediaPlayer mp=MediaPlayer.create(this,urgent?R.raw.viaje_proximo:R.raw.reserva_calida);if(mp!=null){mp.setOnCompletionListener(MediaPlayer::release);mp.start();}}catch(Exception ignored){}hapticTick();}
     private void showDriverPreview(String title,String message){final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell(title,message);Button ok=primaryButton("LISTO");ok.setOnClickListener(v->d.dismiss());shell.addView(ok,lpMatch(dp(50),10,0));showDriverDialog(d,shell,.88f,.42f);}

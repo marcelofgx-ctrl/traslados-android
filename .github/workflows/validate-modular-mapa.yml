@@ -47,6 +47,10 @@ jobs:
           java -cp /tmp/mapa-system-status SystemStatusPolicyTest
           grep -q 'driver_system_status_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
           grep -q 'SystemStatusActivity' mapatrayectos/src/main/AndroidManifest.xml
+      - name: Passenger chat integration regression
+        shell: bash
+        run: |
+          python3 mapatrayectos/tests/chat-flow-contract-smoke.py
       - name: Prepare existing Mapa offline assets
         shell: bash
         run: |
@@ -75,7 +79,7 @@ jobs:
           # ni reemplaza las APK RELEASE que usan los pasajeros y conductor.
           set -uo pipefail
           started=$SECONDS
-          gradle :core-reservations:classes :mapatrayectos:assembleDebug \
+          gradle :core-reservations:classes :mapatrayectos:assembleDebug :conductor:assembleDebug \
             --build-cache --stacktrace --no-daemon --console=plain --profile \
             2>&1 | tee "$RUNNER_TEMP/mapa-gradle-build.log"
           result=${PIPESTATUS[0]}
