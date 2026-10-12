@@ -27,4 +27,9 @@ assert 'if(archived)send.setVisibility(View.GONE)' in main
 assert 'com.equalsIgnoreCase("null")' in main
 assert 'installedConductorVersion()' in main
 assert 'WHATSAPP · ESTOY EN CAMINO' in quick
+assert 'handler.postDelayed(activeChatRefresh[0],15000L)' in main
+assert 'dialog.setOnDismissListener(v->handler.removeCallbacks(activeChatRefresh[0]))' in main
+assert 'if(signature.equals(list.getTag()))return;' in main
+assert '!list.isAttachedToWindow()||!requestPin.equals(pin)' in main
+assert 'if(nearEnd)scroll.fullScroll(View.FOCUS_DOWN)' in main
 print("PASS native chat from bubble/alert/notification, editable quick drafts, driver RPC, archive and driving guard")
