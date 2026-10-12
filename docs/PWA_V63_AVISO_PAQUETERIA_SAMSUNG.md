@@ -1,6 +1,6 @@
 # PWA v63 · Aviso de paquetería visible en pantalla móvil
 
-**12/10/2026 · rama de revisión.** Corrección puntual de continuidad sobre PWA v62 publicada; no rediseña tarjetas ni altera rutas, presupuestos, disponibilidad, ETA, reservas, sesiones o chat.
+**12/10/2026 · PUBLICADA EN MAIN.** Corrección puntual de continuidad sobre PWA v62 publicada; no rediseña tarjetas ni altera rutas, presupuestos, disponibilidad, ETA, reservas, sesiones o chat.
 
 ## Problema reproducible por inspección del código
 La tarjeta «Tu paquete» mostraba/ocultaba el aviso **debajo** del grupo de tres tarjetas. En una pantalla Samsung corta, el contenido podía abrirse por debajo del área visible sin indicación inmediata; el botón seguía siendo el foco del teclado.
@@ -10,6 +10,8 @@ La tarjeta «Tu paquete» mostraba/ocultaba el aviso **debajo** del grupo de tre
 - El indicador final alterna **＋/−** de forma visual, mientras `aria-expanded` conserva su estado semántico. El cierre no mueve el scroll.
 - Si el usuario pasa a «Tu viaje» o «Tu reserva», se repliega el aviso y se restablece **＋**, evitando un estado visual engañoso.
 - Ninguna acción del modo «Tu paquete» genera reservas, mensajes, geocodificación ni llamadas al backend.
+
+**Publicación verificada:** PR #64 fusionado (`c423b189`); [GitHub Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38274850653) y [PWA CI SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38274851041). Pruebas de interfaz y paridad Cliente Premium WebView también correctas. Prueba física Samsung aún pendiente.
 
 ## Versiones y contratos
 - **PWA v63**, `service-home.js?v=3`, consulta de `app.js?v=63` y `styles.css?v=63` (fuentes operativas sin cambios), y service worker `traslados-cliente-pwa-v63`; Los archivos JS y CSS principales conservan íntegramente su código; solo se renuevan sus parámetros de caché por compatibilidad con verificadores y WebView.
