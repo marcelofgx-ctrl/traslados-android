@@ -245,8 +245,8 @@ public final class TransferQuickPanel {
         if(mins>0)detail(card,"TIEMPO ESTIMADO",mins+" min");
         double total=r.optDouble("quote_final_total",0);
         if(total>0)detail(card,"PRESUPUESTO",String.format(Locale.US,"%.0f UYU",total));
-        String comment=r.optString("comments","");
-        if(!comment.isEmpty())detail(card,"OBSERVACIONES",comment);
+        String comment=r.optString("comments","").trim();
+        if(!comment.isEmpty()&&!comment.equalsIgnoreCase("null")&&!comment.equalsIgnoreCase("undefined"))detail(card,"OBSERVACIONES",comment);
         if(QuickReservationLogic.pending(status)&&conflicts(r,list)){
             TextView warn=label("⚠ POSIBLE CONFLICTO DE AGENDA · confirmar con Conductor",10,GOLD,true);
             warn.setPadding(dp(2),dp(8),dp(2),dp(8));card.addView(warn);
