@@ -59,7 +59,7 @@ assert.match(board.guidance({...confirmed,pickup_phase:"EN_CAMINO"}),/en camino 
 assert.match(board.guidance({...confirmed,pickup_phase:"EN_PUNTO"}),/llegó al punto de recogida/);
 assert.equal(board.guidance({...confirmed,pickup_phase:"EN_CAMINO",status:"EN_VIAJE"}),"Tu traslado está en curso.","In-ride must override stale pickup phase");
 assert.match(board.guidance({status:"PENDIENTE",quote_status:"ENVIADO",quote_final_total:490,pickup_date:"2026-12-12",pickup_time:"11:00:00"}),/presupuesto para responder/);
-assert(!/min|km|GPS/.test(board.guidance({...confirmed,pickup_phase:"EN_CAMINO"})),
+assert(!/(?:\bGPS\b|\d+\s*(?:km|min)\b)/i.test(board.guidance({...confirmed,pickup_phase:"EN_CAMINO"})),
   "Do not invent a GPS or arrival time for an unverified reservation stage");
 assert(app.includes("const guidance=tripBoard.guidance(r);"),"Reservation view must use modular real-phase guidance");
 console.log("PASS v60 contextual pickup, one-time accessibility announcement, stale ETA removal, CSS and cache");
