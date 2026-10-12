@@ -7,7 +7,8 @@ monitor=(root/"conductor/src/main/java/uy/com/traslados/conductor/ReservationMon
 quick=(root/"mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java").read_text()
 api=(root/"conductor/src/main/java/uy/com/traslados/conductor/Api.java").read_text()
 assert 'openRequestedPassengerChatIfReady()' in main
-assert 'pendingChatReservationId=driverBubbleReservationId' in main
+assert 'pendingChatReservationId=intent.getBooleanExtra("open_chat",false)' in main
+assert '?driverBubbleReservationId:"";' in main
 assert 'intent.getBooleanExtra("open_chat",false)' in main
 assert 'open.putExtra("open_chat",true)' in monitor
 assert 'i.putExtra("open_chat",true)' in quick
