@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=56">
+  <link rel="stylesheet" href="./styles.css?v=57">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -57,6 +57,21 @@
         <button type="button" class="booking-step-toggle" data-step-toggle aria-expanded="true" aria-controls="booking-step-route">
           <span class="booking-step-number" aria-hidden="true">01</span>
           <span class="booking-step-heading"><strong>Tu recorrido</strong><small data-step-summary id="booking-step-summary-route">Elegí origen y destino</small><small data-step-extra id="booking-step-route-extra" hidden></small></span>
+          <span id="route-folded-preview" class="route-folded-preview" hidden>
+            <span class="route-folded-places">
+              <span class="route-folded-timeline" aria-hidden="true"><i></i><i></i></span>
+              <span class="route-folded-place-text">
+                <span class="route-folded-place"><span class="route-folded-label">ORIGEN</span><span id="route-folded-origin" class="route-folded-address"></span></span>
+                <span class="route-folded-place"><span class="route-folded-label">DESTINO</span><span id="route-folded-destination" class="route-folded-address"></span></span>
+              </span>
+            </span>
+            <span id="route-folded-stops" class="route-folded-stops" hidden></span>
+            <span class="route-folded-metrics">
+              <span class="route-folded-metric"><span class="route-folded-metric-label">DISTANCIA</span><strong id="route-folded-km">—</strong></span>
+              <span class="route-folded-metric"><span class="route-folded-metric-label">DURACIÓN</span><strong id="route-folded-minutes">—</strong></span>
+              <span class="route-folded-metric"><span class="route-folded-metric-label">ESTIMADO</span><strong id="route-folded-fare">A confirmar</strong></span>
+            </span>
+          </span>
           <span data-step-check class="booking-step-check" hidden aria-hidden="true"></span>
           <span class="booking-step-chevron" aria-hidden="true"></span>
         </button>
@@ -165,14 +180,32 @@
         <p class="booking-final-eyebrow">ÚLTIMO PASO</p>
         <h3>Tu viaje, a un paso.</h3>
         <p class="booking-final-description">Revisá los detalles y dejá tu solicitud en manos del conductor.</p>
+        <div class="request-route-recap" id="scheduled-route-recap" hidden>
+          <span class="request-recap-top"><span>ESTIMACIÓN DEL RECORRIDO</span><span>Precio orientativo</span></span>
+          <span class="request-recap-metrics">
+            <span><small>DISTANCIA</small><strong data-final-route-distance>—</strong></span>
+            <span><small>DURACIÓN</small><strong data-final-route-duration>—</strong></span>
+            <span><small>VALOR</small><strong data-final-route-fare>A confirmar</strong></span>
+          </span>
+        </div>
         <button id="review-booking" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">REVISAR Y CONFIRMAR</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
         <p class="booking-final-note">Sin pagos ahora. El traslado se confirma cuando el conductor lo acepta.</p>
       </div>
       <div id="booking-preview" class="card preview" hidden></div>
       <div id="urgent-actions" class="urgent-actions" hidden>
-        <p class="urgent-actions-eyebrow">SOLICITUD DE RECOGIDA</p>
-        <h3 id="urgent-actions-title">Tu viaje puede empezar acá.</h3>
+        <div class="request-hero">
+          <span class="request-hero-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-1.4-6.3A2 2 0 0 0 15.65 9H8.35a2 2 0 0 0-1.95 1.7L5 17Z"/><path d="M5 17v1.5M19 17v1.5M7 17h.01M17 17h.01M7 12h10"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9" opacity=".6"/></svg></span>
+          <span class="request-hero-copy"><span class="urgent-actions-eyebrow">RECOGIDA PERSONALIZADA</span><h3 id="urgent-actions-title">Tu viaje puede empezar acá.</h3></span>
+        </div>
         <p id="urgent-actions-description">Enviá tu recorrido al conductor. Te responderá desde Traslados; la recogida requiere su aceptación.</p>
+        <div class="request-route-recap" id="urgent-route-recap" hidden>
+          <span class="request-recap-top"><span>ESTIMACIÓN DEL RECORRIDO</span><span>Precio orientativo</span></span>
+          <span class="request-recap-metrics">
+            <span><small>DISTANCIA</small><strong data-final-route-distance>—</strong></span>
+            <span><small>DURACIÓN</small><strong data-final-route-duration>—</strong></span>
+            <span><small>VALOR</small><strong data-final-route-fare>A confirmar</strong></span>
+          </span>
+        </div>
         <p id="urgent-send-error" class="booking-send-error" role="alert" hidden></p>
         <button id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
         <p class="booking-final-note">Sin pago anticipado · Sujeto a confirmación del conductor</p>
@@ -288,6 +321,6 @@
   <script src="./pickup-observability.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
   <script src="./trip-board.js?v=4" defer></script>
-  <script src="./app.js?v=56" defer></script>
+  <script src="./app.js?v=57" defer></script>
 </body>
 </html>
