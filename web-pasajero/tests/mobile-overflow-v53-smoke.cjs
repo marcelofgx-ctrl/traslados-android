@@ -12,8 +12,8 @@ assert(/\.trips-tabs\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)[
 assert(/\.trips-tab\s*\{[^}]*min-height:42px/s.test(fix),"Touch targets remain accessible");
 assert(/\.trip-detail \.action-row\{flex-wrap:wrap\}/.test(fix),"Reservation buttons must wrap when narrow");
 assert(/@media\(max-width:365px\)\s*\{\s*\.trips-controls\{grid-template-columns:minmax\(0,1fr\)\}/.test(fix),"Very small mobile devices have single-column filters");
-assert(html.includes('styles.css?v=59')&&html.includes('app.js?v=59'),"Cache bust version in HTML");
-assert(sw.includes('traslados-cliente-pwa-v59'),"Service worker owns matching cache");
+assert(html.includes('styles.css?v=60')&&html.includes('app.js?v=60'),"Cache bust version in HTML");
+assert(sw.includes('traslados-cliente-pwa-v60'),"Service worker owns matching cache");
 assert(html.includes('id="trips-list"')&&html.includes('id="trip-alert-overlay"'),"Keep trip dashboard and alerts");
 assert(html.includes('id="trips-alert-sound"')&&html.includes('id="trips-alert-vibrate"'),"Keep sounds and vibration choices");
 console.log("PASS v53 mobile: no horizontal tabs, root clipping without sticky regression, responsive controls and existing interactions");
