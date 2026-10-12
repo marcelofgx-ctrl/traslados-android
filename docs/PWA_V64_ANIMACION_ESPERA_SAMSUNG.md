@@ -1,6 +1,8 @@
 # Traslados · PWA v64 · Espera visual de llegada en Samsung
 
-**12/10/2026 · Rama de revisión.** Continuidad sobre PWA v63, sin modificar las aplicaciones nativas firmadas ni los contratos de disponibilidad y ETA.
+**12/10/2026 · PUBLICADA.** Continuidad sobre PWA v63, sin modificar las aplicaciones nativas firmadas ni los contratos de disponibilidad y ETA.
+
+**Despliegue verificado:** PR #65 fusionado a main `cfb85e07`; [Pages SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38277644999), [PWA CI SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38277646051), revisión visual automatizada y validación Android WebView v15 correctas. **QA físico Samsung pendiente**.
 
 ## Evidencia y causa
 
