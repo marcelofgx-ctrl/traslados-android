@@ -106,6 +106,7 @@ jobs:
           node web-pasajero/tests/pickup-health-v54-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
+          node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node web-pasajero/tests/location-permission-smoke.cjs
