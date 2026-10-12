@@ -371,6 +371,8 @@ function setWhen(kind){
   // "Ahora" y "En 10 min" comparten el mismo origen: cambiar de pestaña
   // no debe disparar nuevas ETA ni eludir la cuota de privacidad.
   selectedPickupMode=kind;
+  const serviceCaption=$("booking-service-caption");
+  if(serviceCaption)serviceCaption.textContent=kind==="schedule"?"VIAJE PROGRAMADO":kind==="10"?"RECOGIDA EN 10 MIN":"RECOGIDA AHORA";
   clearBookingFeedback();
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
@@ -414,7 +416,7 @@ function shiftView(name){
   }
   if(name==="viajes")void loadTrips();
   if(name==="cuenta")renderAccount();
-  window.scrollTo({top:Math.min(window.scrollY,150),behavior:"smooth"});
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
 // El navegador solo puede SOLICITAR el permiso al tocar el botón.
@@ -1696,6 +1698,16 @@ function installUI(){
 function init(){
   session=jsonStorage(SESSION_KEY,null);
   bookingSteps=window.TrasladosBookingSteps.mount(document);
+  // Service cards are navigation-only; the existing native/backend contracts
+  // keep full responsibility for preparing and sending transport requests.
+  window.TrasladosServiceHome.mount(document,{
+    onSelect:kind=>{
+      setWhen(kind);
+      bookingSteps.open("route");
+      shiftView("reservar");
+    },
+    onNavigate:shiftView
+  });
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>shiftView(tab.dataset.view));
   document.querySelectorAll("[data-open-login]").forEach(x=>x.addEventListener("click",()=>shiftView("cuenta")));
   document.querySelectorAll("[data-when]").forEach(b=>b.addEventListener("click",()=>setWhen(b.dataset.when)));
