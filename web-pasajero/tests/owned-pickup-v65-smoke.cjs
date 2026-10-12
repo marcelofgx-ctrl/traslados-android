@@ -8,9 +8,13 @@ assert(Object.isFrozen(owned));
 const origin={text:"Arenal Grande 2274"},destination={text:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros"};
 const now=Date.parse("2026-10-12T17:48:00Z");
 const recent={code:"TR-SAMPLE",status:"PENDIENTE",quote_status:"SIN_PRESUPUESTO",
-  pickup_mode:"now",created_at:"2026-10-12T16:38:37Z",
+  pickup_date:"2026-10-12",pickup_time:"13:38:37.279746",created_at:"2026-10-12T16:38:37Z",
   origin_text:"ARENAL GRANDE 2274",destination_text:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros"};
 assert.equal(owned.match([recent],origin,destination,[],now).code,"TR-SAMPLE");
+assert.equal(owned.match([{...recent,pickup_time:"13:48:37"}],origin,destination,[],now).code,"TR-SAMPLE");
+assert.equal(owned.match([{...recent,pickup_time:"14:08:37"}],origin,destination,[],now),null,
+  "Scheduled +30min reservation must not appear as an immediate request");
+assert.equal(owned.match([{...recent,pickup_mode:"schedule"}],origin,destination,[],now),null);
 assert.match(owned.presentation(recent).title,/solicitud/);
 assert.match(owned.presentation({...recent,quote_status:"ENVIADO"}).action,/presupuesto/);
 assert.match(owned.presentation({...recent,status:"ACEPTADA"}).title,/confirmado/);
