@@ -12,7 +12,7 @@ La tarjeta «Tu paquete» mostraba/ocultaba el aviso **debajo** del grupo de tre
 - Ninguna acción del modo «Tu paquete» genera reservas, mensajes, geocodificación ni llamadas al backend.
 
 ## Versiones y contratos
-- **PWA v63**, únicamente `service-home.js?v=3` y service worker `traslados-cliente-pwa-v63`; `app.js?v=62` y `styles.css?v=62` permanecen idénticos intencionalmente.
+- **PWA v63**, `service-home.js?v=3`, consulta de `app.js?v=63` y `styles.css?v=63` (fuentes operativas sin cambios), y service worker `traslados-cliente-pwa-v63`; Los archivos JS y CSS principales conservan íntegramente su código; solo se renuevan sus parámetros de caché por compatibilidad con verificadores y WebView.
 - Cliente Premium **v15 WebView**, Mapa Trayectos **R25.0**, Conductor **11.5-R5**, backend y credenciales **sin cambios**. No recompilar APK firmadas.
 - Tests del selector y continuidad artística v62 actualizados; todo el pipeline web existente debe quedar verde antes de publicar.
 
