@@ -23,6 +23,8 @@ public class MainActivity extends Activity {
     // v10.5: estado del globito del conductor.
     private boolean driverBubbleOpenRequested=false;
     private String driverBubbleReservationId="";
+    // The driver explicitly requested a conversation; never auto-send replies.
+    private String pendingChatReservationId="";
     // v10.7: cola visual de nuevas solicitudes; una sola caja, navegable y con acciones siempre visibles.
     private final ArrayList<JSONObject> driverAlertQueue=new ArrayList<>();
     private final HashSet<String> driverAlertQueuedIds=new HashSet<>();
@@ -217,13 +219,9 @@ public class MainActivity extends Activity {
 
     private void enterDashboard(){
         maybeAskDriverBubblePermission();
-        if(driverBubbleOpenRequested){
-  historyMode=false;
-  if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
-  driverBubbleOpenRequested=false;
-        }
-
-        dashboardVisible=true; historyMode=false; expandedId=""; firstLoad=true; seenPending.clear(); currentRows.clear();
+        String requestedId=driverBubbleOpenRequested?driverBubbleReservationId:"";
+        driverBubbleOpenRequested=false;
+        dashboardVisible=true; historyMode=false; expandedId=requestedId; firstLoad=true; seenPending.clear(); currentRows.clear();
         startMonitor(); buildDashboard(false); loadActive(true);
     }
 
@@ -331,6 +329,7 @@ public class MainActivity extends Activity {
                     currentRows.clear();currentRows.addAll(rows);lastSuccessfulSyncAt=System.currentTimeMillis();ensureTelemetryForActiveTrip(rows);
                     if(changed||showLoading||listBox==null||listBox.getChildCount()==0)renderRows(false);else refreshPassiveDashboard();
                     for(JSONObject r:fresh)alertNew(r);
+                    openRequestedPassengerChatIfReady();
                 });
             }catch(Exception e){runOnUiThread(()->{activeSyncInFlight=false;if(!historyMode)showLoadError(e,false);});}
         });
@@ -857,6 +856,20 @@ public class MainActivity extends Activity {
     }
 
 
+    private void openRequestedPassengerChatIfReady(){
+        if(pendingChatReservationId.isEmpty()||pin.isEmpty()||historyMode)return;
+        for(JSONObject row:currentRows){
+            if(!pendingChatReservationId.equals(row.optString("id","")))continue;
+            String target=pendingChatReservationId;
+            pendingChatReservationId="";
+            expandedId=target;
+            if(driverAlertDialog!=null&&driverAlertDialog.isShowing())driverAlertDialog.dismiss();
+            showReservationChat(row);
+            return;
+        }
+        // Unknown or unauthorized reservation: never synthesize a chat.
+    }
+
     private void showReservationChat(JSONObject reservation){
         final String id=reservation.optString("id","");
         if(id.isEmpty()){toast("Esta solicitud no tiene identificador");return;}
@@ -1154,10 +1167,12 @@ public class MainActivity extends Activity {
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);captureDriverBubbleIntent(intent);
         if(driverBubbleOpenRequested&&!pin.isEmpty()){
-  historyMode=false;
-  if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
-  driverBubbleOpenRequested=false;
-  loadActive(true);
+            historyMode=false;
+            if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
+            driverBubbleOpenRequested=false;
+            if(!pendingChatReservationId.isEmpty())openRequestedPassengerChatIfReady();
+            if(!pendingChatReservationId.isEmpty())loadActive(true);
+            else renderRows(false);
         }
     }
 
@@ -1166,6 +1181,8 @@ public class MainActivity extends Activity {
         if(intent.getBooleanExtra("open_requests",false)){
   driverBubbleOpenRequested=true;
   driverBubbleReservationId=intent.getStringExtra("reservation_id")==null?"":intent.getStringExtra("reservation_id");
+            if(intent.getBooleanExtra("open_chat",false)&&!driverBubbleReservationId.isEmpty())
+                pendingChatReservationId=driverBubbleReservationId;
         }
     }
 
