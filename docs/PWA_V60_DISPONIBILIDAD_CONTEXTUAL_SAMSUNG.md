@@ -10,6 +10,12 @@
 - Una ETA ya calculada se indica como aproximada y puede variar. Si el estado deja de estar disponible, **se eliminan los antiguos km/min**. El pasajero sabe que **la recogida requiere confirmación**.
 - El lector de pantalla no debe recibir anuncios nuevos por repintados idénticos cada 15 s. Se respeta `prefers-reduced-motion`.
 
+## Estado del viaje y conversación
+- `trip-board.js` ahora proporciona un único `guidance(r)` derivado de los estados realmente confirmados por backend: solicitud pendiente, presupuesto para responder, confirmado, conductor en camino, conductor llegó, viaje en curso y finalizado. El texto de la tarjeta deja de ser un genérico “el conductor actualizó el servicio”.
+- No se inventan minutos de llegada desde `pickup_phase`; la ETA de recogida solo corresponde al motor comprobado en `pickup-eta`.
+- El chat activo continúa con composición explícita y respuesta desde Conductor R5; el cerrado permanece **solo lectura**. El aviso foreground no sustituye push real con app cerrada.
+- Se verifica con casos puros sin mutar reservas de producción.
+
 ## Contratos conservados
 No cambia Supabase, RPCs de disponibilidad ni ETA, cadencias 15 s/25–45 s, cuotas, privacidad, recorridos, tarifas, chat, presupuestos, jornadas ni GPS. No se modifica `cliente-premium/`, `conductor/` ni `mapatrayectos/`. La APK Cliente Premium v15 seguirá mostrando la PWA por WebView si después se publica.
 
