@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=60">
+  <link rel="stylesheet" href="./styles.css?v=61">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -28,25 +28,56 @@
     </div>
   </header>
   <main class="shell">
-    <section class="hero">
-      <p class="eyebrow"><span class="star">✦</span> VIAJES PRIVADOS · URUGUAY</p>
-      <h1>Tu viaje,<br><em>bien organizado.</em></h1>
-      <p>Traslados al aeropuerto, servicios programados y viajes puerta a puerta, coordinados directamente con tu conductor.</p>
-      <div class="hero-tags"><span>◈ Aeropuerto</span><span>◷ Reservas programadas</span><span>⌖ Puerta a puerta</span></div>
-    </section>
-
     <nav class="tabs" aria-label="Secciones principales">
-      <button class="tab active" data-view="reservar" type="button" aria-current="page">Reservar</button>
+      <button class="tab active" data-view="inicio" type="button" aria-current="page">Inicio</button>
+      <button class="tab" data-view="reservar" type="button">Reservar</button>
       <button class="tab" data-view="viajes" type="button">Mis traslados</button>
       <button class="tab" data-view="cuenta" type="button">Mi cuenta</button>
-      <button class="tab" data-view="instalar" type="button">Instalar</button>
     </nav>
 
-    <section id="view-reservar" class="view active" aria-labelledby="reserva-title">
+    <section id="view-inicio" class="view active home-screen" aria-labelledby="home-title">
+      <div class="home-hero">
+        <p class="eyebrow"><span class="star" aria-hidden="true">✦</span> TRASLADOS CON RESERVA · URUGUAY</p>
+        <h1 id="home-title">Tu próximo viaje,<br><em>más simple.</em></h1>
+        <p>Un servicio personal para moverte con tranquilidad. Elegí qué necesitás y nosotros nos encargamos del resto.</p>
+      </div>
+      <div class="home-section-heading">
+        <div><p class="eyebrow">EMPEZÁ POR ACÁ</p><h2>¿Qué necesitás hoy?</h2></div>
+        <p>Elegí tu servicio para continuar.</p>
+      </div>
+      <div class="service-list" aria-label="Servicios de Traslados">
+        <button type="button" class="service-card service-card-featured" data-service="now">
+          <span class="service-card-icon" aria-hidden="true">↗</span>
+          <span class="service-card-body"><strong>Viajar ahora</strong><small>Recogida inmediata o en 10 minutos, según disponibilidad.</small><span class="service-card-tag">A pedido</span></span>
+          <span class="service-card-arrow" aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="service-card" data-service="schedule">
+          <span class="service-card-icon" aria-hidden="true">◷</span>
+          <span class="service-card-body"><strong>Programar un viaje</strong><small>Aeropuerto, eventos y puerta a puerta. Elegí fecha y hora.</small></span>
+          <span class="service-card-arrow" aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="service-card service-card-soon" data-service="delivery" aria-describedby="service-coming-soon">
+          <span class="service-card-icon" aria-hidden="true">▣</span>
+          <span class="service-card-body"><span class="service-card-heading"><strong>Mensajería y paquetería</strong><span class="service-card-tag service-tag-soon">Próximamente</span></span><small>Envíos de documentos y pequeños paquetes.</small></span>
+          <span class="service-card-arrow" aria-hidden="true">↗</span>
+        </button>
+      </div>
+      <p id="service-coming-soon" class="service-coming-soon" role="status" aria-live="polite" hidden>Estamos preparando el servicio de mensajería y paquetería. Todavía no se pueden solicitar envíos.</p>
+      <div class="home-quick-links">
+        <button type="button" data-open-view="viajes"><span aria-hidden="true">◷</span> Seguir mis traslados <span aria-hidden="true">→</span></button>
+        <button type="button" data-open-view="instalar"><span aria-hidden="true">↓</span> Instalar la app <span aria-hidden="true">→</span></button>
+      </div>
+      <p class="home-assurance">Atención directa con tu conductor · Uruguay</p>
+    </section>
+
+    <section id="view-reservar" class="view" aria-labelledby="reserva-title">
+      <div class="booking-entry-nav">
+        <button type="button" class="booking-back-services" data-open-view="inicio">← Ver servicios</button>
+        <span id="booking-service-caption" class="booking-service-caption">VIAJE PROGRAMADO</span>
+      </div>
       <div class="section-heading">
-        <p class="eyebrow">SOLICITAR UN SERVICIO</p>
-        <h2 id="reserva-title">Reservá tu traslado</h2>
-        <p>Elegí tu origen y destino. Consultá la distancia, el tiempo y un valor orientativo antes de solicitar el traslado. <strong>El conductor confirma el viaje.</strong></p>
+        <h2 id="reserva-title">Prepará tu traslado</h2>
+        <p>Elegí el recorrido, revisá la estimación y enviá tu solicitud. <strong>El conductor confirma el viaje.</strong></p>
       </div>
       <div class="booking-progress" aria-label="Avance de la solicitud">
         <span id="booking-progress-text" class="booking-progress-text" aria-live="polite">Paso 1 de 3</span>
@@ -336,6 +367,7 @@
   <script src="./pickup-observability.js?v=1" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
   <script src="./trip-board.js?v=5" defer></script>
-  <script src="./app.js?v=60" defer></script>
+  <script src="./service-home.js?v=1" defer></script>
+  <script src="./app.js?v=61" defer></script>
 </body>
 </html>
