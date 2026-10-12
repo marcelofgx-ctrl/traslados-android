@@ -1301,14 +1301,25 @@ html,body{
   box-shadow:0 0 0 4px rgba(222,185,100,.12);
   font-size:11px;transform:translateY(-50%);
 }
-#pickup-presence[data-phase="checking"] .pickup-route-car,
-#pickup-presence[data-phase="routing"] .pickup-route-car{
-  animation:pickupRouteTravel 2.8s ease-in-out infinite alternate;
+.pickup-route-car svg{
+  display:block;width:17px;height:17px;stroke:currentColor;stroke-width:2;
+  fill:none;stroke-linecap:round;stroke-linejoin:round;
 }
-#pickup-presence[data-phase="ready"] .pickup-route-car{left:calc(100% - 20px)}
+#pickup-presence[data-presence="online"] .pickup-route-line{
+  background:repeating-linear-gradient(to right,rgba(133,224,174,.72) 0 9px,transparent 9px 16px);
+}
+#pickup-presence[data-presence="online"] .pickup-route-car{
+  color:#bff7d4;background:linear-gradient(135deg,#286d5c,#0a4b43);
+  box-shadow:0 0 0 4px rgba(104,219,160,.12),0 1px 8px rgba(20,95,65,.25);
+}
+#pickup-presence[data-phase="checking"] .pickup-route-car,
+#pickup-presence[data-phase="routing"] .pickup-route-car,
+#pickup-presence[data-phase="waiting"] .pickup-route-car,
+#pickup-presence[data-phase="ready"] .pickup-route-car{
+  animation:pickupRouteTravel 3.7s ease-in-out infinite alternate;
+}
 #pickup-presence[data-phase="blocked"] .pickup-route-car,
-#pickup-presence[data-phase="issue"] .pickup-route-car,
-#pickup-presence[data-phase="waiting"] .pickup-route-car{
+#pickup-presence[data-phase="issue"] .pickup-route-car{
   left:0;opacity:.68;box-shadow:none;
 }
 .pickup-route-caption{
@@ -1334,7 +1345,9 @@ html,body{
     animation:none!important;
   }
   #pickup-presence[data-phase="checking"] .pickup-route-car,
-  #pickup-presence[data-phase="routing"] .pickup-route-car{left:42%}
+  #pickup-presence[data-phase="routing"] .pickup-route-car,
+  #pickup-presence[data-phase="waiting"] .pickup-route-car,
+  #pickup-presence[data-phase="ready"] .pickup-route-car{left:42%}
 }
 
 /* PWA v55 — cotizaciones históricas no accionables; compacto y coherente. */
@@ -1824,13 +1837,15 @@ body.trip-chat-modal-open{overflow:hidden}
   .trip-chat-dialog-content .trip-chat-feed{scroll-behavior:auto}
 }
 
-/* PWA v60 — llegada contextual: estado primero, kilometraje y ETA después.
+/* PWA v64 sobre v60 — recorrido ilustrativo visible en espera y llegada verificada.
+ * No muestra progreso real del vehículo y nunca aparece en estados no disponibles.
+ * Llegada contextual: estado primero, kilometraje y ETA después.
  * El esquema premium sigue igual; los diagnósticos quedan en memoria interna. */
 #pickup-presence{padding:14px 15px 12px;gap:6px}
 #pickup-presence .pickup-card-heading strong{font-size:17px;line-height:1.3}
 #pickup-presence .pickup-card-heading p{margin:4px 0 0;line-height:1.42;font-size:12.5px}
-#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]) .pickup-route-animation,
-#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]) .pickup-route-caption{display:none!important}
+#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]):not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation,
+#pickup-presence:not([data-phase="checking"]):not([data-phase="routing"]):not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-caption{display:none!important}
 #pickup-presence .pickup-route-caption:empty{display:none!important}
 #pickup-presence .pickup-presence-metrics{margin:12px 0 6px;gap:8px}
 #pickup-presence .pickup-presence-metric{min-height:67px;padding:11px 12px;border-radius:12px}

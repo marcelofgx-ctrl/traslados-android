@@ -188,7 +188,7 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   const host=$("pickup-presence");
   if(host){host.dataset.presence=presence;host.dataset.phase=phase;}
   const routeCaption=$("pickup-route-caption");
-  if(routeCaption)routeCaption.textContent=({checking:"Comprobando disponibilidad…",routing:"Calculando llegada a tu origen…"})[phase]||"";
+  if(routeCaption)routeCaption.textContent=({checking:"Comprobando disponibilidad…",routing:"Calculando llegada a tu origen…",waiting:"Animación ilustrativa · No es seguimiento en vivo",ready:"Animación ilustrativa · No es seguimiento en vivo"})[phase]||"";
   const main=$("pickup-presence-title");
   const sub=$("pickup-presence-subtitle");
   const metrics=$("pickup-presence-metrics");
