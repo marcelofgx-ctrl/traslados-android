@@ -56,8 +56,8 @@ assert(css.includes('.trip-chat-sheet')&&css.includes('.trip-chat-archived')&&
   css.includes('.trip-detail-disclosure'));
 assert(css.includes('.trip-card:not([open]) .trip-route-label')&&
   css.includes('-webkit-line-clamp:unset'),"Long airport destinations must remain readable");
-assert(html.includes("app.js?v=63")&&html.includes("styles.css?v=63")&&
-  sw.includes("traslados-cliente-pwa-v63"),"Release must bust stale Samsung caches");
+assert(html.includes("app.js?v=64")&&html.includes("styles.css?v=64")&&
+  sw.includes("traslados-cliente-pwa-v64"),"Release must bust stale Samsung caches");
 assert(!/serviceWorker\.ready\.then\(reg=>reg\.pushManager\.subscribe/.test(app),
   "No fake push with app closed");
 console.log("PASS PWA v58: passenger states, smart initial tab, closed chat, on-demand details and contracts");
