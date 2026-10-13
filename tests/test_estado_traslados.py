@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/estado_traslados.py"
 spec = importlib.util.spec_from_file_location("estado_traslados", SCRIPT)
@@ -64,6 +65,48 @@ class EstadoAutomaticoTests(unittest.TestCase):
         value = status.render(self.root, offline=True)
         self.assertIn("downloads/traslados-conductor-r6.apk", value)
         self.assertIn("NO PUBLICADA EN REPOSITORIO", value, "Other APKs remain unverified")
+
+    def test_formats_build_and_change_times_in_uruguay(self):
+        self.assertEqual(status.time_uy("2026-10-13T05:36:21Z"), "13/10/2026 02:36 UYT")
+        self.assertEqual(status.time_uy("2026-10-13T11:00:00+00:00"), "13/10/2026 08:00 UYT")
+        self.assertEqual(status.time_uy(None), "fecha/hora no informada")
+        self.assertEqual(status.build_time({
+            "status": "completed", "updated_at": "2026-10-13T05:36:21Z"
+        }), "13/10/2026 02:36 UYT")
+
+    def test_latest_successful_compilation_excludes_failure_and_docs_pages(self):
+        runs = [
+            {"name": "pages build and deployment", "head_branch": "main",
+             "conclusion": "success", "status": "completed",
+             "updated_at": "2026-10-13T11:00:00Z"},
+            {"name": "Build Traslados Conductor RELEASE", "head_branch": "main",
+             "conclusion": "success", "status": "completed",
+             "updated_at": "2026-10-13T05:36:21Z"},
+            {"name": "Build Mapa Trayectos RELEASE", "head_branch": "main",
+             "conclusion": "failure", "status": "completed",
+             "updated_at": "2026-10-13T12:00:00Z"},
+        ]
+        self.assertEqual(status.latest_app_build(runs)["name"], "Build Traslados Conductor RELEASE")
+
+    def test_latest_code_change_is_not_docs_bot(self):
+        fixture = {"sha": "a" * 40, "commit": {
+            "message": "Actualización PWA v68", "committer": {"date": "2026-10-13T05:34:35Z"}}}
+        def fake_api(path, offline=False):
+            return [fixture] if "path=web-pasajero" in path else []
+        with patch.object(status, "github_json", side_effect=fake_api):
+            changed = status.latest_code_change(offline=False)
+        self.assertIsNotNone(changed)
+        self.assertEqual(changed["area"], "Web pasajero")
+        self.assertEqual(status.time_uy(changed["timestamp"]), "13/10/2026 02:34 UYT")
+        self.assertIsNone(status.latest_code_change(offline=True))
+
+    def test_result_contains_restart_phrase_and_timing_policy(self):
+        value = status.render(self.root, offline=True)
+        self.assertIn("Retomar Traslados Web desde Git", value)
+        self.assertIn("Última compilación", value)
+        self.assertIn("Último cambio de código", value)
+        self.assertIn("Montevideo", value)
+        self.assertIn("No fue posible verificar", value)
 
     def test_missing_version_fails_closed(self):
         (self.root / "web-pasajero/sw.js").write_text("no version", encoding="utf-8")
