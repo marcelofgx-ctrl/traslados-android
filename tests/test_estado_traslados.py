@@ -62,7 +62,6 @@ class EstadoAutomaticoTests(unittest.TestCase):
         self.git("-c", "user.name=test", "-c", "user.email=test@example.invalid",
                  "commit", "-qm", "Add fake tracked path")
         value = status.render(self.root, offline=True)
-        self.assertIn("descargas/does-not-exist", value) if False else None
         self.assertIn("downloads/traslados-conductor-r6.apk", value)
         self.assertIn("NO PUBLICADA EN REPOSITORIO", value, "Other APKs remain unverified")
 
