@@ -80,11 +80,15 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
     v = versions(root)
     names = set(git(root, "ls-tree", "-r", "--name-only", "HEAD", "web-pasajero/downloads").splitlines())
     latest_android = github_json("repos/" + REPO + "/actions/runs?branch=main&per_page=70", offline) or {}
+    client_actions = github_json("repos/" + REPO + "/actions/workflows/build-cliente-premium-v15.yml/runs?branch=main&per_page=5", offline) or {}
     latest_backend = github_json("repos/" + BACKEND + "/commits/main", offline) or {}
     backend_actions = github_json("repos/" + BACKEND + "/actions/runs?branch=main&per_page=15", offline) or {}
     runs = latest_android.get("workflow_runs", [])
+    client_runs = client_actions.get("workflow_runs", [])
     b_runs = backend_actions.get("workflow_runs", [])
     if not isinstance(runs, list): runs = []
+    if not isinstance(client_runs, list): client_runs = []
+    runs.extend(client_runs)
     if not isinstance(b_runs, list): b_runs = []
     short_backend = latest_backend.get("sha", "")[:12]
     backend_link = ("[" + short_backend + "](https://github.com/" + BACKEND + "/commit/" + short_backend + ")") if short_backend else "No consultado"
@@ -107,7 +111,7 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
       "| Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |",
       "|---|---|---|---|",
       "| Pasajero PWA | v" + v["pwa"] + " | [Abrir web](" + SITE + ") | " + recent(runs, "pages build and deployment") + " |",
-      apk_row("Cliente Premium", v["cliente"], client_name, "Build Cliente Premium v15 RELEASE"),
+      apk_row("Cliente Premium", v["cliente"], client_name, "Build Traslados Cliente Premium v15 RELEASE"),
       apk_row("Conductor", v["conductor"], conductor_name, "Build Traslados Conductor RELEASE"),
       apk_row("Mapa Trayectos", v["mapa"], mapa_name, "Build Mapa Trayectos RELEASE"),
       "",

@@ -22,7 +22,7 @@ on:
       - Build Traslados Conductor RELEASE
       - Build Mapa Trayectos RELEASE
       - Verify and package passenger PWA (GitHub Pages via branch)
-      - Build Cliente Premium v15 RELEASE
+      - Build Traslados Cliente Premium v15 RELEASE
     types: [completed]
 
 permissions:
