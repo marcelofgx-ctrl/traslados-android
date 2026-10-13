@@ -999,7 +999,14 @@ public class MainActivity extends Activity {
                 if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);
                 else startService(svc);
             }else startService(svc);
-        }catch(Exception ex){android.util.Log.w("MapaBubble","No se pudo cambiar el estado de la burbuja",ex);}
+        }catch(Exception ex){
+            android.util.Log.w("MapaBubble","No se pudo cambiar el estado de la burbuja",ex);
+            String detail=ex.getClass().getSimpleName()+": "+(ex.getMessage()==null?"":ex.getMessage());
+            getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
+                .putString("bubble_diag_stage","error al iniciar servicio desde Mapa")
+                .putString("bubble_diag_error",detail.length()>180?detail.substring(0,180):detail)
+                .putLong("bubble_diag_at",System.currentTimeMillis()).apply();
+        }
     }
     private void requestServiceState(){if(!shiftActive)return;try{Intent svc=new Intent(this,TrackingService.class).setAction(TrackingService.ACTION_REQUEST_STATE);if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}catch(Exception ignored){}}
 
