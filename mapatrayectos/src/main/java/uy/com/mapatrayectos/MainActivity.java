@@ -26,7 +26,7 @@ import org.maplibre.android.style.sources.GeoJsonSource;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012;
+    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_NOTIF_SETTINGS=7004,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012;
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
@@ -486,6 +486,7 @@ public class MainActivity extends Activity {
             ()->{reopenConfigurationAfterOverlay=true;openOverlaySystemSettings();},
             ()->{reopenConfigurationAfterOverlay=true;openMapaAppInfoSettings();},
             ()->{reopenConfigurationAfterOverlay=true;openOverlaySystemSettingsUnscoped();},
+            ()->{reopenConfigurationAfterOverlay=true;openMapaNotificationSettings();},
             this::testFloatingShortcut,
             this::showBubbleDiagnostics);
     }
@@ -550,6 +551,19 @@ public class MainActivity extends Activity {
         openOverlaySystemSettings();
     }
 
+    /** Open the exact notification settings for Mapa Trayectos on Android 8+. */
+    private void openMapaNotificationSettings(){
+        returningFromOverlaySettings=true;
+        try{
+            Intent notificationSettings=new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            notificationSettings.putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName());
+            startActivityForResult(notificationSettings,REQ_NOTIF_SETTINGS);
+        }catch(Exception ex){
+            returningFromOverlaySettings=false;
+            openMapaAppInfoSettings();
+        }
+    }
+
     /** Supported, package-targeted app-information screen (not the overlay toggle). */
     private void openMapaAppInfoSettings(){
         returningFromOverlaySettings=true;
@@ -594,6 +608,16 @@ public class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==REQ_NOTIF_SETTINGS){
+            returningFromOverlaySettings=false;
+            updateFloatingAccessBanner();
+            updateUi();
+            if(reopenConfigurationAfterOverlay){
+                reopenConfigurationAfterOverlay=false;
+                uiHandler.postDelayed(this::showConfiguration,200L);
+            }
+            return;
+        }
         if(requestCode==REQ_OVERLAY){
             returningFromOverlaySettings=false;
             boolean granted=Settings.canDrawOverlays(this);
