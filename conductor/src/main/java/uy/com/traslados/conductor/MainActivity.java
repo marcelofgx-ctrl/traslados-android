@@ -788,6 +788,16 @@ public class MainActivity extends Activity {
         EditText start=availabilityField(box,"Hora inicial",jsonTime(j,"day_start","08:00"),false),end=availabilityField(box,"Hora final",jsonTime(j,"day_end","22:00"),false);
         box.addView(body("DÍAS HABILITADOS",12,GOLD),lpMatch(-2,6,4));String[] labs={"D","L","M","X","J","V","S"};CheckBox[] days=new CheckBox[7];HashSet<Integer> active=new HashSet<>();JSONArray aa=j.optJSONArray("active_weekdays");if(aa!=null)for(int i=0;i<aa.length();i++)active.add(aa.optInt(i,-1));else for(int i=0;i<7;i++)active.add(i);
         LinearLayout day1=new LinearLayout(this),day2=new LinearLayout(this);for(int i=0;i<7;i++){CheckBox c=new CheckBox(this);days[i]=c;c.setText(labs[i]);c.setTextColor(TEXT);c.setGravity(Gravity.CENTER);c.setChecked(active.contains(i));(i<4?day1:day2).addView(c,new LinearLayout.LayoutParams(0,dp(46),1));}box.addView(day1);box.addView(day2);
+        CheckBox scheduledAnytime=new CheckBox(this);
+        scheduledAnytime.setText("Programadas a cualquier hora");
+        scheduledAnytime.setSingleLine(false);scheduledAnytime.setTextColor(TEXT);
+        scheduledAnytime.setChecked(j.optBoolean("allow_scheduled_any_time",true));
+        box.addView(scheduledAnytime,lpMatch(dp(60),8,2));
+        CheckBox liveOutside=new CheckBox(this);
+        liveOutside.setText("Inmediatos fuera de horario con jornada activa");
+        liveOutside.setSingleLine(false);liveOutside.setTextColor(TEXT);
+        liveOutside.setChecked(j.optBoolean("allow_live_outside_hours",true));
+        box.addView(liveOutside,lpMatch(dp(70),3,2));
         box.addView(body("PRESETS DE MARGEN",12,GOLD),lpMatch(-2,8,4));LinearLayout presets=new LinearLayout(this);Button tight=secondaryButton("AJUSTADO 5/5"),normal=secondaryButton("NORMAL 10/10"),safe=secondaryButton("CONSERV. 15/30");for(Button b:new Button[]{tight,normal,safe}){b.setTextSize(9);presets.addView(b,new LinearLayout.LayoutParams(0,dp(44),1));if(b!=safe)spacerH(presets,4);}box.addView(presets,lpMatch(dp(46),0,6));
         EditText interval=availabilityField(box,"Intervalo de horarios ofrecidos (min)",String.valueOf(j.optInt("slot_interval_min",30)),true);EditText before=availabilityField(box,"Llegar antes al próximo origen (min)",String.valueOf(j.optInt("buffer_before_min",15)),true);EditText after=availabilityField(box,"Margen después de finalizar (min)",String.valueOf(j.optInt("buffer_after_min",30)),true);EditText duration=availabilityField(box,"Duración por defecto si no hay ruta (min)",String.valueOf(j.optInt("default_trip_min",60)),true);EditText hold=availabilityField(box,"Retener solicitud pendiente (min)",String.valueOf(j.optInt("pending_hold_min",30)),true);EditText lead=availabilityField(box,"Anticipación mínima para reservar (min)",String.valueOf(j.optInt("lead_time_min",30)),true);
         TextView example=body("",12,TEXT);example.setPadding(dp(10),dp(10),dp(10),dp(10));example.setBackground(rounded(PANEL,LINE,14));box.addView(example,lpMatch(-2,7,5));
