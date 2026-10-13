@@ -9,7 +9,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Pasajero PWA | v69 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 13/10/2026 13:50 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38433519601) · commit 1d966ea05 |
 | Cliente Premium | 15.0-Premium · code 203 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | [SUCCESS · 13/10/2026 02:36 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100436) · commit 64b249b2a |
-| Mapa Trayectos | 0.1-R25.5 · code 57 | **NO PUBLICADA EN REPOSITORIO** | [EN CURSO · 13/10/2026 14:14 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38437025708) · commit 6ccdf3aaf |
+| Mapa Trayectos | 0.1-R25.5 · code 57 | **NO PUBLICADA EN REPOSITORIO** | [ERROR · 13/10/2026 14:15 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38437025708) · commit 6ccdf3aaf |
 
 **PWA CI:** [SUCCESS · 13/10/2026 09:09 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395139733) · commit aa72e1103.
 **Backend fuente:** [93e302863813](https://github.com/marcelofgx-ctrl/traslados-web/commit/93e302863813) · **último CI encontrado:** [SUCCESS · 13/10/2026 02:39 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38352487078) · commit 93e302863.
