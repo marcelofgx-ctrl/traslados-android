@@ -103,7 +103,7 @@ jobs:
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'PopupWindow(menu,dp(232)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'PopupWindow(menu,menuWidth,-2,true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'dp(49)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'FrameLayout bubble=new FrameLayout' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'new WindowManager.LayoutParams(size,size' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
