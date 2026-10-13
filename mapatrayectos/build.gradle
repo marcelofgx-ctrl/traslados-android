@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 52
-        versionName '0.1-R25.0'
+        versionCode 53
+        versionName '0.1-R25.1'
     }
 
     signingConfigs {
@@ -103,7 +103,7 @@ tasks.register('prepareEmbeddedConductor') {
             }
             if (original.name == 'MainActivity.java') {
                 java = java.replace('super.onResume();',
-                    'super.onResume();\n        uy.com.mapatrayectos.TransferAlerts.markViewed(this);\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();\n        try{startService(new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(uy.com.mapatrayectos.TrackingService.ACTION_UI_VISIBLE));}catch(Exception ignored){}')
+                    'super.onResume();\n        uy.com.mapatrayectos.TransferAlerts.markViewed(this);\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();\n        try{boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);boolean allowed=android.provider.Settings.canDrawOverlays(this);Intent svc=new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(active?uy.com.mapatrayectos.TrackingService.ACTION_UI_VISIBLE:uy.com.mapatrayectos.TrackingService.ACTION_PREPARE_IDLE_BUBBLE);if(!active&&!allowed)stopService(new Intent(this,uy.com.mapatrayectos.TrackingService.class));else if(!active&&Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}catch(Exception ex){android.util.Log.w("MapaBubble","Prepare integrated Conductor bubble",ex);}')
                 java = java.replace('super.onPause();',
                     'super.onPause();\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();\n        try{Intent svc=new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(uy.com.mapatrayectos.TrackingService.ACTION_UI_HIDDEN);boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);if(active)startService(svc);else if(android.provider.Settings.canDrawOverlays(this)){if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}}catch(Exception ignored){}')
             }
