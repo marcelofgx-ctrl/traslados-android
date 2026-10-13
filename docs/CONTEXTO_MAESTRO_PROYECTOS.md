@@ -1,5 +1,8 @@
 # CONTEXTO MAESTRO — ECOSISTEMA TRASLADOS / MAPA TRAYECTOS
 
+> **ESTADO TÉCNICO AUTOMÁTICO:** [ESTADO_AUTOMATICO_TRASLADOS.md](ESTADO_AUTOMATICO_TRASLADOS.md). **DECISIONES Y PENDIENTES:** [REANUDAR_TRASLADOS.md](REANUDAR_TRASLADOS.md). Este documento es un archivo cronológico que contiene etiquetas históricas «actual» y NO se debe releer íntegro para retomar un chat.
+
+
 > **PRIMERO LEER EN CUALQUIER SESIÓN NUEVA:** [REANUDAR TRASLADOS — CONTEXTO VIVO](REANUDAR_TRASLADOS.md), con versiones, enlaces, decisiones, pendientes y protocolo para conservar continuidad. Los registros de abajo son cronológicos y pueden usar el término «actual» respecto a su fecha histórica.
 
 
