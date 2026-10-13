@@ -6,10 +6,10 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 | Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |
 |---|---|---|---|
-| Pasajero PWA | v69 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 13/10/2026 09:11 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395261624) · commit 117dfc038 |
+| Pasajero PWA | v69 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 13/10/2026 09:15 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395594045) · commit 95f3e4050 |
 | Cliente Premium | 15.0-Premium · code 203 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | [SUCCESS · 13/10/2026 02:36 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100436) · commit 64b249b2a |
-| Mapa Trayectos | 0.1-R25.0 · code 52 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.0.apk) | [SUCCESS · 13/10/2026 02:35 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100294) · commit 64b249b2a |
+| Mapa Trayectos | 0.1-R25.1 · code 53 | **NO PUBLICADA EN REPOSITORIO** | [EN CURSO · 13/10/2026 11:43 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38415830571) · commit 07040e73b |
 
 **PWA CI:** [SUCCESS · 13/10/2026 09:09 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395139733) · commit aa72e1103.
 **Backend fuente:** [93e302863813](https://github.com/marcelofgx-ctrl/traslados-web/commit/93e302863813) · **último CI encontrado:** [SUCCESS · 13/10/2026 02:39 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38352487078) · commit 93e302863.
@@ -17,7 +17,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 13/10/2026 09:09 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395139733) · commit aa72e1103 · Verify and package passenger PWA (GitHub Pages via branch).
-**Último cambio de código verificado:** 13/10/2026 09:08 UYT · [Web pasajero / aa72e11037](https://github.com/marcelofgx-ctrl/traslados-android/commit/aa72e110370e54c80d373b2bebe3048195756f51) — PWA v69: improve department-aware Costa de Oro search and full QA.
+**Último cambio de código verificado:** 13/10/2026 11:43 UYT · [Mapa Trayectos / 07040e73b0](https://github.com/marcelofgx-ctrl/traslados-android/commit/07040e73b02062be4259971a0b94de2d47ef5037) — Mapa R25.1: restore floating bubble over Cliente on Android 16.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
