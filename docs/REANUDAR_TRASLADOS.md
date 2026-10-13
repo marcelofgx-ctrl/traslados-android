@@ -17,6 +17,22 @@
 
 **Secuencia obligatoria al empezar:** (1) leer ESTE archivo, (2) contrastarlo con los últimos commits y Actions de ambos repositorios, (3) ampliar solo los documentos técnicos pertinentes, (4) preguntarle al usuario qué comportamiento vio en Samsung si depende de QA físico. Ante una contradicción, **el código publicado y la base vigente prevalecen sobre la prosa histórica**. No inventar pruebas ni instalaciones.
 
+## Forma de trabajo solicitada — criterio profesional y proactividad (13/10/2026)
+
+**Preferencia explícita del usuario:** no quiere tener que imaginar ni detallar cada necesidad básica, comportamiento obvio, accesibilidad del sistema operativo o paso necesario para una experiencia completa. Espera que ChatGPT actúe **como un responsable técnico y de producto proactivo**, no como un ejecutor literal. Esta pauta es prioritaria al iniciar cualquier sesión del proyecto.
+
+**Aplicación operativa en cada pedido, sin convertirlo en burocracia:**
+
+1. **Interpretar el objetivo final y el recorrido real de usuario**, no solamente la modificación textual. Revisar el flujo completo, pasos anteriores y posteriores, permisos, primera instalación, reanudación, errores, casos límite y facilidad de uso. Si solicita «abrir el permiso», el objetivo es llegar a la pantalla y la app correctas con la menor fricción posible.
+2. **Investigar antes de afirmar que algo es imposible**, especialmente en Android/Samsung: examinar código y versiones históricas que funcionaban, documentación vigente y compatibilidad de ROM/versiones; distinguir entre API oficial, intento condicionado al fabricante y límite real. Evitar respuestas tajantes no comprobadas.
+3. **Proponer e incorporar pequeños ajustes obvios y complementarios** (mensajes, accesos directos compatibles, indicadores de estado, ayudas y diagnóstico, recuperación ante fallos, accesibilidad) cuando mejoran la solución y no alteran el alcance sustancial. Para cambios con implicaciones de costo, seguridad, privacidad, negocio o riesgo de regresión, exponer la elección antes de ejecutarlos.
+4. **Pensar en experiencia premium además de funcionalidad**: buena jerarquía visual, pocos toques, diseño coherente, estados claros, mensajes orientados al usuario y alternativa cuando una API no responde.
+5. **Proteger lo existente**: no perder datos, no desinstalar para actualizar, mantener funciones y diseño ya aprobados; revisar cliente, conductor, mapa, web y backend si comparten el flujo. Añadir verificaciones prácticas de punta a punta; no sustituir QA real en Samsung por CI exitoso.
+6. **Entregar resultados verificables**, no solo planes: actualizar GitHub, revisar ejecución CI, firma, publicación, checksum y versión; citar hora/commit reales y APK correcta. Si falta evidencia, comunicar exactamente qué está listo y qué queda por probar.
+7. **Anticipar dos o tres problemas probables sin pedir al usuario que los descubra**; corregirlos si son seguros y razonables. Resumir decisiones y resultados con brevedad, sin cargar al usuario con detalles de implementación ni pedir confirmaciones innecesarias.
+
+**Ejemplo de aprendizaje — permiso «Aparecer encima»:** el usuario tuvo que señalar que no bastaba abrir ajustes genéricos, sino que debía quedar ubicado directamente en la aplicación. Antes de declarar el acceso imposible, debimos revisar el Intent anterior `ACTION_MANAGE_OVERLAY_PERMISSION + package:<id>` y contrastar la restricción Android 11+ con el comportamiento real del firmware Samsung. Esta anticipación debe formar parte de la revisión inicial del flujo, no depender de que el usuario la solicite.
+
 ## Repositorios y servicios canónicos
 
 | Parte | Referencia verificada |
