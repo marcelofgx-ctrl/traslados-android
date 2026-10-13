@@ -45,7 +45,7 @@ public final class BubbleSettingsPanel {
         long at=state.getLong("bubble_diag_at",0L);
         long trial=state.getLong("bubble_test_requested_at",0L);
         // Actual drawing is independent from granting Android permission.
-        long lastDrawn=state.getLong("floating_seen_ms",0L);
+        long lastDrawn=state.getLong("floating_last_drawn_ms",0L);
         boolean confirmed=BubbleReadinessPolicy.confirmed(trial,lastDrawn);
         boolean pending=BubbleReadinessPolicy.pending(trial,lastDrawn,System.currentTimeMillis());
         String clockText=at>0?new SimpleDateFormat("HH:mm",Locale.getDefault())
@@ -85,7 +85,7 @@ public final class BubbleSettingsPanel {
         }
         addText(host,pane,!overlay
             ?"PRÓXIMO PASO · Autorizá el acceso flotante para continuar.":
-            confirmed?"COMPROBADO · Se oculta al abrir Mapa y aparece al salir.":
+            confirmed?"COMPROBADO · Se dibujó al salir; Mapa lo oculta al volver.":
             pending?"COMPROBANDO · Esperá en Inicio para ver el globito.":
             "PRÓXIMO PASO · Probá el globito en Inicio de Android.",
             12,overlay&&confirmed?GREEN:AMBER,true,14);
@@ -185,7 +185,7 @@ public final class BubbleSettingsPanel {
         boolean notifications=nm!=null&&nm.areNotificationsEnabled();
         long at=state.getLong("bubble_diag_at",0L);
         long trial=state.getLong("bubble_test_requested_at",0L);
-        long drawn=state.getLong("floating_seen_ms",0L);
+        long drawn=state.getLong("floating_last_drawn_ms",0L);
         return "Mapa Trayectos · estado del globito"
             +"\nAndroid: "+android.os.Build.VERSION.RELEASE
             +"\nAcceso flotante: "+(Settings.canDrawOverlays(host)?"Autorizado":"Pendiente")
