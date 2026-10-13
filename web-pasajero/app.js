@@ -606,11 +606,20 @@ function picker(name,mount,position){
       text(btn,"span",item.name,"result-title");
       text(btn,"small",(item.type==="place"?"◉ Lugar · ":"⌖ Dirección · ")+item.secondary,"result-subtitle");
     }
-    if(places.some(p=>p.id?.startsWith("osm-"))){
+    const fromOsm=places.some(p=>p.id?.startsWith("osm-"));
+    const local=places.some(p=>p.source==="local-verified");
+    if(fromOsm||local){
       source.hidden=false;
-      source.textContent="Lugares: © OpenStreetMap contributors (ODbL). Elegí en el mapa el acceso exacto si es necesario.";
+      source.textContent=(fromOsm?"Lugares: © OpenStreetMap contributors (ODbL). ":"")+
+        (local?"Guía de la Costa: ubicación de referencia. ":"")+
+        "Confirmá en el mapa el acceso exacto si es necesario.";
     }
-    if(!unique.length){feedback.hidden=false;feedback.textContent="Sin coincidencias verificadas en "+dept+". Revisá calle y número o elegí otro departamento. No mostramos direcciones de otras zonas como si fueran correctas.";}
+    if(!unique.length){
+      feedback.hidden=false;
+      feedback.textContent=window.TrasladosGeo.catalogState==="error"
+        ?"No pudimos consultar los lugares. Revisá la conexión y volvé a buscar; también podés probar una dirección."
+        :"Sin coincidencias en "+dept+". Probá el nombre completo o una dirección. Para buscar en otro departamento, cambialo arriba.";
+    }
     else feedback.hidden=true;
   }
   const lookup=async()=>{
@@ -622,7 +631,7 @@ function picker(name,mount,position){
     if(q.length<3)return;
     let places=quick,addresses=[],done=0;
     loading(search,true);
-    feedback.hidden=false;feedback.textContent=quick.length?"Buscando otros lugares…":"Buscando lugares y direcciones en Uruguay…";
+    feedback.hidden=false;feedback.textContent=quick.length?"Buscando otros lugares…":"Buscando lugares y direcciones en "+dept+"…";
     const update=()=>{
       if(seq!==sequence||selected)return;
       renderEntries(places,addresses,q);
