@@ -33,6 +33,10 @@
 
 **Ejemplo de aprendizaje — permiso «Aparecer encima»:** el usuario tuvo que señalar que no bastaba abrir ajustes genéricos, sino que debía quedar ubicado directamente en la aplicación. Antes de declarar el acceso imposible, debimos revisar el Intent anterior `ACTION_MANAGE_OVERLAY_PERMISSION + package:<id>` y contrastar la restricción Android 11+ con el comportamiento real del firmware Samsung. Esta anticipación debe formar parte de la revisión inicial del flujo, no depender de que el usuario la solicite.
 
+## Mejora de producto R25.9 — centro de control y enlaces oficiales (13/10/2026)
+
+Revisión y alcance documentados en [REVISION_PRODUCTO_TRASLADOS_R25_9.md](REVISION_PRODUCTO_TRASLADOS_R25_9.md). Tras R25.8, el siguiente lote *exclusivamente de experiencia y enlaces* incluye: panel `BubbleSettingsPanel` premium con estado del globito y notificaciones, permisos primero y herramientas plegables, botón de ajuste específico de notificaciones, informe técnico copiable sin PIN/ubicación, menú principal adaptable y táctil; corrección del enlace Web público de reservas y APK Cliente Premium v15 frente a Worker/Lovable, con migración únicamente de defaults anteriores y confirmación al compartir. **Versión fuente R25.9 code 61: verificar release CI/firmas/checksum y QA Samsung antes de afirmar que está funcionando físicamente.** Preservar rutas del permiso específico R25.8, globito, GPS, base y Conductor. Próximas fases sugeridas: flujo de reservas extremo a extremo y alertas fiables; estimaciones viales con precisión explícita; tablero por estado y fecha.
+
 ## Repositorios y servicios canónicos
 
 | Parte | Referencia verificada |
