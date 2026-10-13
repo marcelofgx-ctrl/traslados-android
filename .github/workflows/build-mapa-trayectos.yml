@@ -249,7 +249,7 @@ jobs:
           grep -q 'private void openMapaAppInfoSettings()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'Settings.ACTION_APPLICATION_DETAILS_SETTINGS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'private void openOverlaySystemSettings()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'IR AL PERMISO DE MAPA' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
+          grep -q 'ACTIVAR ACCESO FLOTANTE' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'CENTRO DE CONTROL' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'ACTIVAR NOTIFICACIONES' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'COPIAR INFORME' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
@@ -275,7 +275,7 @@ jobs:
           assert config.index("openOverlaySystemSettings()") < config.index("openMapaAppInfoSettings()"), "Package-scoped overlay request must be offered first"
           assert 'new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,\n                Uri.parse("package:"+getPackageName()))' in source, "Restore original package-scoped overlay Intent on all Android versions"
           assert "private void openOverlaySystemSettingsUnscoped()" in source, "Keep unscoped list fallback"
-          assert panel.index("IR AL PERMISO DE MAPA") < panel.index("AJUSTES DE MAPA TRAYECTOS"), "Targeted attempt must be first"
+          assert panel.index("ACTIVAR ACCESO FLOTANTE") < panel.index("AJUSTES DE MAPA TRAYECTOS"), "Permission call to action must remain primary"
           assert "home.addCategory(Intent.CATEGORY_HOME)" in source, "Existing bubble test must remain"
           print("PASS: restored package-targeted overlay request, fallback routes and functioning bubble test")
           PY
