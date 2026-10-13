@@ -1,0 +1,75 @@
+name: Actualizar estado técnico Traslados (sin compilar)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'conductor/**'
+      - 'mapatrayectos/**'
+      - 'cliente-premium/app/**'
+      - 'core-reservations/**'
+      - 'web-pasajero/**'
+      - 'scripts/estado_traslados.py'
+      - '.github/workflows/estado-tecnico-auto.yml'
+  workflow_run:
+    workflows:
+      - Build Traslados Conductor RELEASE
+      - Build Mapa Trayectos RELEASE
+      - Verify and package passenger PWA (GitHub Pages via branch)
+      - Build Cliente Premium v15 RELEASE
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: traslados-autoestado-main
+  cancel-in-progress: false
+
+jobs:
+  report:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout mínimo de código y contexto
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/estado_traslados.py
+            /conductor/build.gradle
+            /mapatrayectos/build.gradle
+            /cliente-premium/app/build.gradle
+            /web-pasajero/sw.js
+            /docs/ESTADO_AUTOMATICO_TRASLADOS.md
+
+      - name: Escribir estado técnico sin compilar nada
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/estado_traslados.py --root .
+
+      - name: Publicar solo el archivo de estado si cambió
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add docs/ESTADO_AUTOMATICO_TRASLADOS.md
+          if git diff --cached --quiet; then
+            echo 'Sin diferencias; no crear commit'
+            exit 0
+          fi
+          git config user.name 'Traslados Estado Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'docs: actualizar estado técnico automático [skip ci]'
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'main cambió durante la publicación; reintentar workflow'
+          exit 1
