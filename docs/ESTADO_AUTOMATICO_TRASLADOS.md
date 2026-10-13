@@ -17,7 +17,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 13/10/2026 14:37 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38439863432) · commit 307e6f261 · Build Mapa Trayectos RELEASE.
-**Último cambio de código verificado:** 13/10/2026 14:36 UYT · [Web pasajero / 10f42e841d](https://github.com/marcelofgx-ctrl/traslados-android/commit/10f42e841d069a5f3f0537b53237daa678d9eb67) — Publicar Mapa Trayectos R25.2 APK firmada.
+**Último cambio de código verificado:** 13/10/2026 14:37 UYT · [Web pasajero / 9ace1106ce](https://github.com/marcelofgx-ctrl/traslados-android/commit/9ace1106ce8670083c6e1c34b0391f201749a167) — Publicar Mapa Trayectos R25.6 APK firmada.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
