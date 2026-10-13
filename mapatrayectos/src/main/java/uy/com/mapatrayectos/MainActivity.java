@@ -470,7 +470,7 @@ public class MainActivity extends Activity {
     private void updateFloatingAccessBanner(){
         boolean granted=Settings.canDrawOverlays(this);
         if(floatingAccessBanner!=null)
-            floatingAccessBanner.setVisibility(granted?View.GONE:View.VISIBLE);
+            floatingAccessBanner.setVisibility(FloatingShortcutPolicy.showOverlayPermissionBanner(granted)?View.VISIBLE:View.GONE);
         if(bubbleBtn!=null)
             bubbleBtn.setContentDescription(granted
                 ?"Acceso flotante autorizado. Tocá para consultar el diagnóstico."
