@@ -2,6 +2,11 @@ name: Actualizar estado técnico Traslados (sin compilar)
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/estado_traslados.py'
+      - 'tests/test_estado_traslados.py'
+      - '.github/workflows/estado-tecnico-auto.yml'
   push:
     branches: [main]
     paths:
@@ -29,8 +34,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/estado_traslados.py
+            /tests/test_estado_traslados.py
+            /tests/test_estado_traslados.py
+      - name: Probar lectura de versiones y seguridad sin conexión
+        run: python3 -m unittest discover -s tests -p 'test_estado_traslados.py'
   report:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main'
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -48,6 +68,9 @@ jobs:
             /cliente-premium/app/build.gradle
             /web-pasajero/sw.js
             /docs/ESTADO_AUTOMATICO_TRASLADOS.md
+
+      - name: Probar seguridad y coherencia del estado
+        run: python3 -m unittest discover -s tests -p 'test_estado_traslados.py'
 
       - name: Escribir estado técnico sin compilar nada
         env:
