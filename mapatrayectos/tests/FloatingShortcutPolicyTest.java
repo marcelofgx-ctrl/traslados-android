@@ -7,7 +7,9 @@ public final class FloatingShortcutPolicyTest {
         require(FloatingShortcutPolicy.prearmBeforeLeaving(false,true),"Prepare idle foreground while visible");
         require(FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,true),"First app open offers overlay without starting shift");
         require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(true,false,true),"No prompt if permission already granted");
-        require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(false,true,true),"No repeated prompts after dismissal");
+        require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(false,true,true),"No repeated prompts within one Activity");
+        require(FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,true),
+            "Next Activity relaunch must offer again even if an older version persisted an old flag");
         require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,false),"Wait for runtime permission dialogs to close");
         require(!FloatingShortcutPolicy.prearmBeforeLeaving(false,false),"Never prepare without overlay permission");
         require(!FloatingShortcutPolicy.prearmBeforeLeaving(true,true),"Active journey is already foreground");

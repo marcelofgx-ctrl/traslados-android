@@ -10,8 +10,8 @@ public final class FloatingShortcutPolicy {
     public static boolean canDisplay(boolean appVisible,boolean overlayGranted,boolean alreadyShown){
         return !appVisible&&overlayGranted&&!alreadyShown;
     }
-    /** Pre-arm the overlay only when an idle Activity can request foreground service. */
-    /** Offer exactly once, after focus returns from any initial system dialogs. */
+    /** Offer once per visible Activity launch, not once forever across APK upgrades.
+     * Only Android's actual permission grant suppresses future prompts. */
     public static boolean shouldOfferPermissionIntro(boolean overlayGranted,
                                                      boolean alreadyOffered,boolean activityFocused){
         return activityFocused&&!overlayGranted&&!alreadyOffered;
