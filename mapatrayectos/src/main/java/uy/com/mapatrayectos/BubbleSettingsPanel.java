@@ -44,7 +44,10 @@ public final class BubbleSettingsPanel {
         String stage=state.getString("bubble_diag_stage","");
         long at=state.getLong("bubble_diag_at",0L);
         long trial=state.getLong("bubble_test_requested_at",0L);
-        boolean lastVisible=state.getBoolean("floating_visible",false);
+        // Actual drawing is independent from granting Android permission.
+        long lastDrawn=state.getLong("floating_seen_ms",0L);
+        boolean confirmed=BubbleReadinessPolicy.confirmed(trial,lastDrawn);
+        boolean pending=BubbleReadinessPolicy.pending(trial,lastDrawn,System.currentTimeMillis());
         String clockText=at>0?new SimpleDateFormat("HH:mm",Locale.getDefault())
             .format(new Date(at)):"sin registro";
 
@@ -71,18 +74,32 @@ public final class BubbleSettingsPanel {
         statusRow(host,pane,"◉",notifications?"Avisos habilitados":"Avisos desactivados",
             notifications?"Notificaciones de la app permitidas":
                 "Podés perder avisos si están desactivados",notifications);
-        addText(host,pane,overlay
-            ?"LISTO PARA PROBAR · El globito se oculta mientras Mapa está abierto."
-            :"PRÓXIMO PASO · Autorizá el acceso flotante y después probá el globito.",
-            12,overlay?GREEN:AMBER,true,14);
+        if(overlay){
+            statusRow(host,pane,confirmed?"✓":"◌",
+                confirmed?"Globito comprobado":pending?"Prueba en curso":
+                    trial>0?"Prueba sin confirmar":"Todavía sin probar",
+                confirmed?"Se dibujó después de la última prueba en Inicio":
+                    pending?"Volvé desde Inicio y actualizá el estado":
+                    trial>0?"No hay registro de dibujo en la última prueba":
+                    "Probalo desde esta pantalla, sin iniciar jornada",confirmed);
+        }
+        addText(host,pane,!overlay
+            ?"PRÓXIMO PASO · Autorizá el acceso flotante para continuar.":
+            confirmed?"COMPROBADO · Se oculta al abrir Mapa y aparece al salir.":
+            pending?"COMPROBANDO · Esperá en Inicio para ver el globito.":
+            "PRÓXIMO PASO · Probá el globito en Inicio de Android.",
+            12,overlay&&confirmed?GREEN:AMBER,true,14);
 
-        TextView directButton=addAction(host,pane,
-            overlay?"01   REVISAR PERMISO DE MAPA":"01   IR AL PERMISO DE MAPA",
-            overlay?"Consultar la autorización en Android":
-                "Intentar abrir el permiso de Mapa Trayectos directamente",true);
-        TextView testButton=addAction(host,pane,
-            "02   PROBAR GLOBITO",overlay?"Abrir Inicio y comprobar la burbuja real":
-                "Primero se solicitará la autorización",true);
+        // Show only one primary next action; keep alternate settings below.
+        TextView directButton=null;
+        TextView testButton=null;
+        if(!overlay)
+            directButton=addAction(host,pane,"01   ACTIVAR ACCESO FLOTANTE",
+                "Ir al permiso de Mapa Trayectos en Android",true);
+        else
+            testButton=addAction(host,pane,
+                confirmed?"01   REPETIR PRUEBA":"01   PROBAR GLOBITO",
+                "Abrir Inicio y comprobar la burbuja real",true);
         TextView notificationButton=null;
         if(!notifications)
             notificationButton=addAction(host,pane,"03   ACTIVAR NOTIFICACIONES",
@@ -105,6 +122,8 @@ public final class BubbleSettingsPanel {
         advanced.setOrientation(LinearLayout.VERTICAL);
         advanced.setVisibility(View.GONE);
         pane.addView(advanced,new LinearLayout.LayoutParams(-1,-2));
+        TextView reviewButton=addAction(host,advanced,"REVISAR ACCESO FLOTANTE",
+            "Abrir el permiso aunque ya esté autorizado",false);
         TextView appButton=addAction(host,advanced,"AJUSTES DE MAPA TRAYECTOS",
             "Abrir la ficha de esta aplicación",false);
         TextView permissionButton=addAction(host,advanced,"LISTA «APARECER ENCIMA»",
@@ -119,8 +138,10 @@ public final class BubbleSettingsPanel {
 
         AlertDialog dialog=new AlertDialog.Builder(host).setView(scroll)
             .setNegativeButton("CERRAR",null).create();
-        directButton.setOnClickListener(v->{dialog.dismiss();targetedOverlay.run();});
-        testButton.setOnClickListener(v->{dialog.dismiss();test.run();});
+        if(directButton!=null)
+            directButton.setOnClickListener(v->{dialog.dismiss();targetedOverlay.run();});
+        if(testButton!=null)
+            testButton.setOnClickListener(v->{dialog.dismiss();test.run();});
         if(notificationButton!=null)
             notificationButton.setOnClickListener(v->{dialog.dismiss();notificationSettings.run();});
         refreshButton.setOnClickListener(v->{dialog.dismiss();show(host,targetedOverlay,
@@ -131,6 +152,7 @@ public final class BubbleSettingsPanel {
             more.setText(expanded?"⌃   MENOS OPCIONES\nOcultar las herramientas avanzadas":
                 "⌄   MÁS OPCIONES\nAjustes de la app, lista de permisos y diagnóstico");
         });
+        reviewButton.setOnClickListener(v->{dialog.dismiss();targetedOverlay.run();});
         appButton.setOnClickListener(v->{dialog.dismiss();ownAppInfo.run();});
         permissionButton.setOnClickListener(v->{dialog.dismiss();overlayList.run();});
         diagButton.setOnClickListener(v->{dialog.dismiss();diagnostics.run();});
@@ -162,6 +184,8 @@ public final class BubbleSettingsPanel {
             host.getSystemService(Context.NOTIFICATION_SERVICE);
         boolean notifications=nm!=null&&nm.areNotificationsEnabled();
         long at=state.getLong("bubble_diag_at",0L);
+        long trial=state.getLong("bubble_test_requested_at",0L);
+        long drawn=state.getLong("floating_seen_ms",0L);
         return "Mapa Trayectos · estado del globito"
             +"\nAndroid: "+android.os.Build.VERSION.RELEASE
             +"\nAcceso flotante: "+(Settings.canDrawOverlays(host)?"Autorizado":"Pendiente")
@@ -169,6 +193,9 @@ public final class BubbleSettingsPanel {
             +"\nÚltimo estado reportado: "+state.getString("bubble_diag_stage","Sin registro")
             +"\nÚltima visibilidad reportada: "+
                 (state.getBoolean("floating_visible",false)?"Visible":"No visible")
+            +"\nÚltima prueba: "+(trial>0?"Registrada":"Sin registro")
+            +"\nDibujo tras la prueba: "+
+                (BubbleReadinessPolicy.confirmed(trial,drawn)?"Confirmado":"Sin confirmar")
             +"\nÚltimo evento: "+(at>0?
                 new SimpleDateFormat("dd/MM HH:mm:ss",Locale.getDefault()).format(new Date(at)):
                 "Sin registro")
