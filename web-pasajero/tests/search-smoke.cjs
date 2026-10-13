@@ -76,15 +76,18 @@ assert(scoreAddress(sample("Arenal Grande 2274, Canelones","Canelones"),"Arenal 
   assert.equal(known[0]?.department,"Canelones");
   assert(known[0]?.lat>-35&&known[0]?.lng<-55,"Carrasco debe tener punto real");
   assert.equal(calls,0,"Aeropuerto inmediato sin solicitudes HTTP");
-  const names=await geo.find("Punta Carreta Shopping","Canelones");
+  const names=await geo.find("Punta Carreta Shopping","Montevideo");
   assert.equal(names[0]?.name,"Punta Carretas Shopping",
     "Tolerar singular/plural sin listas manuales");
   const other=await geo.find("plaza italia","Maldonado");
-  assert.equal(other[0]?.name,"Plaza Italia Shopping Outlet",
-    "Departamento no puede excluir un POI del país");
+  assert.equal(other.length,0,"No mezclar resultados de otro departamento");
+  const sameDept=await geo.find("plaza italia","Montevideo");
+  assert.equal(sameDept[0]?.name,"Plaza Italia Shopping Outlet");
   const hospital=await geo.find("hospital clinicas","Montevideo");
   assert.equal(hospital[0]?.name,"Hospital de Clínicas");
   assert.equal(calls,1,"El índice debe solicitarse una única vez");
   assert.equal(geo.normalize("Punta Carrétas"),"punta carretas");
+  assert.equal(geo.immediate("madrid","Canelones")[0]?.name,"De Madrid");
+  assert.equal(geo.immediate("madrid","Montevideo").length,0);
   console.log("PASS: Carrasco inmediato, Punta Carretas, Plaza Italia, Hospital Clínicas, Uruguay general, índice cacheado");
 })().catch(e=>{console.error(e);process.exitCode=1});

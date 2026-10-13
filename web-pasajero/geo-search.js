@@ -1,12 +1,17 @@
 /* Traslados · buscador de comercios y lugares de Uruguay.
- * Índice OSM generado automáticamente desde Geofabrik; no se mantienen
- * shoppings/hospitales a mano. Dirección/calles: IDE Uruguay independiente.
+ * Catálogo principal OSM automático, con excepciones locales verificadas.
+ * Dirección/calles: IDE Uruguay independiente.
  * © OpenStreetMap contributors, ODbL.
  */
 (function (global) {
   "use strict";
   const catalogUrl="./data/uy-pois.json";
   const namedKnown=[
+    // Caso real Samsung; coordenadas verificadas: https://guiadelacosta.uy/negocios/de-madrid/
+    {id:"uy-local-de-madrid",name:"De Madrid",lat:-34.8274694,lng:-55.969099,
+      department:"Canelones",category:"RESTAURANTE",source:"local-verified",
+      hint:"Restaurante · Av. Giannattasio, Solymar · ubicación de referencia",
+      aliases:"restaurante de madrid restaurant madrid restaurante madrid parrillada madrid solymar ciudad de la costa"},
     {id:"uy-airport-carrasco",name:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros",
       lat:-34.83696,lng:-56.01638,department:"Canelones",hint:"Aeropuerto MVD · Paso Carrasco",
       aliases:"aeropuerto carrasco aeropuerto montevideo aeropuerto canelones mvd terminal de pasajeros cesareo berisso"},
@@ -16,6 +21,7 @@
   ];
   let indexPromise=null;
   let readyCount=0;
+  let catalogState="idle";
   function normalize(value) {
     return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -28,17 +34,20 @@
   }
   async function preload(){
     if(indexPromise)return indexPromise;
+    catalogState="loading";
     indexPromise=fetch(catalogUrl,{cache:"default"}).then(async r=>{
       if(!r.ok)throw new Error("Índice de lugares no publicado ("+r.status+")");
       const data=await r.json();
       if(data.version!==1||!Array.isArray(data.items)||data.items.length<5000)
         throw new Error("Índice de lugares incompleto");
       readyCount=data.items.length;
+      catalogState="ready";
       return data.items.map(extract).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));
-    }).catch(e=>{indexPromise=null;throw e;});
+    }).catch(e=>{indexPromise=null;catalogState="error";throw e;});
     return indexPromise;
   }
   function score(p,q,selectedDept){
+    if(selectedDept&&normalize(p.department)!==normalize(selectedDept))return -1;
     const want=words(q),got=words(p.name+" "+p.aliases);
     if(!want.length||!want.every(w=>got.some(t=>t.startsWith(w))))return -1;
     const a=normalize(p.name),b=normalize(q);
@@ -73,5 +82,6 @@
     }catch{return immediatePlaces;}
   }
   global.TrasladosGeo={normalize,preload,find,immediate,lookupIn,
-    get indexedCount(){return readyCount;}};
+    get indexedCount(){return readyCount;},
+    get catalogState(){return catalogState;}};
 })(window);
