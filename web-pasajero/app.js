@@ -1040,7 +1040,7 @@ function showPreview(){
     const title=text(target,"div","","preview-title");
     text(title,"span","ÚLTIMO PASO · CONFIRMACIÓN","preview-eyebrow");
     text(title,"h3","Confirmá tu solicitud");
-    text(title,"p","Revisá origen, destino, horario y pasajeros. La confirmación del traslado llegará después de la respuesta del conductor.");
+    text(title,"p","Podés solicitar horarios fuera de la franja habitual. El conductor revisará tu pedido, podrá enviarte un presupuesto y solo se confirmará cuando lo aceptes.");
 
     const journey=text(target,"div","","preview-journey");
     previewLocation(journey,"Origen",p.origin.text);
@@ -1117,7 +1117,7 @@ function renderBookingSuccess(result,mode="schedule"){
   const urgent=mode!=="schedule";
   text(box,"p",urgent
     ?"Recibimos tu pedido de recogida. El conductor debe responder; todavía no es un viaje confirmado."
-    :"El conductor debe revisar y confirmar el traslado. No es una aceptación automática.");
+    :"Recibimos tu solicitud. El conductor revisará el horario y podrá ofrecerte un presupuesto; el viaje se confirma únicamente cuando lo aceptes.");
   text(box,"div",result.code,"code");
   if(urgent&&result.pickup_date&&result.pickup_time){
     text(box,"p",mode==="10"
@@ -1195,7 +1195,11 @@ async function submitBooking(){
     if(authReady()){
       const availability=await rpc("customer_check_availability_v11_4",
         window.TrasladosBookingContracts.checkAvailability(session.token,p));
-      if(!availability?.available)throw new Error("Este horario no está disponible. Seleccioná otro horario para el viaje.");
+      if(!availability?.requestable)throw new Error(
+        availability?.request_reason==="SCHEDULE_REQUESTS_PAUSED"
+          ?"El conductor pausó temporalmente los pedidos programados."
+          :"Este horario no admite solicitudes. Elegí una fecha futura o consultá al conductor."
+      );
       result=await rpc("customer_create_reservation_v12",
         window.TrasladosBookingContracts.registeredReservation(session.token,p));
     }else{
