@@ -469,7 +469,16 @@ public class HistoryActivity extends Activity {
         android.content.Intent svc=new android.content.Intent(this,TrackingService.class)
             .setAction(visible?TrackingService.ACTION_UI_VISIBLE:TrackingService.ACTION_UI_HIDDEN);
         if(visible&&!active){
-            stopService(new android.content.Intent(this,TrackingService.class));
+            // Prepare the foreground overlay while this screen is still visible.
+            // Starting it only onPause can be rejected on recent Samsung Android.
+            if(android.provider.Settings.canDrawOverlays(this)){
+                android.content.Intent ready=new android.content.Intent(this,TrackingService.class)
+                    .setAction(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+                try{
+                    if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(ready);
+                    else startService(ready);
+                }catch(Exception e){android.util.Log.w("MapaBubble","Idle bubble preparation failed",e);}
+            }else stopService(new android.content.Intent(this,TrackingService.class));
             return;
         }
         if(!active&&!android.provider.Settings.canDrawOverlays(this))return;
