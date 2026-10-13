@@ -243,6 +243,7 @@ jobs:
           grep -q 'private void openMapaAppInfoSettings()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'Settings.ACTION_APPLICATION_DETAILS_SETTINGS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'private void openOverlaySystemSettings()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'IR AL PERMISO DE MAPA' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'LISTA «APARECER ENCIMA»' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'ownAppInfo,overlayList,test,diagnostics' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'recordFloatingDiagnostic' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
