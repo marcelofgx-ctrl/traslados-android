@@ -6,7 +6,9 @@
 2. [REANUDAR TRASLADOS — decisiones, arquitectura y pendientes](docs/REANUDAR_TRASLADOS.md) · se edita únicamente cuando cambian decisiones o QA.
 3. [Contexto histórico completo](docs/CONTEXTO_MAESTRO_PROYECTOS.md) · consultar solo para profundizar.
 
-**Frase mínima para otro chat:** «Retomá Traslados desde GitHub: marcelofgx-ctrl/traslados-android».
+**Frase única para otra sesión:** «**Retomar Traslados Web desde Git**». Esta frase designa todo el ecosistema (PWA, APK, conductor, Mapa, backend) y conduce a los dos documentos enlazados arriba.
+
+**Al retomar:** informar primero **fecha y hora en Uruguay de la última compilación verificada y el último cambio de código**, y sus enlaces; después el pendiente actual. **Al finalizar cualquier compilación informada al usuario**, devolver el resumen de la compilación y repetir al final la misma frase exacta para copiar y pegar.
 
 ## Accesos
 

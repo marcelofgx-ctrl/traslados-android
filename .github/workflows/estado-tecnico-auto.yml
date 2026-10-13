@@ -77,6 +77,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/estado_traslados.py --root .
 
+      - name: Dejar frase de reanudación en resumen de GitHub
+        shell: bash
+        run: |
+          echo '### Continuar Traslados en ChatGPT' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Copiar: **Retomar Traslados Web desde Git**' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Primero consultar fechas/horas UYT de última compilación y último cambio en el estado automático.' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publicar solo el archivo de estado si cambió
         shell: bash
         run: |

@@ -7,7 +7,13 @@
 
 ## Instrucción de reanudación para ChatGPT
 
-**Pedido corto recomendado (copiar):** «Retomemos Traslados. Leé primero `docs/REANUDAR_TRASLADOS.md` en GitHub `marcelofgx-ctrl/traslados-android` (`main`), verificá las versiones y continuemos desde sus pendientes. No pierdas funcionalidades ni modifiques producción sin comprobar el alcance».
+**ÚNICA FRASE PARA COPIAR EN CUALQUIER CHAT:** **Retomar Traslados Web desde Git**.
+
+**Qué significa esta frase:** recuperar el proyecto completo (Web/PWA + Cliente + Conductor + Mapa Trayectos + Supabase + Cloudflare) de `marcelofgx-ctrl/traslados-android` (`main`), usando primero el [estado técnico automático](ESTADO_AUTOMATICO_TRASLADOS.md) y después este documento. No interpretar «Web» como una orden de ignorar APK.
+
+**Respuesta inicial obligatoria al retomar:** informar *primero* la **fecha y hora de Uruguay de la última compilación de aplicación verificada y el último cambio funcional**, indicando qué aplicación, resultado, commit y enlace; verificar que el registro sea vigente frente a GitHub y no confundir commits de documentación con modificaciones funcionales. Luego resumir brevemente pendientes y continuar el trabajo.
+
+**Al finalizar una compilación o publicación sobre la que se informa al usuario** (correcta o fallida): señalar resultado real, versión, fecha/hora y enlace; dejar SIEMPRE al final, lista para copiar: **Retomar Traslados Web desde Git**. Esto es una instrucción para futuras respuestas de desarrollo, no una promesa de notificaciones en segundo plano.
 
 **Secuencia obligatoria al empezar:** (1) leer ESTE archivo, (2) contrastarlo con los últimos commits y Actions de ambos repositorios, (3) ampliar solo los documentos técnicos pertinentes, (4) preguntarle al usuario qué comportamiento vio en Samsung si depende de QA físico. Ante una contradicción, **el código publicado y la base vigente prevalecen sobre la prosa histórica**. No inventar pruebas ni instalaciones.
 
@@ -77,7 +83,7 @@ Corte Git de referencia previo a este documento: Android `6de4cafd046a192b876129
 - Cambios SQL con migración versionada en `traslados-web/supabase/migrations/`, CI y verificación explícita de aplicación a producción. Cambios a Worker necesitan workflow manual de publicación; CI/merge ≠ deploy.
 - Cambios Android firmados requieren comprobar `versionCode` creciente, certificado/keystore existente y build SUCCESS; no publicar o afirmar APK nueva sin verificar archivo real; conservar R5 y versiones anteriores como rollback. Cliente WebView consume PWA sin recompilar APK salvo cambios nativos.
 - Las pruebas automáticas NO equivalen a prueba física. Evitar insertar pruebas persistentes en producción, enviar avisos reales sin autorización o alterar reservas existentes sin consentimiento.
-- Al cerrar una fase aprobada: las **versiones/links/Actions** se actualizan automáticamente en [ESTADO_AUTOMATICO_TRASLADOS.md](ESTADO_AUTOMATICO_TRASLADOS.md). Solo actualizar **este** documento cuando cambien decisiones, lógica funcional, QA o pendientes; no reescribir historia ni obligar a generar documentación extra en cada commit. Para retomar otra sesión es suficiente pedir «Retomá Traslados desde GitHub: marcelofgx-ctrl/traslados-android» y abrir ambos documentos.
+- Al cerrar una fase aprobada: las **versiones/links/Actions** se actualizan automáticamente en [ESTADO_AUTOMATICO_TRASLADOS.md](ESTADO_AUTOMATICO_TRASLADOS.md). Solo actualizar **este** documento cuando cambien decisiones, lógica funcional, QA o pendientes; no reescribir historia ni obligar a generar documentación extra en cada commit. Para retomar otra sesión basta con «Retomar Traslados Web desde Git» y leer ambos documentos.
 
 ## Documentos para ampliar únicamente cuando haga falta
 
