@@ -5,6 +5,10 @@ public final class FloatingShortcutPolicyTest {
     public static void main(String[] args){
         require(FloatingShortcutPolicy.canDisplay(false,true,false),"Idle minimizes to bubble");
         require(FloatingShortcutPolicy.prearmBeforeLeaving(false,true),"Prepare idle foreground while visible");
+        require(FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,true),"First app open offers overlay without starting shift");
+        require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(true,false,true),"No prompt if permission already granted");
+        require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(false,true,true),"No repeated prompts after dismissal");
+        require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,false),"Wait for runtime permission dialogs to close");
         require(!FloatingShortcutPolicy.prearmBeforeLeaving(false,false),"Never prepare without overlay permission");
         require(!FloatingShortcutPolicy.prearmBeforeLeaving(true,true),"Active journey is already foreground");
         require(!FloatingShortcutPolicy.collectLocation(false,false),"Prepared idle service must never collect GPS");
