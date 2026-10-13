@@ -654,10 +654,11 @@ public class MainActivity extends Activity {
         menu.setPadding(dp(8),dp(7),dp(8),dp(8));
         menu.setBackground(new TexturedDrawable(this,Color.rgb(6,45,53),
             Color.rgb(9,72,80),Color.argb(220,231,202,130),18f,1f,false));
-        TextView heading=text("MAPA TRAYECTOS · CENTRO DE CONTROL",9.3f,CHAMPAGNE,true);
+        TextView heading=text("MAPA TRAYECTOS · NAVEGACIÓN",10.3f,CHAMPAGNE,true);
         heading.setGravity(Gravity.CENTER_VERTICAL);
         menu.addView(heading,new LinearLayout.LayoutParams(-1,dp(29)));
-        PopupWindow popup=new PopupWindow(menu,dp(232),-2,true);
+        int menuWidth=Math.min(dp(282),getResources().getDisplayMetrics().widthPixels-dp(20));
+        PopupWindow popup=new PopupWindow(menu,menuWidth,-2,true);
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);popup.setElevation(dp(13));
         addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
@@ -676,7 +677,7 @@ public class MainActivity extends Activity {
             this::showConfiguration);
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
-        try{popup.showAsDropDown(anchor,-dp(181),dp(4));}
+        try{popup.showAsDropDown(anchor,dp(50)-menuWidth,dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
     /** Semáforo del permiso comercial, no una garantía automática de GPS o agenda. */
@@ -692,12 +693,12 @@ public class MainActivity extends Activity {
         row.addView(symbol,new LinearLayout.LayoutParams(dp(33),dp(34)));
         LinearLayout labels=new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
-        TextView title=text("Disponibilidad de recogida",11.8f,TEXT,true);
+        TextView title=text("Disponibilidad de recogida",12.8f,TEXT,true);
         title.setSingleLine(true);
         TextView desc=text(!enabled?"Apagada · no localizable":
             busy?"Ocupado · no localizable":
             (!shiftActive||shiftPaused||tripActive)?"Activada · esperando jornada libre":
-            "Activada · GPS y agenda mandan",9.1f,MUTED,false);
+            "Activada · GPS y agenda mandan",10.3f,MUTED,false);
         desc.setSingleLine(true);
         labels.addView(title);labels.addView(desc);
         LinearLayout.LayoutParams body=new LinearLayout.LayoutParams(0,-2,1);
@@ -711,7 +712,9 @@ public class MainActivity extends Activity {
         dot.setContentDescription(publishing?"Interruptor de recogida activado":
             "Interruptor de recogida apagado");
         row.addView(dot,new LinearLayout.LayoutParams(dp(24),dp(38)));
-        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(49)));
+        row.setContentDescription("Disponibilidad de recogida. "+desc.getText());
+        row.setFocusable(true);
+        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(54)));
         View line=new View(this);
         line.setBackgroundColor(Color.argb(70,231,202,130));
         menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
@@ -812,12 +815,18 @@ public class MainActivity extends Activity {
         TextView symbol=text(icon,18,CHAMPAGNE,true);symbol.setGravity(Gravity.CENTER);
         row.addView(symbol,new LinearLayout.LayoutParams(dp(33),dp(34)));
         LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);
-        TextView name=text(title,11.8f,TEXT,true);name.setSingleLine(true);
-        TextView desc=text(sub,9.1f,MUTED,false);desc.setSingleLine(true);
+        TextView name=text(title,12.8f,TEXT,true);name.setSingleLine(true);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        TextView desc=text(sub,10.4f,MUTED,false);desc.setSingleLine(true);
+        desc.setEllipsize(android.text.TextUtils.TruncateAt.END);
         col.addView(name);col.addView(desc);
         LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);
         cp.leftMargin=dp(6);row.addView(col,cp);
-        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(49)));
+        row.setContentDescription(title+". "+sub);
+        row.setFocusable(true);
+        row.setBackground(new android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(0x55FFFFFF),null,null));
+        menu.addView(row,new LinearLayout.LayoutParams(-1,dp(54)));
         View line=new View(this);line.setBackgroundColor(Color.argb(70,231,202,130));
         menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
         row.setOnClickListener(v->{popup.dismiss();action.run();});
