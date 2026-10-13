@@ -1,5 +1,12 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mejora R25.11 — prueba real del globito (13/10/2026)
+
+- Se distingue **permiso otorgado** de **globito realmente dibujado** al salir. El indicador de última vista solo se actualiza al mostrar, jamás al ocultar; evita falsos positivos en el diagnóstico.
+- El Centro de control muestra «comprobado», «en curso», «sin confirmar» o «sin probar» según evidencia; una sola acción principal contextual (autorizar o probar). Ajustes Android/Samsung quedan en «Más opciones» e informe copiable informa la prueba sin PIN, contactos ni coordenadas.
+- R25.11 / versionCode 63 preserva R25.10; nuevo test Java de política temporal para regresiones. **Pendiente verificación CI de RELEASE y prueba Samsung física; no se da por probada la instalación con este commit.** No toca lógica GPS, Conductor, jornadas ni reservas.
+
+
 > **LECTURA RÁPIDA EN NUEVA SESIÓN:** primero [ESTADO AUTOMÁTICO — VERSIONES Y BUILDS](ESTADO_AUTOMATICO_TRASLADOS.md), después este documento para decisiones, reglas de negocio, QA y pendientes. El estado técnico lo genera GitHub Actions sin recompilar. **No copiar manualmente números de versiones acá cada vez.**
 
 

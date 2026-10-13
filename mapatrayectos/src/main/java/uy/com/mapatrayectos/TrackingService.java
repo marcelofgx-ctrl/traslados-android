@@ -545,7 +545,13 @@ public class TrackingService extends Service implements LocationListener {
     }
     private void saveFloatingBubbleState(boolean visible){
         SharedPreferences.Editor e=getSharedPreferences("bubble_state",MODE_PRIVATE).edit();
-        e.putBoolean("floating_visible",visible).putLong("floating_seen_ms",System.currentTimeMillis());
+        e.putBoolean("floating_visible",visible);
+        // A hidden bubble is not evidence of a successful display.
+        if(visible){
+            long drawnAt=System.currentTimeMillis();
+            e.putLong("floating_seen_ms",drawnAt)
+                .putLong("floating_last_drawn_ms",drawnAt);
+        }
         if(visible&&bubbleLp!=null)e.putInt("window_x",bubbleLp.x).putInt("window_y",bubbleLp.y)
             .putInt("x",bubbleLp.x+dp(4)).putInt("y",bubbleLp.y+dp(4))
             .putInt("floating_size",dp(56));
