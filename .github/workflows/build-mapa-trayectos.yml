@@ -253,7 +253,13 @@ jobs:
           assert "openBubblePermission()" not in section, "Permission Settings must launch from foreground action, not Home"
           assert "floatingAccessBanner.setOnClickListener(v->openBubblePermission())" in source
           assert "updateFloatingAccessBanner();" in source
-          print("PASS: visible permission CTA and no background Settings launch")
+          panel=Path("mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java").read_text()
+          config=source.split("private void showConfiguration()",1)[1].split("private void testFloatingShortcut()",1)[0]
+          assert config.index("openMapaAppInfoSettings()") < config.index("openOverlaySystemSettings()"), "App details must be offered first"
+          assert "Uri.parse(\"package:\"+getPackageName())" in source, "Package-specific app info required"
+          assert panel.index("AJUSTES DE MAPA TRAYECTOS") < panel.index("LISTA «APARECER ENCIMA»"), "App settings must be first"
+          assert "home.addCategory(Intent.CATEGORY_HOME)" in source, "Existing bubble test must remain"
+          print("PASS: settings opens Mapa details first and preserves working bubble test")
           PY
           if grep -q 'prefs.getBoolean(key,false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java; then echo 'Old permanently suppressed prompt still present' >&2; exit 1; fi
           grep -q 'onWindowFocusChanged' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
