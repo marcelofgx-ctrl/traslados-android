@@ -514,6 +514,11 @@ public class MainActivity extends Activity {
         addDetail(bodyBox,"person","PASAJERO",r.optString("customer_name")+" · "+r.optString("customer_phone"));
         addDetail(bodyBox,"calendar","FECHA Y HORA",fullDt+" · "+r.optInt("passengers",1)+" pasajero(s)");
         addRouteBlock(bodyBox,"pin","ORIGEN",r.optString("origin_text"));
+        JSONArray routeStops=r.optJSONArray("stops");
+        if(routeStops!=null)for(int i=0;i<routeStops.length();i++){
+            JSONObject stop=routeStops.optJSONObject(i);
+            if(stop!=null)addRouteBlock(bodyBox,"pin","PARADA "+(i+1),stop.optString("address_text",""));
+        }
         addRouteBlock(bodyBox,"flag","DESTINO",r.optString("destination_text"));
         LinearLayout navRow=new LinearLayout(this);navRow.setOrientation(LinearLayout.HORIZONTAL);
         Button navOrigin=secondaryButton("IR AL ORIGEN"),navDest=secondaryButton("IR AL DESTINO");navOrigin.setTextSize(11);navDest.setTextSize(11);
@@ -627,6 +632,9 @@ public class MainActivity extends Activity {
         int oldCount=r.optInt("quote_toll_count",0);double oldUnit=r.optDouble("quote_toll_unit_value",0);double oldTolls=r.optDouble("quote_tolls",0);
         if(oldUnit<=0)oldUnit=defaultTollUnit;
         if(oldCount<=0&&oldTolls>0){oldCount=1;if(oldUnit<=0)oldUnit=oldTolls;}
+        JSONArray quoteStops=r.optJSONArray("stops");
+        if(quoteStops!=null&&quoteStops.length()>0)
+            box.addView(body("Este recorrido tiene "+quoteStops.length()+" paradas. Calculá los kilómetros de la ruta COMPLETA antes de presupuestar.",12,GOLD),lpMatch(-2,7,5));
         EditText kmF=quoteNumberField(box,"Distancia por carretera (km)",km>0?String.format(Locale.US,"%.1f",km):"");
         EditText rateF=quoteNumberField(box,"Referencia interna por km (UYU)",oldRate>0?String.format(Locale.US,"%.0f",oldRate):"");
         EditText minF=quoteNumberField(box,"Mínimo interno de referencia",valueOrPref(r,"quote_minimum",pref,"minimum_bits"));
@@ -778,16 +786,26 @@ public class MainActivity extends Activity {
     private String jsonTime(JSONObject j,String key,String fallback){String x=j.optString(key,fallback);return x==null||x.isEmpty()||"null".equalsIgnoreCase(x)?fallback:(x.length()>=5?x.substring(0,5):x);}
     private EditText availabilityField(LinearLayout box,String label,String value,boolean numeric){EditText e=addField(box,"ticket",label,value);e.setText(value);if(numeric)e.setInputType(InputType.TYPE_CLASS_NUMBER);return e;}
     private int intValue(EditText e,int fallback){try{return Integer.parseInt(e.getText().toString().trim());}catch(Exception x){return fallback;}}
-    private void loadAvailabilitySummary(){if(pin==null||pin.isEmpty()||availabilityStatus==null)return;pool.execute(()->{try{JSONObject j=Api.getAvailabilitySettings(pin);getSharedPreferences("driver_availability_cache",MODE_PRIVATE).edit().putInt("before",j.optInt("buffer_before_min",15)).putInt("after",j.optInt("buffer_after_min",30)).putInt("interval",j.optInt("slot_interval_min",30)).apply();runOnUiThread(()->{if(availabilityStatus==null)return;if(j.optBoolean("enabled",true)){availabilityStatus.setText("● RESERVAS ONLINE · "+jsonTime(j,"day_start","08:00")+"–"+jsonTime(j,"day_end","22:00")+" · cada "+j.optInt("slot_interval_min",30)+" min · antes "+j.optInt("buffer_before_min",15)+" min · después "+j.optInt("buffer_after_min",30)+" min");availabilityStatus.setTextColor(GREEN);}else{availabilityStatus.setText("○ RESERVAS ONLINE DESACTIVADAS · tocá HORARIOS para configurar");availabilityStatus.setTextColor(MUTED);}});}catch(Exception e){runOnUiThread(()->{if(availabilityStatus!=null){availabilityStatus.setText("⚠ No pude leer la disponibilidad · tocá para reintentar");availabilityStatus.setTextColor(Color.rgb(235,170,80));}});}});}
+    private void loadAvailabilitySummary(){if(pin==null||pin.isEmpty()||availabilityStatus==null)return;pool.execute(()->{try{JSONObject j=Api.getAvailabilitySettings(pin);getSharedPreferences("driver_availability_cache",MODE_PRIVATE).edit().putInt("before",j.optInt("buffer_before_min",15)).putInt("after",j.optInt("buffer_after_min",30)).putInt("interval",j.optInt("slot_interval_min",30)).apply();runOnUiThread(()->{if(availabilityStatus==null)return;if(j.optBoolean("enabled",true)){availabilityStatus.setText("● PROGRAMADAS · horario "+jsonTime(j,"day_start","08:00")+"–"+jsonTime(j,"day_end","22:00")+(j.optBoolean("allow_scheduled_any_time",true)?" · pedidos todo el día":" · solo horario habitual")+"\nINMEDIATOS · "+(j.optBoolean("allow_live_outside_hours",true)?"fuera de horario si estoy conectado":"según horario habitual y jornada"));availabilityStatus.setTextColor(GREEN);}else{availabilityStatus.setText("○ PROGRAMADAS EN PAUSA · inmediatos según jornada y política · tocá HORARIOS");availabilityStatus.setTextColor(MUTED);}});}catch(Exception e){runOnUiThread(()->{if(availabilityStatus!=null){availabilityStatus.setText("⚠ No pude leer la disponibilidad · tocá para reintentar");availabilityStatus.setTextColor(Color.rgb(235,170,80));}});}});}
     private void showAvailabilitySettings(){toast("Cargando disponibilidad…");pool.execute(()->{try{JSONObject j=Api.getAvailabilitySettings(pin);runOnUiThread(()->buildAvailabilitySettingsDialog(j));}catch(Exception e){runOnUiThread(()->toast("No pude cargar horarios: "+friendly(e)));}});}
     private void buildAvailabilitySettingsDialog(JSONObject j){
         final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        LinearLayout shell=driverDialogShell("HORARIOS Y MÁRGENES","Configurá cuándo aceptar reservas y cuánto tiempo operativo querés dejar entre viajes.");
+        LinearLayout shell=driverDialogShell("HORARIO HABITUAL Y SOLICITUDES","Las reservas programadas requieren tu presupuesto y la aceptación del pasajero.");
         ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(0,dp(2),0,dp(8));sc.addView(box,new ScrollView.LayoutParams(-1,-2));shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
-        CheckBox enabled=new CheckBox(this);enabled.setText("Aceptar reservas online");enabled.setTextColor(TEXT);enabled.setChecked(j.optBoolean("enabled",true));box.addView(enabled,lpMatch(dp(50),0,7));
+        CheckBox enabled=new CheckBox(this);enabled.setText("Recibir solicitudes programadas");enabled.setTextColor(TEXT);enabled.setChecked(j.optBoolean("enabled",true));box.addView(enabled,lpMatch(dp(50),0,7));
         EditText start=availabilityField(box,"Hora inicial",jsonTime(j,"day_start","08:00"),false),end=availabilityField(box,"Hora final",jsonTime(j,"day_end","22:00"),false);
         box.addView(body("DÍAS HABILITADOS",12,GOLD),lpMatch(-2,6,4));String[] labs={"D","L","M","X","J","V","S"};CheckBox[] days=new CheckBox[7];HashSet<Integer> active=new HashSet<>();JSONArray aa=j.optJSONArray("active_weekdays");if(aa!=null)for(int i=0;i<aa.length();i++)active.add(aa.optInt(i,-1));else for(int i=0;i<7;i++)active.add(i);
         LinearLayout day1=new LinearLayout(this),day2=new LinearLayout(this);for(int i=0;i<7;i++){CheckBox c=new CheckBox(this);days[i]=c;c.setText(labs[i]);c.setTextColor(TEXT);c.setGravity(Gravity.CENTER);c.setChecked(active.contains(i));(i<4?day1:day2).addView(c,new LinearLayout.LayoutParams(0,dp(46),1));}box.addView(day1);box.addView(day2);
+        CheckBox scheduledAnytime=new CheckBox(this);
+        scheduledAnytime.setText("Programadas a cualquier hora");
+        scheduledAnytime.setSingleLine(false);scheduledAnytime.setTextColor(TEXT);
+        scheduledAnytime.setChecked(j.optBoolean("allow_scheduled_any_time",true));
+        box.addView(scheduledAnytime,lpMatch(dp(60),8,2));
+        CheckBox liveOutside=new CheckBox(this);
+        liveOutside.setText("Inmediatos fuera de horario con jornada activa");
+        liveOutside.setSingleLine(false);liveOutside.setTextColor(TEXT);
+        liveOutside.setChecked(j.optBoolean("allow_live_outside_hours",true));
+        box.addView(liveOutside,lpMatch(dp(70),3,2));
         box.addView(body("PRESETS DE MARGEN",12,GOLD),lpMatch(-2,8,4));LinearLayout presets=new LinearLayout(this);Button tight=secondaryButton("AJUSTADO 5/5"),normal=secondaryButton("NORMAL 10/10"),safe=secondaryButton("CONSERV. 15/30");for(Button b:new Button[]{tight,normal,safe}){b.setTextSize(9);presets.addView(b,new LinearLayout.LayoutParams(0,dp(44),1));if(b!=safe)spacerH(presets,4);}box.addView(presets,lpMatch(dp(46),0,6));
         EditText interval=availabilityField(box,"Intervalo de horarios ofrecidos (min)",String.valueOf(j.optInt("slot_interval_min",30)),true);EditText before=availabilityField(box,"Llegar antes al próximo origen (min)",String.valueOf(j.optInt("buffer_before_min",15)),true);EditText after=availabilityField(box,"Margen después de finalizar (min)",String.valueOf(j.optInt("buffer_after_min",30)),true);EditText duration=availabilityField(box,"Duración por defecto si no hay ruta (min)",String.valueOf(j.optInt("default_trip_min",60)),true);EditText hold=availabilityField(box,"Retener solicitud pendiente (min)",String.valueOf(j.optInt("pending_hold_min",30)),true);EditText lead=availabilityField(box,"Anticipación mínima para reservar (min)",String.valueOf(j.optInt("lead_time_min",30)),true);
         TextView example=body("",12,TEXT);example.setPadding(dp(10),dp(10),dp(10),dp(10));example.setBackground(rounded(PANEL,LINE,14));box.addView(example,lpMatch(-2,7,5));
@@ -796,7 +814,7 @@ public class MainActivity extends Activity {
         android.text.TextWatcher tw=new android.text.TextWatcher(){public void beforeTextChanged(CharSequence c,int st,int count,int after){}public void onTextChanged(CharSequence c,int st,int beforeCount,int count){}public void afterTextChanged(android.text.Editable e){updateExample.run();}};before.addTextChangedListener(tw);after.addTextChangedListener(tw);interval.addTextChangedListener(tw);updateExample.run();
         TextView note=body("El tiempo por carretera entre un destino y el siguiente origen se calcula aparte. El cliente solo ve horarios disponibles; nunca ve tu agenda ni otros pasajeros.",11,MUTED);box.addView(note,lpMatch(-2,4,4));
         LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(50),1));shell.addView(actions,lpMatch(dp(54),8,0));cancel.setOnClickListener(v->d.dismiss());
-        save.setOnClickListener(v->{String st=start.getText().toString().trim(),en=end.getText().toString().trim();if(!st.matches("[0-2][0-9]:[0-5][0-9]")||!en.matches("[0-2][0-9]:[0-5][0-9]")){toast("Usá formato HH:mm");return;}JSONArray wd=new JSONArray();for(int i=0;i<7;i++)if(days[i].isChecked())wd.put(i);if(wd.length()==0){toast("Elegí al menos un día");return;}try{JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_enabled",enabled.isChecked());b.put("p_day_start",st);b.put("p_day_end",en);b.put("p_active_weekdays",wd);b.put("p_slot_interval_min",intValue(interval,30));b.put("p_buffer_before_min",intValue(before,10));b.put("p_buffer_after_min",intValue(after,10));b.put("p_default_trip_min",intValue(duration,60));b.put("p_pending_hold_min",intValue(hold,30));b.put("p_lead_time_min",intValue(lead,30));save.setEnabled(false);pool.execute(()->{try{Api.setAvailabilitySettings(b);getSharedPreferences("driver_availability_cache",MODE_PRIVATE).edit().putInt("before",intValue(before,10)).putInt("after",intValue(after,10)).putInt("interval",intValue(interval,30)).apply();runOnUiThread(()->{toast("Disponibilidad guardada");d.dismiss();loadAvailabilitySummary();});}catch(Exception e){runOnUiThread(()->{save.setEnabled(true);toast(Api.publicMessage("driver_set_availability_settings_v11_3",e));});}});}catch(Exception e){toast("Datos inválidos");}});
+        save.setOnClickListener(v->{String st=start.getText().toString().trim(),en=end.getText().toString().trim();if(!st.matches("[0-2][0-9]:[0-5][0-9]")||!en.matches("[0-2][0-9]:[0-5][0-9]")){toast("Usá formato HH:mm");return;}JSONArray wd=new JSONArray();for(int i=0;i<7;i++)if(days[i].isChecked())wd.put(i);if(wd.length()==0){toast("Elegí al menos un día");return;}try{JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_enabled",enabled.isChecked());b.put("p_day_start",st);b.put("p_day_end",en);b.put("p_active_weekdays",wd);b.put("p_slot_interval_min",intValue(interval,30));b.put("p_buffer_before_min",intValue(before,10));b.put("p_buffer_after_min",intValue(after,10));b.put("p_default_trip_min",intValue(duration,60));b.put("p_pending_hold_min",intValue(hold,30));b.put("p_lead_time_min",intValue(lead,30));b.put("p_allow_scheduled_any_time",scheduledAnytime.isChecked());b.put("p_allow_live_outside_hours",liveOutside.isChecked());save.setEnabled(false);pool.execute(()->{try{Api.setAvailabilitySettings(b);getSharedPreferences("driver_availability_cache",MODE_PRIVATE).edit().putInt("before",intValue(before,10)).putInt("after",intValue(after,10)).putInt("interval",intValue(interval,30)).apply();runOnUiThread(()->{toast("Disponibilidad guardada");d.dismiss();loadAvailabilitySummary();});}catch(Exception e){runOnUiThread(()->{save.setEnabled(true);toast(Api.publicMessage("driver_set_availability_settings_v12",e));});}});}catch(Exception e){toast("Datos inválidos");}});
         showDriverDialog(d,shell,.94f,.90f);
     }
     private void showAddScheduleBlock(){
@@ -1135,7 +1153,20 @@ public class MainActivity extends Activity {
         String o,d;
         if(r.has("origin_lat")&&!r.isNull("origin_lat"))o=r.optDouble("origin_lat")+","+r.optDouble("origin_lng");else o=Uri.encode(r.optString("origin_text"));
         if(r.has("destination_lat")&&!r.isNull("destination_lat"))d=r.optDouble("destination_lat")+","+r.optDouble("destination_lng");else d=Uri.encode(r.optString("destination_text"));
-        try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://www.google.com/maps/dir/?api=1&origin="+o+"&destination="+d+"&travelmode=driving")));}catch(Exception e){toast("No se pudo abrir Maps");}
+        try{
+            StringBuilder link=new StringBuilder("https://www.google.com/maps/dir/?api=1&origin=").append(Uri.encode(o,",")).append("&destination=").append(Uri.encode(d,",")).append("&travelmode=driving");
+            JSONArray stops=r.optJSONArray("stops");StringBuilder waypoints=new StringBuilder();
+            if(stops!=null)for(int i=0;i<stops.length();i++){
+                JSONObject stop=stops.optJSONObject(i);if(stop==null)continue;
+                String addr=stop.optString("address_text","").trim();if(addr.isEmpty())continue;
+                if(waypoints.length()>0)waypoints.append("|");
+                if(stop.has("lat")&&!stop.isNull("lat")&&stop.has("lng")&&!stop.isNull("lng"))
+                    waypoints.append(stop.optDouble("lat")).append(",").append(stop.optDouble("lng"));
+                else waypoints.append(addr);
+            }
+            if(waypoints.length()>0)link.append("&waypoints=").append(Uri.encode(waypoints.toString()));
+            startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(link.toString())));
+        }catch(Exception e){toast("No se pudo abrir Maps");}
     }
 
     private void instalarAyudaTecladoConductor(EditText e){
