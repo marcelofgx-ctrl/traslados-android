@@ -229,7 +229,7 @@ jobs:
           grep -q 'requestNotificationPermissionIfNeeded' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'returningFromOverlaySettings' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'onUserLeaveHint' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'offerOverlaySettingsOnLeave' mapatrayectos/src/main/java/uy/com/mapatrayectos/FloatingShortcutPolicy.java
+          grep -q 'showOverlayPermissionBanner' mapatrayectos/src/main/java/uy/com/mapatrayectos/FloatingShortcutPolicy.java
           grep -q 'navigatingWithinMapa' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'GLOBITO INACTIVO' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'showOverlayPermissionBanner' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
