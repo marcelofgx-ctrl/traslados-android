@@ -4,6 +4,10 @@ public final class FloatingShortcutPolicyTest {
     private static void require(boolean b,String msg){if(!b)throw new AssertionError(msg);}
     public static void main(String[] args){
         require(FloatingShortcutPolicy.canDisplay(false,true,false),"Idle minimizes to bubble");
+        require(FloatingShortcutPolicy.prearmBeforeLeaving(false,true),"Prepare idle foreground while visible");
+        require(!FloatingShortcutPolicy.prearmBeforeLeaving(false,false),"Never prepare without overlay permission");
+        require(!FloatingShortcutPolicy.prearmBeforeLeaving(true,true),"Active journey is already foreground");
+        require(!FloatingShortcutPolicy.collectLocation(false,false),"Prepared idle service must never collect GPS");
         require(!FloatingShortcutPolicy.canDisplay(true,true,false),"Open app must not overlay");
         require(!FloatingShortcutPolicy.canDisplay(false,false,false),"No overlay permission must block");
         require(!FloatingShortcutPolicy.canDisplay(false,true,true),"No duplicate floating shortcuts");
