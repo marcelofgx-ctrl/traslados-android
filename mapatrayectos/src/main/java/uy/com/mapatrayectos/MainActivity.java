@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     private MapView mapView; private MapLibreMap map; private Style style;
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,shiftKmText,shiftTripsText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
+    private TextView floatingAccessBanner;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
     private SlideActionView slider,endShiftSlider;
@@ -155,9 +156,27 @@ public class MainActivity extends Activity {
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);zoneText=text(zone,10.8f,Color.rgb(236,195,92),true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(58),dp(42)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(52),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
-        bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->openBubblePermission());LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
+        bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
+            if(!Settings.canDrawOverlays(this))openBubblePermission();
+            else showBubbleDiagnostics();
+        });
+        bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
         maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
+         // A foreground tap can reliably open system Settings on Android 16.
+         // Show a visible action when permission has not been granted yet.
+         floatingAccessBanner=text("GLOBITO INACTIVO  ·  ACTIVAR PERMISO",12,Color.WHITE,true);
+         floatingAccessBanner.setGravity(Gravity.CENTER);
+         floatingAccessBanner.setElevation(dp(8));
+         floatingAccessBanner.setBackground(premiumGradient(
+             Color.rgb(65,45,24),Color.rgb(109,75,35),
+             Color.argb(235,224,193,111),18f,1f));
+         floatingAccessBanner.setOnClickListener(v->openBubblePermission());
+         floatingAccessBanner.setContentDescription("Permiso para aparecer encima desactivado. Tocá para abrir ajustes de Android.");
+         FrameLayout.LayoutParams accessLp=new FrameLayout.LayoutParams(-1,dp(45),Gravity.TOP);
+         accessLp.setMargins(dp(14),dp(288),dp(14),0);
+         root.addView(floatingAccessBanner,accessLp);
+         updateFloatingAccessBanner();
 
         speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(100),dp(100),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(94),dp(12),0);root.addView(speedGauge,spdLp);
         gpsText=text("●  GPS buscando…",11.2f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GOLD));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(142),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(96),0,0);root.addView(gpsText,gpsLp);
@@ -441,18 +460,45 @@ public class MainActivity extends Activity {
 
     @Override protected void onUserLeaveHint(){
         super.onUserLeaveHint();
-        boolean granted=Settings.canDrawOverlays(this);
-        if(FloatingShortcutPolicy.offerOverlaySettingsOnLeave(granted,
-                returningFromOverlaySettings,runtimePermissionInProgress,
-                navigatingWithinMapa||mapCloseRequested)){
-            uiHandler.removeCallbacks(checkBubblePermission);
-            bubbleIntroShownThisActivity=true;
-            android.util.Log.i("MapaBubble","Home: missing overlay permission; opening settings");
-            openBubblePermission();
-        }else if(granted&&!shiftActive&&!returningFromOverlaySettings
-                &&!navigatingWithinMapa&&!mapCloseRequested){
+        // Android may block launching Settings while Home is switching tasks.
+        // Offer permission while this Activity is visible instead.
+        if(Settings.canDrawOverlays(this)&&!shiftActive
+                &&!returningFromOverlaySettings&&!navigatingWithinMapa&&!mapCloseRequested)
             sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
-        }
+    }
+
+    private void updateFloatingAccessBanner(){
+        boolean granted=Settings.canDrawOverlays(this);
+        if(floatingAccessBanner!=null)
+            floatingAccessBanner.setVisibility(granted?View.GONE:View.VISIBLE);
+        if(bubbleBtn!=null)
+            bubbleBtn.setContentDescription(granted
+                ?"Acceso flotante autorizado. Tocá para consultar el diagnóstico."
+                :"Acceso flotante pendiente. Tocá para abrir permisos de Android.");
+    }
+
+    private void showBubbleDiagnostics(){
+        SharedPreferences b=getSharedPreferences("bubble_state",MODE_PRIVATE);
+        boolean granted=Settings.canDrawOverlays(this);
+        boolean visible=b.getBoolean("floating_visible",false);
+        long last=b.getLong("bubble_diag_at",0);
+        String stage=b.getString("bubble_diag_stage","sin evento registrado");
+        String error=b.getString("bubble_diag_error","");
+        String status="PERMISO ANDROID: "+(granted?"AUTORIZADO":"NO AUTORIZADO")
+            +"\nBURBUJA DIBUJADA: "+(visible?"SÍ":"NO")
+            +"\nSERVICIO: "+stage
+            +(last>0?"\nÚLTIMO EVENTO: "+new java.text.SimpleDateFormat(
+                  "HH:mm:ss",java.util.Locale.getDefault()).format(new java.util.Date(last)):"")
+            +(error.isEmpty()?"":"\nERROR: "+error)
+            +"\n\nMientras Mapa está abierto, la burbuja permanece oculta.";
+        new AlertDialog.Builder(this)
+            .setTitle("Estado del globito")
+            .setMessage(status)
+            .setPositiveButton(granted?"REINTENTAR GLOBITO":"ABRIR PERMISOS",(d,w)->{
+                if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+                else if(!granted)openBubblePermission();
+            })
+            .setNegativeButton("CERRAR",null).show();
     }
 
     private void openBubblePermission(){
@@ -485,6 +531,7 @@ public class MainActivity extends Activity {
         if(requestCode==REQ_OVERLAY){
             returningFromOverlaySettings=false;
             boolean granted=Settings.canDrawOverlays(this);
+            updateFloatingAccessBanner();
             updateUi();
             if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
             Toast.makeText(this,granted
@@ -1231,7 +1278,7 @@ public class MainActivity extends Activity {
         }else if(current.getParent() instanceof android.view.ViewGroup)
             ((android.view.ViewGroup)current.getParent()).removeView(current);
     }
-    @Override protected void onResume(){super.onResume();navigatingWithinMapa=false;getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
+    @Override protected void onResume(){super.onResume();navigatingWithinMapa=false;updateFloatingAccessBanner();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
         if(Build.VERSION.SDK_INT>=33){
             IntentFilter transfers=new IntentFilter();transfers.addAction(TransferAlerts.ACTION_NEW);
             transfers.addAction(TransferAlerts.ACTION_COUNT);
