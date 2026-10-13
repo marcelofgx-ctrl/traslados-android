@@ -100,8 +100,8 @@ jobs:
           test -f gradle.properties
           grep -q '^android.useAndroidX=true$' gradle.properties
           grep -q "applicationId 'uy.com.traslados.conductor'" conductor/build.gradle
-          grep -q "versionCode 127" conductor/build.gradle
-          grep -q "versionName '11.5-R5'" conductor/build.gradle
+          grep -q "versionCode 128" conductor/build.gradle
+          grep -q "versionName '11.5-R6'" conductor/build.gradle
           grep -q "org.maplibre.gl:android-sdk:13.6.1" conductor/build.gradle
           grep -q "DemandMapActivity" conductor/src/main/AndroidManifest.xml
           grep -q "signingConfigs" conductor/build.gradle
@@ -118,7 +118,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.5-R5-build-log
+          name: Traslados-Conductor-v11.5-R6-build-log
           path: conductor-release-build.log
           if-no-files-found: warn
           retention-days: 7
@@ -147,19 +147,19 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           cp conductor/build/outputs/apk/release/conductor-release.apk \
-            artifacts/Traslados_Conductor_v11.5_R5_MAPA_BETA_RELEASE.apk
-          sha256sum artifacts/Traslados_Conductor_v11.5_R5_MAPA_BETA_RELEASE.apk \
+            artifacts/Traslados_Conductor_v11.5_R6_MAPA_BETA_RELEASE.apk
+          sha256sum artifacts/Traslados_Conductor_v11.5_R6_MAPA_BETA_RELEASE.apk \
             | tee artifacts/SHA256SUMS.txt
           printf '%s\n' "$EXPECTED_CERT_SHA256" > artifacts/SIGNING_CERT_SHA256.txt
-          ls -lh artifacts/Traslados_Conductor_v11.5_R5_MAPA_BETA_RELEASE.apk \
+          ls -lh artifacts/Traslados_Conductor_v11.5_R6_MAPA_BETA_RELEASE.apk \
             artifacts/SHA256SUMS.txt artifacts/SIGNING_CERT_SHA256.txt
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.5-R5-MAPA-BETA-RELEASE
+          name: Traslados-Conductor-v11.5-R6-MAPA-BETA-RELEASE
           path: |
-            artifacts/Traslados_Conductor_v11.5_R5_MAPA_BETA_RELEASE.apk
+            artifacts/Traslados_Conductor_v11.5_R6_MAPA_BETA_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING_CERT_SHA256.txt
           if-no-files-found: error
@@ -170,20 +170,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p web-pasajero/downloads
-          cp artifacts/Traslados_Conductor_v11.5_R5_MAPA_BETA_RELEASE.apk \
-            web-pasajero/downloads/traslados-conductor-r5.apk
-          (cd web-pasajero/downloads && sha256sum traslados-conductor-r5.apk > CONDUCTOR-R5-SHA256SUMS.txt)
-          (cd web-pasajero/downloads && sha256sum -c CONDUCTOR-R5-SHA256SUMS.txt)
+          cp artifacts/Traslados_Conductor_v11.5_R6_MAPA_BETA_RELEASE.apk \
+            web-pasajero/downloads/traslados-conductor-r6.apk
+          (cd web-pasajero/downloads && sha256sum traslados-conductor-r6.apk > CONDUCTOR-R6-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c CONDUCTOR-R6-SHA256SUMS.txt)
           # Existing Android certificate was verified above. Never overwrite older backups.
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
-          git add web-pasajero/downloads/traslados-conductor-r5.apk \
-                  web-pasajero/downloads/CONDUCTOR-R5-SHA256SUMS.txt
+          git add web-pasajero/downloads/traslados-conductor-r6.apk \
+                  web-pasajero/downloads/CONDUCTOR-R6-SHA256SUMS.txt
           if git diff --cached --quiet; then
-            echo 'Conductor R5 signed download already published'
+            echo 'Conductor R6 signed download already published'
             exit 0
           fi
-          git commit -m 'Publicar Conductor R5 APK firmada'
+          git commit -m 'Publicar Conductor R6 APK firmada'
           for retry in 1 2 3; do
             if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
