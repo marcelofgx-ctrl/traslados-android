@@ -6,7 +6,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 | Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |
 |---|---|---|---|
-| Pasajero PWA | v68 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [EN CURSO](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38390286492) · commit eaa08e450 |
+| Pasajero PWA | v68 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38390035000) · commit 535dd4524 |
 | Cliente Premium | 15.0-Premium · code 203 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk) | [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100436) · commit 64b249b2a |
 | Mapa Trayectos | 0.1-R25.0 · code 52 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.0.apk) | [SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100294) · commit 64b249b2a |
