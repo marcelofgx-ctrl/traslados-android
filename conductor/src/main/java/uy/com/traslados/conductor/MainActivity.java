@@ -632,6 +632,9 @@ public class MainActivity extends Activity {
         int oldCount=r.optInt("quote_toll_count",0);double oldUnit=r.optDouble("quote_toll_unit_value",0);double oldTolls=r.optDouble("quote_tolls",0);
         if(oldUnit<=0)oldUnit=defaultTollUnit;
         if(oldCount<=0&&oldTolls>0){oldCount=1;if(oldUnit<=0)oldUnit=oldTolls;}
+        JSONArray quoteStops=r.optJSONArray("stops");
+        if(quoteStops!=null&&quoteStops.length()>0)
+            box.addView(body("Este recorrido tiene "+quoteStops.length()+" paradas. Calculá los kilómetros de la ruta COMPLETA antes de presupuestar.",12,GOLD),lpMatch(-2,7,5));
         EditText kmF=quoteNumberField(box,"Distancia por carretera (km)",km>0?String.format(Locale.US,"%.1f",km):"");
         EditText rateF=quoteNumberField(box,"Referencia interna por km (UYU)",oldRate>0?String.format(Locale.US,"%.0f",oldRate):"");
         EditText minF=quoteNumberField(box,"Mínimo interno de referencia",valueOrPref(r,"quote_minimum",pref,"minimum_bits"));
