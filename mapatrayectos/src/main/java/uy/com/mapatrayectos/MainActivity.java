@@ -855,7 +855,11 @@ public class MainActivity extends Activity {
     private void sendUiSignal(String action){
         try{
             Intent svc=new Intent(this,TrackingService.class).setAction(action);
-            if(TrackingService.ACTION_UI_HIDDEN.equals(action)&&!shiftActive){
+            if(TrackingService.ACTION_PREPARE_IDLE_BUBBLE.equals(action)){
+                if(!Settings.canDrawOverlays(this))return;
+                if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);
+                else startService(svc);
+            }else if(TrackingService.ACTION_UI_HIDDEN.equals(action)&&!shiftActive){
                 if(!Settings.canDrawOverlays(this))return;
                 if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);
                 else startService(svc);
@@ -1123,7 +1127,10 @@ public class MainActivity extends Activity {
         TransferAlerts.ensureMonitor(this);
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
-        if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{stopService(new Intent(this,TrackingService.class));startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
+        if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
+            sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+        else stopService(new Intent(this,TrackingService.class));
+        startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
     @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}

@@ -34,6 +34,7 @@ public class TrackingService extends Service implements LocationListener {
     public static final String ACTION_PRESENCE_SYNC="uy.com.mapatrayectos.PRESENCE_SYNC";
     public static final String ACTION_UI_VISIBLE="uy.com.mapatrayectos.UI_VISIBLE";
     public static final String ACTION_UI_HIDDEN="uy.com.mapatrayectos.UI_HIDDEN";
+    public static final String ACTION_PREPARE_IDLE_BUBBLE="uy.com.mapatrayectos.PREPARE_IDLE_BUBBLE";
     public static final String ACTION_STATE="uy.com.mapatrayectos.STATE";
     public static final String ACTION_FLOATING_BUBBLE_POSITION="uy.com.mapatrayectos.FLOATING_BUBBLE_POSITION";
 
@@ -170,6 +171,22 @@ public class TrackingService extends Service implements LocationListener {
             hideBubble();
             if(!shiftActive){stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
             else broadcastState();
+        }
+        else if(ACTION_PREPARE_IDLE_BUBBLE.equals(a)){
+            // Start the idle foreground service before leaving the visible Activity.
+            // Recent Android versions can reject a new foreground service after
+            // another app (such as Cliente Premium or Google Maps) is foreground.
+            appVisible=true;
+            hideBubble();
+            if(!shiftActive&&Settings.canDrawOverlays(this)){
+                try{promoteIdleBubble();}
+                catch(Exception e){
+                    Log.w("MapaBubble","Unable to arm idle floating shortcut",e);
+                    stopSelf();return START_NOT_STICKY;
+                }
+            }else if(!shiftActive){
+                stopSelf();return START_NOT_STICKY;
+            }else broadcastState();
         }
         else if(ACTION_UI_HIDDEN.equals(a)){
             appVisible=false;

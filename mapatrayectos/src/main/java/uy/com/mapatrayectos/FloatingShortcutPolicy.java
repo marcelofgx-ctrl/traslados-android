@@ -10,6 +10,10 @@ public final class FloatingShortcutPolicy {
     public static boolean canDisplay(boolean appVisible,boolean overlayGranted,boolean alreadyShown){
         return !appVisible&&overlayGranted&&!alreadyShown;
     }
+    /** Pre-arm the overlay only when an idle Activity can request foreground service. */
+    public static boolean prearmBeforeLeaving(boolean shiftActive,boolean overlayGranted){
+        return !shiftActive&&overlayGranted;
+    }
     public static boolean maintainIdleService(boolean appVisible,boolean overlayGranted,boolean shiftActive){
         return shiftActive||(!appVisible&&overlayGranted);
     }
