@@ -76,6 +76,11 @@ def recent(runs: list[dict], name: str) -> str:
     return "Sin resultado verificable en esta consulta"
 
 
+def recent_success(runs: list[dict], name: str) -> str:
+    """Pages: display last SUCCESS instead of a transient build that will become stale."""
+    return recent([item for item in runs if item.get("conclusion") == "success"], name)
+
+
 def render(root: Path, offline: bool = False, now: dt.datetime | None = None) -> str:
     v = versions(root)
     names = set(git(root, "ls-tree", "-r", "--name-only", "HEAD", "web-pasajero/downloads").splitlines())
@@ -110,7 +115,7 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
       "",
       "| Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |",
       "|---|---|---|---|",
-      "| Pasajero PWA | v" + v["pwa"] + " | [Abrir web](" + SITE + ") | " + recent(runs, "pages build and deployment") + " |",
+      "| Pasajero PWA | v" + v["pwa"] + " | [Abrir web](" + SITE + ") | " + recent_success(runs, "pages build and deployment") + " |",
       apk_row("Cliente Premium", v["cliente"], client_name, "Build Traslados Cliente Premium v15 RELEASE"),
       apk_row("Conductor", v["conductor"], conductor_name, "Build Traslados Conductor RELEASE"),
       apk_row("Mapa Trayectos", v["mapa"], mapa_name, "Build Mapa Trayectos RELEASE"),
