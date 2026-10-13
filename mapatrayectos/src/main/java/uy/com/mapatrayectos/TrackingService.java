@@ -143,6 +143,16 @@ public class TrackingService extends Service implements LocationListener {
         }
     };
 
+    private void recordFloatingDiagnostic(String stage,Exception error){
+        String detail=error==null?"":error.getClass().getSimpleName()
+            +": "+(error.getMessage()==null?"":error.getMessage());
+        getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
+            .putString("bubble_diag_stage",stage)
+            .putString("bubble_diag_error",detail.length()>180?detail.substring(0,180):detail)
+            .putLong("bubble_diag_at",System.currentTimeMillis()).apply();
+        Log.i("MapaBubble","Diagnostic "+stage+(error==null?"":": "+detail));
+    }
+
     @Override public void onCreate(){
         super.onCreate();
         IntentFilter tf=new IntentFilter();tf.addAction(TransferAlerts.ACTION_NEW);
@@ -179,8 +189,9 @@ public class TrackingService extends Service implements LocationListener {
             appVisible=true;
             hideBubble();
             if(!shiftActive&&Settings.canDrawOverlays(this)){
-                try{promoteIdleBubble();}
+                try{promoteIdleBubble();recordFloatingDiagnostic("servicio listo (sin GPS)",null);}
                 catch(Exception e){
+                    recordFloatingDiagnostic("error al preparar servicio",e);
                     Log.w("MapaBubble","Unable to arm idle floating shortcut",e);
                     stopSelf();return START_NOT_STICKY;
                 }
@@ -191,9 +202,16 @@ public class TrackingService extends Service implements LocationListener {
         else if(ACTION_UI_HIDDEN.equals(a)){
             appVisible=false;
             if(!shiftActive){
-                if(!Settings.canDrawOverlays(this)){stopSelf();return START_NOT_STICKY;}
-                try{promoteIdleBubble();}
-                catch(Exception e){Log.w("MapaBubble","Idle foreground shortcut rejected",e);stopSelf();return START_NOT_STICKY;}
+                if(!Settings.canDrawOverlays(this)){
+                    recordFloatingDiagnostic("sin permiso para superposición",null);
+                    stopSelf();return START_NOT_STICKY;
+                }
+                try{promoteIdleBubble();recordFloatingDiagnostic("activando globito",null);}
+                catch(Exception e){
+                    recordFloatingDiagnostic("servicio rechazado por Android",e);
+                    Log.w("MapaBubble","Idle foreground shortcut rejected",e);
+                    stopSelf();return START_NOT_STICKY;
+                }
             }
             if(clockHandler!=null){
                 clockHandler.removeCallbacks(bubbleShow);
@@ -476,12 +494,17 @@ public class TrackingService extends Service implements LocationListener {
             });
             bubbleWm.addView(bubble,bubbleLp);
             bubbleView=bubble;saveFloatingBubbleState(true);
+            recordFloatingDiagnostic("globito creado correctamente",null);
             if(clockHandler!=null){
                 clockHandler.removeCallbacks(bubbleHeartbeat);
                 clockHandler.postDelayed(bubbleHeartbeat,IDLE_BUBBLE_HEARTBEAT_MS);
             }
             signalFloatingBubblePosition(true);
-        }catch(Exception ex){Log.w("MapaBubble","Unable to show shortcut",ex);hideBubble();}
+        }catch(Exception ex){
+            Log.w("MapaBubble","Unable to show shortcut",ex);
+            hideBubble();
+            recordFloatingDiagnostic("error al dibujar globito",ex);
+        }
     }
 
     /** Closing the map shortcut must NEVER disable authenticated transfer alerts. */
