@@ -78,7 +78,6 @@ def recent(runs: list[dict], name: str) -> str:
 
 def render(root: Path, offline: bool = False, now: dt.datetime | None = None) -> str:
     v = versions(root)
-    head = git(root, "rev-parse", "HEAD")
     names = set(git(root, "ls-tree", "-r", "--name-only", "HEAD", "web-pasajero/downloads").splitlines())
     latest_android = github_json("repos/" + REPO + "/actions/runs?branch=main&per_page=70", offline) or {}
     latest_backend = github_json("repos/" + BACKEND + "/commits/main", offline) or {}
@@ -87,8 +86,6 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
     b_runs = backend_actions.get("workflow_runs", [])
     if not isinstance(runs, list): runs = []
     if not isinstance(b_runs, list): b_runs = []
-    uyt = dt.timezone(dt.timedelta(hours=-3))
-    stamp = (now or dt.datetime.now(uyt)).astimezone(uyt).strftime("%d/%m/%Y %H:%M UYT")
     short_backend = latest_backend.get("sha", "")[:12]
     backend_link = ("[" + short_backend + "](https://github.com/" + BACKEND + "/commit/" + short_backend + ")") if short_backend else "No consultado"
 
@@ -103,7 +100,7 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
     lines = [
       "# ESTADO AUTOMÁTICO DE TRASLADOS",
       "",
-      "**Corte:** " + stamp + " · commit de código consultado " + head[:12] + ".",
+      "**Versión detectada en las fuentes de GitHub** (regenerada únicamente cuando cambian versiones o resultados de ejecución).",
       "",
       "Este archivo es generado automáticamente. La versión procede del código y la columna de descarga refleja si el nombre de APK existe en Git; no certifica instalación ni funcionamiento en Samsung.",
       "",
