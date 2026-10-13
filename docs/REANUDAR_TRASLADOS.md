@@ -1,5 +1,8 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+> **LECTURA RÁPIDA EN NUEVA SESIÓN:** primero [ESTADO AUTOMÁTICO — VERSIONES Y BUILDS](ESTADO_AUTOMATICO_TRASLADOS.md), después este documento para decisiones, reglas de negocio, QA y pendientes. El estado técnico lo genera GitHub Actions sin recompilar. **No copiar manualmente números de versiones acá cada vez.**
+
+
 > **Última revisión verificada: 13 de octubre de 2026, Uruguay (UYT).** Este documento es el **punto único de entrada** para una nueva conversación; el resto de `docs/` conserva historia detallada y puede contener etiquetas «ACTUAL» ya obsoletas. **Antes de ejecutar trabajo nuevo, verificar `main`, GitHub Actions, migraciones aplicadas y versiones publicadas.** No inferir que esta foto seguirá siendo vigente indefinidamente.
 
 ## Instrucción de reanudación para ChatGPT
@@ -21,7 +24,7 @@
 | Android pasajero | `cliente-premium/` / WebView que carga la misma PWA; comprobar estructura exacta antes de editar |
 | Conductor y Mapa | `conductor/` y `mapatrayectos/`; APK separadas con funciones complementarias |
 
-## Corte estable observado el 13/10/2026
+## Corte de referencia histórico del 13/10/2026 (consultar estado automático vigente)
 
 | Componente | Versión | Comprobación | Descarga / acceso |
 |---|---|---|---|
@@ -74,7 +77,7 @@ Corte Git de referencia previo a este documento: Android `6de4cafd046a192b876129
 - Cambios SQL con migración versionada en `traslados-web/supabase/migrations/`, CI y verificación explícita de aplicación a producción. Cambios a Worker necesitan workflow manual de publicación; CI/merge ≠ deploy.
 - Cambios Android firmados requieren comprobar `versionCode` creciente, certificado/keystore existente y build SUCCESS; no publicar o afirmar APK nueva sin verificar archivo real; conservar R5 y versiones anteriores como rollback. Cliente WebView consume PWA sin recompilar APK salvo cambios nativos.
 - Las pruebas automáticas NO equivalen a prueba física. Evitar insertar pruebas persistentes en producción, enviar avisos reales sin autorización o alterar reservas existentes sin consentimiento.
-- Al cerrar una fase aprobada: actualizar PR/commit/run y estado (HECHO / VERIFICADO EN CI / PUBLICADO / PENDIENTE QA), y actualizar **este** archivo, preferiblemente en el mismo PR, antes de decir «podemos cambiar de sesión». La continuidad no es automática por una frase: en otro chat hay que abrir la referencia del repositorio.
+- Al cerrar una fase aprobada: las **versiones/links/Actions** se actualizan automáticamente en [ESTADO_AUTOMATICO_TRASLADOS.md](ESTADO_AUTOMATICO_TRASLADOS.md). Solo actualizar **este** documento cuando cambien decisiones, lógica funcional, QA o pendientes; no reescribir historia ni obligar a generar documentación extra en cada commit. Para retomar otra sesión es suficiente pedir «Retomá Traslados desde GitHub: marcelofgx-ctrl/traslados-android» y abrir ambos documentos.
 
 ## Documentos para ampliar únicamente cuando haga falta
 
