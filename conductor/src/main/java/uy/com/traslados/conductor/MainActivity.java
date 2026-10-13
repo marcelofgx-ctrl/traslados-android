@@ -1150,7 +1150,20 @@ public class MainActivity extends Activity {
         String o,d;
         if(r.has("origin_lat")&&!r.isNull("origin_lat"))o=r.optDouble("origin_lat")+","+r.optDouble("origin_lng");else o=Uri.encode(r.optString("origin_text"));
         if(r.has("destination_lat")&&!r.isNull("destination_lat"))d=r.optDouble("destination_lat")+","+r.optDouble("destination_lng");else d=Uri.encode(r.optString("destination_text"));
-        try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://www.google.com/maps/dir/?api=1&origin="+o+"&destination="+d+"&travelmode=driving")));}catch(Exception e){toast("No se pudo abrir Maps");}
+        try{
+            StringBuilder link=new StringBuilder("https://www.google.com/maps/dir/?api=1&origin=").append(Uri.encode(o,",")).append("&destination=").append(Uri.encode(d,",")).append("&travelmode=driving");
+            JSONArray stops=r.optJSONArray("stops");StringBuilder waypoints=new StringBuilder();
+            if(stops!=null)for(int i=0;i<stops.length();i++){
+                JSONObject stop=stops.optJSONObject(i);if(stop==null)continue;
+                String addr=stop.optString("address_text","").trim();if(addr.isEmpty())continue;
+                if(waypoints.length()>0)waypoints.append("|");
+                if(stop.has("lat")&&!stop.isNull("lat")&&stop.has("lng")&&!stop.isNull("lng"))
+                    waypoints.append(stop.optDouble("lat")).append(",").append(stop.optDouble("lng"));
+                else waypoints.append(addr);
+            }
+            if(waypoints.length()>0)link.append("&waypoints=").append(Uri.encode(waypoints.toString()));
+            startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(link.toString())));
+        }catch(Exception e){toast("No se pudo abrir Maps");}
     }
 
     private void instalarAyudaTecladoConductor(EditText e){
