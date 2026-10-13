@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
     private boolean bubbleIntroShownThisActivity=false;
     private boolean runtimePermissionInProgress=false;
     private boolean returningFromOverlaySettings=false;
+    private boolean reopenConfigurationAfterOverlay=false;
     private boolean navigatingWithinMapa=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
 
@@ -477,6 +478,53 @@ public class MainActivity extends Activity {
                 :"Acceso flotante pendiente. Tocá para abrir permisos de Android.");
     }
 
+    /** All Android Settings intents are launched from a visible user tap. */
+    private void showConfiguration(){
+        BubbleSettingsPanel.show(this,
+            ()->{reopenConfigurationAfterOverlay=true;openOverlaySystemSettings();},
+            this::testFloatingShortcut,
+            this::showBubbleDiagnostics,
+            ()->{
+                reopenConfigurationAfterOverlay=true;
+                returningFromOverlaySettings=true;
+                try{
+                    startActivityForResult(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:"+getPackageName())),REQ_OVERLAY);
+                }catch(Exception e){
+                    returningFromOverlaySettings=false;
+                    reopenConfigurationAfterOverlay=false;
+                    Toast.makeText(this,"No se pudieron abrir los ajustes de Android",Toast.LENGTH_LONG).show();
+                }
+            });
+    }
+
+    /** A real overlay test must leave this Activity in the background. */
+    private void testFloatingShortcut(){
+        if(!Settings.canDrawOverlays(this)){
+            Toast.makeText(this,"Primero autorizá Aparecer encima de otras apps",Toast.LENGTH_LONG).show();
+            reopenConfigurationAfterOverlay=true;
+            openOverlaySystemSettings();
+            return;
+        }
+        getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
+            .putLong("bubble_test_requested_at",System.currentTimeMillis()).apply();
+        if(!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+        Toast.makeText(this,"Prueba en Inicio: si no aparece el globito, volvé a Configuración",
+            Toast.LENGTH_LONG).show();
+        try{
+            Intent home=new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(home);
+        }catch(Exception ex){
+            getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
+                .putString("bubble_diag_stage","error al abrir Inicio")
+                .putString("bubble_diag_error",ex.getClass().getSimpleName())
+                .putLong("bubble_diag_at",System.currentTimeMillis()).apply();
+            Toast.makeText(this,"Usá Inicio de Android para completar la prueba",Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void showBubbleDiagnostics(){
         SharedPreferences b=getSharedPreferences("bubble_state",MODE_PRIVATE);
         boolean granted=Settings.canDrawOverlays(this);
@@ -494,9 +542,9 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle("Estado del globito")
             .setMessage(status)
-            .setPositiveButton(granted?"REINTENTAR GLOBITO":"ABRIR PERMISOS",(d,w)->{
-                if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
-                else if(!granted)openBubblePermission();
+            .setPositiveButton(granted?"PROBAR EN INICIO":"ABRIR PERMISOS",(d,w)->{
+                if(granted)testFloatingShortcut();
+                else openBubblePermission();
             })
             .setNegativeButton("CERRAR",null).show();
     }
@@ -507,6 +555,10 @@ public class MainActivity extends Activity {
             Toast.makeText(this,"Permiso activo. El globito aparecerá al salir de Mapa.",Toast.LENGTH_LONG).show();
             return;
         }
+        openOverlaySystemSettings();
+    }
+
+    private void openOverlaySystemSettings(){
         returningFromOverlaySettings=true;
         try{
             // Android 11+ ignores the package URI for this public Settings
@@ -535,9 +587,13 @@ public class MainActivity extends Activity {
             updateUi();
             if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
             Toast.makeText(this,granted
-                ?"Burbuja flotante activada. Ya podés salir a Cliente."
-                :"Permiso pendiente. Tocá el botón ◎ para intentar nuevamente.",
+                ?"Permiso autorizado. Usá Configuración para probar el globito."
+                :"Permiso pendiente. Revisalo desde Configuración.",
                 Toast.LENGTH_LONG).show();
+            if(reopenConfigurationAfterOverlay){
+                reopenConfigurationAfterOverlay=false;
+                uiHandler.postDelayed(this::showConfiguration,200L);
+            }
             return;
         }
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
@@ -578,6 +634,8 @@ public class MainActivity extends Activity {
         addPickupPresenceRow(menu,popup);
         addMainMenuRow(menu,"◈","Estado del sistema","Supabase · GPS · sincronización",popup,
             ()->startActivity(new Intent(this,SystemStatusActivity.class)));
+        addMainMenuRow(menu,"⚙","Configuración","Globito · permisos · pruebas",popup,
+            this::showConfiguration);
         addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
         try{popup.showAsDropDown(anchor,-dp(181),dp(4));}
