@@ -34,9 +34,15 @@ import android.util.Base64;
 
 public final class QuickActionsMenu {
     private static final String PHONE="+598 97 228 175";
-    private static final String BOOKING_URL="https://traslados-web.marcelof-gx.workers.dev/";
+    // Public, customer-facing Pages UI, never the technical Cloudflare Worker.
+    private static final String BOOKING_URL=
+        "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/";
+    private static final String DOWNLOAD_URL=
+        "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk";
+    // Previous defaults are kept only to migrate links saved on existing phones.
     private static final String PREVIOUS_BOOKING_URL="https://traslados-con-reserva.lovable.app/";
-    private static final String DOWNLOAD_URL="https://traslados-con-reserva.lovable.app/descargas";
+    private static final String PREVIOUS_WORKER_URL="https://traslados-web.marcelof-gx.workers.dev/";
+    private static final String PREVIOUS_DOWNLOAD_URL="https://traslados-con-reserva.lovable.app/descargas";
     private static final int GOLD=Color.rgb(231,202,130),WHITE=Color.rgb(247,246,241),
             PETROL=Color.rgb(7,43,51),PETROL_LIGHT=Color.rgb(9,66,74);
     private static PopupWindow currentPopup;
@@ -295,23 +301,27 @@ public final class QuickActionsMenu {
         addDialogAction(a,content,"⌁  WEB DE RESERVAS",false,()->{
             dialog.dismiss();shareEditableLink(a,"booking_url","Reservas de traslados",BOOKING_URL);
         });
-        addDialogAction(a,content,"⇩  DESCARGAR LA APP",false,()->{
-            dialog.dismiss();shareEditableLink(a,"download_url","Enlace de descarga de la aplicación",DOWNLOAD_URL);
+        addDialogAction(a,content,"⇩  APP PARA PASAJEROS",false,()->{
+            dialog.dismiss();shareEditableLink(a,"download_url","APK oficial para pasajeros",DOWNLOAD_URL);
         });
         addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
         dialog.show();
     }
 
-    /** Project URL was never verified; require human confirmation before first share. */
+    /** Never share an obsolete default. Confirm updated destination before first send. */
     private static void shareEditableLink(Activity a,String key,String title,String proposed){
         android.content.SharedPreferences prefs=a.getSharedPreferences("share_links",Activity.MODE_PRIVATE);
         String current=prefs.getString(key,proposed);
-        // User supplied the authoritative booking site. Migrate only the stale default;
-        // preserve any deliberately customized URL on the phone.
-        if("booking_url".equals(key)
-            &&(!prefs.getBoolean(key+"_confirmed",false)||PREVIOUS_BOOKING_URL.equals(current))){
-            current=BOOKING_URL;
-            prefs.edit().putString(key,current).putBoolean(key+"_confirmed",true).apply();
+        // Previous installs may retain an obsolete Worker/Lovable link.
+        // Migrate only known former defaults, and ask before sharing.
+        // Custom URLs chosen by the owner must remain untouched.
+        boolean staleBooking="booking_url".equals(key)&&
+            (PREVIOUS_BOOKING_URL.equals(current)||PREVIOUS_WORKER_URL.equals(current));
+        boolean staleDownload="download_url".equals(key)&&
+            PREVIOUS_DOWNLOAD_URL.equals(current);
+        if(staleBooking||staleDownload){
+            current=proposed;
+            prefs.edit().putString(key,current).putBoolean(key+"_confirmed",false).apply();
         }
         if(prefs.getBoolean(key+"_confirmed",false)&&validUrl(current)){
             shareLink(a,title,current);return;
@@ -320,7 +330,7 @@ public final class QuickActionsMenu {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(a,18),dp(a,7),dp(a,18),dp(a,9));
         TextView notice=text(a,
-            "Este enlace todavía no está confirmado. Revisalo o reemplazalo por la dirección real antes de compartir.",
+            "Comprobá el destino antes de enviarlo. Los enlaces anteriores fueron actualizados; podés cambiarlo si lo necesitás.",
             12.5f,Color.rgb(50,76,80),false);
         content.addView(notice);
         EditText url=formField(a,"https://…",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
