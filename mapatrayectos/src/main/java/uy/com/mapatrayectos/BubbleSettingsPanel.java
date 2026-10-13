@@ -21,8 +21,8 @@ import java.util.Locale;
 public final class BubbleSettingsPanel {
     private BubbleSettingsPanel(){}
 
-    public static void show(Activity host, Runnable permissions, Runnable test,
-                            Runnable diagnostics, Runnable appInfo) {
+    public static void show(Activity host, Runnable ownAppInfo, Runnable overlayList,
+                            Runnable test, Runnable diagnostics) {
         SharedPreferences state=host.getSharedPreferences("bubble_state",Context.MODE_PRIVATE);
         boolean overlay=Settings.canDrawOverlays(host);
         NotificationManager nm=(NotificationManager)host.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -54,34 +54,38 @@ public final class BubbleSettingsPanel {
         addText(host,pane,notifications?"●  Notificaciones: ACTIVADAS":
             "●  Notificaciones: DESACTIVADAS",12,
             notifications?0xFF79DDAE:0xFFFFCC80,true,6);
-        addText(host,pane,"El globito permanece oculto mientras Mapa está abierto. "+
-            "La prueba auténtica se realiza sobre Inicio, sin iniciar jornada ni activar el GPS.",
+        addText(host,pane,"Android 11 o superior no permite abrir directamente el "+
+            "interruptor de superposición. Primero podés abrir los ajustes de Mapa Trayectos; "+
+            "si no aparece «Aparecer encima», usá la lista de permisos y elegí Mapa Trayectos.",
             12,0xFFF5F1E7,false,14);
+        addText(host,pane,"El globito permanece oculto mientras Mapa está abierto. "+
+            "Para probarlo se abre Inicio, sin activar jornada ni GPS.",
+            11,0xFFC0D3D4,false,10);
         addText(host,pane,"ÚLTIMO DIAGNÓSTICO",11,0xFFE7CA82,true,16);
         String info=stage+(at>0?" · "+clock.format(new Date(at)):"")
             +(trial>0?"\nÚltima prueba: "+clock.format(new Date(trial)):"")
             +(error.isEmpty()?"":"\nError: "+error);
         addText(host,pane,info,11,0xFFC0D3D4,false,6);
 
-        TextView permissionButton=addAction(host,pane,
-            "01   REVISAR PERMISOS","Acceso especial de Android · Aparecer encima");
-        TextView testButton=addAction(host,pane,
-            "02   PROBAR GLOBITO",overlay?"Ir a Inicio y comprobar la burbuja real":
-                "Primero se abrirá el permiso de Android");
-        TextView refreshButton=addAction(host,pane,
-            "03   ACTUALIZAR ESTADO","Volver a consultar permiso y servicio");
-        TextView diagButton=addAction(host,pane,
-            "04   DIAGNÓSTICO DETALLADO","Último evento, visibilidad y errores");
         TextView appButton=addAction(host,pane,
-            "05   AJUSTES DE LA APLICACIÓN","Alternativa si Mapa no figura en permisos");
+            "01   AJUSTES DE MAPA TRAYECTOS","Ir directamente a la ficha de esta app");
+        TextView permissionButton=addAction(host,pane,
+            "02   LISTA «APARECER ENCIMA»","Elegir Mapa Trayectos y autorizar superposición");
+        TextView testButton=addAction(host,pane,
+            "03   PROBAR GLOBITO",overlay?"Ir a Inicio y comprobar la burbuja real":
+                "Primero hay que autorizar «Aparecer encima»");
+        TextView refreshButton=addAction(host,pane,
+            "04   ACTUALIZAR ESTADO","Volver a consultar permiso y servicio");
+        TextView diagButton=addAction(host,pane,
+            "05   DIAGNÓSTICO DETALLADO","Último evento, visibilidad y errores");
 
         AlertDialog dialog=new AlertDialog.Builder(host).setView(scroll)
             .setNegativeButton("CERRAR",null).create();
-        permissionButton.setOnClickListener(v->{dialog.dismiss();permissions.run();});
+        appButton.setOnClickListener(v->{dialog.dismiss();ownAppInfo.run();});
+        permissionButton.setOnClickListener(v->{dialog.dismiss();overlayList.run();});
         testButton.setOnClickListener(v->{dialog.dismiss();test.run();});
-        refreshButton.setOnClickListener(v->{dialog.dismiss();show(host,permissions,test,diagnostics,appInfo);});
+        refreshButton.setOnClickListener(v->{dialog.dismiss();show(host,ownAppInfo,overlayList,test,diagnostics);});
         diagButton.setOnClickListener(v->{dialog.dismiss();diagnostics.run();});
-        appButton.setOnClickListener(v->{dialog.dismiss();appInfo.run();});
         dialog.show();
     }
 
