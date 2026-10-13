@@ -46,7 +46,6 @@ jobs:
           sparse-checkout: |
             /scripts/estado_traslados.py
             /tests/test_estado_traslados.py
-            /tests/test_estado_traslados.py
       - name: Probar lectura de versiones y seguridad sin conexión
         run: python3 -m unittest discover -s tests -p 'test_estado_traslados.py'
   report:
@@ -63,6 +62,7 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /scripts/estado_traslados.py
+            /tests/test_estado_traslados.py
             /conductor/build.gradle
             /mapatrayectos/build.gradle
             /cliente-premium/app/build.gradle
