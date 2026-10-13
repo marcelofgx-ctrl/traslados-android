@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     private MapView mapView; private MapLibreMap map; private Style style;
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,shiftKmText,shiftTripsText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
+    private Boolean lastBubblePermissionUi=null;
     private TextView floatingAccessBanner;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
@@ -370,7 +371,17 @@ public class MainActivity extends Activity {
 
     private void updateUi(){
         if(sheetState>maxSheetState())setSheetState(maxSheetState(),true);
-        zoneText.setText(zone);if(bubbleBtn!=null)bubbleBtn.setBackground(headerButtonGradient(Settings.canDrawOverlays(this)?GREEN:GOLD,Color.argb(48,54,190,125)));long now=System.currentTimeMillis();
+        zoneText.setText(zone);
+        boolean bubbleAuthorized=Settings.canDrawOverlays(this);
+        if(bubbleBtn!=null&&(lastBubblePermissionUi==null||lastBubblePermissionUi!=bubbleAuthorized)){
+            bubbleBtn.setBackground(headerButtonGradient(bubbleAuthorized?GREEN:GOLD,
+                Color.argb(48,54,190,125)));
+            bubbleBtn.setContentDescription(bubbleAuthorized
+                ?"Acceso flotante autorizado. Abrir diagnóstico del globito."
+                :"Acceso flotante pendiente. Abrir permiso de Mapa Trayectos.");
+            lastBubblePermissionUi=bubbleAuthorized;
+        }
+        long now=System.currentTimeMillis();
         long effective=shiftActive?Math.max(0,shiftMoving+shiftStopped):0;
         long elapsed=shiftActive?Math.max(0,now-shiftStarted):0;
         long tripElapsed=tripActive?Math.max(0,now-tripStarted):0;
