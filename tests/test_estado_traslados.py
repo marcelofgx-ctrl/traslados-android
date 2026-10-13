@@ -88,6 +88,18 @@ class EstadoAutomaticoTests(unittest.TestCase):
         ]
         self.assertEqual(status.latest_app_build(runs)["name"], "Build Traslados Conductor RELEASE")
 
+    def test_ci_status_ignores_transient_builds(self):
+        latest = {"name": "Verify and package passenger PWA (GitHub Pages via branch)",
+                  "head_branch": "main", "status": "in_progress",
+                  "created_at": "2026-10-13T13:00:00Z", "html_url": "https://github.com/test"}
+        previous = {"name": latest["name"], "head_branch": "main",
+                    "status": "completed", "conclusion": "success",
+                    "updated_at": "2026-10-13T12:00:00Z",
+                    "html_url": "https://github.com/test"}
+        self.assertEqual(status.recent_completed([latest, previous], latest["name"]),
+                         status.recent([previous], latest["name"]))
+        self.assertIn("SUCCESS", status.recent_completed([latest, previous], latest["name"]))
+
     def test_latest_code_change_is_not_docs_bot(self):
         fixture = {"sha": "a" * 40, "commit": {
             "message": "Actualización PWA v68", "committer": {"date": "2026-10-13T05:34:35Z"}}}
