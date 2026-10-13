@@ -151,6 +151,11 @@ def recent_success(runs: list[dict], name: str) -> str:
     return recent([item for item in runs if item.get("conclusion") == "success"], name)
 
 
+def recent_completed(runs: list[dict], name: str) -> str:
+    """Do not commit transient queued/running workflow state to the repo."""
+    return recent([item for item in runs if item.get("status") == "completed"], name)
+
+
 def render(root: Path, offline: bool = False, now: dt.datetime | None = None) -> str:
     v = versions(root)
     names = set(git(root, "ls-tree", "-r", "--name-only", "HEAD", "web-pasajero/downloads").splitlines())
@@ -192,7 +197,7 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
       apk_row("Conductor", v["conductor"], conductor_name, "Build Traslados Conductor RELEASE"),
       apk_row("Mapa Trayectos", v["mapa"], mapa_name, "Build Mapa Trayectos RELEASE"),
       "",
-      "**PWA CI:** " + recent(runs, "Verify and package passenger PWA (GitHub Pages via branch)") + ".",
+      "**PWA CI:** " + recent_completed(runs, "Verify and package passenger PWA (GitHub Pages via branch)") + ".",
       "**Backend fuente:** " + backend_link + " · **último CI encontrado:** " + recent(b_runs, "Traslados Web — CI independiente") + ".",
       "",
       "### Fecha y hora de la última compilación y del último cambio",

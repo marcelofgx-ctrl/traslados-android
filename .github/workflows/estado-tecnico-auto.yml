@@ -14,9 +14,10 @@ on:
       - 'mapatrayectos/**'
       - 'cliente-premium/app/**'
       - 'core-reservations/**'
-      - 'web-pasajero/**'
       - 'scripts/estado_traslados.py'
       - '.github/workflows/estado-tecnico-auto.yml'
+  # La web no actualiza metadatos hasta cerrar su CI. Evita commits de
+  # estado "EN CURSO" que cancelan en cadena el deploy de GitHub Pages.
   workflow_run:
     workflows:
       - Build Traslados Conductor RELEASE
