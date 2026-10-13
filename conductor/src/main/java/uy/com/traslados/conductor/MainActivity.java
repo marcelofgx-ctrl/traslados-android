@@ -782,9 +782,9 @@ public class MainActivity extends Activity {
     private void showAvailabilitySettings(){toast("Cargando disponibilidad…");pool.execute(()->{try{JSONObject j=Api.getAvailabilitySettings(pin);runOnUiThread(()->buildAvailabilitySettingsDialog(j));}catch(Exception e){runOnUiThread(()->toast("No pude cargar horarios: "+friendly(e)));}});}
     private void buildAvailabilitySettingsDialog(JSONObject j){
         final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        LinearLayout shell=driverDialogShell("HORARIOS Y MÁRGENES","Configurá cuándo aceptar reservas y cuánto tiempo operativo querés dejar entre viajes.");
+        LinearLayout shell=driverDialogShell("HORARIO HABITUAL Y SOLICITUDES","Las reservas programadas requieren tu presupuesto y la aceptación del pasajero.");
         ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(0,dp(2),0,dp(8));sc.addView(box,new ScrollView.LayoutParams(-1,-2));shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
-        CheckBox enabled=new CheckBox(this);enabled.setText("Aceptar reservas online");enabled.setTextColor(TEXT);enabled.setChecked(j.optBoolean("enabled",true));box.addView(enabled,lpMatch(dp(50),0,7));
+        CheckBox enabled=new CheckBox(this);enabled.setText("Recibir solicitudes programadas");enabled.setTextColor(TEXT);enabled.setChecked(j.optBoolean("enabled",true));box.addView(enabled,lpMatch(dp(50),0,7));
         EditText start=availabilityField(box,"Hora inicial",jsonTime(j,"day_start","08:00"),false),end=availabilityField(box,"Hora final",jsonTime(j,"day_end","22:00"),false);
         box.addView(body("DÍAS HABILITADOS",12,GOLD),lpMatch(-2,6,4));String[] labs={"D","L","M","X","J","V","S"};CheckBox[] days=new CheckBox[7];HashSet<Integer> active=new HashSet<>();JSONArray aa=j.optJSONArray("active_weekdays");if(aa!=null)for(int i=0;i<aa.length();i++)active.add(aa.optInt(i,-1));else for(int i=0;i<7;i++)active.add(i);
         LinearLayout day1=new LinearLayout(this),day2=new LinearLayout(this);for(int i=0;i<7;i++){CheckBox c=new CheckBox(this);days[i]=c;c.setText(labs[i]);c.setTextColor(TEXT);c.setGravity(Gravity.CENTER);c.setChecked(active.contains(i));(i<4?day1:day2).addView(c,new LinearLayout.LayoutParams(0,dp(46),1));}box.addView(day1);box.addView(day2);
