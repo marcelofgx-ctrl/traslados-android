@@ -483,8 +483,9 @@ public class MainActivity extends Activity {
      * Offer the selected app's information screen and a separate official overlay list. */
     private void showConfiguration(){
         BubbleSettingsPanel.show(this,
-            ()->{reopenConfigurationAfterOverlay=true;openMapaAppInfoSettings();},
             ()->{reopenConfigurationAfterOverlay=true;openOverlaySystemSettings();},
+            ()->{reopenConfigurationAfterOverlay=true;openMapaAppInfoSettings();},
+            ()->{reopenConfigurationAfterOverlay=true;openOverlaySystemSettingsUnscoped();},
             this::testFloatingShortcut,
             this::showBubbleDiagnostics);
     }
@@ -494,8 +495,7 @@ public class MainActivity extends Activity {
         if(!Settings.canDrawOverlays(this)){
             Toast.makeText(this,"Primero autorizá Aparecer encima de otras apps",Toast.LENGTH_LONG).show();
             reopenConfigurationAfterOverlay=true;
-            if(Build.VERSION.SDK_INT>=30)openMapaAppInfoSettings();
-            else openOverlaySystemSettings();
+            openOverlaySystemSettings();
             return;
         }
         getSharedPreferences("bubble_state",MODE_PRIVATE).edit()
@@ -547,8 +547,7 @@ public class MainActivity extends Activity {
             Toast.makeText(this,"Permiso activo. El globito aparecerá al salir de Mapa.",Toast.LENGTH_LONG).show();
             return;
         }
-        if(Build.VERSION.SDK_INT>=30)openMapaAppInfoSettings();
-        else openOverlaySystemSettings();
+        openOverlaySystemSettings();
     }
 
     /** Supported, package-targeted app-information screen (not the overlay toggle). */
@@ -565,15 +564,28 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Official special-access list; package-scoped launch is blocked on Android 11+. */
+    /**
+     * Reproduce the original R25.2 package-scoped permission request.
+     * Samsung firmware may choose to honor the package; stock Android 11+ ignores it
+     * and opens the general access list. Never claim the per-app switch opened.
+     */
     private void openOverlaySystemSettings(){
         returningFromOverlaySettings=true;
         try{
-            // Android 11+ deliberately ignores package URI and opens the full list.
-            // We keep this as a supported fallback, clearly labeled in Configuration.
+            Intent intent=new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:"+getPackageName()));
+            startActivityForResult(intent,REQ_OVERLAY);
+        }catch(Exception ex){
+            returningFromOverlaySettings=false;
+            openMapaAppInfoSettings();
+        }
+    }
+
+    /** Explicit compatibility fallback without app scoping. */
+    private void openOverlaySystemSettingsUnscoped(){
+        returningFromOverlaySettings=true;
+        try{
             Intent intent=new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-            if(Build.VERSION.SDK_INT<30)
-                intent.setData(Uri.parse("package:"+getPackageName()));
             startActivityForResult(intent,REQ_OVERLAY);
         }catch(Exception ex){
             returningFromOverlaySettings=false;

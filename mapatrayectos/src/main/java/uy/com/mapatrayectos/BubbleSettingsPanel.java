@@ -21,8 +21,8 @@ import java.util.Locale;
 public final class BubbleSettingsPanel {
     private BubbleSettingsPanel(){}
 
-    public static void show(Activity host, Runnable ownAppInfo, Runnable overlayList,
-                            Runnable test, Runnable diagnostics) {
+    public static void show(Activity host, Runnable targetedOverlay, Runnable ownAppInfo,
+                            Runnable overlayList, Runnable test, Runnable diagnostics) {
         SharedPreferences state=host.getSharedPreferences("bubble_state",Context.MODE_PRIVATE);
         boolean overlay=Settings.canDrawOverlays(host);
         NotificationManager nm=(NotificationManager)host.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -54,9 +54,9 @@ public final class BubbleSettingsPanel {
         addText(host,pane,notifications?"●  Notificaciones: ACTIVADAS":
             "●  Notificaciones: DESACTIVADAS",12,
             notifications?0xFF79DDAE:0xFFFFCC80,true,6);
-        addText(host,pane,"Android 11 o superior no permite abrir directamente el "+
-            "interruptor de superposición. Primero podés abrir los ajustes de Mapa Trayectos; "+
-            "si no aparece «Aparecer encima», usá la lista de permisos y elegí Mapa Trayectos.",
+        addText(host,pane,"Probamos primero el acceso del permiso vinculado a Mapa Trayectos, "+
+            "como en las primeras versiones. Android 11+ puede ignorar la selección y "+
+            "mostrar la lista general; si ocurre, elegí Mapa Trayectos o entrá a sus ajustes.",
             12,0xFFF5F1E7,false,14);
         addText(host,pane,"El globito permanece oculto mientras Mapa está abierto. "+
             "Para probarlo se abre Inicio, sin activar jornada ni GPS.",
@@ -67,24 +67,27 @@ public final class BubbleSettingsPanel {
             +(error.isEmpty()?"":"\nError: "+error);
         addText(host,pane,info,11,0xFFC0D3D4,false,6);
 
+        TextView directButton=addAction(host,pane,
+            "01   IR AL PERMISO DE MAPA","Intentar abrir «Aparecer encima» con la app seleccionada");
         TextView appButton=addAction(host,pane,
-            "01   AJUSTES DE MAPA TRAYECTOS","Ir directamente a la ficha de esta app");
+            "02   AJUSTES DE MAPA TRAYECTOS","Ir directamente a la ficha de esta app");
         TextView permissionButton=addAction(host,pane,
-            "02   LISTA «APARECER ENCIMA»","Elegir Mapa Trayectos y autorizar superposición");
+            "03   LISTA «APARECER ENCIMA»","Alternativa oficial si no abre el permiso específico");
         TextView testButton=addAction(host,pane,
-            "03   PROBAR GLOBITO",overlay?"Ir a Inicio y comprobar la burbuja real":
+            "04   PROBAR GLOBITO",overlay?"Ir a Inicio y comprobar la burbuja real":
                 "Primero hay que autorizar «Aparecer encima»");
         TextView refreshButton=addAction(host,pane,
-            "04   ACTUALIZAR ESTADO","Volver a consultar permiso y servicio");
+            "05   ACTUALIZAR ESTADO","Volver a consultar permiso y servicio");
         TextView diagButton=addAction(host,pane,
-            "05   DIAGNÓSTICO DETALLADO","Último evento, visibilidad y errores");
+            "06   DIAGNÓSTICO DETALLADO","Último evento, visibilidad y errores");
 
         AlertDialog dialog=new AlertDialog.Builder(host).setView(scroll)
             .setNegativeButton("CERRAR",null).create();
+        directButton.setOnClickListener(v->{dialog.dismiss();targetedOverlay.run();});
         appButton.setOnClickListener(v->{dialog.dismiss();ownAppInfo.run();});
         permissionButton.setOnClickListener(v->{dialog.dismiss();overlayList.run();});
         testButton.setOnClickListener(v->{dialog.dismiss();test.run();});
-        refreshButton.setOnClickListener(v->{dialog.dismiss();show(host,ownAppInfo,overlayList,test,diagnostics);});
+        refreshButton.setOnClickListener(v->{dialog.dismiss();show(host,targetedOverlay,ownAppInfo,overlayList,test,diagnostics);});
         diagButton.setOnClickListener(v->{dialog.dismiss();diagnostics.run();});
         dialog.show();
     }
