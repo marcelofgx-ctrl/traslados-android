@@ -75,6 +75,18 @@ public class MainActivity extends Activity {
 
     private boolean resetAfterBackup=false;
     private boolean mapCloseRequested=false;
+    // Never persist "shown" before the user actually grants SYSTEM_ALERT_WINDOW:
+    // R25.2 could suppress the dialog forever after upgrading the APK.
+    private boolean bubbleIntroShownThisActivity=false;
+    private boolean runtimePermissionInProgress=false;
+    private boolean returningFromOverlaySettings=false;
+    private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
+
+    private void scheduleBubblePermissionCheck(){
+        if(bubbleIntroShownThisActivity||runtimePermissionInProgress||returningFromOverlaySettings)return;
+        uiHandler.removeCallbacks(checkBubblePermission);
+        uiHandler.postDelayed(checkBubblePermission,750L);
+    }
 
     public static final String ACTION_REMINDER_POPUP="uy.com.mapatrayectos.REMINDER_POPUP";
     private final BroadcastReceiver reminderReceiver=new BroadcastReceiver(){
@@ -401,36 +413,60 @@ public class MainActivity extends Activity {
 
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
     private void maybeOfferBubblePermission(){
-        SharedPreferences prefs=getSharedPreferences("ui_prefs",MODE_PRIVATE);
-        // The old first-run question was only called from START_SHIFT, even
-        // though R25.1 supports a bubble while idle. Show it on first focus.
-        final String key="bubble_permission_intro_r25_2";
+        // An in-memory, per-Activity guard; legacy "offered" preferences from
+        // earlier APKs are intentionally ignored. Missing permission must
+        // prompt again at the next real app launch, even after upgrading.
+        if(runtimePermissionInProgress||returningFromOverlaySettings||isFinishing())return;
         if(!FloatingShortcutPolicy.shouldOfferPermissionIntro(
-                Settings.canDrawOverlays(this),prefs.getBoolean(key,false),hasWindowFocus()))return;
-        prefs.edit().putBoolean(key,true).apply();
+                Settings.canDrawOverlays(this),bubbleIntroShownThisActivity,hasWindowFocus()))return;
+        bubbleIntroShownThisActivity=true;
         new AlertDialog.Builder(this)
             .setTitle("Activar acceso flotante")
-            .setMessage("Mapa Trayectos puede dejar un globito encima de Cliente Premium y Google Maps. Solo tenés que autorizarlo una vez. Sin jornada, el globito no registra recorridos ni consume GPS.")
+            .setMessage("Para que el globito de Mapa Trayectos aparezca sobre Cliente Premium y Google Maps, autorizá «Aparecer encima». Android puede mostrar una lista: elegí Mapa Trayectos y activá el permiso. No es necesario iniciar jornada ni activar el GPS.")
             .setPositiveButton("ACTIVAR",(dialog,which)->openBubblePermission())
-            .setNegativeButton("MÁS TARDE",null).show();
+            .setNegativeButton("MÁS TARDE",null)
+            .show();
     }
     @Override public void onWindowFocusChanged(boolean hasFocus){
         super.onWindowFocusChanged(hasFocus);
-        if(!hasFocus)return;
-        // Wait until Android has closed the location/notification permission
-        // sheets. Never display a second permission dialog over a system dialog.
-        uiHandler.postDelayed(()->{
-            if(!isFinishing()&&hasWindowFocus())maybeOfferBubblePermission();
-        },550L);
+        if(hasFocus)scheduleBubblePermissionCheck();
     }
-    private void openBubblePermission(){if(Settings.canDrawOverlays(this)){Toast.makeText(this,"Burbuja activada: aparecerá al minimizar la app, incluso sin jornada.",Toast.LENGTH_LONG).show();return;}try{startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())),REQ_OVERLAY);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}
+    private void openBubblePermission(){
+        if(Settings.canDrawOverlays(this)){
+            if(!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+            Toast.makeText(this,"Permiso activo. El globito aparecerá al salir de Mapa.",Toast.LENGTH_LONG).show();
+            return;
+        }
+        returningFromOverlaySettings=true;
+        try{
+            // Android 11+ ignores the package URI for this public Settings
+            // action. The user must select Mapa Trayectos from the system list.
+            Intent intent=new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            if(Build.VERSION.SDK_INT<30)
+                intent.setData(Uri.parse("package:"+getPackageName()));
+            startActivityForResult(intent,REQ_OVERLAY);
+        }catch(Exception ex){
+            returningFromOverlaySettings=false;
+            try{
+                Intent fallback=new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:"+getPackageName()));
+                startActivityForResult(fallback,REQ_OVERLAY);
+            }catch(Exception ignored){
+                Toast.makeText(this,"No se pudo abrir la configuración del permiso",Toast.LENGTH_LONG).show();
+            }
+        }
+    }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
         if(requestCode==REQ_OVERLAY){
+            returningFromOverlaySettings=false;
             boolean granted=Settings.canDrawOverlays(this);
             updateUi();
             if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
-            Toast.makeText(this,granted?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,granted
+                ?"Burbuja flotante activada. Ya podés salir a Cliente."
+                :"Permiso pendiente. Tocá el botón ◎ para intentar nuevamente.",
+                Toast.LENGTH_LONG).show();
             return;
         }
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
@@ -1007,8 +1043,38 @@ public class MainActivity extends Activity {
     }
     private Bitmap driverArrow(){int n=104;Bitmap b=Bitmap.createBitmap(n,n,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);Path outer=new Path();outer.moveTo(52,2);outer.lineTo(91,95);outer.lineTo(52,78);outer.lineTo(13,95);outer.close();Paint halo=new Paint(Paint.ANTI_ALIAS_FLAG);halo.setColor(Color.WHITE);halo.setShadowLayer(6,0,2,Color.argb(120,0,0,0));c.drawPath(outer,halo);halo.clearShadowLayer();Path edge=new Path();edge.moveTo(52,7);edge.lineTo(84,86);edge.lineTo(52,72);edge.lineTo(20,86);edge.close();Paint dark=new Paint(Paint.ANTI_ALIAS_FLAG);dark.setColor(BG);c.drawPath(edge,dark);Path fill=new Path();fill.moveTo(52,11);fill.lineTo(78,80);fill.lineTo(52,68);fill.lineTo(26,80);fill.close();Paint gold=new Paint(Paint.ANTI_ALIAS_FLAG);gold.setColor(GOLD);c.drawPath(fill,gold);Path core=new Path();core.moveTo(52,18);core.lineTo(70,71);core.lineTo(52,62);core.lineTo(34,71);core.close();Paint light=new Paint(Paint.ANTI_ALIAS_FLAG);light.setColor(Color.rgb(255,249,224));c.drawPath(core,light);Paint center=new Paint(Paint.ANTI_ALIAS_FLAG);center.setColor(ROUTE);c.drawCircle(52,63,4.8f,center);return b;}
 
-    private void requestNeededPermissions(){if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},REQ_LOCATION);else startPreview();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF);}
-    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==REQ_LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)startPreview();}
+    private void requestNeededPermissions(){
+        // Do not overlap Android's initial permission sheets. Show the
+        // floating-permission onboarding only once they are all dismissed.
+        if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
+            runtimePermissionInProgress=true;
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION},REQ_LOCATION);
+        }else{
+            startPreview();
+            requestNotificationPermissionIfNeeded();
+        }
+    }
+    private void requestNotificationPermissionIfNeeded(){
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                !=PackageManager.PERMISSION_GRANTED){
+            runtimePermissionInProgress=true;
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF);
+        }else{
+            runtimePermissionInProgress=false;
+            scheduleBubblePermissionCheck();
+        }
+    }
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(requestCode,permissions,results);
+        if(requestCode==REQ_LOCATION){
+            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)startPreview();
+            uiHandler.post(this::requestNotificationPermissionIfNeeded);
+        }else if(requestCode==REQ_NOTIF){
+            runtimePermissionInProgress=false;
+            scheduleBubblePermissionCheck();
+        }
+    }
     private void startPreview(){if(shiftActive||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;if(previewLm==null)previewLm=(LocationManager)getSystemService(LOCATION_SERVICE);if(previewLm==null)return;try{boolean gps=previewLm.isProviderEnabled(LocationManager.GPS_PROVIDER);Location l=previewLm.getLastKnownLocation(gps?LocationManager.GPS_PROVIDER:LocationManager.NETWORK_PROVIDER);if(l!=null&&Math.abs(System.currentTimeMillis()-l.getTime())<120000L)previewListener.onLocationChanged(l);if(gps)previewLm.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500L,1f,previewListener,Looper.getMainLooper());else if(previewLm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))previewLm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000L,12f,previewListener,Looper.getMainLooper());}catch(Exception ignored){}}
     private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}previewLastLocation=null;previewLastTs=0L;previewLastSpeed=0f;previewMoving=false;previewMovingEvidence=previewStoppedEvidence=0;}
 
@@ -1158,8 +1224,9 @@ public class MainActivity extends Activity {
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
             sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
         else stopService(new Intent(this,TrackingService.class));
-        startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();}
-    @Override protected void onPause(){getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+        startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();
+        scheduleBubblePermissionCheck();}
+    @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);
