@@ -9,15 +9,15 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Pasajero PWA | v69 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 13/10/2026 12:47 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38424844141) · commit e577915ab |
 | Cliente Premium | 15.0-Premium · code 203 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | [SUCCESS · 13/10/2026 02:36 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38352100436) · commit 64b249b2a |
-| Mapa Trayectos | 0.1-R25.3 · code 55 | **NO PUBLICADA EN REPOSITORIO** | [EN CURSO · 13/10/2026 13:00 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38426916214) · commit 98ea86f13 |
+| Mapa Trayectos | 0.1-R25.3 · code 55 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.3.apk) | [SUCCESS · 13/10/2026 13:02 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38426916214) · commit 98ea86f13 |
 
 **PWA CI:** [SUCCESS · 13/10/2026 09:09 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38395139733) · commit aa72e1103.
 **Backend fuente:** [93e302863813](https://github.com/marcelofgx-ctrl/traslados-web/commit/93e302863813) · **último CI encontrado:** [SUCCESS · 13/10/2026 02:39 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38352487078) · commit 93e302863.
 
 ### Fecha y hora de la última compilación y del último cambio
 
-**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 13/10/2026 12:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38424528621) · commit 1d8990b15 · Build Mapa Trayectos RELEASE.
-**Último cambio de código verificado:** 13/10/2026 13:00 UYT · [Mapa Trayectos / 98ea86f139](https://github.com/marcelofgx-ctrl/traslados-android/commit/98ea86f1399838a4fab6a94de7af88d25ecb3940) — Mapa R25.3: fix overlay permission prompt persistence and retries.
+**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 13/10/2026 13:02 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38426916214) · commit 98ea86f13 · Build Mapa Trayectos RELEASE.
+**Último cambio de código verificado:** 13/10/2026 13:02 UYT · [Web pasajero / 48a4178b32](https://github.com/marcelofgx-ctrl/traslados-android/commit/48a4178b32dc75ce785a8e02c8a4e1189d7fc072) — Publicar Mapa Trayectos R25.2 APK firmada.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
