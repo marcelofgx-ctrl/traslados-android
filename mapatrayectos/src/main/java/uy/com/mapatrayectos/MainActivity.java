@@ -80,6 +80,7 @@ public class MainActivity extends Activity {
     private boolean bubbleIntroShownThisActivity=false;
     private boolean runtimePermissionInProgress=false;
     private boolean returningFromOverlaySettings=false;
+    private boolean navigatingWithinMapa=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
 
     private void scheduleBubblePermissionCheck(){
@@ -431,6 +432,29 @@ public class MainActivity extends Activity {
         super.onWindowFocusChanged(hasFocus);
         if(hasFocus)scheduleBubblePermissionCheck();
     }
+    @Override public void startActivity(Intent intent){
+        if(intent!=null&&intent.getComponent()!=null
+                &&getPackageName().equals(intent.getComponent().getPackageName()))
+            navigatingWithinMapa=true;
+        super.startActivity(intent);
+    }
+
+    @Override protected void onUserLeaveHint(){
+        super.onUserLeaveHint();
+        boolean granted=Settings.canDrawOverlays(this);
+        if(FloatingShortcutPolicy.offerOverlaySettingsOnLeave(granted,
+                returningFromOverlaySettings,runtimePermissionInProgress,
+                navigatingWithinMapa||mapCloseRequested)){
+            uiHandler.removeCallbacks(checkBubblePermission);
+            bubbleIntroShownThisActivity=true;
+            android.util.Log.i("MapaBubble","Home: missing overlay permission; opening settings");
+            openBubblePermission();
+        }else if(granted&&!shiftActive&&!returningFromOverlaySettings
+                &&!navigatingWithinMapa&&!mapCloseRequested){
+            sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+        }
+    }
+
     private void openBubblePermission(){
         if(Settings.canDrawOverlays(this)){
             if(!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
@@ -1207,7 +1231,7 @@ public class MainActivity extends Activity {
         }else if(current.getParent() instanceof android.view.ViewGroup)
             ((android.view.ViewGroup)current.getParent()).removeView(current);
     }
-    @Override protected void onResume(){super.onResume();getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
+    @Override protected void onResume(){super.onResume();navigatingWithinMapa=false;getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();if(mapView!=null)mapView.onResume();if(Build.VERSION.SDK_INT>=33)registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE),Context.RECEIVER_NOT_EXPORTED);else registerReceiver(stateReceiver,new IntentFilter(TrackingService.ACTION_STATE));
         if(Build.VERSION.SDK_INT>=33){
             IntentFilter transfers=new IntentFilter();transfers.addAction(TransferAlerts.ACTION_NEW);
             transfers.addAction(TransferAlerts.ACTION_COUNT);

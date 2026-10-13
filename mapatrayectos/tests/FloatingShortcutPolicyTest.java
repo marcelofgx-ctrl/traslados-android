@@ -4,6 +4,16 @@ public final class FloatingShortcutPolicyTest {
     private static void require(boolean b,String msg){if(!b)throw new AssertionError(msg);}
     public static void main(String[] args){
         require(FloatingShortcutPolicy.canDisplay(false,true,false),"Idle minimizes to bubble");
+        require(FloatingShortcutPolicy.offerOverlaySettingsOnLeave(false,false,false,false),
+                "Home without grant opens Settings");
+        require(!FloatingShortcutPolicy.offerOverlaySettingsOnLeave(true,false,false,false),
+                "Granted overlay should show bubble without Settings");
+        require(!FloatingShortcutPolicy.offerOverlaySettingsOnLeave(false,true,false,false),
+                "No Settings loop while already requesting permission");
+        require(!FloatingShortcutPolicy.offerOverlaySettingsOnLeave(false,false,true,false),
+                "Do not interfere with initial Android runtime permission");
+        require(!FloatingShortcutPolicy.offerOverlaySettingsOnLeave(false,false,false,true),
+                "Internal navigation must not trigger permission Settings");
         require(FloatingShortcutPolicy.prearmBeforeLeaving(false,true),"Prepare idle foreground while visible");
         require(FloatingShortcutPolicy.shouldOfferPermissionIntro(false,false,true),"First app open offers overlay without starting shift");
         require(!FloatingShortcutPolicy.shouldOfferPermissionIntro(true,false,true),"No prompt if permission already granted");

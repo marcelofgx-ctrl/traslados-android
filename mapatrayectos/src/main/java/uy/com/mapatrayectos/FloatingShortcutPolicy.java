@@ -16,6 +16,12 @@ public final class FloatingShortcutPolicy {
                                                      boolean alreadyOffered,boolean activityFocused){
         return activityFocused&&!overlayGranted&&!alreadyOffered;
     }
+    /** Home is reported before onPause; do not redirect during system
+     * permissions or when opening an internal Activity. */
+    public static boolean offerOverlaySettingsOnLeave(boolean granted,
+            boolean visitingSettings, boolean runtimeRequest, boolean internalMove) {
+        return !granted && !visitingSettings && !runtimeRequest && !internalMove;
+    }
     public static boolean prearmBeforeLeaving(boolean shiftActive,boolean overlayGranted){
         return !shiftActive&&overlayGranted;
     }
