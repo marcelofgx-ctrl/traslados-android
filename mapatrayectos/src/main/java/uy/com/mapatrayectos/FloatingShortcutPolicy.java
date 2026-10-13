@@ -11,6 +11,11 @@ public final class FloatingShortcutPolicy {
         return !appVisible&&overlayGranted&&!alreadyShown;
     }
     /** Pre-arm the overlay only when an idle Activity can request foreground service. */
+    /** Offer exactly once, after focus returns from any initial system dialogs. */
+    public static boolean shouldOfferPermissionIntro(boolean overlayGranted,
+                                                     boolean alreadyOffered,boolean activityFocused){
+        return activityFocused&&!overlayGranted&&!alreadyOffered;
+    }
     public static boolean prearmBeforeLeaving(boolean shiftActive,boolean overlayGranted){
         return !shiftActive&&overlayGranted;
     }

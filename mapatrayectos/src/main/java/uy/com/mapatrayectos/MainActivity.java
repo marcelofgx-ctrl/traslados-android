@@ -400,11 +400,39 @@ public class MainActivity extends Activity {
     }
 
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
-    private void maybeOfferBubblePermission(){if(Settings.canDrawOverlays(this))return;SharedPreferences p=getSharedPreferences("ui_prefs",MODE_PRIVATE);if(p.getBoolean("bubble_offer_r6",false))return;p.edit().putBoolean("bubble_offer_r6",true).apply();new AlertDialog.Builder(this).setTitle("Acceso flotante").setMessage("Mapa Trayectos puede quedar como un globito encima de otras aplicaciones, incluso sin jornada. En modo inactivo NO usa el GPS ni registra kilómetros. Tocándolo volvés al mapa.").setPositiveButton("ACTIVAR",(d,w)->openBubblePermission()).setNegativeButton("MÁS TARDE",null).show();}
+    private void maybeOfferBubblePermission(){
+        SharedPreferences prefs=getSharedPreferences("ui_prefs",MODE_PRIVATE);
+        // The old first-run question was only called from START_SHIFT, even
+        // though R25.1 supports a bubble while idle. Show it on first focus.
+        final String key="bubble_permission_intro_r25_2";
+        if(!FloatingShortcutPolicy.shouldOfferPermissionIntro(
+                Settings.canDrawOverlays(this),prefs.getBoolean(key,false),hasWindowFocus()))return;
+        prefs.edit().putBoolean(key,true).apply();
+        new AlertDialog.Builder(this)
+            .setTitle("Activar acceso flotante")
+            .setMessage("Mapa Trayectos puede dejar un globito encima de Cliente Premium y Google Maps. Solo tenés que autorizarlo una vez. Sin jornada, el globito no registra recorridos ni consume GPS.")
+            .setPositiveButton("ACTIVAR",(dialog,which)->openBubblePermission())
+            .setNegativeButton("MÁS TARDE",null).show();
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus){
+        super.onWindowFocusChanged(hasFocus);
+        if(!hasFocus)return;
+        // Wait until Android has closed the location/notification permission
+        // sheets. Never display a second permission dialog over a system dialog.
+        uiHandler.postDelayed(()->{
+            if(!isFinishing()&&hasWindowFocus())maybeOfferBubblePermission();
+        },550L);
+    }
     private void openBubblePermission(){if(Settings.canDrawOverlays(this)){Toast.makeText(this,"Burbuja activada: aparecerá al minimizar la app, incluso sin jornada.",Toast.LENGTH_LONG).show();return;}try{startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+getPackageName())),REQ_OVERLAY);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}}
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
-        if(requestCode==REQ_OVERLAY){updateUi();Toast.makeText(this,Settings.canDrawOverlays(this)?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();return;}
+        if(requestCode==REQ_OVERLAY){
+            boolean granted=Settings.canDrawOverlays(this);
+            updateUi();
+            if(granted&&!shiftActive)sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
+            Toast.makeText(this,granted?"Burbuja flotante activada":"La burbuja sigue desactivada",Toast.LENGTH_SHORT).show();
+            return;
+        }
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
             if(requestCode==REQ_EXPORT_DB)resetAfterBackup=false;
             return;
