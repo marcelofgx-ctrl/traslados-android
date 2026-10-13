@@ -7,6 +7,8 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from zoneinfo import ZoneInfo
 import re
 import subprocess
 import urllib.error
@@ -61,6 +63,72 @@ def github_json(path: str, offline: bool = False) -> dict | None:
         return None
 
 
+def time_uy(iso: str | None) -> str:
+    """GitHub UTC event timestamp, presented in Montevideo's civil time."""
+    if not iso:
+        return "fecha/hora no informada"
+    try:
+        stamp = dt.datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            return "fecha/hora sin zona verificable"
+        return stamp.astimezone(ZoneInfo("America/Montevideo")).strftime("%d/%m/%Y %H:%M UYT")
+    except (TypeError, ValueError):
+        return "fecha/hora inválida"
+
+
+def build_time(run: dict) -> str:
+    # GitHub workflow updated_at is the final update, not compilation-start time.
+    # Never claim this is an exact timestamp from apksigner or Gradle.
+    raw = run.get("updated_at") if run.get("status") == "completed" else (
+        run.get("run_started_at") or run.get("created_at"))
+    return time_uy(raw)
+
+
+def latest_app_build(runs: list[dict]) -> dict | None:
+    names = {
+        "Verify and package passenger PWA (GitHub Pages via branch)",
+        "Build Traslados Cliente Premium v15 RELEASE",
+        "Build Traslados Conductor RELEASE",
+        "Build Mapa Trayectos RELEASE",
+    }
+    finished = [r for r in runs if r.get("head_branch") == "main"
+                and r.get("name") in names and r.get("status") == "completed"
+                and r.get("conclusion") == "success" and r.get("updated_at")]
+    return max(finished, key=lambda r: r["updated_at"], default=None)
+
+
+def latest_code_change(offline: bool) -> dict | None:
+    """Ignore automatic documentation commits by querying relevant source paths."""
+    tracks = [
+        (REPO, "web-pasajero", "Web pasajero"),
+        (REPO, "conductor", "Conductor"),
+        (REPO, "mapatrayectos", "Mapa Trayectos"),
+        (REPO, "cliente-premium", "Cliente Premium"),
+        (REPO, "core-reservations", "Código Android compartido"),
+        (BACKEND, "src", "Backend Web/Worker"),
+        (BACKEND, "supabase/migrations", "Supabase / migraciones"),
+    ]
+    if offline:
+        return None
+    def fetch_track(spec: tuple[str, str, str]) -> dict | None:
+        repository, path, label = spec
+        response = github_json("repos/" + repository + "/commits?sha=main&path=" + path + "&per_page=1")
+        if not isinstance(response, list) or not response:
+            return None
+        commit = response[0]
+        date = ((commit.get("commit") or {}).get("committer") or {}).get("date")
+        sha = commit.get("sha", "")
+        if not isinstance(date, str) or not isinstance(sha, str) or len(sha) < 10:
+            return None
+        subject = str(((commit.get("commit") or {}).get("message") or "").splitlines()[0])[:90]
+        return {"timestamp": date, "sha": sha, "repository": repository,
+                "area": label, "subject": subject.replace("|", "/")}
+    with ThreadPoolExecutor(max_workers=7) as pool:
+        results = list(pool.map(fetch_track, tracks))
+    valid = [item for item in results if item is not None]
+    return max(valid, key=lambda item: item["timestamp"], default=None)
+
+
 def recent(runs: list[dict], name: str) -> str:
     for item in runs:
         if item.get("name") != name or item.get("head_branch") != "main":
@@ -70,6 +138,8 @@ def recent(runs: list[dict], name: str) -> str:
                  "in_progress": "EN CURSO", "queued": "EN COLA"}.get(result, "NO VERIFICADO")
         url = item.get("html_url", "")
         sha = str(item.get("head_sha", ""))[:9]
+        observed = build_time(item)
+        label = label + " · " + observed
         if url.startswith("https://github.com/"):
             return "[" + label + "](" + url + ") · commit " + sha
         return label + " · commit " + sha
@@ -95,6 +165,8 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
     if not isinstance(client_runs, list): client_runs = []
     runs.extend(client_runs)
     if not isinstance(b_runs, list): b_runs = []
+    newest_build = latest_app_build(runs)
+    newest_change = latest_code_change(offline)
     short_backend = latest_backend.get("sha", "")[:12]
     backend_link = ("[" + short_backend + "](https://github.com/" + BACKEND + "/commit/" + short_backend + ")") if short_backend else "No consultado"
 
@@ -122,6 +194,29 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
       "",
       "**PWA CI:** " + recent(runs, "Verify and package passenger PWA (GitHub Pages via branch)") + ".",
       "**Backend fuente:** " + backend_link + " · **último CI encontrado:** " + recent(b_runs, "Traslados Web — CI independiente") + ".",
+      "",
+      "### Fecha y hora de la última compilación y del último cambio",
+      "",
+      "**Última compilación de aplicación con resultado SUCCESS:** "
+        + (recent([newest_build], newest_build["name"]) + " · " + newest_build["name"]
+           if newest_build else "No fue posible verificar una compilación exitosa") + ".",
+      "**Último cambio de código verificado:** "
+        + (time_uy(newest_change["timestamp"]) + " · "
+           + "[" + newest_change["area"] + " / " + newest_change["sha"][:10] + "]("
+           + "https://github.com/" + newest_change["repository"] + "/commit/" + newest_change["sha"] + ")"
+           + " — " + newest_change["subject"]
+           if newest_change else "No fue posible verificar la fecha/hora del último cambio de código")
+        + ".",
+      "",
+      "La hora de compilación corresponde a la **última actualización del workflow en GitHub**; "
+      "no es el instante exacto de firma del APK. Los cambios automáticos de documentación "
+      "se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).",
+      "",
+      "### Frase para la siguiente sesión",
+      "",
+      "> **Retomar Traslados Web desde Git**",
+      "",
+      "Al confirmar el resultado de cada compilación, ofrecer al usuario esta misma frase para copiar y pegar.",
       "",
       "### Interpretación y límites",
       "",
