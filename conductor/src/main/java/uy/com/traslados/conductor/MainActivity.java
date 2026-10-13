@@ -514,6 +514,11 @@ public class MainActivity extends Activity {
         addDetail(bodyBox,"person","PASAJERO",r.optString("customer_name")+" · "+r.optString("customer_phone"));
         addDetail(bodyBox,"calendar","FECHA Y HORA",fullDt+" · "+r.optInt("passengers",1)+" pasajero(s)");
         addRouteBlock(bodyBox,"pin","ORIGEN",r.optString("origin_text"));
+        JSONArray routeStops=r.optJSONArray("stops");
+        if(routeStops!=null)for(int i=0;i<routeStops.length();i++){
+            JSONObject stop=routeStops.optJSONObject(i);
+            if(stop!=null)addRouteBlock(bodyBox,"pin","PARADA "+(i+1),stop.optString("address_text",""));
+        }
         addRouteBlock(bodyBox,"flag","DESTINO",r.optString("destination_text"));
         LinearLayout navRow=new LinearLayout(this);navRow.setOrientation(LinearLayout.HORIZONTAL);
         Button navOrigin=secondaryButton("IR AL ORIGEN"),navDest=secondaryButton("IR AL DESTINO");navOrigin.setTextSize(11);navDest.setTextSize(11);
