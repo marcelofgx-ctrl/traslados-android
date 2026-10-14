@@ -113,14 +113,18 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R25.14'" mapatrayectos/build.gradle
-          grep -q "versionCode 66" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R25.15'" mapatrayectos/build.gradle
+          grep -q "versionCode 67" mapatrayectos/build.gradle
+          grep -q 'sheet_end_shift_action' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'endShiftAction.setOnClickListener' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'DESLIZAR · INICIAR JORNADA' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'drawRoundRect(surface,corners,corners,p)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'showEndShiftConfirmation' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ShiftEndPolicy.canEndShift(shiftActive,tripActive)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           ! grep -q 'sheet_shift_close' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_FULL_DP=374' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_MID_DP=236' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=330' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_MID_DP=230' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'liveStyle.getLayers()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(mode==MODE_SHIFT_START)return Color.rgb(2,57,61)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(metrics!=null)metrics.setVisibility(state>=2' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -128,7 +132,7 @@ jobs:
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'PopupWindow(menu,menuWidth,-2,true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'dp(49)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'stripLp=new LinearLayout.LayoutParams(-1,dp(57))' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'FrameLayout bubble=new FrameLayout' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'new WindowManager.LayoutParams(size,size' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'postDelayed(longPress,800L)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -156,7 +160,7 @@ jobs:
           test -s conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
-          grep -q "SHEET_MID_DP=236" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=230" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -198,7 +202,7 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=236" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=230" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -512,8 +516,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_14_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_14_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_15_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_15_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -521,9 +525,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R25-14-RELEASE
+          name: Mapa-Trayectos-v0.1-R25-15-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R25_14_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R25_15_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
@@ -542,6 +546,7 @@ jobs:
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.11-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.12-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.13-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R25.14-SHA256SUMS.txt)
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
           # Always build publication on the latest main. Concurrent docs/Pages
@@ -550,17 +555,17 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             mkdir -p web-pasajero/downloads
-            cp artifacts/Mapa_Trayectos_v0.1_R25_14_RELEASE.apk \
-              web-pasajero/downloads/mapa-trayectos-r25.14.apk
-            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.14.apk > MAPA-R25.14-SHA256SUMS.txt)
-            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.14-SHA256SUMS.txt)
-            git add web-pasajero/downloads/mapa-trayectos-r25.14.apk \
-                    web-pasajero/downloads/MAPA-R25.14-SHA256SUMS.txt
+            cp artifacts/Mapa_Trayectos_v0.1_R25_15_RELEASE.apk \
+              web-pasajero/downloads/mapa-trayectos-r25.15.apk
+            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.15.apk > MAPA-R25.15-SHA256SUMS.txt)
+            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.15-SHA256SUMS.txt)
+            git add web-pasajero/downloads/mapa-trayectos-r25.15.apk \
+                    web-pasajero/downloads/MAPA-R25.15-SHA256SUMS.txt
             if git diff --cached --quiet; then
-              echo 'APK Mapa R25.14 ya publicada sin alterar binario'
+              echo 'APK Mapa R25.15 ya publicada sin alterar binario'
               exit 0
             fi
-            git commit -m 'Publicar Mapa Trayectos R25.14 APK firmada'
+            git commit -m 'Publicar Mapa Trayectos R25.15 APK firmada'
             if git push origin HEAD:main; then exit 0; fi
             echo "Publicación concurrente, reintentando sobre main actual (${retry}/5)"
           done
