@@ -2146,3 +2146,12 @@ body.trip-chat-modal-open{overflow:hidden}
 .pickup-existing-open[hidden]{display:none!important}
 .pickup-existing-open:focus-visible{outline:3px solid #ffffff;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.pickup-existing-open{transition:none!important}}
+
+/* v70 · soporte de recogida con diagnósticos solo locales y discretos */
+.pickup-diagnostics{margin-top:1rem;padding:1rem 1.1rem}
+.pickup-diagnostics>summary{cursor:pointer;font-weight:700;color:#e7cd8f;letter-spacing:.01em;list-style:revert}
+.pickup-diagnostics[open]>summary{margin-bottom:.8rem}
+.pickup-diagnostics label{display:block;margin:.65rem 0 .3rem;color:#d7e6df;font-size:.88rem}
+#pickup-diagnostics-preview{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:7rem;padding:.7rem;border:1px solid #547974;border-radius:.85rem;background:#08282e;color:#dce9df;font:12px/1.45 ui-monospace,SFMono-Regular,monospace;resize:vertical}
+.pickup-diagnostics-actions{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:.75rem}
+.pickup-diagnostics-actions button{flex:1 1 10rem;min-height:44px}
