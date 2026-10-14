@@ -127,7 +127,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   assert.equal(host.dataset.presence,"busy");
   assert.equal(host.dataset.phase,"blocked","Agenda bloqueada must show a stable non-animated state");
   assert.match(els["pickup-presence-status"].textContent,/Recogida inmediata sin confirmar/);
-  assert.match(els["pickup-presence-status"].textContent,/Se actualiza solo/);
+  assert.match(els["pickup-presence-status"].textContent,/La llegada se calcula por separado/);
   assert.match(els["pickup-presence-status"].textContent,/Disponibilidad comprobada ahora/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");
   assert.equal(els["pickup-presence-metrics"].hidden,true,"No ETA when driver becomes busy");
