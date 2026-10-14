@@ -299,9 +299,20 @@ public class MainActivity extends Activity {
                     ((LineLayer)layer).setProperties(PropertyFactory.lineColor(
                             major?Color.rgb(200,164,99):Color.rgb(130,118,88)),PropertyFactory.lineOpacity(0.79f));
                 }else if(layer instanceof FillLayer && id.contains("water")){
-                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(6,46,69)));
+                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(9,52,87)));
+                }else if(layer instanceof FillLayer && id.contains("building")){
+                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(58,88,103)),
+                        PropertyFactory.fillOpacity(0.82f));
+                }else if(layer instanceof FillLayer &&
+                        (id.contains("park")||id.contains("grass")||id.contains("wood")||id.contains("forest"))){
+                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(29,85,72)),
+                        PropertyFactory.fillOpacity(0.84f));
+                }else if(layer instanceof FillLayer &&
+                        (id.contains("landuse")||id.contains("landcover"))){
+                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(35,72,84)),
+                        PropertyFactory.fillOpacity(0.73f));
                 }else if(layer instanceof BackgroundLayer){
-                    ((BackgroundLayer)layer).setProperties(PropertyFactory.backgroundColor(Color.rgb(7,26,36)));
+                    ((BackgroundLayer)layer).setProperties(PropertyFactory.backgroundColor(Color.rgb(18,51,67)));
                 }
             }
         }catch(Exception ignored){ /* Decorative map layers must never interrupt GPS. */ }
