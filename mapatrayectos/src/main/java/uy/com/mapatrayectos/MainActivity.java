@@ -479,6 +479,7 @@ public class MainActivity extends Activity {
         stoppedText.setContentDescription(tripActive?"Detenido del servicio "+formatClock(tripStopped):"Viajes completados "+shiftCompletedTrips);
         if(stopActive&&stopStarted>0)idleText.setText("Parada registrada  "+formatDuration(now-stopStarted)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
         else if(tripActive&&pickupAt>0)idleText.setText("Con pasajero  "+formatDuration(now-pickupAt)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
+        else if(tripActive)idleText.setText("A recoger  "+formatDuration(tripElapsed)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
         else idleText.setText("Sin viaje  "+formatDuration(idle)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
 
         if(!shiftActive){
