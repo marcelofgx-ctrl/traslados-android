@@ -45,7 +45,7 @@
     persist(); // purge aged events and any unknown fields
   }
   function append(step,outcome,latencyMs,phase,mode){
-    const evt=clean({step,outcome,latencyMs,phase,mode,at:new Date().toISOString()});
+    const evt=clean({step,outcome:outcomes.has(outcome)?outcome:"other",latencyMs,phase,mode,at:new Date().toISOString()});
     if(!evt)return;
     events.push(evt);
     while(events.length>MAX)events.shift();
