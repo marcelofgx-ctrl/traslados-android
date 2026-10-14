@@ -62,8 +62,8 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          target: google_apis
-          profile: pixel_6
+          target: default
+          profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
@@ -77,15 +77,16 @@ jobs:
             adb shell pm grant uy.com.mapatrayectos android.permission.POST_NOTIFICATIONS
             adb shell appops set uy.com.mapatrayectos SYSTEM_ALERT_WINDOW allow || true
             adb emu geo fix -56.084 -34.880 || true
-            adb shell am force-stop com.google.android.apps.nexuslauncher || true
             adb shell am start -n uy.com.mapatrayectos/.MainActivity
             sleep 20
-            # A Google Pixel Launcher ANR dialog dimmed all UI in the first run.
-            # Recognize the bright center modal and dismiss it before accepting captures.
-            for attempt in 1 2 3 4; do adb exec-out screencap -p > /tmp/mapa-qa-window.png; if python3 -c 'from PIL import Image;im=Image.open("/tmp/mapa-qa-window.png").convert("RGB");w,h=im.size;cx=im.getpixel((w//2,h//2));assert sum(cx)/3<155,cx'; then break; fi; adb shell input tap 340 1210; sleep 4; done
+            # Use AOSP image instead of Pixel Launcher to avoid launcher ANR.
+            # Never hide unexpected system dialogs as if they were valid app pixels.
+            adb exec-out screencap -p > /tmp/mapa-qa-window.png
             adb exec-out screencap -p > docs/visual-qa/mapa-r25.15-idle.png
             # From the expanded idle dashboard the large slider is near y=2138.
-            adb shell input swipe 130 2138 950 2138 1100
+            adb shell input swipe 135 2130 945 2130 950
+            sleep 2
+            adb shell run-as uy.com.mapatrayectos cat shared_prefs/tracking_state.xml > docs/visual-qa/state-after-start.xml || true
             sleep 11
             adb exec-out screencap -p > docs/visual-qa/mapa-r25.15-shift-active.png
             adb shell uiautomator dump /sdcard/ui.xml || true
@@ -122,7 +123,8 @@ jobs:
           print('Porcentaje cambios pixel fuerte entre estados',round(changed*100,2),'%')
           assert changed>0.015, 'La jornada no cambió visualmente: verificar gesto de inicio'
           PY
-      - name: Guardar capturas de previsualización
+      - name: Guardar capturas de previsualización (incluso si falla QA)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visual-qa-mapa-r25-15
@@ -130,6 +132,7 @@ jobs:
             docs/visual-qa/mapa-r25.15-*.png
             docs/visual-qa/ui.xml
             docs/visual-qa/fatal-log.txt
+            docs/visual-qa/state-after-start.xml
           if-no-files-found: error
       - name: Publicar capturas de revisión en esta rama
         if: github.event_name == 'pull_request'
