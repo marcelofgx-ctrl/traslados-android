@@ -291,6 +291,11 @@ public class TrackingService extends Service implements LocationListener {
 
     private void stopTripInternal(boolean send,String status,double amount){
         if(!tripActive){if(send)broadcastState();return;}
+        // Service-side guard: UI validation must never be the sole defense.
+        if(!TripClosePolicy.mayFinish(normalizeStatus(status),amount)){
+            if(send)broadcastState();
+            return;
+        }
         long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);if(stopActive&&!stopId.isEmpty())db.finishStop(stopId,now);double avg=tripMoving>0?(tripDistance/1000.0)/(tripMoving/3600000.0):0;tripStatus=normalizeStatus(status);tripAmountUyu=Math.max(0,amount);String endedTrip=tripId;Double endLat=null,endLon=null;if(lastAccepted!=null){endLat=lastAccepted.getLatitude();endLon=lastAccepted.getLongitude();}db.updateTrip(tripId,now,tripDistance,tripMoving,tripStopped,tripMax,avg,zone);if(endLat!=null&&endLon!=null)db.setTripEndLocation(tripId,endLat,endLon,null);db.finalizeTrip(tripId,tripStatus,tripAmountUyu>0?tripAmountUyu:null);shiftCompletedTrips=db.completedTripsForShift(shiftId);if(endLat!=null&&endLon!=null)AddressResolver.resolveTripEndAsync(this,endedTrip,endLat,endLon,zone);shiftTripMs+=Math.max(0,now-tripStarted);tripActive=false;stopActive=false;tripOriginCaptured=false;tripStage="none";stopId="";tripId="";tripStarted=pickupAt=stopStarted=0;tripDistance=0;tripMoving=0;tripStopped=0;tripMax=0;prevMaxSample=-1f;prevMaxSampleTs=0;db.updateShift(shiftId,null,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);persist();Api.syncTripAsync(endedTrip);publishPickupPresence(now);if(send)broadcastState();updateNotification();
     }
 
