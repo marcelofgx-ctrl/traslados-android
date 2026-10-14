@@ -206,7 +206,8 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   const sig=presence+"|"+phase+"|"+(Number.isFinite(km)&&Number.isFinite(minutes)?"eta":"no_eta");
   if(sig!==paintPickupCard.lastSignature){
     paintPickupCard.lastSignature=sig;
-    window.TrasladosPickupHealth?.recordContext?.("card",phase,phase,authReady()?"session":"guest");
+    window.TrasladosPickupHealth?.recordContext?.("card",phase,phase,
+      typeof authReady==="function"&&authReady()?"session":"guest");
   }
 /* Recorrido decorativo sin leyenda redundante; la información operativa
    * sigue en el título, el subtítulo y las métricas verificadas. */
