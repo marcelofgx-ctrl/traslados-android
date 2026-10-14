@@ -50,6 +50,11 @@ jobs:
       - name: Compilar APK de previsualización
         shell: bash
         run: gradle :mapatrayectos:assembleDebug --stacktrace
+      - name: Preparar aceleración de hardware del emulador
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; ls -l /dev/kvm; fi
+          df -h /tmp
       - name: Capturas Android (inicio y jornada activa)
         uses: reactivecircus/android-emulator-runner@v2
         with:
