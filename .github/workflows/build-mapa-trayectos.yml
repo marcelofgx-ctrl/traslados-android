@@ -442,8 +442,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/mapa-shift-policy
-          javac -d /tmp/mapa-shift-policy \\
-            mapatrayectos/src/main/java/uy/com/mapatrayectos/ShiftEndPolicy.java \\
+          javac -d /tmp/mapa-shift-policy \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/ShiftEndPolicy.java \
             mapatrayectos/tests/ShiftEndPolicyTest.java
           java -cp /tmp/mapa-shift-policy ShiftEndPolicyTest
 
