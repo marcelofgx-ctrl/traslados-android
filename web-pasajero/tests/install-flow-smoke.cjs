@@ -17,7 +17,7 @@ const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
 const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
 assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
 assert(sw.includes("traslados-cliente-pwa-v"+appVersion),"Service Worker and UI release must match");
-assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v15.apk"));
+assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v16.apk"));
 assert(css.includes(".install-apk-option[hidden]"));
 
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140",apkAvailable=false}={}){
@@ -33,7 +33,7 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
     "install-guide-steps","install-guide-note","install-copy-link",
     "install-apk-option","install-apk-link","install-apk-web-guide"
   ].map(id=>[id,element(id)]));
-  elements["install-apk-link"].href="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk";
+  elements["install-apk-link"].href="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk";
   elements["install-apk-link"].click=()=>{apkClicks++;};
   const browser={
     matchMedia:()=>({matches:standalone}),
@@ -104,6 +104,11 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   assert.equal(nativeV15.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
   await nativeV15.click();
   assert.equal(nativeV15.view(),"viajes","Native v15 opens the same trip history");
+  const nativeV16=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/16",apkAvailable:true});
+  await settled();
+  assert.equal(nativeV16.elements["install-apk-option"].hidden,true,"Native v16 must not invite reinstallation");
+  await nativeV16.click();
+  assert.equal(nativeV16.view(),"viajes","Native v16 opens the same trip history");
   assert.equal(nativeApk.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
   await nativeApk.click();
   assert.equal(nativeApk.view(),"viajes","Native Cliente must open real trip history");

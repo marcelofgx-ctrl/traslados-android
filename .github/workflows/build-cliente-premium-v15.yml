@@ -1,15 +1,8 @@
 name: Build Traslados Cliente Premium v15 RELEASE
 
+# Historical v15 signing recipe retained for audit/rollback; v16 is the
+# current release pipeline. Never run obsolete release on source updates.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'cliente-premium/app/**'
-      - 'cliente-premium/tests/**'
-      - 'cliente-premium/build.gradle'
-      - 'cliente-premium/settings.gradle'
-      - 'cliente-premium/gradle.properties'
-      - '.github/workflows/build-cliente-premium-v15.yml'
   workflow_dispatch:
 
 permissions:

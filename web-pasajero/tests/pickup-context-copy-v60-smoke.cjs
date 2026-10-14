@@ -4,12 +4,12 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=f=>fs.readFileSync(path.join(root,f),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),sw=read("sw.js");
-assert(html.includes("app.js?v=69")&&html.includes("styles.css?v=69"));
-assert(sw.includes("traslados-cliente-pwa-v69"));
+assert(html.includes("app.js?v=70")&&html.includes("styles.css?v=70"));
+assert(sw.includes("traslados-cliente-pwa-v70"));
 assert(html.includes("DISTANCIA AL ORIGEN")&&html.includes("LLEGADA ESTIMADA"));
 assert(css.includes('not([data-phase="waiting"]):not([data-phase="ready"]) .pickup-route-animation'));
 assert(!app.includes("Actualización automática cada 15 s."));
-assert(app.includes(" · Se actualiza solo"));
+assert(app.includes(" · La llegada se calcula por separado"));
 assert(app.includes('if(!driver.available){')&&app.includes("forgetPickupEta()"));
 assert(app.includes('phase:"blocked"')&&app.includes('phase:"issue"'));
 assert(app.includes('window.TrasladosPickupCadence.intervalMs(driver.motionHint)'));
@@ -32,7 +32,7 @@ vm.createContext(context);vm.runInContext(app.slice(begin,end),context);
 const online={presence:"online",title:"Conductor disponible para recogerte",
   subtitle:"Llegada aproximada hasta tu origen.",km:3.5,minutes:10,
   estimateNote:"Distancia y tiempo aproximados. La recogida requiere confirmación.",
-  checked:"Actualizado ahora · Se actualiza solo",phase:"ready"};
+  checked:"Disponibilidad comprobada ahora · La llegada se calcula por separado",phase:"ready"};
 context.paintPickupCard(online);
 assert.equal(nodes["pickup-distance"].textContent,"3,5 km");
 assert.equal(nodes["pickup-minutes"].textContent,"5–10 min");
@@ -43,7 +43,7 @@ context.paintPickupCard(online);
 assert.equal(announcements,1,"Do not reannounce unchanged passenger status on each poll");
 context.paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
  subtitle:"Podés enviar tu solicitud para que el conductor la revise.",
- checked:"Actualizado ahora · Se actualiza solo",phase:"blocked"});
+ checked:"Disponibilidad comprobada ahora · La llegada se calcula por separado",phase:"blocked"});
 assert.equal(nodes["pickup-presence-metrics"].hidden,true,"Hide previous ETA when unavailable");
 assert.equal(nodes["pickup-distance"].textContent,"");
 assert(!screenreader.textContent.includes("3,5 km"));

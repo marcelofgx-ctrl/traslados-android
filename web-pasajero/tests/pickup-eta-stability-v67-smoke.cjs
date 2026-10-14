@@ -4,8 +4,8 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const root=path.join(__dirname,".."),read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),eta=read("eta-engine.js"),sw=read("sw.js");
-assert(html.includes("app.js?v=69")&&html.includes("styles.css?v=69"));
-assert(sw.includes("traslados-cliente-pwa-v69"));
+assert(html.includes("app.js?v=70")&&html.includes("styles.css?v=70"));
+assert(sw.includes("traslados-cliente-pwa-v70"));
 assert(eta.includes("setTimeout(()=>ctrl.abort(),18000)"));
 assert(!html.includes('id="pickup-route-caption"'));
 assert(!app.includes("Animación ilustrativa · No es seguimiento en vivo"));
