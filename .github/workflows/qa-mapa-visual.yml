@@ -82,14 +82,7 @@ jobs:
             sleep 20
             # A Google Pixel Launcher ANR dialog dimmed all UI in the first run.
             # Recognize the bright center modal and dismiss it before accepting captures.
-            for attempt in 1 2 3 4; do
-              adb exec-out screencap -p > /tmp/mapa-qa-window.png
-              if python3 -c 'from PIL import Image;im=Image.open("/tmp/mapa-qa-window.png").convert("RGB");w,h=im.size;cx=im.getpixel((w//2,h//2));assert sum(cx)/3<155,cx'; then
-                break
-              fi
-              adb shell input tap 340 1210
-              sleep 4
-            done
+            for attempt in 1 2 3 4; do adb exec-out screencap -p > /tmp/mapa-qa-window.png; if python3 -c 'from PIL import Image;im=Image.open("/tmp/mapa-qa-window.png").convert("RGB");w,h=im.size;cx=im.getpixel((w//2,h//2));assert sum(cx)/3<155,cx'; then break; fi; adb shell input tap 340 1210; sleep 4; done
             adb exec-out screencap -p > docs/visual-qa/mapa-r25.15-idle.png
             # From the expanded idle dashboard the large slider is near y=2138.
             adb shell input swipe 130 2138 950 2138 1100
