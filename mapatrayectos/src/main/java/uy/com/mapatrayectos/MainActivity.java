@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false; private int lastSheetLayoutVariant=-1;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=334;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=244,SHEET_FULL_DP=346;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
     private void buildUi(Bundle b){
         FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(8),dp(5),dp(8),dp(5));top.setBackground(headerGradient());top.setElevation(dp(7));
-        TextView brand=text("Uber\n➜",14.0f,TEXT,true);brand.setGravity(Gravity.CENTER);brand.setIncludeFontPadding(false);brand.setLineSpacing(0,0.92f);brand.setContentDescription("Mapa Trayectos · conductor");brand.setBackground(premiumGradient(Color.rgb(0,5,11),Color.rgb(1,17,23),Color.argb(248,234,193,99),30f,1.6f));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(53),dp(53));brandLp.setMargins(0,0,dp(7),0);top.addView(brand,brandLp);
+        TextView brand=text("Uber\n➜",14.0f,TEXT,true);brand.setGravity(Gravity.CENTER);brand.setIncludeFontPadding(false);brand.setLineSpacing(0,0.92f);brand.setContentDescription("Mapa Trayectos · conductor");brand.setBackground(premiumGradient(Color.rgb(0,5,11),Color.rgb(1,17,23),Color.argb(248,234,193,99),30f,1.6f));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(48),dp(48));brandLp.setMargins(0,0,dp(7),0);top.addView(brand,brandLp);
         brand.setContentDescription("Mapa Trayectos. Mantené pulsado para cerrar el mapa si no hay jornada.");
         brand.setOnLongClickListener(v->{
             SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
@@ -156,7 +156,7 @@ public class MainActivity extends Activity {
             return true;
         });
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.8f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
-        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(46),dp(44)));
+        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setSingleLine(true);followBtn.setMaxLines(1);followBtn.setAutoSizeTextTypeUniformWithConfiguration(8,11,1,android.util.TypedValue.COMPLEX_UNIT_SP);followBtn.setMinWidth(0);followBtn.setMinimumWidth(0);followBtn.setPadding(dp(2),0,dp(2),0);followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(53),dp(44)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(39),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
             if(!Settings.canDrawOverlays(this))openBubblePermission();
@@ -457,12 +457,12 @@ public class MainActivity extends Activity {
         if(!shiftActive){
             sheetMetaText.setText("Preparado · GPS y recorridos");modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR · INICIAR JORNADA");
         }else if(shiftPaused){
-            sheetMetaText.setText("Jornada pausada · no suma km ni minutos DET. · total pausa "+formatDuration(shiftPauseMs));
-            modeText.setText("JORNADA EN PAUSA · "+zone);
+            sheetMetaText.setText(zone+" · en pausa · total "+formatDuration(shiftPauseMs));
+            modeText.setText("JORNADA EN PAUSA");
             slider.setMode(SlideActionView.MODE_TRIP_START);
             slider.setLabel("DESLIZAR PARA REANUDAR JORNADA");
         }else if(!tripActive){
-            sheetMetaText.setText("Jornada en curso · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA · "+zone);slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR · INICIAR SERVICIO");
+            sheetMetaText.setText(zone+" · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA");slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR · INICIAR SERVICIO");
         }else if("to_pickup".equals(tripStage)){
             sheetMetaText.setText(typeLabel(tripType)+" · etapa 1/2 · trayecto hacia la recogida");setModeTitle("EN CAMINO A RECOGER",typeLabel(tripType));slider.setMode(SlideActionView.MODE_PICKUP);slider.setLabel("DESLIZAR · PASAJERO RECOGIDO");
         }else if(stopActive){
@@ -1235,15 +1235,15 @@ public class MainActivity extends Activity {
     private Drawable premiumGradient(int c1,int c2,int stroke,float radius,float strokeDp){GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{c1,c2});g.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(strokeDp>0)g.setStroke(Math.max(1,Math.round(strokeDp*getResources().getDisplayMetrics().density)),stroke);return g;}
     private int sheetHeightDp(int state){
         if(state<=0)return SHEET_PEEK_DP;
-        return (state==1?SHEET_MID_DP:SHEET_FULL_DP)+(shiftActive&&!tripActive?40:0);
+        return state==1?SHEET_MID_DP:(SHEET_FULL_DP+(shiftActive&&!tripActive?46:0));
     }
     private int maxSheetState(){return 2;}
     private int maxSheetHeightDp(){return sheetHeightDp(maxSheetState());}
     private void setSheetHeightPx(int heightPx){if(bottomSheet==null)return;FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();lp.height=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),heightPx));bottomSheet.setLayoutParams(lp);}
-    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(endShiftAction!=null)endShiftAction.setVisibility(!peek&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
+    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(endShiftAction!=null)endShiftAction.setVisibility(state>=2&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
     private void updateSheetContentVisibility(){
         applySheetVisibility(sheetState);
-        int variant=shiftActive&&!tripActive?1:0;
+        int variant=sheetState==2&&shiftActive&&!tripActive?1:0;
         if(variant!=lastSheetLayoutVariant){
             lastSheetLayoutVariant=variant;
             if(!sheetDragging)setSheetHeightPx(dp(sheetHeightDp(sheetState)));
