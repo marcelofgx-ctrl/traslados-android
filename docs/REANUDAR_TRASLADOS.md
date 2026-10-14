@@ -1,5 +1,15 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa Trayectos R25.20 — círculo expandible, deslizador de jornada, zona legible (14/10/2026, EN VALIDACIÓN)
+
+- Pedido desde capturas reales Samsung 14:20-14:21 UYT. Dejar la cartografía clara de R25.19 y la traza verde jade; recuperar el estilo de gesto deslizante para fin de jornada, eliminando el cuadrado de 36×34 px/dp que se confundía con ejecución directa. La zona Shangrilá del encabezado era demasiado pequeña.
+- Rama `feature/mapa-r25-20-circulo-deslizante-jornada-zona`: `MainActivity` muestra un círculo `⇠` de 44dp con contorno champagne, visible **solo con jornada activa y sin viaje**. Al tocarlo despliega en estado operativo un rail secundario `DESLIZAR ← FINALIZAR JORNADA` (modo reverse desde derecha hacia izquierda). Tocar círculo **no cierra** jornada; deslizar exige todavía diálogo confirmatorio y `ShiftEndPolicy` más guardas reales de TrackingService. Nuevo toque `×` colapsa el rail. El deslizador principal de inicio/viaje/recogida/parada/finalizar queda separado. Durante viaje no hay opción de fin jornada.
+- Mantener **tres alturas reales** (compacta 86dp, operativa 246dp, extendida 349dp, o +70dp temporalmente cuando se despliega el fin de jornada), con área útil del mapa preservada. Tocar el círculo desde la vista compacta abre la vista operativa con rail; no cerrar por error.
+- Zona superior con Manrope nativo más grande (13.4sp), champagne luminoso, autoajuste sin recortes, sombreado leve, contenido accesible dinámico.
+- Versión prevista **R25.20/versionCode 72**. Pendiente QA modular, imágenes Android reales, RELEASE firmada, SHA y descarga verificable. Nunca sobrescribir R25.19, ni tocar Supabase, web v69, Conductor o DB.
+
+
+
 ## R25.19: CARTOGRAFÍA CLARA + TRAZA VERDE JADE — FIRMADA Y PUBLICADA (14/10/2026 13:44 UYT)
 
 - Pedido y diseño aprobados: reemplazar en Mapa la cartografía nocturna oscura por un fondo **marfil/piedra** claro texturado, construcciones gris cálido, parques salvia, agua celeste y caminos beige/champagne; conservar HUD petróleo/negro con dorado.

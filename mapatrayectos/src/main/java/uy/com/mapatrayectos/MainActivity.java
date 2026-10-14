@@ -42,7 +42,8 @@ public class MainActivity extends Activity {
     private String selectedTripPlatform="";
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
-    private SlideActionView slider; private TextView endShiftAction;
+    private SlideActionView slider,endShiftSlider; private TextView endShiftAction;
+    private View endShiftSliderWrap; private boolean shiftCloseExpanded=false;
     private FrameLayout rootFrame;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
@@ -61,7 +62,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false; private int lastSheetLayoutVariant=-1;
-    private static final int SHEET_PEEK_DP=78,SHEET_MID_DP=239,SHEET_FULL_DP=342;
+    private static final int SHEET_PEEK_DP=86,SHEET_MID_DP=246,SHEET_FULL_DP=349,SHIFT_CLOSE_EXTRA_DP=70;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -159,7 +160,15 @@ public class MainActivity extends Activity {
         tripSourceBadge=brand;
         brand.setOnClickListener(v->chooseUpcomingTripPlatform());
         refreshPlatformBadge();
-        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.8f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
+        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,13.4f,Color.rgb(255,232,177),true);
+        zoneText.setSingleLine(true);zoneText.setMaxLines(1);
+        zoneText.setAutoSizeTextTypeUniformWithConfiguration(11,14,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        zoneText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        zoneText.setIncludeFontPadding(false);
+        zoneText.setLetterSpacing(.012f);
+        zoneText.setShadowLayer(dp(1),0,dp(1),Color.argb(165,0,0,0));
+        zoneText.setContentDescription("Zona actual: "+zone);
+        labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setSingleLine(true);followBtn.setMaxLines(1);followBtn.setAutoSizeTextTypeUniformWithConfiguration(8,11,1,android.util.TypedValue.COMPLEX_UNIT_SP);followBtn.setMinWidth(0);followBtn.setMinimumWidth(0);followBtn.setPadding(dp(2),0,dp(2),0);followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(53),dp(44)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(39),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
@@ -215,19 +224,20 @@ public class MainActivity extends Activity {
 
         LinearLayout head=new LinearLayout(this);head.setTag("sheet_head");head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(dp(2),0,0,0);head.setOnTouchListener(this::onSheetTouch);
         modeText=text("LISTO PARA JORNADA",18.1f,TEXT,true);modeText.setSingleLine(true);modeText.setLetterSpacing(.006f);modeText.setAutoSizeTextTypeUniformWithConfiguration(12,18,1,android.util.TypedValue.COMPLEX_UNIT_SP);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));
-        // Small but accessible shift closure, placed in the header instead of below the slider.
-        endShiftAction=text("■",18f,CHAMPAGNE,true);
+        // R25.20: tactile circular opener. A TAP expands a dedicated REVERSE
+        // swipe-to-close control; tapping this orb can NEVER close the journey.
+        endShiftAction=text("⇠",24f,CHAMPAGNE,true);
         endShiftAction.setTag("sheet_end_shift_action");
         endShiftAction.setGravity(Gravity.CENTER);
-        endShiftAction.setContentDescription("Finalizar jornada. Requiere confirmación y no permite cerrar con viaje activo.");
-        endShiftAction.setBackground(premiumGradient(Color.rgb(3,34,43),Color.rgb(5,54,55),
-            Color.argb(205,234,193,99),13f,0.9f));
-        endShiftAction.setOnClickListener(v->showEndShiftConfirmation());
-        LinearLayout.LayoutParams miniEndLp=new LinearLayout.LayoutParams(dp(36),dp(34));
-        miniEndLp.setMargins(dp(3),0,dp(4),0);
+        endShiftAction.setContentDescription("Abrir el deslizador para finalizar jornada");
+        endShiftAction.setBackground(premiumGradient(Color.rgb(18,47,48),Color.rgb(36,66,56),
+            Color.argb(238,234,193,99),28f,1.25f));
+        endShiftAction.setOnClickListener(v->toggleShiftCloseControl());
+        LinearLayout.LayoutParams miniEndLp=new LinearLayout.LayoutParams(dp(44),dp(44));
+        miniEndLp.setMargins(dp(2),0,dp(2),0);
         head.addView(endShiftAction,miniEndLp);
-        sheetChevron=text("⌄",22,CHAMPAGNE,true);sheetChevron.setGravity(Gravity.CENTER);sheetChevron.setContentDescription("Cambiar entre mapa, panel operativo y estadísticas");sheetChevron.setOnClickListener(v->cycleSheetState());head.addView(sheetChevron,new LinearLayout.LayoutParams(dp(38),dp(38)));
-        bottomSheet.addView(head,new LinearLayout.LayoutParams(-1,dp(41)));
+        sheetChevron=text("⌄",22,CHAMPAGNE,true);sheetChevron.setGravity(Gravity.CENTER);sheetChevron.setContentDescription("Cambiar entre mapa, panel operativo y estadísticas");sheetChevron.setOnClickListener(v->cycleSheetState());head.addView(sheetChevron,new LinearLayout.LayoutParams(dp(37),dp(44)));
+        bottomSheet.addView(head,new LinearLayout.LayoutParams(-1,dp(48)));
 
         sheetMetaText=text("Preparado · GPS y recorridos",11.6f,MUTED,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(24)));
 
@@ -260,6 +270,19 @@ public class MainActivity extends Activity {
         FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);
         FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(61));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);
         LinearLayout.LayoutParams actionWrapLp=new LinearLayout.LayoutParams(-1,dp(72));actionWrapLp.setMargins(0,dp(7),0,0);bottomSheet.addView(actionWrap,actionWrapLp);
+        
+        // A separate secondary safety rail is hidden until the circular opener
+        // expands. The normal service slider always remains independent.
+        FrameLayout closeWrap=new FrameLayout(this);closeWrap.setTag("sheet_shift_close_slider");endShiftSliderWrap=closeWrap;
+        endShiftSlider=new SlideActionView(this);
+        endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);
+        endShiftSlider.setLabel("DESLIZAR ← FINALIZAR JORNADA");
+        endShiftSlider.setOnCompleted(this::showEndShiftConfirmation);
+        FrameLayout.LayoutParams closeLp=new FrameLayout.LayoutParams(-1,dp(61));
+        closeLp.setMargins(dp(1),0,dp(1),0);closeWrap.addView(endShiftSlider,closeLp);
+        LinearLayout.LayoutParams closeWrapLp=new LinearLayout.LayoutParams(-1,dp(70));
+        closeWrapLp.setMargins(0,0,0,0);bottomSheet.addView(closeWrap,closeWrapLp);
+        closeWrap.setVisibility(View.GONE);
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
@@ -454,6 +477,7 @@ public class MainActivity extends Activity {
     private void updateUi(){
         if(sheetState>maxSheetState())setSheetState(maxSheetState(),true);
         zoneText.setText(zone);
+        zoneText.setContentDescription("Zona actual: "+zone);
         boolean bubbleAuthorized=Settings.canDrawOverlays(this);
         if(bubbleBtn!=null&&(lastBubblePermissionUi==null||lastBubblePermissionUi!=bubbleAuthorized)){
             bubbleBtn.setBackground(headerButtonGradient(bubbleAuthorized?GREEN:GOLD,
@@ -1347,7 +1371,8 @@ public class MainActivity extends Activity {
     private Drawable premiumGradient(int c1,int c2,int stroke,float radius,float strokeDp){GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{c1,c2});g.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(strokeDp>0)g.setStroke(Math.max(1,Math.round(strokeDp*getResources().getDisplayMetrics().density)),stroke);return g;}
     private int sheetHeightDp(int state){
         if(state<=0)return SHEET_PEEK_DP;
-        return state==1?(tripActive?253:SHEET_MID_DP):SHEET_FULL_DP;
+        int base=state==1?(tripActive?260:SHEET_MID_DP):SHEET_FULL_DP;
+        return base+(shiftCloseExpanded&&shiftActive&&!tripActive?SHIFT_CLOSE_EXTRA_DP:0);
     }
     private int maxSheetState(){return 2;}
     private int maxSheetHeightDp(){return sheetHeightDp(maxSheetState());}
@@ -1365,10 +1390,20 @@ public class MainActivity extends Activity {
         if(detail!=null)detail.setVisibility(state==2?View.VISIBLE:View.GONE);
         if(metrics!=null)metrics.setVisibility(state==2||(state==1&&tripActive)?View.VISIBLE:View.GONE);
         if(action!=null)action.setVisibility(state>=1?View.VISIBLE:View.GONE);
-        if(endShiftAction!=null)endShiftAction.setVisibility(shiftActive&&!tripActive?View.VISIBLE:View.GONE);
+        if(endShiftAction!=null){
+            boolean available=shiftActive&&!tripActive;
+            endShiftAction.setVisibility(available?View.VISIBLE:View.GONE);
+            endShiftAction.setText(shiftCloseExpanded?"×":"⇠");
+            endShiftAction.setContentDescription(shiftCloseExpanded
+                ?"Ocultar el deslizador de fin de jornada"
+                :"Desplegar el deslizador para finalizar jornada");
+        }
+        if(endShiftSliderWrap!=null)endShiftSliderWrap.setVisibility(
+            state>=1&&shiftCloseExpanded&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);
         if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");
     }
     private void updateSheetContentVisibility(){
+        if((!shiftActive||tripActive)&&shiftCloseExpanded)shiftCloseExpanded=false;
         applySheetVisibility(sheetState);
         int variant=sheetHeightDp(sheetState);
         if(variant!=lastSheetLayoutVariant){
@@ -1376,11 +1411,19 @@ public class MainActivity extends Activity {
             if(!sheetDragging)setSheetHeightPx(dp(sheetHeightDp(sheetState)));
         }
     }
-    private void previewSheetVisibilityForHeight(int heightPx){int mid=dp(sheetHeightDp(1)),low=(dp(SHEET_PEEK_DP)+mid)/2,high=(mid+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
+    private void previewSheetVisibilityForHeight(int heightPx){int mid=dp(sheetHeightDp(1)),low=(dp(SHEET_PEEK_DP)+mid)/2,high=(mid+dp(sheetHeightDp(2)))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
     private void animateSheetHeight(int targetPx){if(bottomSheet==null)return;int start=bottomSheet.getLayoutParams().height;if(start==targetPx){setSheetHeightPx(targetPx);return;}android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,targetPx);a.setDuration(220);a.setInterpolator(new android.view.animation.DecelerateInterpolator());a.addUpdateListener(x->setSheetHeightPx((Integer)x.getAnimatedValue()));a.start();}
-    private void setSheetState(int state,boolean animate){if(bottomSheet==null)return;sheetState=Math.max(0,Math.min(maxSheetState(),state));applySheetVisibility(sheetState);int target=dp(sheetHeightDp(sheetState));if(animate)animateSheetHeight(target);else setSheetHeightPx(target);getSharedPreferences("ui_prefs",MODE_PRIVATE).edit().putInt("dashboard_sheet_state_r13",sheetState).apply();}
+    private void setSheetState(int state,boolean animate){if(bottomSheet==null)return;sheetState=Math.max(0,Math.min(maxSheetState(),state));if(sheetState==0)shiftCloseExpanded=false;applySheetVisibility(sheetState);int target=dp(sheetHeightDp(sheetState));if(animate)animateSheetHeight(target);else setSheetHeightPx(target);getSharedPreferences("ui_prefs",MODE_PRIVATE).edit().putInt("dashboard_sheet_state_r13",sheetState).apply();}
+    /** Only reveals the rail. Closing shift still needs reverse swipe + confirmation. */
+    private void toggleShiftCloseControl(){
+        if(!shiftActive||tripActive)return;
+        shiftCloseExpanded=!shiftCloseExpanded;
+        if(sheetState==0&&shiftCloseExpanded)setSheetState(1,true);
+        else{applySheetVisibility(sheetState);animateSheetHeight(dp(sheetHeightDp(sheetState)));}
+        if(endShiftAction!=null)endShiftAction.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+    }
     private void cycleSheetState(){int max=maxSheetState();setSheetState(sheetState>=max?0:sheetState+1,true);if(sheetHandle!=null)sheetHandle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);}
-    private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(sheetHeightDp(1));int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
+    private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(sheetHeightDp(1));int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(sheetHeightDp(2));target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
 
     /** The approved three-card composition: gold pictogram at left, small caption above large figure. */
     private TextView shiftCard(LinearLayout row,String label,String value){
@@ -1740,7 +1783,7 @@ public class MainActivity extends Activity {
         public static final int MODE_SHIFT_START=0,MODE_TRIP_START=1,MODE_TRIP_STOP=2,MODE_SHIFT_CLOSE=3,MODE_PICKUP=4,MODE_STOP_RESUME=5;
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();private final Typeface sliderFace;
         private Runnable completed,midpointCompleted;private String label="";private int mode=MODE_SHIFT_START;
-        private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f;
+        private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f,dragStartX=0f;
 
         public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");
             Typeface face;
@@ -1767,7 +1810,7 @@ public class MainActivity extends Activity {
             c.drawRoundRect(track,h/2,h/2,p);p.setShader(null);
             // The luminous outline is decorative; drag thresholds remain unchanged.
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.25f));
-            p.setColor(accent());p.setShadowLayer(dpv(5),0,0,Color.argb(180,36,242,170));
+            p.setColor(accent());p.setShadowLayer(dpv(5),0,0,isReverse()?Color.argb(125,211,169,86):Color.argb(180,36,242,170));
             c.drawRoundRect(track,h/2,h/2,p);p.clearShadowLayer();
             p.setStrokeWidth(dpv(.75f));p.setColor(Color.argb(180,246,217,143));
             c.drawRoundRect(new RectF(track.left+dpv(4),track.top+dpv(4),
@@ -1777,9 +1820,15 @@ public class MainActivity extends Activity {
             if(!isDual()&&!dragging&&w>dpv(245)){
                 p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.8f));
                 p.setStrokeCap(Paint.Cap.ROUND);p.setColor(Color.argb(196,128,255,207));
-                for(int j=0;j<3;j++){float x=dpv(73+j*10),y=h*.5f;
-                    c.drawLine(x-dpv(3),y-dpv(4),x+dpv(1),y,p);
-                    c.drawLine(x+dpv(1),y,x-dpv(3),y+dpv(4),p);
+                for(int j=0;j<3;j++){
+                    float x=isReverse()?w-dpv(73+j*10):dpv(73+j*10),y=h*.5f;
+                    if(isReverse()){
+                        c.drawLine(x+dpv(3),y-dpv(4),x-dpv(1),y,p);
+                        c.drawLine(x-dpv(1),y,x+dpv(3),y+dpv(4),p);
+                    }else{
+                        c.drawLine(x-dpv(3),y-dpv(4),x+dpv(1),y,p);
+                        c.drawLine(x+dpv(1),y,x-dpv(3),y+dpv(4),p);
+                    }
                 }
             }
 
@@ -1816,7 +1865,9 @@ public class MainActivity extends Activity {
 
             if(!isDual()){
                 // Reserve a protected label region beyond the thumb and three arrows.
-                float left=dpv(112),right=w-dpv(15),allowed=Math.max(dpv(100),right-left);
+                float left=isReverse()?dpv(15):dpv(112);
+                float right=isReverse()?w-dpv(112):w-dpv(15);
+                float allowed=Math.max(dpv(100),right-left);
                 p.setTextAlign(Paint.Align.CENTER);p.setTypeface(sliderFace);
                 float textSp=11.9f*getResources().getDisplayMetrics().scaledDensity;
                 p.setTextSize(textSp);
@@ -1829,7 +1880,8 @@ public class MainActivity extends Activity {
                 c.drawText(label,textX,textY,p);
                 p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1f));
                 p.setColor(Color.argb(190,225,246,242));
-                c.drawLine(dpv(109),h*.29f,dpv(109),h*.71f,p);
+                float divider=isReverse()?w-dpv(109):dpv(109);
+                c.drawLine(divider,h*.29f,divider,h*.71f,p);
             }
         }
 
@@ -1837,6 +1889,11 @@ public class MainActivity extends Activity {
             float h=getHeight(),pad=dpv(4),radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=getWidth()-pad-dpv(4)-radius;
             switch(e.getActionMasked()){
                 case MotionEvent.ACTION_DOWN:
+                    // R25.20: end-of-shift demands a true right-to-left drag
+                    // originating on the circular thumb. A tap on the far left
+                    // of the rail must never be treated as a completed gesture.
+                    if(isReverse()&&e.getX()<maxX-dpv(43f))return true;
+                    dragStartX=e.getX();
                     dragging=true;thresholdBuzzed=false;midBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);
                     performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;
                 case MotionEvent.ACTION_MOVE:
@@ -1853,7 +1910,9 @@ public class MainActivity extends Activity {
                 case MotionEvent.ACTION_CANCEL:
                     if(dragging){
                         boolean up=e.getActionMasked()==MotionEvent.ACTION_UP;
-                        boolean full=up&&(isReverse()?progress<=.16f:progress>=.88f);
+                        boolean full=up&&(isReverse()?
+                            (progress<=.16f&&dragStartX-e.getX()>=(maxX-minX)*.60f):
+                            progress>=.88f);
                         boolean mid=up&&isDual()&&!full&&progress>=.46f&&progress<.80f;
                         dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();
                         if(full){performClick();performHapticFeedback(HapticFeedbackConstants.CONFIRM);if(completed!=null)completed.run();}

@@ -2,7 +2,7 @@
 set -euo pipefail
 mkdir -p docs/visual-qa
 # Do not mistake an old source-controlled image for a screenshot from this run.
-rm -f docs/visual-qa/mapa-preview-idle.png docs/visual-qa/mapa-preview-shift-active.png
+rm -f docs/visual-qa/mapa-preview-idle.png docs/visual-qa/mapa-preview-shift-active.png docs/visual-qa/mapa-preview-shift-close-expanded.png
 APP=uy.com.mapatrayectos
 adb shell wm size 1080x2400
 adb shell wm density 440
@@ -135,7 +135,36 @@ active=[n for n in state.iter('boolean') if n.get('name')=='shift_active']
 assert active and active[0].get('value')=='true', 'Deslizamiento no inició jornada'
 print('Verified jornada: inicial INICIAR JORNADA -> shift_active true')
 PY
-adb shell uiautomator dump /sdcard/active-ui.xml >/dev/null 2>&1 || true
-adb exec-out cat /sdcard/active-ui.xml > docs/visual-qa/active-ui.xml 2>/dev/null || true
+# UIAutomator often stops producing *any* post-start XML on API35. The
+# original idle-ui.xml was collected and validated against the real window;
+# the 44dp circle is the first left sibling of its fixed right chevron.
+# Confirm the actual result using a SCREENSHOT and persisted shift state.
+orb_coords="$(python3 - <<'PY'
+import xml.etree.ElementTree as ET,re
+root=ET.parse('docs/visual-qa/idle-ui.xml').getroot()
+for n in root.iter():
+    if 'Cambiar entre mapa' in n.get('content-desc',''):
+        b=list(map(int,re.findall(r'\d+',n.get('bounds',''))))
+        if len(b)==4:
+            x=b[0]-round(44*440/160/2)-round(2*440/160)
+            y=(b[1]+b[3])//2
+            print(x,y)
+            break
+else:
+    raise SystemExit('QA: no se pudo ubicar la cabecera inicial')
+PY
+)"
+echo "QA: click expanding jornada circle at $orb_coords"
+adb shell input tap $orb_coords
+sleep 3
+capture_window docs/visual-qa/mapa-preview-shift-close-expanded.png
+adb shell run-as "$APP" cat shared_prefs/tracking_state.xml > docs/visual-qa/state-after-orb.xml
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+root=ET.parse('docs/visual-qa/state-after-orb.xml').getroot()
+active=[n for n in root.iter('boolean') if n.get('name')=='shift_active']
+assert active and active[0].get('value')=='true','Tocar círculo finalizó jornada incorrectamente'
+print('QA: jornada sigue activa luego de tocar círculo. Validación visual de expansión sigue en workflow.')
+PY
 adb logcat -d -t 700 | grep -E 'FATAL EXCEPTION|AndroidRuntime:.*Process: uy.com.mapatrayectos' > docs/visual-qa/fatal-log.txt || true
 test ! -s docs/visual-qa/fatal-log.txt
