@@ -123,8 +123,8 @@ jobs:
           grep -q 'ShiftEndPolicy.canEndShift(shiftActive,tripActive)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           ! grep -q 'sheet_shift_close' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_FULL_DP=334' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_MID_DP=230' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=346' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_MID_DP=244' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'liveStyle.getLayers()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(mode==MODE_SHIFT_START)return Color.rgb(2,57,61)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(metrics!=null)metrics.setVisibility(state>=2' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -160,7 +160,7 @@ jobs:
           test -s conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
-          grep -q "SHEET_MID_DP=230" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=244" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -202,7 +202,7 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=230" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=244" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
