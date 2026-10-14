@@ -61,7 +61,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false; private int lastSheetLayoutVariant=-1;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=244,SHEET_FULL_DP=346;
+    private static final int SHEET_PEEK_DP=78,SHEET_MID_DP=239,SHEET_FULL_DP=342;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -215,7 +215,18 @@ public class MainActivity extends Activity {
 
         LinearLayout head=new LinearLayout(this);head.setTag("sheet_head");head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(dp(2),0,0,0);head.setOnTouchListener(this::onSheetTouch);
         modeText=text("LISTO PARA JORNADA",18.1f,TEXT,true);modeText.setSingleLine(true);modeText.setLetterSpacing(.006f);modeText.setAutoSizeTextTypeUniformWithConfiguration(12,18,1,android.util.TypedValue.COMPLEX_UNIT_SP);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));
-        sheetChevron=text("⌄",22,CHAMPAGNE,true);sheetChevron.setGravity(Gravity.CENTER);sheetChevron.setContentDescription("Expandir o contraer panel");sheetChevron.setOnClickListener(v->cycleSheetState());head.addView(sheetChevron,new LinearLayout.LayoutParams(dp(38),dp(38)));
+        // Small but accessible shift closure, placed in the header instead of below the slider.
+        endShiftAction=text("■",18f,CHAMPAGNE,true);
+        endShiftAction.setTag("sheet_end_shift_action");
+        endShiftAction.setGravity(Gravity.CENTER);
+        endShiftAction.setContentDescription("Finalizar jornada. Requiere confirmación y no permite cerrar con viaje activo.");
+        endShiftAction.setBackground(premiumGradient(Color.rgb(3,34,43),Color.rgb(5,54,55),
+            Color.argb(205,234,193,99),13f,0.9f));
+        endShiftAction.setOnClickListener(v->showEndShiftConfirmation());
+        LinearLayout.LayoutParams miniEndLp=new LinearLayout.LayoutParams(dp(36),dp(34));
+        miniEndLp.setMargins(dp(3),0,dp(4),0);
+        head.addView(endShiftAction,miniEndLp);
+        sheetChevron=text("⌄",22,CHAMPAGNE,true);sheetChevron.setGravity(Gravity.CENTER);sheetChevron.setContentDescription("Cambiar entre mapa, panel operativo y estadísticas");sheetChevron.setOnClickListener(v->cycleSheetState());head.addView(sheetChevron,new LinearLayout.LayoutParams(dp(38),dp(38)));
         bottomSheet.addView(head,new LinearLayout.LayoutParams(-1,dp(41)));
 
         sheetMetaText=text("Preparado · GPS y recorridos",11.6f,MUTED,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(24)));
@@ -249,16 +260,6 @@ public class MainActivity extends Activity {
         FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);
         FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(61));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);
         LinearLayout.LayoutParams actionWrapLp=new LinearLayout.LayoutParams(-1,dp(72));actionWrapLp.setMargins(0,dp(7),0,0);bottomSheet.addView(actionWrap,actionWrapLp);
-        endShiftAction=text("■   FINALIZAR JORNADA",11.8f,CHAMPAGNE,true);
-        endShiftAction.setTag("sheet_end_shift_action");
-        endShiftAction.setGravity(Gravity.CENTER);
-        endShiftAction.setContentDescription("Finalizar jornada: confirmar y guardar el historial");
-        endShiftAction.setBackground(premiumGradient(Color.rgb(3,34,43),Color.rgb(5,54,55),
-            Color.argb(220,234,193,99),20f,0.9f));
-        endShiftAction.setOnClickListener(v->showEndShiftConfirmation());
-        LinearLayout.LayoutParams endActionLp=new LinearLayout.LayoutParams(-1,dp(38));
-        endActionLp.setMargins(dp(3),dp(2),dp(3),0);
-        bottomSheet.addView(endShiftAction,endActionLp);
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
@@ -392,15 +393,14 @@ public class MainActivity extends Activity {
         if(!shiftActive){if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0))maybeOfferBubblePermission();return;}
         if(shiftPaused){sendAction(TrackingService.ACTION_RESUME_SHIFT,null,null,0);return;}
         if(!tripActive){
-            if(!TripPlatformChoice.shouldPrompt(selectedTripPlatform)){
-                sendAction(TrackingService.ACTION_START_TRIP,selectedTripPlatform,null,0);
-            }else{
-                TripFlowDialogs.chooseTripType(this,type->{
-                    if(tripActive||getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("trip_active",false))return;
-                    rememberUpcomingTripPlatform(type);
-                    sendAction(TrackingService.ACTION_START_TRIP,selectedTripPlatform,null,0);
-                });
-            }
+            // Always confirm platform for EACH service. The upper circle is only a default.
+            TripFlowDialogs.chooseTripType(this,selectedTripPlatform,type->{
+                SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);
+                if(tripActive||!live.getBoolean("shift_active",false)
+                    ||live.getBoolean("trip_active",false)||live.getBoolean("shift_paused",false))return;
+                rememberUpcomingTripPlatform(type);
+                sendAction(TrackingService.ACTION_START_TRIP,type,null,0);
+            });
             return;
         }
         if("to_pickup".equals(tripStage)){sendAction(TrackingService.ACTION_PICKUP_PASSENGER,null,null,0);return;}
@@ -566,7 +566,7 @@ public class MainActivity extends Activity {
     private void refreshPlatformBadge(){
         if(tripSourceBadge==null)return;
         String shown=TripPlatformChoice.forBadge(selectedTripPlatform,tripActive,tripType);
-        int rim="CABIFY".equals(shown)?Color.rgb(185,137,241):
+        int rim="CABIFY".equals(shown)?Color.rgb(204,149,255):
             "PERSONAL".equals(shown)?Color.rgb(94,221,197):
             "OTRO".equals(shown)?Color.rgb(218,181,123):CHAMPAGNE;
         // The physical 48dp circle must never shrink "PERSONAL" to unreadable text.
@@ -577,9 +577,13 @@ public class MainActivity extends Activity {
         tripSourceBadge.setIncludeFontPadding(false);
         tripSourceBadge.setAutoSizeTextTypeUniformWithConfiguration(
             9,12,1,android.util.TypedValue.COMPLEX_UNIT_SP);
-        tripSourceBadge.setTextColor(tripActive?Color.rgb(230,255,246):TEXT);
-        tripSourceBadge.setBackground(premiumGradient(Color.rgb(0,5,11),
-            Color.rgb(1,17,23),rim,30f,tripActive?2.2f:1.4f));
+        // Cabify violet glass, Uber restrained black/champagne, Personal mint and Otro amber.
+        boolean cabify="CABIFY".equals(shown);
+        tripSourceBadge.setTextColor(cabify?Color.rgb(244,222,255):
+            "PERSONAL".equals(shown)?Color.rgb(180,255,232):TEXT);
+        tripSourceBadge.setBackground(premiumGradient(cabify?Color.rgb(31,14,55):Color.rgb(0,5,11),
+            cabify?Color.rgb(81,37,112):Color.rgb(1,17,23),rim,30f,
+            tripActive?2.3f:1.7f));
         tripSourceBadge.setContentDescription((tripActive?"Servicio activo: ":"Próximo servicio: ")+
             shown+". Tocá para "+(tripActive?"ver la plataforma registrada":"elegir plataforma")+
             ". Mantener pulsado: cerrar Mapa Trayectos si no hay jornada.");
@@ -1319,51 +1323,64 @@ public class MainActivity extends Activity {
     private Drawable premiumGradient(int c1,int c2,int stroke,float radius,float strokeDp){GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{c1,c2});g.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(strokeDp>0)g.setStroke(Math.max(1,Math.round(strokeDp*getResources().getDisplayMetrics().density)),stroke);return g;}
     private int sheetHeightDp(int state){
         if(state<=0)return SHEET_PEEK_DP;
-        return state==1?SHEET_MID_DP:(SHEET_FULL_DP+(shiftActive&&!tripActive?46:0));
+        return state==1?(tripActive?253:SHEET_MID_DP):SHEET_FULL_DP;
     }
     private int maxSheetState(){return 2;}
     private int maxSheetHeightDp(){return sheetHeightDp(maxSheetState());}
     private void setSheetHeightPx(int heightPx){if(bottomSheet==null)return;FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();lp.height=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),heightPx));bottomSheet.setLayoutParams(lp);}
-    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(endShiftAction!=null)endShiftAction.setVisibility(state>=2&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
+    /** Three actual dashboard modes: navigation/compact, contextual operating, expanded history metrics. */
+    private void applySheetVisibility(int state){
+        if(bottomSheet==null)return;
+        View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),
+             strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),
+             metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");
+        if(head!=null)head.setVisibility(View.VISIBLE);
+        if(meta!=null)meta.setVisibility(state>=1?View.VISIBLE:View.GONE);
+        // In operating mode show journey when free, ONLY active trip metrics when serving.
+        if(strip!=null)strip.setVisibility(state==2||(state==1&&!tripActive)?View.VISIBLE:View.GONE);
+        if(detail!=null)detail.setVisibility(state==2?View.VISIBLE:View.GONE);
+        if(metrics!=null)metrics.setVisibility(state==2||(state==1&&tripActive)?View.VISIBLE:View.GONE);
+        if(action!=null)action.setVisibility(state>=1?View.VISIBLE:View.GONE);
+        if(endShiftAction!=null)endShiftAction.setVisibility(shiftActive&&!tripActive?View.VISIBLE:View.GONE);
+        if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");
+    }
     private void updateSheetContentVisibility(){
         applySheetVisibility(sheetState);
-        int variant=sheetState==2&&shiftActive&&!tripActive?1:0;
+        int variant=sheetHeightDp(sheetState);
         if(variant!=lastSheetLayoutVariant){
             lastSheetLayoutVariant=variant;
             if(!sheetDragging)setSheetHeightPx(dp(sheetHeightDp(sheetState)));
         }
     }
-    private void previewSheetVisibilityForHeight(int heightPx){int low=(dp(SHEET_PEEK_DP)+dp(SHEET_MID_DP))/2;if(maxSheetState()<2){applySheetVisibility(heightPx<low?0:1);return;}int high=(dp(SHEET_MID_DP)+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
+    private void previewSheetVisibilityForHeight(int heightPx){int mid=dp(sheetHeightDp(1)),low=(dp(SHEET_PEEK_DP)+mid)/2,high=(mid+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
     private void animateSheetHeight(int targetPx){if(bottomSheet==null)return;int start=bottomSheet.getLayoutParams().height;if(start==targetPx){setSheetHeightPx(targetPx);return;}android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,targetPx);a.setDuration(220);a.setInterpolator(new android.view.animation.DecelerateInterpolator());a.addUpdateListener(x->setSheetHeightPx((Integer)x.getAnimatedValue()));a.start();}
     private void setSheetState(int state,boolean animate){if(bottomSheet==null)return;sheetState=Math.max(0,Math.min(maxSheetState(),state));applySheetVisibility(sheetState);int target=dp(sheetHeightDp(sheetState));if(animate)animateSheetHeight(target);else setSheetHeightPx(target);getSharedPreferences("ui_prefs",MODE_PRIVATE).edit().putInt("dashboard_sheet_state_r13",sheetState).apply();}
     private void cycleSheetState(){int max=maxSheetState();setSheetState(sheetState>=max?0:sheetState+1,true);if(sheetHandle!=null)sheetHandle.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);}
-    private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(SHEET_MID_DP);int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
+    private boolean onSheetTouch(View v,MotionEvent e){if(bottomSheet==null)return false;switch(e.getActionMasked()){case MotionEvent.ACTION_DOWN:sheetDragging=true;sheetDownY=e.getRawY();sheetStartHeight=bottomSheet.getLayoutParams().height;v.getParent().requestDisallowInterceptTouchEvent(true);return true;case MotionEvent.ACTION_MOVE:if(sheetDragging){int h=Math.round(sheetStartHeight+(sheetDownY-e.getRawY()));h=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),h));setSheetHeightPx(h);previewSheetVisibilityForHeight(h);return true;}break;case MotionEvent.ACTION_UP:case MotionEvent.ACTION_CANCEL:if(sheetDragging){float delta=e.getRawY()-sheetDownY;sheetDragging=false;v.getParent().requestDisallowInterceptTouchEvent(false);if(e.getActionMasked()==MotionEvent.ACTION_UP&&Math.abs(delta)<dp(8)){cycleSheetState();return true;}int h=bottomSheet.getLayoutParams().height;int c0=dp(SHEET_PEEK_DP),c1=dp(sheetHeightDp(1));int target;if(maxSheetState()<2)target=Math.abs(h-c1)<=Math.abs(h-c0)?1:0;else{int c2=dp(SHEET_FULL_DP);target=Math.abs(h-c2)<=Math.abs(h-c1)&&Math.abs(h-c2)<=Math.abs(h-c0)?2:(Math.abs(h-c1)<=Math.abs(h-c0)?1:0);}setSheetState(target,true);v.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);return true;}break;}return false;}
 
     /** The approved three-card composition: gold pictogram at left, small caption above large figure. */
     private TextView shiftCard(LinearLayout row,String label,String value){
         LinearLayout card=new LinearLayout(this);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setPadding(dp(6),dp(4),dp(5),dp(4));
+        card.setPadding(dp(4),dp(4),dp(4),dp(4));
         card.setBackground(premiumGradient(Color.rgb(2,35,47),Color.rgb(2,63,65),
                 Color.argb(235,92,238,202),17f,1.0f));
         int iconType="JORNADA".equals(label)?ShiftSummaryIconView.SUN:
             "KM".equals(label)?ShiftSummaryIconView.ROAD:ShiftSummaryIconView.CAR;
         ShiftSummaryIconView icon=new ShiftSummaryIconView(this,iconType);
-        card.addView(icon,new LinearLayout.LayoutParams(dp(27),dp(31)));
+        card.addView(icon,new LinearLayout.LayoutParams(dp(23),dp(29)));
         LinearLayout numbers=new LinearLayout(this);numbers.setOrientation(LinearLayout.VERTICAL);
-        numbers.setGravity(Gravity.CENTER_VERTICAL);
-        TextView caption=text(label,10.1f,CHAMPAGNE,true);
-        caption.setLetterSpacing(.02f);
-        caption.setSingleLine(true);
-        TextView amount=text(value,16.4f,TEXT,true);
-        amount.setSingleLine(true);
-        amount.setIncludeFontPadding(false);
-        amount.setAutoSizeTextTypeUniformWithConfiguration(12,17,1,android.util.TypedValue.COMPLEX_UNIT_SP);
-        numbers.addView(caption,new LinearLayout.LayoutParams(-1,dp(16)));
-        numbers.addView(amount,new LinearLayout.LayoutParams(-1,dp(21)));
+        numbers.setGravity(Gravity.CENTER);
+        TextView caption=text(label,10f,CHAMPAGNE,true);
+        caption.setGravity(Gravity.CENTER);caption.setIncludeFontPadding(false);caption.setSingleLine(true);
+        TextView amount=text(value,15f,TEXT,true);
+        amount.setGravity(Gravity.CENTER);amount.setSingleLine(true);amount.setIncludeFontPadding(false);
+        amount.setAutoSizeTextTypeUniformWithConfiguration(10,16,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        numbers.addView(caption,new LinearLayout.LayoutParams(-1,dp(15)));
+        numbers.addView(amount,new LinearLayout.LayoutParams(-1,dp(24)));
         LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(0,dp(39),1);
-        np.leftMargin=dp(4);
+        np.leftMargin=dp(2);
         card.addView(numbers,np);
         LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-1,1);
         cp.setMargins(dp(3),0,dp(3),0);
@@ -1375,9 +1392,11 @@ public class MainActivity extends Activity {
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(3),dp(4),dp(3),dp(3));
         box.setBackground(premiumGradient(Color.rgb(2,34,43),Color.rgb(1,49,55),Color.argb(224,77,223,202),18f,0.95f));
         MetricIconView ic=new MetricIconView(this,iconType);box.addView(ic,new LinearLayout.LayoutParams(-1,dp(17)));
-        TextView v=text(value,16.3f,TEXT,true);v.setGravity(Gravity.CENTER);v.setLetterSpacing(.006f);
-        TextView l=text(label,9.6f,CHAMPAGNE,true);l.setGravity(Gravity.CENTER);l.setLetterSpacing(.035f);
-        box.addView(v,new LinearLayout.LayoutParams(-1,0,1.05f));box.addView(l,new LinearLayout.LayoutParams(-1,0,.55f));
+        TextView v=text(value,15f,TEXT,true);v.setGravity(Gravity.CENTER);v.setSingleLine(true);v.setIncludeFontPadding(false);
+        v.setAutoSizeTextTypeUniformWithConfiguration(9,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        TextView l=text(label,9.2f,CHAMPAGNE,true);l.setGravity(Gravity.CENTER);l.setSingleLine(true);l.setIncludeFontPadding(false);
+        box.addView(v,new LinearLayout.LayoutParams(-1,dp(26)));
+        box.addView(l,new LinearLayout.LayoutParams(-1,dp(16)));
         LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));row.addView(box,bp);return v;
     }
     private float followZoom(){if(currentSpeedKmh<12f)return 13.60f;if(currentSpeedKmh<45f)return 13.43f;if(currentSpeedKmh<80f)return 13.15f;return 12.87f;}
