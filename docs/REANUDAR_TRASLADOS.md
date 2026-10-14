@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Estado ACTUAL: Supabase de testing reiniciada, configuración preservada (13/10/2026, ~23:21 UYT)
+
+**Pedido confirmado:** el usuario desinstaló Mapa Trayectos de su Samsung y ordenó dejar la base en cero salvo configuración. Se ejecutó una transacción COMMIT exitosa sobre Supabase `zetaudvvutlouiqxopvg`, **sin backup adicional**, eliminando las ocho reservas de prueba (más sus 13 eventos, 7 mensajes y una parada mediante FK CASCADE), clientes y sesiones de test, passkeys y códigos de recuperación, desafíos, dispositivos, puntos, trayectos y jornadas, presencia activa, registros, consultas ETA y caché de rutas. `auth.users` ya tenía cero registros antes de la operación; no se tocaron secretos de autenticación.
+
+**Postcondición consultada directamente en Supabase:** todas las tablas de datos `public` con **0 filas**: `reservations`, `reservation_events`, `reservation_stops`, `reservation_chat_messages`, `customers`, `customer_sessions`, `customer_passkeys`, `customer_passkey_challenges`, `customer_recovery_codes`, `push_subscriptions`, `drivers`, `mapa_trayectos_devices`, `mapa_trayectos_shifts`, `mapa_trayectos_trips`, `mapa_trayectos_points`, `driver_live_presence`, `driver_eta_customer_requests`, `driver_eta_public_requests`, `route_reposition_cache`, `app_logs` y `build_assets`. Se preservaron `driver_access` (**1 fila, PIN/configuración del conductor**) y `driver_settings` (**1 fila, parámetros económicos**); también `driver_availability_settings` y `driver_schedule_blocks` (**0 filas antes y después**, se conservó la estructura), las políticas RLS, funciones SQL y migraciones. No se modificó la web ni las APK.
+
+**Para continuar las pruebas:** nueva instalación registra un dispositivo nuevo; volver a iniciar jornada solo cuando corresponda. El informe de almacenamiento de PostgreSQL puede seguir mostrando espacio asignado hasta que VACUUM/gestión de páginas lo reutilice; cero filas no implica cero MB físicos. El RESET anterior pendiente de reservas quedó **resuelto**; los apartados de inventario y pendientes anteriores son históricos y **no describen el estado actual**.
+
+
 ## Pendiente de limpieza de reservas de testing — 13/10/2026
 
 - El usuario confirmó expresamente que **todas las reservas son pruebas**, no solo las cinco pendientes.
