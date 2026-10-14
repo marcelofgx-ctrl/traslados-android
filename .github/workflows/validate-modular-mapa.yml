@@ -59,6 +59,22 @@ jobs:
           grep -q 'CERRAR VIAJE' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
           grep -q 'amount.setError' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
           ! grep -q 'if(!"uber".equals(type)&&!"cabify".equals(type))' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
+      - name: Trip close amount and edit metadata regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-r25-18-policies
+          javac -d /tmp/mapa-r25-18-policies \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/TripClosePolicy.java \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/TripPlatformChoice.java \
+            mapatrayectos/tests/TripClosePolicyTest.java \
+            mapatrayectos/tests/TripPlatformChoiceTest.java
+          java -cp /tmp/mapa-r25-18-policies TripClosePolicyTest
+          java -cp /tmp/mapa-r25-18-policies TripPlatformChoiceTest
+          grep -q 'correctFinishedTripAmount' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'correctFinishedTripPlatform' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'db.markTripSynced(tripId,trip)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'showTripCorrectionMenu' mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
       - name: Passenger chat integration regression
         shell: bash
         run: |

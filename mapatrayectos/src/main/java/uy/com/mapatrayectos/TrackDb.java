@@ -7,7 +7,7 @@ import org.json.*;
 
 public final class TrackDb extends SQLiteOpenHelper {
     static final String DB_NAME = "mapa_trayectos.db";
-    static final int DB_VERSION = 5;
+    static final int DB_VERSION = 6;
 
     public TrackDb(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
@@ -20,6 +20,7 @@ public final class TrackDb extends SQLiteOpenHelper {
         db.execSQL("create index idx_points_shift on points(shift_id, recorded_at_ms)");
         db.execSQL("create index idx_trips_started on trips(started_at_ms desc)");
         db.execSQL("create index idx_stops_trip on trip_stops(trip_id, started_at_ms)");
+        db.execSQL("create table trip_corrections(correction_id integer primary key autoincrement, trip_id text not null, field_name text not null, old_value text, new_value text not null, corrected_at_ms integer not null)");
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -51,6 +52,9 @@ public final class TrackDb extends SQLiteOpenHelper {
         if(oldVersion<5){
             try{db.execSQL("alter table shifts add column paused_ms integer not null default 0");}catch(Exception ignored){}
             try{db.execSQL("alter table shifts add column pause_count integer not null default 0");}catch(Exception ignored){}
+        }
+        if(oldVersion<6){
+            db.execSQL("create table if not exists trip_corrections(correction_id integer primary key autoincrement, trip_id text not null, field_name text not null, old_value text, new_value text not null, corrected_at_ms integer not null)");
         }
     }
 
@@ -137,6 +141,47 @@ public final class TrackDb extends SQLiteOpenHelper {
         ContentValues v=new ContentValues();v.put("trip_status",normalizeStatus(status));v.put("trip_stage","completed");if(amountUyu==null)v.putNull("amount_uyu");else v.put("amount_uyu",Math.max(0,amountUyu));v.put("synced",0);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{id});
     }
 
+    /** Edit only metadata of a closed trip; the underlying route, clock and GPS never change. */
+    public boolean correctFinishedTripAmount(String id,double amountUyu){
+        if(!TripClosePolicy.validCompletedAmount(amountUyu))return false;
+        return correctFinishedTrip(id,"amount_uyu",Double.toString(amountUyu));
+    }
+    public boolean correctFinishedTripPlatform(String id,String platform){
+        String value=TripPlatformChoice.canonical(platform);
+        if(value.isEmpty())return false;
+        return correctFinishedTrip(id,"trip_type",value);
+    }
+    private boolean correctFinishedTrip(String id,String field,String value){
+        if(id==null||id.isEmpty())return false;
+        if(!"amount_uyu".equals(field)&&!"trip_type".equals(field))return false;
+        SQLiteDatabase d=getWritableDatabase();
+        d.beginTransaction();
+        try(Cursor cur=d.rawQuery("select trip_type,trip_status,amount_uyu,ended_at_ms from trips where trip_id=?",
+            new String[]{id})){
+            if(!cur.moveToFirst()||cur.isNull(3)||"active".equals(cur.getString(1)))return false;
+            if("amount_uyu".equals(field)&&!"completed".equals(cur.getString(1)))return false;
+            String before="trip_type".equals(field)?cur.getString(0):
+                (cur.isNull(2)?"":Double.toString(cur.getDouble(2)));
+            if(value.equals(before))return false;
+            ContentValues change=new ContentValues();
+            if("amount_uyu".equals(field))change.put(field,Double.parseDouble(value));
+            else change.put(field,value);
+            change.put("synced",0);
+            if(d.update("trips",change,"trip_id=? and ended_at_ms is not null",new String[]{id})!=1)
+                throw new IllegalStateException("No se pudo actualizar el viaje");
+            ContentValues audit=new ContentValues();
+            audit.put("trip_id",id);audit.put("field_name",field);audit.put("old_value",before);
+            audit.put("new_value",value);audit.put("corrected_at_ms",System.currentTimeMillis());
+            if(d.insertOrThrow("trip_corrections",null,audit)<0)
+                throw new IllegalStateException("No se registró la corrección");
+            d.setTransactionSuccessful();
+            return true;
+        }finally{d.endTransaction();}
+    }
+    public JSONArray listTripCorrections(String id){
+        return many("select field_name,old_value,new_value,corrected_at_ms from trip_corrections where trip_id=? order by corrected_at_ms desc",new String[]{id});
+    }
+
     public void addPoint(String pointId,String shiftId,String tripId,long ts,double lat,double lon,float accuracy,float speed,float bearing,String zone,boolean inTrip) {
         ContentValues v=new ContentValues();v.put("point_id",pointId);v.put("shift_id",shiftId);if(tripId==null)v.putNull("trip_id");else v.put("trip_id",tripId);v.put("recorded_at_ms",ts);v.put("lat",lat);v.put("lon",lon);v.put("accuracy_m",accuracy);v.put("speed_kmh",speed);v.put("bearing_deg",bearing);v.put("zone",zone);v.put("in_trip",inTrip?1:0);v.put("synced",0);
         getWritableDatabase().insertWithOnConflict("points",null,v,SQLiteDatabase.CONFLICT_IGNORE);
@@ -163,6 +208,7 @@ public final class TrackDb extends SQLiteOpenHelper {
         d.beginTransaction();
         try{
             d.delete("trip_stops",null,null);
+            d.delete("trip_corrections",null,null);
             d.delete("points",null,null);
             d.delete("trips",null,null);
             d.delete("shifts",null,null);
@@ -182,7 +228,20 @@ public final class TrackDb extends SQLiteOpenHelper {
     public JSONArray unsyncedTripPoints(String tripId) { return many("select * from points where synced=0 and trip_id=? order by recorded_at_ms",new String[]{tripId}); }
     public JSONArray unsyncedIdlePoints(String shiftId) { return many("select * from points where synced=0 and shift_id=? and trip_id is null order by recorded_at_ms",new String[]{shiftId}); }
 
-    public void markTripSynced(String tripId) { ContentValues v=new ContentValues();v.put("synced",1);getWritableDatabase().update("trips",v,"trip_id=?",new String[]{tripId});getWritableDatabase().update("points",v,"trip_id=?",new String[]{tripId}); }
+    /** Do not mark a freshly edited record synced if a previous network request is still in flight. */
+    public boolean markTripSynced(String tripId,JSONObject sent){
+        JSONObject fresh=getTrip(tripId);
+        if(fresh==null||sent==null)return false;
+        if(!fresh.optString("trip_type","").equals(sent.optString("trip_type","")))return false;
+        if(!fresh.optString("trip_status","").equals(sent.optString("trip_status","")))return false;
+        if(fresh.optLong("ended_at_ms",-1)!=sent.optLong("ended_at_ms",-1))return false;
+        boolean a=fresh.isNull("amount_uyu"),b=sent.isNull("amount_uyu");
+        if(a!=b||(!a&&Double.compare(fresh.optDouble("amount_uyu"),sent.optDouble("amount_uyu"))!=0))return false;
+        ContentValues v=new ContentValues();v.put("synced",1);
+        getWritableDatabase().update("trips",v,"trip_id=?",new String[]{tripId});
+        getWritableDatabase().update("points",v,"trip_id=?",new String[]{tripId});
+        return true;
+    }
     public void markShiftSynced(String shiftId, boolean includeIdlePoints) { ContentValues v=new ContentValues();v.put("synced",1);getWritableDatabase().update("shifts",v,"shift_id=?",new String[]{shiftId});if(includeIdlePoints)getWritableDatabase().update("points",v,"shift_id=? and trip_id is null",new String[]{shiftId}); }
 
     private String normalizeType(String s){if(s==null)return "other";String x=s.toLowerCase();if(x.equals("uber")||x.equals("cabify")||x.equals("personal"))return x;return "other";}

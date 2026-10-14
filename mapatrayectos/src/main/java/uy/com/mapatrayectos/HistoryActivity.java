@@ -326,6 +326,15 @@ public class HistoryActivity extends Activity {
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
         TextView time=text(tf.format(new Date(start))+(end>start?"–"+tf.format(new Date(end)):""),11.5f,GOLD_DEEP,true);top.addView(time,new LinearLayout.LayoutParams(0,-2,1));
         TextView tag=text(typeLabel(type)+("cancelled".equals(status)?" · CANCELADO":""),9.5f,"cancelled".equals(status)?RED:GREEN,true);tag.setGravity(Gravity.RIGHT);top.addView(tag);
+        if(end>0){
+            TextView edit=text("⚙",17,TEAL_DARK,true);
+            edit.setGravity(Gravity.CENTER);
+            edit.setContentDescription("Opciones de este viaje: corregir importe o plataforma");
+            LinearLayout.LayoutParams ep=new LinearLayout.LayoutParams(dp(35),dp(36));
+            ep.leftMargin=dp(5);
+            top.addView(edit,ep);
+            edit.setOnClickListener(v->showTripCorrectionMenu(edit,id));
+        }
         card.addView(top);
 
         double startLat=o.isNull("start_lat")?Double.NaN:o.optDouble("start_lat"),startLon=o.isNull("start_lon")?Double.NaN:o.optDouble("start_lon");
@@ -348,6 +357,104 @@ public class HistoryActivity extends Activity {
         TextView open=text("VER RECORRIDO  ›",10.2f,ROUTE,true);open.setGravity(Gravity.RIGHT);card.addView(open,lp(6,0));
         card.setOnClickListener(v->{Intent d=new Intent(this,TripDetailActivity.class);d.putExtra("trip_id",id);startActivity(d);});
         return card;
+    }
+
+    /** Tiny per-row controls; route, points, elapsed time and original timestamps are immutable. */
+    private void showTripCorrectionMenu(View anchor,String id){
+        TrackDb db=new TrackDb(this);
+        JSONObject trip;
+        try{trip=db.getTrip(id);}finally{db.close();}
+        if(trip==null||trip.optLong("ended_at_ms",0)<=0){
+            Toast.makeText(this,"Este viaje todavía no se puede editar",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        PopupMenu popup=new PopupMenu(this,anchor);
+        boolean completed="completed".equals(trip.optString("trip_status",""));
+        if(completed)popup.getMenu().add(0,1,0,"Corregir importe");
+        popup.getMenu().add(0,2,1,"Cambiar plataforma");
+        popup.setOnMenuItemClickListener(item->{
+            if(item.getItemId()==1)editTripAmount(id,trip);
+            else if(item.getItemId()==2)editTripPlatform(id,trip);
+            return true;
+        });
+        popup.show();
+    }
+
+    private void editTripAmount(String id,JSONObject trip){
+        EditText input=new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
+            android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Importe en pesos uruguayos");
+        if(!trip.isNull("amount_uyu")){
+            double old=trip.optDouble("amount_uyu",0);
+            if(old>0)input.setText(String.format(locale,"%.2f",old));
+        }
+        int pad=dp(18);input.setPadding(pad,dp(12),pad,dp(12));
+        AlertDialog dlg=new AlertDialog.Builder(this)
+            .setTitle("Corregir importe")
+            .setMessage("Viaje terminado · el recorrido y los horarios no cambian.")
+            .setView(input)
+            .setNegativeButton("CANCELAR",null)
+            .setPositiveButton("GUARDAR",null).create();
+        dlg.setOnShowListener(v->dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{
+            String raw=input.getText().toString().trim().replace(',','.');
+            double amount;
+            try{amount=Double.parseDouble(raw);}
+            catch(NumberFormatException ex){
+                input.setError("Ingresá un importe válido");return;
+            }
+            if(!TripClosePolicy.validCompletedAmount(amount)){
+                input.setError("El importe debe ser mayor a $0");return;
+            }
+            if(commitTripCorrection(id,"amount_uyu",amount,null))dlg.dismiss();
+        }));
+        dlg.show();
+    }
+
+    private void editTripPlatform(String id,JSONObject trip){
+        final String[] ids={"uber","cabify","personal","other"};
+        final String[] labels={"Uber","Cabify","Personal","Otro"};
+        final String before=trip.optString("trip_type","other");
+        int initial=0;
+        for(int i=0;i<ids.length;i++)if(ids[i].equals(before)){initial=i;break;}
+        new AlertDialog.Builder(this)
+            .setTitle("Cambiar plataforma")
+            .setSingleChoiceItems(labels,initial,(dlg,choice)->{
+                dlg.dismiss();
+                String selected=ids[choice];
+                if(selected.equals(before))return;
+                new AlertDialog.Builder(this).setTitle("Confirmar corrección")
+                    .setMessage("Cambiar de "+typeLabel(before)+" a "+typeLabel(selected)+
+                        ". Se conservarán los kilómetros, horarios y puntos GPS originales.")
+                    .setNegativeButton("VOLVER",null)
+                    .setPositiveButton("GUARDAR",(dialog,which)->commitTripCorrection(id,"trip_type",0,selected))
+                    .show();
+            }).setNegativeButton("CANCELAR",null).show();
+    }
+
+    private boolean commitTripCorrection(String id,String field,double amount,String platform){
+        TrackDb db=new TrackDb(this);
+        boolean changed;
+        try{
+            changed="amount_uyu".equals(field)?db.correctFinishedTripAmount(id,amount):
+                db.correctFinishedTripPlatform(id,platform);
+        }catch(Exception ex){
+            Toast.makeText(this,"No se pudo guardar la corrección",Toast.LENGTH_LONG).show();
+            return false;
+        }finally{db.close();}
+        if(!changed){
+            Toast.makeText(this,"No hubo cambios válidos",Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        // The established authenticated device RPC upserts corrected metadata.
+        Api.syncTripAsync(id);
+        String previousDay=expandedDay;
+        loadData();
+        expandedDay=previousDay;
+        renderFiltered();
+        Toast.makeText(this,"Corrección guardada · sincronización solicitada",Toast.LENGTH_LONG).show();
+        return true;
     }
 
     private View stopsBlock(JSONArray stops){

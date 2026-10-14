@@ -1,5 +1,17 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.18 — mejoras Samsung sobre dos capturas R25.17 (14/10/2026, EN VALIDACIÓN)
+
+- Rama `feature/mapa-r25-18-cockpit-tres-vistas-historial`. Referencias Samsung de jornada activa, en posición media y extendida (14/10 11:54/11:55 UYT). **No es una APK publicada todavía.**
+- Panel en **tres posiciones**: 0 navegación con cabecera compacta y mapa libre; 1 control contextual (jornada + slider si no hay viaje, únicamente métricas del servicio activo + slider cuando hay viaje); 2 estadísticas completas. El botón de FINALIZAR JORNADA pasa a un mini control `■` en cabecera dentro del panel, con las mismas validaciones y confirmación; desaparece el pie de 38dp, recuperando área de mapa.
+- Al iniciar CADA viaje se presenta explícitamente selector Uber/Cabify/Personal/Otro; emblema superior funciona solo como preselección. Cabify lleva contorno violeta más notorio, Uber negro/champagne, Personal verde, Otro ámbar. No modifica globitos de Uber/Cabify externos.
+- Tarjetas de jornada y métricas ajustan su tipografía automáticamente, con alineación centrada y cifras legibles en dispositivos estrechos.
+- **Cobros:** todos los viajes `completed` requieren importe UYU mayor a cero, validado tanto por diálogo como por el `TrackingService`; cancelación permite $0.
+- **Histórico:** engranaje pequeño en tarjeta terminada permite corregir importe positivo o plataforma, sin modificar kilómetros, paradas, fechas ni GPS. DB SQLite v6 agrega auditoría local `trip_corrections`, conservación durante migración y borrado junto al historial solo si se utiliza la opción de vaciado existente. Corrección valida cierre, se marca `synced=0` y usa RPC existente `mapa_sync_trip` (confirmado mediante inspección SQL de solo lectura de la función productiva; permite actualizar `trip_type` y `amount_uyu` mediante `ON CONFLICT DO UPDATE`). La comparación de snapshot impide marcar sincronizada la nueva corrección si existía una petición anterior en vuelo. No se ejecutó ningún UPDATE ni DELETE en Supabase.
+- Pendiente: CI modular, QA visual emulador con capturas, firma RELEASE y revisión real Samsung. Mantener R25.17 publicada y rollback sin sobrescribirla.
+
+
+
 ## Mapa R25.17 — PUBLICADA y firmada (14/10/2026 11:25 UYT)
 
 - **PR #88 fusionado** a `main` (`61b84678e8fa`). **Build Mapa RELEASE SUCCESS:** <https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38580135268>. APK `0.1-R25.17` / `versionCode 69`, publicada como `web-pasajero/downloads/mapa-trayectos-r25.17.apk` (commit `96c3cc2758af`). SHA-256 `4637ef1c74ec811cb8426ada2f5847008dc3333ca0980cdfb768778150e600bc`; **R25.16 permanece intacta** para rollback.
