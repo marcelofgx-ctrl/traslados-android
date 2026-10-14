@@ -5,7 +5,7 @@
 - **Inicio de jornada** queda exclusivamente en el deslizador grande inferior cuando la jornada está cerrada; sigue usando el servicio real de GPS, sin cambiar el umbral ni la lógica de permisos.
 - **Fin de jornada** se traslada al menú ☰ superior, solo cuando la jornada está abierta. Abre confirmación con tiempo, km y viajes; se elimina el deslizador secundario de cierre del panel extendido.
 - En viaje activo, incluso durante recogida o parada, se bloquea la opción desde la interfaz **y desde `TrackingService.stopShift()`**, sin dar el viaje por terminado silenciosamente.
-- Mantener los estados: listo / jornada activa / pausa / recogida / pasajero a bordo / parada / cierre. Conserva historial, rutas, globito, base y Conductor integrado. Nueva versión R25.14 code66, firma CI, publicación y prueba visual Samsung pendientes hasta verificar resultado.
+- Mantener los estados: listo / jornada activa / pausa / recogida / pasajero a bordo / parada / cierre. Conserva historial, rutas, globito, base y Conductor integrado. Nueva versión **R25.14 code66**: [RELEASE CI SUCCESS 13/10/2026 23:07 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38499249463), APK firmado guardado en `web-pasajero/downloads/mapa-trayectos-r25.14.apk`, SHA-256 `03865c4b4ae49edde5d62612d9b15fc55c4c676610cf05ea93a070e327ea58e0`. **QA físico Samsung y disponibilidad final en Pages todavía no comprobados**; la copia GitHub es respaldo hasta verificar Pages.
 
 
 ## Ajuste de fidelidad visual R25.13 — revisión Samsung (13/10/2026)
