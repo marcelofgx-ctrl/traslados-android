@@ -113,14 +113,18 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R25.17'" mapatrayectos/build.gradle
-          grep -q "versionCode 69" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R25.18'" mapatrayectos/build.gradle
+          grep -q "versionCode 70" mapatrayectos/build.gradle
           grep -q 'TripPlatformChoice.forBadge' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'TripPlatformChoice.badgeLabel' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           ! grep -q 'if(!"uber".equals(type)&&!"cabify".equals(type))' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
           grep -q 'chooseUpcomingTripPlatform' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'TripPlatformChoice.shouldPrompt' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'sheet_end_shift_action' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'head.addView(endShiftAction,miniEndLp)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'TripFlowDialogs.chooseTripType(this,selectedTripPlatform' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'TripClosePolicy.mayFinish' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'correctFinishedTripAmount' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'endShiftAction.setOnClickListener' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'DESLIZAR · INICIAR JORNADA' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'drawRoundRect(surface,corners,corners,p)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -128,11 +132,11 @@ jobs:
           grep -q 'ShiftEndPolicy.canEndShift(shiftActive,tripActive)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           ! grep -q 'sheet_shift_close' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_FULL_DP=346' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_MID_DP=244' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=342' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_MID_DP=239' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'liveStyle.getLayers()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(mode==MODE_SHIFT_START)return Color.rgb(2,57,61)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'if(metrics!=null)metrics.setVisibility(state>=2' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'if(metrics!=null)metrics.setVisibility(state==2||(state==1&&tripActive)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -466,6 +470,18 @@ jobs:
             mapatrayectos/tests/TripPlatformChoiceTest.java
           java -cp /tmp/mapa-platform-test TripPlatformChoiceTest
 
+      - name: Test trip close policies and platform before signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-r25-18-tests
+          javac -d /tmp/mapa-r25-18-tests \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/TripClosePolicy.java \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/TripPlatformChoice.java \
+            mapatrayectos/tests/TripClosePolicyTest.java \
+            mapatrayectos/tests/TripPlatformChoiceTest.java
+          java -cp /tmp/mapa-r25-18-tests TripClosePolicyTest
+          java -cp /tmp/mapa-r25-18-tests TripPlatformChoiceTest
       - name: Build signed release
         shell: bash
         env:
@@ -531,8 +547,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_17_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_17_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_18_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_18_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -540,9 +556,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R25-17-RELEASE
+          name: Mapa-Trayectos-v0.1-R25-18-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R25_17_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R25_18_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
@@ -564,6 +580,7 @@ jobs:
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.14-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.15-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.16-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R25.17-SHA256SUMS.txt)
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
           # Always build publication on the latest main. Concurrent docs/Pages
@@ -572,17 +589,17 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             mkdir -p web-pasajero/downloads
-            cp artifacts/Mapa_Trayectos_v0.1_R25_17_RELEASE.apk \
-              web-pasajero/downloads/mapa-trayectos-r25.17.apk
-            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.17.apk > MAPA-R25.17-SHA256SUMS.txt)
-            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.17-SHA256SUMS.txt)
-            git add web-pasajero/downloads/mapa-trayectos-r25.17.apk \
-                    web-pasajero/downloads/MAPA-R25.17-SHA256SUMS.txt
+            cp artifacts/Mapa_Trayectos_v0.1_R25_18_RELEASE.apk \
+              web-pasajero/downloads/mapa-trayectos-r25.18.apk
+            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.18.apk > MAPA-R25.18-SHA256SUMS.txt)
+            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.18-SHA256SUMS.txt)
+            git add web-pasajero/downloads/mapa-trayectos-r25.18.apk \
+                    web-pasajero/downloads/MAPA-R25.18-SHA256SUMS.txt
             if git diff --cached --quiet; then
-              echo 'APK Mapa R25.17 ya publicada sin alterar binario'
+              echo 'APK Mapa R25.18 ya publicada sin alterar binario'
               exit 0
             fi
-            git commit -m 'Publicar Mapa Trayectos R25.17 APK firmada'
+            git commit -m 'Publicar Mapa Trayectos R25.18 APK firmada'
             if git push origin HEAD:main; then exit 0; fi
             echo "Publicación concurrente, reintentando sobre main actual (${retry}/5)"
           done
