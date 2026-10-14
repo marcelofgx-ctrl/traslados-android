@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 64
-        versionName '0.1-R25.12'
+        versionCode 65
+        versionName '0.1-R25.13'
     }
 
     signingConfigs {
