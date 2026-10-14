@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.15 — implementación visual estricta del mockup #3 (14/10/2026)
+
+- Pedido explícito: asumir rol de diseñador/programador senior; no publicar otra APK «parecida». Capturas R25.14 Samsung comparadas contra `mapa_trayectos_diseno_3_aprobado.png`; fallos: panel vacío, slider apagado y texto minúsculo, velocímetro circular en vez de tarjeta, controles jornada poco visibles.
+- Cambios: fuente Manrope; logo circular negro/dorado; velocímetro rectangular 116×105dp con arco luminiscente; GPS/compás/HUD refinados; tarjetas de totales 57dp, métricas 75dp, slider 61dp con trazo brillante y texto escalado; panel dinámico 230/330dp + 40dp cuando hay jornada activa sin viaje. Título y colores de alto contraste, calles oro atenuadas. No se cambia cálculo de GPS, rutas, registro ni Conductor.
+- Inicio de jornada: `DESLIZAR · INICIAR JORNADA` en slider cuando no hay jornada. Durante jornada sin viaje: `DESLIZAR · INICIAR SERVICIO` y botón secundario `FINALIZAR JORNADA` visible con confirmación, además de menú ☰. Durante viaje se oculta el cierre por seguridad.
+- `feature/mapa-r25-15-master-visual-qa` trae workflow `qa-mapa-visual.yml` para compilar debug y tomar screenshots reales en emulador Android de estados sin jornada/con jornada, con artefacto para revisión **antes de fusionar/publicar**. Publicación R25.15 code67 y QA real Samsung permanecen pendientes hasta verificarse.
+
+
+
 ## Estado ACTUAL: Supabase de testing reiniciada, configuración preservada (13/10/2026, ~23:21 UYT)
 
 **Pedido confirmado:** el usuario desinstaló Mapa Trayectos de su Samsung y ordenó dejar la base en cero salvo configuración. Se ejecutó una transacción COMMIT exitosa sobre Supabase `zetaudvvutlouiqxopvg`, **sin backup adicional**, eliminando las ocho reservas de prueba (más sus 13 eventos, 7 mensajes y una parada mediante FK CASCADE), clientes y sesiones de test, passkeys y códigos de recuperación, desafíos, dispositivos, puntos, trayectos y jornadas, presencia activa, registros, consultas ETA y caché de rutas. `auth.users` ya tenía cero registros antes de la operación; no se tocaron secretos de autenticación.
