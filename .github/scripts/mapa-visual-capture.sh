@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p docs/visual-qa
+# Do not mistake an old source-controlled image for a screenshot from this run.
+rm -f docs/visual-qa/mapa-preview-idle.png docs/visual-qa/mapa-preview-shift-active.png
 APP=uy.com.mapatrayectos
 adb shell wm size 1080x2400
 adb shell wm density 440
@@ -22,15 +24,33 @@ capture_window() {
   test -s "$1"
 }
 is_modal() {
-  python3 - "$1" <<'PY'
+  # A bright road, marker or route may occupy the center pixel. Use the
+  # ACTUAL Android view hierarchy, not a single RGB value, to reject popups.
+  adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 || true
+  adb exec-out cat /sdcard/window.xml > docs/visual-qa/last-window.xml 2>/dev/null || true
+  python3 - <<'PY'
 import sys
-from PIL import Image
-im=Image.open(sys.argv[1]).convert('RGB')
-w,h=im.size
-# Center is map/panel (deep petroleum), never a light system dialog.
-rgb=im.getpixel((w//2,h//2))
-print("Screenshot center pixel:", rgb)
-sys.exit(0 if sum(rgb)/3 > 160 else 1)
+import xml.etree.ElementTree as ET
+try:
+    root=ET.parse('docs/visual-qa/last-window.xml').getroot()
+except (ET.ParseError, OSError):
+    print('QA: Android UI hierarchy unavailable; treat screen as blocked')
+    sys.exit(0)
+texts=[(n.get('text','')+' '+n.get('content-desc','')).strip() for n in root.iter()]
+visible=' '.join(texts).lower()
+errors=('not responding', "isn't responding", 'keeps stopping',
+        'se detuvo', 'no responde', 'cerrar app', 'close app',
+        'activar acceso flotante')
+if any(error in visible for error in errors):
+    print('QA: visible Android error/permission modal')
+    sys.exit(0)
+app_on_screen='mapa trayectos' in visible and (
+    'iniciar jornada' in visible or 'jornada activa' in visible)
+if app_on_screen:
+    print('QA: Mapa and jornada controls visible; no blocking modal')
+    sys.exit(1)
+print('QA: expected Mapa controls not visible; block capture')
+sys.exit(0)
 PY
 }
 dismiss_modal() {
@@ -69,9 +89,9 @@ for attempt in 1 2 3 4 5; do
   echo "Detected system-level modal; dismissing attempt $attempt"
   dismiss_modal
 done
-capture_window docs/visual-qa/mapa-r25.15-idle.png
-if is_modal docs/visual-qa/mapa-r25.15-idle.png; then
-  echo "QA BLOCKED: light system dialog obscures the actual UI" >&2
+capture_window docs/visual-qa/mapa-preview-idle.png
+if is_modal docs/visual-qa/mapa-preview-idle.png; then
+  echo "QA BLOCKED: Android hierarchy shows a blocking modal or missing app controls" >&2
   exit 1
 fi
 
@@ -95,8 +115,8 @@ PY
 echo "Start journey swipe: $coords"
 adb shell input swipe $coords 1350
 sleep 11
-capture_window docs/visual-qa/mapa-r25.15-shift-active.png
-if is_modal docs/visual-qa/mapa-r25.15-shift-active.png; then
+capture_window docs/visual-qa/mapa-preview-shift-active.png
+if is_modal docs/visual-qa/mapa-preview-shift-active.png; then
   echo "QA BLOCKED: modal obscured the active shift" >&2
   exit 1
 fi
