@@ -32,18 +32,18 @@ const nodes={
 const ctx={window:{TrasladosPickupCadence:{arrivalLabel:()=> "5–10 min"}},$:id=>nodes[id],Number};
 vm.createContext(ctx);vm.runInContext(app.slice(begin,end),ctx);
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Actualizando la llegada…",
-  checked:"Se actualiza solo",phase:"waiting"});
+  checked:"La llegada se calcula por separado",phase:"waiting"});
 assert.equal(nodes["pickup-presence"].dataset.phase,"waiting");
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
 assert.equal(nodes["pickup-distance"].textContent,"");
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Calculando llegada…",phase:"routing"});
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Llegada aproximada",
-  km:3.4,minutes:8,phase:"ready",checked:"Se actualiza solo"});
+  km:3.4,minutes:8,phase:"ready",checked:"La llegada se calcula por separado"});
 assert.equal(nodes["pickup-presence-metrics"].hidden,false);
 assert.equal(nodes["pickup-distance"].textContent,"3,4 km");
 const count=notices;
 ctx.paintPickupCard({presence:"online",title:"Conductor disponible",subtitle:"Llegada aproximada",
-  km:3.4,minutes:8,phase:"ready",checked:"Se actualiza solo"});
+  km:3.4,minutes:8,phase:"ready",checked:"La llegada se calcula por separado"});
 assert.equal(notices,count,"No aria-live announcement on identical updates");
 ctx.paintPickupCard({presence:"busy",title:"No disponible",phase:"blocked"});
 assert.equal(nodes["pickup-presence-metrics"].hidden,true);
