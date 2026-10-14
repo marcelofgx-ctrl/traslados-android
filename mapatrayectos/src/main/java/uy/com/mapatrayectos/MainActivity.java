@@ -156,14 +156,14 @@ public class MainActivity extends Activity {
             return true;
         });
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",12.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,12,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.5f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
-        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(51),dp(42)));
-        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(44),dp(42));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
+        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(51),dp(44)));
+        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(44),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
             if(!Settings.canDrawOverlays(this))openBubblePermission();
             else showBubbleDiagnostics();
         });
-        bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(37),dp(42));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
-        maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(37),dp(42));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
+        bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(44));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
+        maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(44));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
          // A foreground tap can reliably open system Settings on Android 16.
          // Show a visible action when permission has not been granted yet.
@@ -254,7 +254,7 @@ public class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(92);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(94);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(90);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
         setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",1)));setSheetState(sheetState,false);updateUi();
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
-            style=s;style.addImage(DRIVER_IMAGE,driverArrow());
+            style=s;applyNightCartography(style);style.addImage(DRIVER_IMAGE,driverArrow());
             GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);
             SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.86f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")),PropertyFactory.iconRotationAlignment("viewport"));style.addLayer(dl);
             GeoJsonSource rs=new GeoJsonSource(ROUTE_SOURCE,lineGeoJson(route));style.addSource(rs);
@@ -273,6 +273,27 @@ public class MainActivity extends Activity {
             style.addLayer(new CircleLayer(END_LAYER,END_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(RED),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));
             refreshRoute();if(!Double.isNaN(lastLat))updateDriver(lastLat,lastLon,lastBearing,false);if(!tripId.isEmpty())loadRoute(tripId);if(shiftActive)uiHandler.postDelayed(this::requestServiceState,180);
         });});
+    }
+
+    /** Golden roads and navy water from the selected mockup; best-effort only.
+     *  Unknown future OpenFreeMap layer IDs leave the map style untouched.
+     *  All original GPS, markers, routes and gestures are preserved. */
+    private void applyNightCartography(Style liveStyle){
+        if(liveStyle==null)return;
+        try{
+            Layer roads=liveStyle.getLayer("Road network");
+            if(roads instanceof LineLayer){
+                ((LineLayer)roads).setProperties(PropertyFactory.lineColor(Color.rgb(193,158,96)));
+            }
+            Layer water=liveStyle.getLayer("Water");
+            if(water instanceof FillLayer){
+                ((FillLayer)water).setProperties(PropertyFactory.fillColor(Color.rgb(6,47,75)));
+            }
+            Layer canvas=liveStyle.getLayer("Background");
+            if(canvas instanceof BackgroundLayer){
+                ((BackgroundLayer)canvas).setProperties(PropertyFactory.backgroundColor(Color.rgb(8,31,45)));
+            }
+        }catch(Exception ignored){ /* Cartography is cosmetic: never affect tracking. */ }
     }
 
     private int historyHeightDp(int state){return state<=0?HISTORY_PEEK_DP:(state==1?HISTORY_MID_DP:HISTORY_FULL_DP);}
