@@ -84,7 +84,11 @@ jobs:
               header=im.crop((int(w*.12),int(h*.045),int(w*.85),int(h*.12)))
               hud=sum(ImageStat.Stat(header).mean)/3
               assert hud<155,(p,'cockpit lost its petroleum contrast',hud)
-              map_window=im.crop((int(w*.2),int(h*.38),int(w*.8),int(h*.60)))
+              # The expanded shift-close panel legitimately covers the lower
+              # map. For that third screenshot sample the unobscured upper
+              # cartography instead of accidentally measuring the dark panel.
+              area=(.20,.28,.80,.38) if 'shift-close-expanded' in p.name else (.20,.38,.80,.60)
+              map_window=im.crop((int(w*area[0]),int(h*area[1]),int(w*area[2]),int(h*area[3])))
               map_mean=sum(ImageStat.Stat(map_window).mean)/3
               assert map_mean>135,(p,'light map is missing or tiles did not load',map_mean)
               assert map_mean>hud+45,(p,'insufficient contrast between map and HUD',map_mean,hud)
