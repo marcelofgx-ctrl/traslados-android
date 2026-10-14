@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa Trayectos R25.22 — tarjetas con temporizadores legibles (14/10/2026, EN QA)
+
+- Captura Samsung de las 18:32: viaje Uber «EN CAMINO A RECOGER», cuatro métricas horizontales; el tiempo de SERVICIO y DET. se desbordaba o cortaba el último dígito dentro de su tarjeta. No era un contador de tiempo incorrecto; era un problema del autoajuste tipográfico de Android al mostrar HH:MM:SS en un ancho de ~65dp.
+- En `MainActivity.metric()` se conserva **cuatro tarjetas y formato HH:MM:SS**; se crea `MetricValueView` que **mide el texto con la fuente realmente dibujada** cada vez que cambia o se redimensiona, ajusta el tamaño real al ancho sin elipsis, aplica cifras tabulares y ligeramente condensadas y usa márgenes internos más eficientes. Las etiquetas tienen ajuste controlado. No cambia número de tarjetas, orden, contadores, GPS, giro rumbo-arriba R25.21, mapa, trace o fondo.
+- Se suma clase pura `MetricTypographyPolicy` con pruebas para contador 8 caracteres y ancho de 64px, fuentes variables, textos largos, valores cortos y límites inválidos. CI modular + release verifican esos tests. Versión prevista **0.1-R25.22 / code 74**, descargable como `web-pasajero/downloads/mapa-trayectos-r25.22.apk` tras release firmada, conservando R25.21 intacta con SHA para rollback.
+- Validación: CI modular, QA visual de emulador (incluye tarjetas al iniciar jornada), release firmada y checksum. Prueba Samsung real de tamaño de letra de usuario pendiente. No tocar bases, web PWA v70, Cliente Premium v16 ni Conductor.
+
+
 ## Mapa R25.21 — rumbo de navegación heading-up (14/10/2026, PUBLICADA 17:58 UYT)
 
 - Reporte Samsung: coche/flecha en la dirección correcta y cartografía perpendicular. Código anterior acoplaba giro de cámara al umbral de velocidad *filtrada* de 4,5 km/h, con factor de giro 0,34 y ciclos de 1300 ms; tras curvas o desaceleraciones la cámara quedaba retrasada o fija.

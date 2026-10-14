@@ -1469,15 +1469,61 @@ public class MainActivity extends Activity {
     }
 
     private TextView metric(LinearLayout row,String value,String label,int iconType){
-        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.CENTER);box.setPadding(dp(3),dp(4),dp(3),dp(3));
+        // Four equal cards must remain legible on 360dp phones and with
+        // Samsung's enlarged font setting. Android TextView autoSize was
+        // leaving the final digit of HH:MM:SS outside the fourth card.
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);box.setPadding(dp(2),dp(4),dp(2),dp(3));
         box.setBackground(premiumGradient(Color.rgb(2,34,43),Color.rgb(1,49,55),Color.argb(224,77,223,202),18f,0.95f));
-        MetricIconView ic=new MetricIconView(this,iconType);box.addView(ic,new LinearLayout.LayoutParams(-1,dp(17)));
-        TextView v=text(value,15f,TEXT,true);v.setGravity(Gravity.CENTER);v.setSingleLine(true);v.setIncludeFontPadding(false);
-        v.setAutoSizeTextTypeUniformWithConfiguration(9,15,1,android.util.TypedValue.COMPLEX_UNIT_SP);
-        TextView l=text(label,9.2f,CHAMPAGNE,true);l.setGravity(Gravity.CENTER);l.setSingleLine(true);l.setIncludeFontPadding(false);
+        MetricIconView ic=new MetricIconView(this,iconType);
+        box.addView(ic,new LinearLayout.LayoutParams(-1,dp(17)));
+        MetricValueView v=new MetricValueView(this,font(true));
+        v.setText(value);v.setTextColor(TEXT);
+        v.setContentDescription(label+": "+value);
+        TextView l=text(label,9.2f,CHAMPAGNE,true);
+        l.setGravity(Gravity.CENTER);l.setSingleLine(true);l.setIncludeFontPadding(false);
+        l.setAutoSizeTextTypeUniformWithConfiguration(8,9,1,android.util.TypedValue.COMPLEX_UNIT_SP);
         box.addView(v,new LinearLayout.LayoutParams(-1,dp(26)));
         box.addView(l,new LinearLayout.LayoutParams(-1,dp(16)));
-        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));row.addView(box,bp);return v;
+        LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,-1,1);
+        bp.setMargins(dp(2),dp(3),dp(2),dp(3));row.addView(box,bp);return v;
+    }
+
+    /** Recomputes glyph width whenever seconds change or the display is
+     * resized. Never ellipsize time, e.g. "00:00:18" -> "00:00:1…".
+     * Keeps Manrope + tabular numerals and preserves real HH:MM:SS values. */
+    private static final class MetricValueView extends TextView {
+        private boolean fitting;
+        private static final float MAX_SP=14f,MIN_SP=8.5f;
+        MetricValueView(Context context,Typeface face){
+            super(context);
+            setTypeface(face);setFontFeatureSettings("tnum");
+            setGravity(Gravity.CENTER);setIncludeFontPadding(false);
+            setSingleLine(true);setHorizontallyScrolling(false);
+            setTextScaleX(.89f);setLetterSpacing(-.018f);
+            setEllipsize(null);
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,MAX_SP);
+        }
+        @Override protected void onSizeChanged(int w,int h,int oldw,int oldh){
+            super.onSizeChanged(w,h,oldw,oldh);fitNumber();
+        }
+        @Override protected void onTextChanged(CharSequence text,int start,int before,int count){
+            super.onTextChanged(text,start,before,count);fitNumber();
+        }
+        private void fitNumber(){
+            if(fitting||getWidth()<=0)return;
+            CharSequence value=getText();
+            if(value==null)return;
+            float available=getWidth()-getPaddingLeft()-getPaddingRight()-getResources().getDisplayMetrics().density*3f;
+            if(available<=0)return;
+            android.text.TextPaint probe=new android.text.TextPaint(getPaint());
+            probe.setTextSize(MAX_SP*getResources().getDisplayMetrics().scaledDensity);
+            float measured=probe.measureText(value.toString());
+            float target=MetricTypographyPolicy.fitSp(measured,available,MAX_SP,MIN_SP);
+            fitting=true;
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,target);
+            fitting=false;
+        }
     }
     private float followZoom(){if(currentSpeedKmh<12f)return 13.60f;if(currentSpeedKmh<45f)return 13.43f;if(currentSpeedKmh<80f)return 13.15f;return 12.87f;}
     private float smoothBearing(float current,float target,float factor){float delta=((target-current+540f)%360f)-180f;return normalizeBearing(current+delta*factor);}

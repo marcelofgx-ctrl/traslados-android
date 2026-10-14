@@ -113,8 +113,8 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R25.21'" mapatrayectos/build.gradle
-          grep -q "versionCode 73" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R25.22'" mapatrayectos/build.gradle
+          grep -q "versionCode 74" mapatrayectos/build.gradle
           grep -q 'TripPlatformChoice.forBadge' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'TripPlatformChoice.badgeLabel' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           ! grep -q 'if(!"uber".equals(type)&&!"cabify".equals(type))' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
@@ -359,6 +359,12 @@ jobs:
           grep -q "cameraBearing" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "iconRotationAlignment" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "13.60f" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'MetricTypographyPolicy.fitSp' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'MetricValueView' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'setTextScaleX(.89f)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          mkdir -p /tmp/mapa-metric-test
+          javac -d /tmp/mapa-metric-test mapatrayectos/src/main/java/uy/com/mapatrayectos/MetricTypographyPolicy.java mapatrayectos/tests/MetricTypographyPolicyTest.java
+          java -cp /tmp/mapa-metric-test MetricTypographyPolicyTest
           grep -q 'NavigationHeadingPolicy.camera' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'navigation_course_fresh' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'NavigationHeadingPolicy.course' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
@@ -563,8 +569,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_21_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_21_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_22_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_22_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -572,9 +578,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R25-21-RELEASE
+          name: Mapa-Trayectos-v0.1-R25-22-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R25_21_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R25_22_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
@@ -600,6 +606,7 @@ jobs:
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.18-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.19-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.20-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R25.21-SHA256SUMS.txt)
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
           # Always build publication on the latest main. Concurrent docs/Pages
@@ -608,17 +615,17 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             mkdir -p web-pasajero/downloads
-            cp artifacts/Mapa_Trayectos_v0.1_R25_21_RELEASE.apk \
-              web-pasajero/downloads/mapa-trayectos-r25.21.apk
-            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.21.apk > MAPA-R25.21-SHA256SUMS.txt)
-            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.21-SHA256SUMS.txt)
-            git add web-pasajero/downloads/mapa-trayectos-r25.21.apk \
-                    web-pasajero/downloads/MAPA-R25.21-SHA256SUMS.txt
+            cp artifacts/Mapa_Trayectos_v0.1_R25_22_RELEASE.apk \
+              web-pasajero/downloads/mapa-trayectos-r25.22.apk
+            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.22.apk > MAPA-R25.22-SHA256SUMS.txt)
+            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.22-SHA256SUMS.txt)
+            git add web-pasajero/downloads/mapa-trayectos-r25.22.apk \
+                    web-pasajero/downloads/MAPA-R25.22-SHA256SUMS.txt
             if git diff --cached --quiet; then
-              echo 'APK Mapa R25.21 ya publicada sin alterar binario'
+              echo 'APK Mapa R25.22 ya publicada sin alterar binario'
               exit 0
             fi
-            git commit -m 'Publicar Mapa Trayectos R25.21 APK firmada'
+            git commit -m 'Publicar Mapa Trayectos R25.22 APK firmada'
             if git push origin HEAD:main; then exit 0; fi
             echo "Publicación concurrente, reintentando sobre main actual (${retry}/5)"
           done
