@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## R25.15 · QA gráfica y funciones, estado 14/10/2026 08:4x UYT
+
+- El **PR #86** sigue abierto; NO fusionar ni ofrecer APK final todavía. `main` sigue R25.14.
+- Compilación Android debug correcta, y capturas reales en emulador (no imagen generada) recuperadas de artefactos `38556108788` y `38557501675`.
+- La captura real verificó el **gesto de iniciar jornada** (`tracking_state.xml shift_active=true`) y el botón **FINALIZAR JORNADA**. Se corrigieron: SEGUIR quebrado, título de zona recortado, botón inferior cortado; última captura `38557501675` muestra esas tres correcciones completas.
+- La primera QA recurrente fallaba por aviso de Launcher/ANR del emulador. Se evitó deshabilitar `com.android.launcher3`. Además se eliminó la dependencia dura de una segunda captura `uiautomator` inaccesible; validación de transición ahora utiliza SharedPreferences reales y la imagen de pantalla.
+- Comparación maestra (local, no parte del repo) demostró que el mapa seguía casi negro contra la referencia azul-gris. Se implementó ajuste de fondo, agua, edificios, parques y landuse en `applyNightCartography`; pendiente resultado de CI `38558352583` y revisión visual posterior.
+- Pendiente: **1)** QA emulador limpia, comparación final con mockup #3 sin anomalías visibles; **2)** comprobar que colores nocturnos no comprometen rutas ni texto; **3)** fusionar PR solo si supera QA; **4)** compilar RELEASE firmada code67, checksum y archivo; **5)** verificar enlace real; **6)** prueba Samsung, con UI de inicio y fin de jornada, permiso burbuja y seguimiento. NO inventar descarga antes de que exista.
+
 ## Mapa R25.15 — implementación visual estricta del mockup #3 (14/10/2026)
 
 - Pedido explícito: asumir rol de diseñador/programador senior; no publicar otra APK «parecida». Capturas R25.14 Samsung comparadas contra `mapa_trayectos_diseno_3_aprobado.png`; fallos: panel vacío, slider apagado y texto minúsculo, velocímetro circular en vez de tarjeta, controles jornada poco visibles.
