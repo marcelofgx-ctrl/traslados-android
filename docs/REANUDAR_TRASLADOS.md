@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.21 — rumbo de navegación heading-up (14/10/2026, EN QA)
+
+- Reporte Samsung: coche/flecha en la dirección correcta y cartografía perpendicular. Código anterior acoplaba giro de cámara al umbral de velocidad *filtrada* de 4,5 km/h, con factor de giro 0,34 y ciclos de 1300 ms; tras curvas o desaceleraciones la cámara quedaba retrasada o fija.
+- R25.21 introduce NavigationHeadingPolicy: rumbo GPS verificado (precisión), fallback por desplazamiento medido si GPS no ofrece bearing, sin usar ruido estacionario. Diferencias >=28 grados orientan al instante (sin lag angular), oscilaciones pequeñas se suavizan correctamente, incluido 359°/2°.
+- TrackingService emite navigation_course_fresh sin cambiar cálculo de kilómetros, ruta, presencia ni estadísticas. MainActivity usa bearing real de MapLibre, actualiza cámara mientras SEGUIR está activo, y conserva orientación válida al detenerse. LIBRE mantiene opción norte-arriba; funciona también fuera de jornada.
+- VersionCode73 / R25.21, nuevo archivo mapa-trayectos-r25.21.apk sin alterar R25.20. Pruebas puras de 90°, norte cruzado, ausencia de bearing, ruido GPS y precisión baja; guardas CI y validación visual emulator. **Validar movimiento real en Samsung con el vehículo detenido para mirar controles**; emulador estático no reproduce navegación real.
+- No se tocó web v70, Cliente Premium v16, Conductor, Supabase ni bases de datos.
+
+
 ## PWA Pasajeros v70 + Cliente Premium v16 — RELEASE FIRMADA (14/10/2026 16:08 UYT)
 
 - Ante captura Samsung de las 15:23 donde disponibilidad pública era verde pero mostraba «Iniciá sesión para consultar la llegada» durante varios minutos: comprobado solo lectura que `public_driver_availability_v1` respondía disponible y el GPS/heartbeat eran recientes. Logs entre 18:20-18:23 UTC: 18 solicitudes RPC disponibilidad HTTP 200 y 2 Edge pickup-eta HTTP 200. HTTP 200 NO implica que Edge haya devuelto distancia y tiempo: la respuesta de negocio puede señalar `login_required` o ruta no disponible. No inventar ETA ni mostrar «GPS falló».

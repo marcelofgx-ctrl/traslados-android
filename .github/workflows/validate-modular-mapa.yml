@@ -75,6 +75,18 @@ jobs:
           grep -q 'correctFinishedTripPlatform' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'db.markTripSynced(tripId,trip)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
           grep -q 'showTripCorrectionMenu' mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
+      - name: R25.21 course-of-travel camera heading-up regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-heading
+          javac -d /tmp/mapa-heading \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/NavigationHeadingPolicy.java \
+            mapatrayectos/tests/NavigationHeadingPolicyTest.java
+          java -cp /tmp/mapa-heading NavigationHeadingPolicyTest
+          grep -q 'NavigationHeadingPolicy.camera(realCamera,lastBearing)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'navigation_course_fresh' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'NavigationHeadingPolicy.course' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
       - name: Passenger chat integration regression
         shell: bash
         run: |
