@@ -1,5 +1,12 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Ajuste de fidelidad visual R25.13 — revisión Samsung (13/10/2026)
+
+- Tras comprobar captura real del usuario de R25.12, se detectó que **el diseño aprobado no estaba reproducido**: la pantalla inicial mantenía las seis tarjetas en dos filas, ocupaba demasiado mapa, el botón de iniciar jornada seguía dorado y el velocímetro seguía contenido en un rectángulo.
+- R25.13 rediseña la composición Android real: velocímetro circular con arco menta, cabecera y HUD compactos, jornada de tres tarjetas principales (tiempo/km/viajes) y cifras secundarias solo al expandir; deslizador de inicio menta/turquesa con señales de gesto, panel petróleo y Manrope existente. **Sin eliminar ninguna estadística ni cambiar acciones o límites táctiles.**
+- La cartografía ahora recorre los IDs de capas cargadas de OpenFreeMap para colorear vías de oro y agua azul petróleo, en vez de depender de tres nombres de capa únicos que podrían no existir. El estilo base oscuro y la navegación permanecen intactos.
+- APK **R25.13 / versionCode 65**, firma y link a verificar tras ejecutar workflow. **QA visual y funcional en Samsung pendiente**: instalación encima sin borrar datos; comprobar hoja compacta/desplegable, velocidad, GPS, iniciar jornada/deslizar y globito.
+
 ## Limpieza de avisos GitHub después de despliegues (13/10/2026)
 
 **Pedido del usuario:** al finalizar los despliegues verificados, limpiar de `marcelof.gx@gmail.com` las notificaciones automáticas de GitHub cuyos asuntos comiencen `[marcelofgx-ctrl/<repositorio>]` y sean avisos técnicos de workflows como `Run failed:` o `PR run failed:`.
