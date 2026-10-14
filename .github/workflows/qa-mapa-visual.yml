@@ -1,0 +1,112 @@
+name: Mapa Trayectos — Visual QA Android
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mapatrayectos/**'
+      - '.github/workflows/qa-mapa-visual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  visual-qa:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 1
+      - name: Reproducir recursos originales
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          test -s mapatrayectos/src/main/assets/manrope.ttf
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK de previsualización
+        shell: bash
+        run: gradle :mapatrayectos:assembleDebug --stacktrace
+      - name: Capturas Android (inicio y jornada activa)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            mkdir -p docs/visual-qa
+            adb shell wm size 1080x2400
+            adb shell wm density 440
+            adb install -r mapatrayectos/build/outputs/apk/debug/mapatrayectos-debug.apk
+            adb shell pm grant uy.com.mapatrayectos android.permission.ACCESS_FINE_LOCATION
+            adb shell pm grant uy.com.mapatrayectos android.permission.ACCESS_COARSE_LOCATION
+            adb shell pm grant uy.com.mapatrayectos android.permission.POST_NOTIFICATIONS
+            adb shell appops set uy.com.mapatrayectos SYSTEM_ALERT_WINDOW allow || true
+            adb emu geo fix -56.084 -34.880 || true
+            adb shell am start -n uy.com.mapatrayectos/.MainActivity
+            sleep 24
+            adb exec-out screencap -p > docs/visual-qa/mapa-r25.15-idle.png
+            adb shell input swipe 130 2138 950 2138 1000
+            sleep 12
+            adb exec-out screencap -p > docs/visual-qa/mapa-r25.15-shift-active.png
+            adb shell uiautomator dump /sdcard/ui.xml || true
+            adb pull /sdcard/ui.xml docs/visual-qa/ui.xml || true
+            adb logcat -d -t 300 | grep -E 'FATAL EXCEPTION|AndroidRuntime:.*Process: uy.com.mapatrayectos' > docs/visual-qa/fatal-log.txt || true
+            test ! -s docs/visual-qa/fatal-log.txt
+            test -s docs/visual-qa/mapa-r25.15-idle.png
+            test -s docs/visual-qa/mapa-r25.15-shift-active.png
+      - name: Inspección geométrica de capturas
+        shell: bash
+        run: |
+          python3 -m pip -q install pillow
+          python3 - <<'PY'
+          from PIL import Image, ImageStat
+          from pathlib import Path
+          for name in ('idle','shift-active'):
+              p=Path('docs/visual-qa/mapa-r25.15-'+name+'.png')
+              with Image.open(p) as im:
+                  rgb=im.convert('RGB')
+                  w,h=rgb.size
+                  assert w>=700 and h>=1400, (w,h)
+                  mean=ImageStat.Stat(rgb).mean
+                  assert sum(mean)/3 < 170, 'La pantalla no parece tener el tema oscuro aprobado'
+                  print(name,w,h,'mean RGB',mean)
+          PY
+      - name: Guardar capturas de previsualización
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-mapa-r25-15
+          path: |
+            docs/visual-qa/mapa-r25.15-*.png
+            docs/visual-qa/ui.xml
+            docs/visual-qa/fatal-log.txt
+          if-no-files-found: error
+      - name: Publicar capturas de revisión en esta rama
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Mapa Visual QA"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/visual-qa/mapa-r25.15-idle.png docs/visual-qa/mapa-r25.15-shift-active.png
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "docs: capturas de QA visual real [skip ci]"
+          git push origin "HEAD:${{ github.head_ref }}"
