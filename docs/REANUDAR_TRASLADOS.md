@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.14 — acciones de jornada sin romper diseño 3 (13/10/2026)
+
+- **Inicio de jornada** queda exclusivamente en el deslizador grande inferior cuando la jornada está cerrada; sigue usando el servicio real de GPS, sin cambiar el umbral ni la lógica de permisos.
+- **Fin de jornada** se traslada al menú ☰ superior, solo cuando la jornada está abierta. Abre confirmación con tiempo, km y viajes; se elimina el deslizador secundario de cierre del panel extendido.
+- En viaje activo, incluso durante recogida o parada, se bloquea la opción desde la interfaz **y desde `TrackingService.stopShift()`**, sin dar el viaje por terminado silenciosamente.
+- Mantener los estados: listo / jornada activa / pausa / recogida / pasajero a bordo / parada / cierre. Conserva historial, rutas, globito, base y Conductor integrado. Nueva versión R25.14 code66, firma CI, publicación y prueba visual Samsung pendientes hasta verificar resultado.
+
+
 ## Ajuste de fidelidad visual R25.13 — revisión Samsung (13/10/2026)
 
 - Tras comprobar captura real del usuario de R25.12, se detectó que **el diseño aprobado no estaba reproducido**: la pantalla inicial mantenía las seis tarjetas en dos filas, ocupaba demasiado mapa, el botón de iniciar jornada seguía dorado y el velocímetro seguía contenido en un rectángulo.
