@@ -1519,8 +1519,7 @@ public class MainActivity extends Activity {
             android.text.TextPaint probe=new android.text.TextPaint(getPaint());
             probe.setTextSize(MAX_SP*getResources().getDisplayMetrics().scaledDensity);
             float measured=probe.measureText(value.toString());
-            float target=measured>available ? MAX_SP*available/Math.max(1f,measured)*.97f:MAX_SP;
-            target=Math.max(MIN_SP,Math.min(MAX_SP,target));
+            float target=MetricTypographyPolicy.fitSp(measured,available,MAX_SP,MIN_SP);
             fitting=true;
             setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,target);
             fitting=false;
