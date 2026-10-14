@@ -1783,7 +1783,7 @@ public class MainActivity extends Activity {
         public static final int MODE_SHIFT_START=0,MODE_TRIP_START=1,MODE_TRIP_STOP=2,MODE_SHIFT_CLOSE=3,MODE_PICKUP=4,MODE_STOP_RESUME=5;
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();private final Typeface sliderFace;
         private Runnable completed,midpointCompleted;private String label="";private int mode=MODE_SHIFT_START;
-        private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f;
+        private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f,dragStartX=0f;
 
         public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");
             Typeface face;
@@ -1889,6 +1889,11 @@ public class MainActivity extends Activity {
             float h=getHeight(),pad=dpv(4),radius=(h-pad*2)/2-dpv(4),minX=pad+dpv(4)+radius,maxX=getWidth()-pad-dpv(4)-radius;
             switch(e.getActionMasked()){
                 case MotionEvent.ACTION_DOWN:
+                    // R25.20: end-of-shift demands a true right-to-left drag
+                    // originating on the circular thumb. A tap on the far left
+                    // of the rail must never be treated as a completed gesture.
+                    if(isReverse()&&e.getX()<maxX-dpv(43f))return true;
+                    dragStartX=e.getX();
                     dragging=true;thresholdBuzzed=false;midBuzzed=false;getParent().requestDisallowInterceptTouchEvent(true);
                     performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);updateProgress(e.getX(),minX,maxX);return true;
                 case MotionEvent.ACTION_MOVE:
@@ -1905,7 +1910,9 @@ public class MainActivity extends Activity {
                 case MotionEvent.ACTION_CANCEL:
                     if(dragging){
                         boolean up=e.getActionMasked()==MotionEvent.ACTION_UP;
-                        boolean full=up&&(isReverse()?progress<=.16f:progress>=.88f);
+                        boolean full=up&&(isReverse()?
+                            (progress<=.16f&&dragStartX-e.getX()>=(maxX-minX)*.60f):
+                            progress>=.88f);
                         boolean mid=up&&isDual()&&!full&&progress>=.46f&&progress<.80f;
                         dragging=false;getParent().requestDisallowInterceptTouchEvent(false);progress=isReverse()?1f:0f;invalidate();
                         if(full){performClick();performHapticFeedback(HapticFeedbackConstants.CONFIRM);if(completed!=null)completed.run();}
