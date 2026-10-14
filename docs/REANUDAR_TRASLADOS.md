@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Estado PUBLICADO — Mapa Trayectos R25.15, 14/10/2026 ~10:05 UYT
+
+- PR #86 fusionado en `main` mediante commit `93fcba7afe70a98883e38f02759e0ba3b8eae13d`. Corrección de aserción obsoleta de gradiente en CI commit `1c42bdebe1e5db2aad059273ae029433e7998f9e`.
+- **APK RELEASE R25.15 versionCode 67** publicada desde pipeline firmada en commit `436c170043db` a `web-pasajero/downloads/mapa-trayectos-r25.15.apk`; SHA-256 verificable `1fb954aed76dc38e90ca7190306f0f76e06b9afe9244181b770fb2df10fa2801` en `web-pasajero/downloads/MAPA-R25.15-SHA256SUMS.txt`.
+- Enlace repositorio estable: `https://github.com/marcelofgx-ctrl/traslados-android/raw/refs/heads/main/web-pasajero/downloads/mapa-trayectos-r25.15.apk`. Evitar prometer enlace GitHub Pages hasta validar desde el navegador (404 previo).
+- Validación previa: Java/Gradle modular SUCCESS. QA Android real `38558352583`: **captura e inspección geométrica y funcional SUCCESS**; el job completo falló solo por conflicto de `git push` de capturas, corregido para conservar únicamente el artefacto. Otra ejecución falló por alerta intermitente del launcher. Capturas se inspeccionaron manualmente y muestran controles de jornada legibles, botón FINALIZAR JORNADA y panel sin texto recortado. No afirmar fidelidad píxel a píxel con una imagen generativa ni QA físico Samsung completo; eso queda pendiente al instalar.
+- La base de Supabase de testing sigue sin historial, preservando configuración (salvo nueva actividad tras instalación); no borrar parámetros.
+- El usuario pidió expresamente trabajar sin interrumpirlo mientras conduce; no solicitar pruebas o confirmaciones durante el viaje.
+
 ## Actualización QA R25.15 — 14/10/2026
 
 - Artefacto real `38558352583` guardado: captura de jornada activa con SEGUIR en una línea, encabezado completo y FINALIZAR JORNADA totalmente visible. Se ve cartografía azul/gris con edificios más legibles. **Capturas Android, transición de jornada (SharedPreferences) e inspección geométrica pasaron**; el único paso fallido fue hacer `git push` de capturas mientras la rama cambiaba. Por eso el workflow ya no publica capturas en Git; quedan en artefactos.
