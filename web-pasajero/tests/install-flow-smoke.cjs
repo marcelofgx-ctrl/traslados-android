@@ -105,7 +105,9 @@ function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/1
   await nativeV15.click();
   assert.equal(nativeV15.view(),"viajes","Native v15 opens the same trip history");
   const nativeV16=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/16",apkAvailable:true});
+  await settled();
   assert.equal(nativeV16.elements["install-apk-option"].hidden,true,"Native v16 must not invite reinstallation");
+  await nativeV16.click();
   assert.equal(nativeV16.view(),"viajes","Native v16 opens the same trip history");
   assert.equal(nativeApk.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
   await nativeApk.click();
