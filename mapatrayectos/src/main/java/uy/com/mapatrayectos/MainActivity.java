@@ -28,11 +28,11 @@ import java.util.*;
 public class MainActivity extends Activity {
     private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_NOTIF_SETTINGS=7004,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012;
     private static final long SPEED_UI_STALE_MS=3500L;
-    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/dark";
+    private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
     private static final String ROUTE_SOURCE="route-source",ROUTE_CASING_LAYER="route-casing",ROUTE_GLOW_LAYER="route-glow",ROUTE_LAYER="route-layer",ROUTE_POINTS_SOURCE="route-points",ROUTE_POINTS_LAYER="route-points-layer",RETURN_SOURCE="route-return-source",RETURN_GLOW_LAYER="route-return-glow",RETURN_LAYER="route-return-layer";
     private static final String START_SOURCE="route-start",END_SOURCE="route-end",START_HALO="route-start-halo",START_LAYER="route-start-dot",END_HALO="route-end-halo",END_LAYER="route-end-dot";
-    private static final int BG=Color.rgb(5,21,29),PANEL=Color.rgb(4,38,45),GOLD=Color.rgb(234,193,99),CHAMPAGNE=Color.rgb(239,204,129),TEXT=Color.rgb(249,250,247),MUTED=Color.rgb(190,211,214),GREEN=Color.rgb(57,227,155),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(73,199,225),RETURN_ROUTE=Color.rgb(235,166,65);
+    private static final int BG=Color.rgb(5,21,29),PANEL=Color.rgb(4,38,45),GOLD=Color.rgb(234,193,99),CHAMPAGNE=Color.rgb(239,204,129),TEXT=Color.rgb(249,250,247),MUTED=Color.rgb(190,211,214),GREEN=Color.rgb(57,227,155),RED=Color.rgb(225,78,84),ROUTE=Color.rgb(39,148,108),RETURN_ROUTE=Color.rgb(205,142,65);
 
     private MapView mapView; private MapLibreMap map; private Style style;
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,shiftKmText,shiftTripsText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
@@ -266,61 +266,84 @@ public class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(79);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(81);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(79);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
         setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",2)));setSheetState(sheetState,false);updateUi();
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
-            style=s;applyNightCartography(style);style.addImage(DRIVER_IMAGE,driverArrow());
+            style=s;applyLightCartography(style);style.addImage(DRIVER_IMAGE,driverArrow());
             GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);
             SymbolLayer dl=new SymbolLayer(DRIVER_LAYER,DRIVER_SOURCE).withProperties(PropertyFactory.iconImage(DRIVER_IMAGE),PropertyFactory.iconSize(0.86f),PropertyFactory.iconAllowOverlap(true),PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(Expression.get("bearing")),PropertyFactory.iconRotationAlignment("viewport"));style.addLayer(dl);
             GeoJsonSource rs=new GeoJsonSource(ROUTE_SOURCE,lineGeoJson(route));style.addSource(rs);
-            LineLayer casing=new LineLayer(ROUTE_CASING_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(BG),PropertyFactory.lineWidth(11f),PropertyFactory.lineOpacity(0.80f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(casing,DRIVER_LAYER);
-            LineLayer glow=new LineLayer(ROUTE_GLOW_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(8.8f),PropertyFactory.lineOpacity(0.28f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(glow,DRIVER_LAYER);
+            LineLayer casing=new LineLayer(ROUTE_CASING_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(Color.rgb(250,250,245)),PropertyFactory.lineWidth(11.4f),PropertyFactory.lineOpacity(0.96f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(casing,DRIVER_LAYER);
+            LineLayer glow=new LineLayer(ROUTE_GLOW_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(Color.rgb(100,179,145)),PropertyFactory.lineWidth(9.7f),PropertyFactory.lineOpacity(0.32f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(glow,DRIVER_LAYER);
             LineLayer rl=new LineLayer(ROUTE_LAYER,ROUTE_SOURCE).withProperties(PropertyFactory.lineColor(ROUTE),PropertyFactory.lineWidth(5.8f),PropertyFactory.lineOpacity(0.99f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(rl,DRIVER_LAYER);
             GeoJsonSource ret=new GeoJsonSource(RETURN_SOURCE,emptyFeatureCollection());style.addSource(ret);
             LineLayer returnGlow=new LineLayer(RETURN_GLOW_LAYER,RETURN_SOURCE).withProperties(PropertyFactory.lineColor(RETURN_ROUTE),PropertyFactory.lineWidth(8.0f),PropertyFactory.lineOpacity(0.28f),PropertyFactory.lineOffset(2.2f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(returnGlow,DRIVER_LAYER);
             LineLayer returnLine=new LineLayer(RETURN_LAYER,RETURN_SOURCE).withProperties(PropertyFactory.lineColor(RETURN_ROUTE),PropertyFactory.lineWidth(4.8f),PropertyFactory.lineOpacity(0.98f),PropertyFactory.lineOffset(2.2f),PropertyFactory.lineCap(Property.LINE_CAP_ROUND),PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND));style.addLayerBelow(returnLine,DRIVER_LAYER);
             GeoJsonSource rps=new GeoJsonSource(ROUTE_POINTS_SOURCE,routePointsGeoJson(route));style.addSource(rps);
-            CircleLayer crumbs=new CircleLayer(ROUTE_POINTS_LAYER,ROUTE_POINTS_SOURCE).withProperties(PropertyFactory.circleRadius(2.0f),PropertyFactory.circleColor(Color.rgb(180,241,250)),PropertyFactory.circleOpacity(0.72f),PropertyFactory.circleStrokeColor(ROUTE),PropertyFactory.circleStrokeWidth(0.7f));style.addLayerBelow(crumbs,DRIVER_LAYER);
+            CircleLayer crumbs=new CircleLayer(ROUTE_POINTS_LAYER,ROUTE_POINTS_SOURCE).withProperties(PropertyFactory.circleRadius(2.0f),PropertyFactory.circleColor(Color.rgb(142,200,169)),PropertyFactory.circleOpacity(0.70f),PropertyFactory.circleStrokeColor(ROUTE),PropertyFactory.circleStrokeWidth(0.7f));style.addLayerBelow(crumbs,DRIVER_LAYER);
             GeoJsonSource ss=new GeoJsonSource(START_SOURCE,emptyFeatureCollection());GeoJsonSource es=new GeoJsonSource(END_SOURCE,emptyFeatureCollection());style.addSource(ss);style.addSource(es);
             style.addLayer(new CircleLayer(START_HALO,START_SOURCE).withProperties(PropertyFactory.circleRadius(10f),PropertyFactory.circleColor(Color.WHITE),PropertyFactory.circleOpacity(0.88f)));
-            style.addLayer(new CircleLayer(START_LAYER,START_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(GREEN),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));
+            style.addLayer(new CircleLayer(START_LAYER,START_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(ROUTE),PropertyFactory.circleStrokeColor(Color.rgb(248,249,241)),PropertyFactory.circleStrokeWidth(1.3f)));
             style.addLayer(new CircleLayer(END_HALO,END_SOURCE).withProperties(PropertyFactory.circleRadius(10f),PropertyFactory.circleColor(Color.WHITE),PropertyFactory.circleOpacity(0.88f)));
             style.addLayer(new CircleLayer(END_LAYER,END_SOURCE).withProperties(PropertyFactory.circleRadius(6.5f),PropertyFactory.circleColor(RED),PropertyFactory.circleStrokeColor(BG),PropertyFactory.circleStrokeWidth(1.3f)));
             refreshRoute();if(!Double.isNaN(lastLat))updateDriver(lastLat,lastLon,lastBearing,false);if(!tripId.isEmpty())loadRoute(tripId);if(shiftActive)uiHandler.postDelayed(this::requestServiceState,180);
         });});
     }
 
-    /** Golden roads and navy water from the selected mockup; best-effort only.
-     *  Unknown future OpenFreeMap layer IDs leave the map style untouched.
-     *  All original GPS, markers, routes and gestures are preserved. */
-    private void applyNightCartography(Style liveStyle){
+    /**
+     * R25.19: Light premium cartography over OpenFreeMap Liberty vector tiles.
+     * Calm ivory, stone blocks, sage parks and softened champagne roads contrast
+     * with the petroleum/champagne HUD. This is real vector map styling, not a
+     * fixed image: pan, zoom, street names and GPS all remain fully functional.
+     * Keep overrides best-effort in case upstream layer IDs change.
+     */
+    private void applyLightCartography(Style liveStyle){
         if(liveStyle==null)return;
-        // Match actual live layer IDs: OpenFreeMap can rename them between styles.
-        try{
-            for(Layer layer:liveStyle.getLayers()){
+        for(Layer layer:liveStyle.getLayers()){
+            try{
                 String id=layer.getId().toLowerCase(Locale.ROOT);
-                if(layer instanceof LineLayer &&
-                        (id.contains("road")||id.contains("highway")||id.contains("street")||
-                         id.contains("transport")||id.contains("bridge")||id.contains("tunnel"))){
-                    boolean major=id.contains("major")||id.contains("primary")||
+                if(layer instanceof BackgroundLayer){
+                    ((BackgroundLayer)layer).setProperties(
+                        PropertyFactory.backgroundColor(Color.rgb(246,242,234)));
+                }else if(layer instanceof FillLayer){
+                    FillLayer fill=(FillLayer)layer;
+                    if(id.contains("water")||id.contains("ocean")||id.contains("sea")){
+                        fill.setProperties(PropertyFactory.fillColor(Color.rgb(143,203,216)),
+                            PropertyFactory.fillOpacity(0.96f));
+                    }else if(id.contains("building")){
+                        fill.setProperties(PropertyFactory.fillColor(Color.rgb(216,214,208)),
+                            PropertyFactory.fillOpacity(0.93f));
+                    }else if(id.contains("park")||id.contains("garden")||
+                            id.contains("grass")||id.contains("wood")||id.contains("forest")){
+                        fill.setProperties(PropertyFactory.fillColor(Color.rgb(183,211,169)),
+                            PropertyFactory.fillOpacity(0.89f));
+                    }else if(id.contains("landuse")||id.contains("landcover")){
+                        fill.setProperties(PropertyFactory.fillColor(Color.rgb(233,230,219)),
+                            PropertyFactory.fillOpacity(0.73f));
+                    }
+                }else if(layer instanceof LineLayer){
+                    LineLayer line=(LineLayer)layer;
+                    if(id.contains("road")||id.contains("highway")||
+                       id.contains("street")||id.contains("transport")||
+                       id.contains("bridge")||id.contains("tunnel")){
+                        boolean arterial=id.contains("major")||id.contains("primary")||
                             id.contains("motorway")||id.contains("trunk");
-                    ((LineLayer)layer).setProperties(PropertyFactory.lineColor(
-                            major?Color.rgb(200,164,99):Color.rgb(130,118,88)),PropertyFactory.lineOpacity(0.79f));
-                }else if(layer instanceof FillLayer && id.contains("water")){
-                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(9,52,87)));
-                }else if(layer instanceof FillLayer && id.contains("building")){
-                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(58,88,103)),
-                        PropertyFactory.fillOpacity(0.82f));
-                }else if(layer instanceof FillLayer &&
-                        (id.contains("park")||id.contains("grass")||id.contains("wood")||id.contains("forest"))){
-                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(29,85,72)),
-                        PropertyFactory.fillOpacity(0.84f));
-                }else if(layer instanceof FillLayer &&
-                        (id.contains("landuse")||id.contains("landcover"))){
-                    ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(35,72,84)),
-                        PropertyFactory.fillOpacity(0.73f));
-                }else if(layer instanceof BackgroundLayer){
-                    ((BackgroundLayer)layer).setProperties(PropertyFactory.backgroundColor(Color.rgb(18,51,67)));
+                        // Roads stay light against the warm canvas. Avoid a fluorescent
+                        // highlight and preserve the original style's line widths.
+                        line.setProperties(PropertyFactory.lineColor(
+                            arterial?Color.rgb(228,204,163):Color.rgb(251,249,240)),
+                            PropertyFactory.lineOpacity(0.94f));
+                    }
+                }else if(layer instanceof SymbolLayer && (id.contains("road")||
+                       id.contains("street")||id.contains("place")||
+                       id.contains("city")||id.contains("town")||
+                       id.contains("label"))){
+                    ((SymbolLayer)layer).setProperties(
+                        PropertyFactory.textColor(Color.rgb(63,67,65)),
+                        PropertyFactory.textHaloColor(Color.rgb(252,250,245)),
+                        PropertyFactory.textHaloWidth(1.1f));
                 }
+            }catch(Exception ignored){
+                // A decorative layer never interrupts the live map or navigation.
             }
-        }catch(Exception ignored){ /* Decorative map layers must never interrupt GPS. */ }
+        }
     }
 
     private int historyHeightDp(int state){return state<=0?HISTORY_PEEK_DP:(state==1?HISTORY_MID_DP:HISTORY_FULL_DP);}
