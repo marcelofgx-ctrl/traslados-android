@@ -562,7 +562,7 @@ public class MainActivity extends Activity {
         int rim="CABIFY".equals(shown)?Color.rgb(185,137,241):
             "PERSONAL".equals(shown)?Color.rgb(94,221,197):
             "OTRO".equals(shown)?Color.rgb(218,181,123):CHAMPAGNE;
-        tripSourceBadge.setText(shown+"\\n➜".replace("\\n","\\n"));
+        tripSourceBadge.setText(shown+"\n➜");
         tripSourceBadge.setMaxLines(2);
         tripSourceBadge.setAutoSizeTextTypeUniformWithConfiguration(
             8,14,1,android.util.TypedValue.COMPLEX_UNIT_SP);
