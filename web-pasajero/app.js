@@ -175,7 +175,6 @@ let lastVerifiedEtaResult=null;
 let etaRetryNotBefore=0,etaRetryIdentity="";
 let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
-let lastPickupPaintSignature="";
 function pickupIdentityKey(){
   if(selectedPickupMode==="schedule"||!record.origin)return "";
   const {lat,lng}=record.origin;
@@ -205,8 +204,8 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   // Only transitions enter the persisted, allowlisted diagnostics. No text,
   // coordinates, URL, tokens, names, or other passenger content is recorded.
   const sig=presence+"|"+phase+"|"+(Number.isFinite(km)&&Number.isFinite(minutes)?"eta":"no_eta");
-  if(sig!==lastPickupPaintSignature){
-    lastPickupPaintSignature=sig;
+  if(sig!==paintPickupCard.lastSignature){
+    paintPickupCard.lastSignature=sig;
     window.TrasladosPickupHealth?.recordContext?.("card",phase,phase,authReady()?"session":"guest");
   }
 /* Recorrido decorativo sin leyenda redundante; la información operativa
