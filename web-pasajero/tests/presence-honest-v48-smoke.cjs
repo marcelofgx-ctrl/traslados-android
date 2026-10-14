@@ -16,7 +16,7 @@ assert(!app.includes('title:"Conductor no disponible ahora"'));
 assert(app.includes('title:"Recogida inmediata sin confirmar"'));
 assert(app.includes('presence:"busy",title:"Recogida inmediata sin confirmar"'));
 assert(app.includes('publicPresenceCache=null;publicPresenceAt=0;'));
-assert(app.includes(' · Se actualiza solo'));
+assert(app.includes(' · La llegada se calcula por separado'));
 assert(app.includes('},15000);'),"Foreground checks remain bounded");
 assert(app.includes('window.TrasladosPickupCadence.intervalMs(driver.motionHint)'));
 assert(app.includes('sessionToken:signedIn?session.token:null'),"Keep original auth behavior");
