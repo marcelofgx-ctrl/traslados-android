@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=290,SHEET_FULL_DP=350;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=307,SHEET_FULL_DP=374;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -444,6 +444,21 @@ public class MainActivity extends Activity {
     }
 
     /** R25.12: la tipografía sigue siendo texto nativo accesible y el estado es real. */
+    /** Fuente Manrope oficial OFL, local en APK (sin peticiones de red). */
+    private Typeface manropeRegular,manropeBold;
+    private Typeface font(boolean bold){
+        if(manropeRegular==null){
+            try{
+                manropeRegular=Typeface.createFromAsset(getAssets(),"manrope.ttf");
+                manropeBold=Typeface.create(manropeRegular,Typeface.BOLD);
+            }catch(Exception absent){
+                manropeRegular=Typeface.create("sans-serif",Typeface.NORMAL);
+                manropeBold=Typeface.create("sans-serif-medium",Typeface.BOLD);
+            }
+        }
+        return bold?manropeBold:manropeRegular;
+    }
+
     private void setModeTitle(String title,String tripKind){
         String suffix=tripKind==null?"":tripKind.trim();
         String combined=suffix.isEmpty()?title:title+" · "+suffix;
@@ -1285,8 +1300,8 @@ public class MainActivity extends Activity {
     private void startPreview(){if(shiftActive||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;if(previewLm==null)previewLm=(LocationManager)getSystemService(LOCATION_SERVICE);if(previewLm==null)return;try{boolean gps=previewLm.isProviderEnabled(LocationManager.GPS_PROVIDER);Location l=previewLm.getLastKnownLocation(gps?LocationManager.GPS_PROVIDER:LocationManager.NETWORK_PROVIDER);if(l!=null&&Math.abs(System.currentTimeMillis()-l.getTime())<120000L)previewListener.onLocationChanged(l);if(gps)previewLm.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500L,1f,previewListener,Looper.getMainLooper());else if(previewLm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))previewLm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000L,12f,previewListener,Looper.getMainLooper());}catch(Exception ignored){}}
     private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}previewLastLocation=null;previewLastTs=0L;previewLastSpeed=0f;previewMoving=false;previewMovingEvidence=previewStoppedEvidence=0;}
 
-    private TextView text(String s,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setTypeface(Typeface.create(bold?"sans-serif-medium":"sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));t.setFontFeatureSettings("tnum");return t;}
-    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10.2f);b.setTextColor(TEXT);b.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));b.setAllCaps(false);b.setPadding(dp(5),0,dp(5),0);b.setBackground(rounded(PANEL,16,1,Color.rgb(50,91,100)));b.setElevation(dp(2));return b;}
+    private TextView text(String s,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setTypeface(font(bold));t.setFontFeatureSettings("tnum");return t;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10.2f);b.setTextColor(TEXT);b.setTypeface(font(true));b.setAllCaps(false);b.setPadding(dp(5),0,dp(5),0);b.setBackground(rounded(PANEL,16,1,Color.rgb(50,91,100)));b.setElevation(dp(2));return b;}
     private GradientDrawable rounded(int fill,int radius,int stroke,int strokeColor){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(stroke>0)g.setStroke(dp(stroke),strokeColor);return g;}
     private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}
     /** Always HH:MM:SS in the dashboard, avoiding apparently frozen 1:07 hour labels. */
@@ -1473,8 +1488,13 @@ public class MainActivity extends Activity {
     }
 
     public static final class SpeedGaugeView extends View {
-        private float speed=0f;private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF r=new RectF();
-        public SpeedGaugeView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
+        private float speed=0f;private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF r=new RectF();private final Typeface regularFace,boldFace;
+        public SpeedGaugeView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            Typeface regular;
+            try{regular=Typeface.createFromAsset(c.getAssets(),"manrope.ttf");}
+            catch(Exception ignored){regular=Typeface.create("sans-serif",Typeface.NORMAL);}
+            regularFace=regular;boldFace=Typeface.create(regular,Typeface.BOLD);
+        }
         public void setSpeed(float v){speed=v<3f?0f:Math.max(0f,Math.min(199f,v));setContentDescription(String.format(Locale.getDefault(),"Velocidad %.0f kilómetros por hora",speed));invalidate();}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
@@ -1497,17 +1517,22 @@ public class MainActivity extends Activity {
             drawCentered(c,String.format(Locale.getDefault(),"%.0f",speed),39f,Color.WHITE,h*.59f,true);
             drawCentered(c,"km/h",12f,GOLD,h*.84f,true);
         }
-        private void drawCentered(Canvas c,String s,float sp,int color,float cy,boolean bold){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(bold?Typeface.create(Typeface.DEFAULT,Typeface.BOLD):Typeface.DEFAULT);p.setTextSize(sp*getResources().getDisplayMetrics().scaledDensity);Paint.FontMetrics fm=p.getFontMetrics();c.drawText(s,getWidth()/2f,cy-(fm.ascent+fm.descent)/2f,p);}
+        private void drawCentered(Canvas c,String s,float sp,int color,float cy,boolean bold){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(bold?boldFace:regularFace);p.setTextSize(sp*getResources().getDisplayMetrics().scaledDensity);Paint.FontMetrics fm=p.getFontMetrics();c.drawText(s,getWidth()/2f,cy-(fm.ascent+fm.descent)/2f,p);}
         private float dpv(float v){return v*getResources().getDisplayMetrics().density;}
     }
 
     public static final class SlideActionView extends View {
         public static final int MODE_SHIFT_START=0,MODE_TRIP_START=1,MODE_TRIP_STOP=2,MODE_SHIFT_CLOSE=3,MODE_PICKUP=4,MODE_STOP_RESUME=5;
-        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();
+        private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF track=new RectF();private final Typeface sliderFace;
         private Runnable completed,midpointCompleted;private String label="";private int mode=MODE_SHIFT_START;
         private boolean dragging=false,thresholdBuzzed=false,midBuzzed=false;private float progress=0f;
 
-        public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");}
+        public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");
+            Typeface face;
+            try{face=Typeface.create(Typeface.createFromAsset(c.getAssets(),"manrope.ttf"),Typeface.BOLD);}
+            catch(Exception ignored){face=Typeface.create("sans-serif-medium",Typeface.BOLD);}
+            sliderFace=face;
+        }
         public void setLabel(String s){if(Objects.equals(label,s))return;label=s;setContentDescription(s);invalidate();}
         public void setMode(int m){if(mode==m)return;mode=m;progress=isReverse()?1f:0f;invalidate();}
         public void setOnCompleted(Runnable r){completed=r;}
@@ -1552,7 +1577,7 @@ public class MainActivity extends Activity {
                 p.setShader(new LinearGradient(pill.left,0,pill.right,0,Color.rgb(255,161,18),Color.rgb(245,188,57),Shader.TileMode.CLAMP));
                 c.drawRoundRect(pill,pillH/2f,pillH/2f,p);p.clearShadowLayer();p.setShader(null);
                 p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1));p.setColor(Color.argb(210,255,220,116));c.drawRoundRect(pill,pillH/2f,pillH/2f,p);
-                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));
+                p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(sliderFace);
                 p.setTextSize(9.1f*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.rgb(56,42,16));
                 Paint.FontMetrics pf=p.getFontMetrics();c.drawText("1/2 PARADA",pillCx,h/2f-(pf.ascent+pf.descent)/2f,p);
 
@@ -1567,7 +1592,7 @@ public class MainActivity extends Activity {
             if(isReverse()){arrow.moveTo(cx+a,cy-a);arrow.lineTo(cx-a,cy);arrow.lineTo(cx+a,cy+a);}else{arrow.moveTo(cx-a,cy-a);arrow.lineTo(cx+a,cy);arrow.lineTo(cx-a,cy+a);}arrow.close();c.drawPath(arrow,p);
 
             if(!isDual()){
-                p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create(Typeface.DEFAULT,Typeface.BOLD));
+                p.setTextAlign(Paint.Align.CENTER);p.setTypeface(sliderFace);
                 p.setTextSize((getHeight()<dpv(55)?9.1f:10.9f)*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.rgb(251,248,241));
                 Paint.FontMetrics fm=p.getFontMetrics();float offset=isReverse()?-dpv(8):dpv(10),textX=w/2f+offset,textY=h/2f-(fm.ascent+fm.descent)/2f;c.drawText(label,textX,textY,p);
             }
