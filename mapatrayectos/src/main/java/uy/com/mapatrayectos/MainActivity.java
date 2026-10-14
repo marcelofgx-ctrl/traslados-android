@@ -479,8 +479,8 @@ public class MainActivity extends Activity {
     private Typeface font(boolean bold){
         if(manropeRegular==null){
             try{
-                manropeRegular=Typeface.createFromAsset(getAssets(),"manrope.ttf");
-                manropeBold=Typeface.create(manropeRegular,Typeface.BOLD);
+                manropeRegular=new Typeface.Builder(getAssets(),"manrope.ttf").setFontVariationSettings("'wght' 500").build();
+                manropeBold=new Typeface.Builder(getAssets(),"manrope.ttf").setFontVariationSettings("'wght' 750").build();
             }catch(Exception absent){
                 manropeRegular=Typeface.create("sans-serif",Typeface.NORMAL);
                 manropeBold=Typeface.create("sans-serif-medium",Typeface.BOLD);
@@ -1575,9 +1575,11 @@ public class MainActivity extends Activity {
         private float speed=0f;private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final RectF r=new RectF();private final Typeface regularFace,boldFace;
         public SpeedGaugeView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);
             Typeface regular;
-            try{regular=Typeface.createFromAsset(c.getAssets(),"manrope.ttf");}
-            catch(Exception ignored){regular=Typeface.create("sans-serif",Typeface.NORMAL);}
-            regularFace=regular;boldFace=Typeface.create(regular,Typeface.BOLD);
+            Typeface bold;
+            try{regular=new Typeface.Builder(c.getAssets(),"manrope.ttf").setFontVariationSettings("'wght' 500").build();
+                bold=new Typeface.Builder(c.getAssets(),"manrope.ttf").setFontVariationSettings("'wght' 760").build();
+            }catch(Exception ignored){regular=Typeface.create("sans-serif",Typeface.NORMAL);bold=Typeface.create("sans-serif",Typeface.BOLD);}
+            regularFace=regular;boldFace=bold;
         }
         public void setSpeed(float v){speed=v<3f?0f:Math.max(0f,Math.min(199f,v));setContentDescription(String.format(Locale.getDefault(),"Velocidad %.0f kilómetros por hora",speed));invalidate();}
         @Override protected void onDraw(Canvas c){
@@ -1615,7 +1617,7 @@ public class MainActivity extends Activity {
 
         public SlideActionView(Context c){super(c);setClickable(true);setFocusable(true);setLayerType(View.LAYER_TYPE_SOFTWARE,null);setContentDescription("Control deslizable");
             Typeface face;
-            try{face=Typeface.create(Typeface.createFromAsset(c.getAssets(),"manrope.ttf"),Typeface.BOLD);}
+            try{face=new Typeface.Builder(c.getAssets(),"manrope.ttf").setFontVariationSettings("'wght' 760").build();}
             catch(Exception ignored){face=Typeface.create("sans-serif-medium",Typeface.BOLD);}
             sliderFace=face;
         }
