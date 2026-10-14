@@ -169,7 +169,7 @@ jobs:
           test -s conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
-          grep -q "SHEET_MID_DP=244" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=239" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -211,8 +211,8 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=244" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q "SHEET_MID_DP=239" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "DB_VERSION = 6" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'DatabaseBackup.inspectBackup' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -380,7 +380,7 @@ jobs:
           grep -q "toggleHistoryPanel" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "HISTORY_MID_DP=360" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "bottomSheet.setVisibility(View.GONE)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_PEEK_DP=34" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_PEEK_DP=78" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "Finalizar jornada" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "headerGradient" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "statusPillGradient" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
