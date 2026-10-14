@@ -19,8 +19,8 @@ public final class TripFlowDialogs {
 
     public static void chooseTripType(Activity a,StartCallback cb){
         LinearLayout box=baseBox(a);
-        TextView title=text(a,"¿QUÉ TIPO DE VIAJE ES?",19,TEXT,true);box.addView(title);
-        TextView sub=text(a,"La categoría queda guardada en el histórico y en la base.",12,MUTED,false);box.addView(sub,lp(a,5,12));
+        TextView title=text(a,"¿CON QUÉ PLATAFORMA?",19,TEXT,true);box.addView(title);
+        TextView sub=text(a,"La selección se aplicará al próximo viaje y quedará registrada en el historial.",12,MUTED,false);box.addView(sub,lp(a,5,12));
         AlertDialog dlg=new AlertDialog.Builder(a).setView(box).create();
         addChoice(a,box,"UBER","Viaje de Uber",Color.rgb(28,122,82),()->{dlg.dismiss();cb.onSelected("uber");});
         addChoice(a,box,"CABIFY","Viaje de Cabify",Color.rgb(88,54,126),()->{dlg.dismiss();cb.onSelected("cabify");});
