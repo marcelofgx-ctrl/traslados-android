@@ -236,8 +236,8 @@ public class TrackingService extends Service implements LocationListener {
     }
 
     private void stopShift(){
-        if(!shiftActive){broadcastState();return;}
-        long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);if(tripActive)stopTripInternal(false,"completed",0);if(shiftPaused){totalPauseMs+=Math.max(0,now-pausedAt);shiftPaused=false;pausedAt=0;}db.updateShiftPaused(shiftId,totalPauseMs,pauseCount);db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();broadcastState();Api.syncShiftAsync(endedShift);publishPickupPresence(now);stopClock();stopLocation();
+        if(!ShiftEndPolicy.canEndShift(shiftActive,tripActive)){broadcastState();return;}
+        long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);if(shiftPaused){totalPauseMs+=Math.max(0,now-pausedAt);shiftPaused=false;pausedAt=0;}db.updateShiftPaused(shiftId,totalPauseMs,pauseCount);db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();broadcastState();Api.syncShiftAsync(endedShift);publishPickupPresence(now);stopClock();stopLocation();
         if(!appVisible&&Settings.canDrawOverlays(this)){
             // End the GPS journey but keep the already visible shortcut alive.
             promoteIdleBubble();showBubbleIfAllowed();

@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private TextView floatingAccessBanner;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
-    private SlideActionView slider,endShiftSlider;
+    private SlideActionView slider;
     private FrameLayout rootFrame;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
@@ -229,9 +229,6 @@ public class MainActivity extends Activity {
         bottomSheet.addView(shiftCards,stripLp);
 
         idleText=text("Sin viaje 00:00   ·   Vel. máx. 0 km/h",10.8f,Color.rgb(202,214,216),false);idleText.setTag("sheet_detail");idleText.setGravity(Gravity.CENTER_VERTICAL);idleText.setSingleLine(true);bottomSheet.addView(idleText,new LinearLayout.LayoutParams(-1,dp(22)));
-
-        LinearLayout closeRow=new LinearLayout(this);closeRow.setTag("sheet_shift_close");closeRow.setGravity(Gravity.CENTER_VERTICAL);TextView closeLabel=text("FIN DE JORNADA",10.5f,MUTED,true);closeRow.addView(closeLabel,new LinearLayout.LayoutParams(0,-2,1));
-        endShiftSlider=new SlideActionView(this);endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);endShiftSlider.setLabel("← CERRAR JORNADA");endShiftSlider.setOnCompleted(()->sendAction(TrackingService.ACTION_STOP_SHIFT,null,null,0));LinearLayout.LayoutParams closeLp=new LinearLayout.LayoutParams(dp(164),dp(40));closeRow.addView(endShiftSlider,closeLp);bottomSheet.addView(closeRow,new LinearLayout.LayoutParams(-1,dp(44)));
 
         LinearLayout metrics=new LinearLayout(this);metrics.setTag("sheet_metrics");metrics.setOrientation(LinearLayout.HORIZONTAL);metrics.setGravity(Gravity.CENTER_VERTICAL);
         distanceText=metric(metrics,"0.0","KM",MetricIconView.DISTANCE);
@@ -454,10 +451,8 @@ public class MainActivity extends Activity {
             modeText.setText("JORNADA EN PAUSA · "+zone);
             slider.setMode(SlideActionView.MODE_TRIP_START);
             slider.setLabel("DESLIZAR PARA REANUDAR JORNADA");
-            endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);
-            endShiftSlider.setLabel("← CERRAR JORNADA");
         }else if(!tripActive){
-            sheetMetaText.setText("Jornada en curso · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA · "+zone);slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR PARA IR A RECOGER");endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);endShiftSlider.setLabel("← CERRAR JORNADA");
+            sheetMetaText.setText("Jornada en curso · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA · "+zone);slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR PARA IR A RECOGER");
         }else if("to_pickup".equals(tripStage)){
             sheetMetaText.setText(typeLabel(tripType)+" · etapa 1/2 · trayecto hacia la recogida");setModeTitle("EN CAMINO A RECOGER",typeLabel(tripType));slider.setMode(SlideActionView.MODE_PICKUP);slider.setLabel("DESLIZAR · PASAJERO RECOGIDO");
         }else if(stopActive){
@@ -726,6 +721,11 @@ public class MainActivity extends Activity {
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);popup.setElevation(dp(13));
         addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
+        if(shiftActive){
+            addMainMenuRow(menu,"■","Finalizar jornada",
+                tripActive?"Primero finalizá el servicio actual":"Cerrar registro de hoy · confirmar",
+                popup,this::showEndShiftConfirmation);
+        }
         int pending=TransferAlerts.pendingCount(this);
         addMainMenuRow(menu,"🚘","TRASLADOS CONDUCTOR",
             pending>0?pending+" solicitud(es) pendiente(s)":"Solicitudes · Agenda · Presupuestos",
@@ -744,6 +744,45 @@ public class MainActivity extends Activity {
         try{popup.showAsDropDown(anchor,dp(50)-menuWidth,dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
+    /** Fin de jornada separado de la acción operativa principal para respetar
+     *  la maqueta aprobada. Validación doble (interfaz + servicio) y confirmación. */
+    private void showEndShiftConfirmation(){
+        SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        boolean active=live.getBoolean("shift_active",shiftActive);
+        boolean serving=tripActive||live.getBoolean("trip_active",false);
+        if(!ShiftEndPolicy.canEndShift(active,serving)){
+            String message=serving
+                ?"Tenés un viaje en curso. Primero finalizá ese servicio desde el deslizador inferior. La jornada y el viaje siguen activos."
+                :"No hay una jornada activa para finalizar.";
+            new AlertDialog.Builder(this)
+                .setTitle(serving?"Viaje en curso":"Jornada no iniciada")
+                .setMessage(message)
+                .setPositiveButton("ENTENDIDO",null).show();
+            return;
+        }
+        long elapsed=Math.max(0,shiftMoving+shiftStopped);
+        String summary="Tiempo de jornada: "+formatClock(elapsed)
+            +"\nKilómetros: "+String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0)
+            +"\nViajes completados: "+shiftCompletedTrips;
+        new AlertDialog.Builder(this)
+            .setTitle("Finalizar jornada")
+            .setMessage(summary+"\n\n¿Querés cerrar la jornada y detener su seguimiento GPS? El historial se conserva.")
+            .setNegativeButton("CANCELAR",null)
+            .setPositiveButton("FINALIZAR",(dialog,which)->{
+                SharedPreferences fresh=getSharedPreferences("tracking_state",MODE_PRIVATE);
+                if(!ShiftEndPolicy.canEndShift(
+                    fresh.getBoolean("shift_active",shiftActive),
+                    tripActive||fresh.getBoolean("trip_active",false))){
+                    Toast.makeText(this,"No se puede cerrar: revisá el estado del viaje",Toast.LENGTH_LONG).show();
+                    requestServiceState();
+                    return;
+                }
+                if(sendAction(TrackingService.ACTION_STOP_SHIFT,null,null,0)){
+                    Toast.makeText(this,"Finalizando jornada…",Toast.LENGTH_SHORT).show();
+                }
+            }).show();
+    }
+
     /** Semáforo del permiso comercial, no una garantía automática de GPS o agenda. */
     private void addPickupPresenceRow(LinearLayout menu,PopupWindow popup){
         boolean enabled=Api.pickupPresenceEnabled();
@@ -1188,7 +1227,7 @@ public class MainActivity extends Activity {
     private int maxSheetState(){return 2;}
     private int maxSheetHeightDp(){return maxSheetState()>=2?SHEET_FULL_DP:SHEET_MID_DP;}
     private void setSheetHeightPx(int heightPx){if(bottomSheet==null)return;FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();lp.height=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),heightPx));bottomSheet.setLayoutParams(lp);}
-    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),close=bottomSheet.findViewWithTag("sheet_shift_close"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(close!=null)close.setVisibility(state>=2&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
+    private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
     private void updateSheetContentVisibility(){applySheetVisibility(sheetState);}
     private void previewSheetVisibilityForHeight(int heightPx){int low=(dp(SHEET_PEEK_DP)+dp(SHEET_MID_DP))/2;if(maxSheetState()<2){applySheetVisibility(heightPx<low?0:1);return;}int high=(dp(SHEET_MID_DP)+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
     private void animateSheetHeight(int targetPx){if(bottomSheet==null)return;int start=bottomSheet.getLayoutParams().height;if(start==targetPx){setSheetHeightPx(targetPx);return;}android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,targetPx);a.setDuration(220);a.setInterpolator(new android.view.animation.DecelerateInterpolator());a.addUpdateListener(x->setSheetHeightPx((Integer)x.getAnimatedValue()));a.start();}
