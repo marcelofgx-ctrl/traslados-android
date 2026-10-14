@@ -573,10 +573,10 @@ jobs:
             git reset --hard origin/main
             mkdir -p web-pasajero/downloads
             cp artifacts/Mapa_Trayectos_v0.1_R25_17_RELEASE.apk \
-              web-pasajero/downloads/mapa-trayectos-r25.16.apk
-            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.16.apk > MAPA-R25.17-SHA256SUMS.txt)
+              web-pasajero/downloads/mapa-trayectos-r25.17.apk
+            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.17.apk > MAPA-R25.17-SHA256SUMS.txt)
             (cd web-pasajero/downloads && sha256sum -c MAPA-R25.17-SHA256SUMS.txt)
-            git add web-pasajero/downloads/mapa-trayectos-r25.16.apk \
+            git add web-pasajero/downloads/mapa-trayectos-r25.17.apk \
                     web-pasajero/downloads/MAPA-R25.17-SHA256SUMS.txt
             if git diff --cached --quiet; then
               echo 'APK Mapa R25.17 ya publicada sin alterar binario'
