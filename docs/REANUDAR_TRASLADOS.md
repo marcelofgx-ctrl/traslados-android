@@ -1,5 +1,15 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## PWA Pasajeros v70 + Cliente Premium v16 — DIAGNÓSTICO DE LLEGADA (14/10/2026, EN VALIDACIÓN)
+
+- Ante captura Samsung de las 15:23 donde disponibilidad pública era verde pero mostraba «Iniciá sesión para consultar la llegada» durante varios minutos: comprobado solo lectura que `public_driver_availability_v1` respondía disponible y el GPS/heartbeat eran recientes. Logs entre 18:20-18:23 UTC: 18 solicitudes RPC disponibilidad HTTP 200 y 2 Edge pickup-eta HTTP 200. HTTP 200 NO implica que Edge haya devuelto distancia y tiempo: la respuesta de negocio puede señalar `login_required` o ruta no disponible. No inventar ETA ni mostrar «GPS falló».
+- PWA v70 agrega `pickup-observability.js` con registros locales de hasta 60 eventos y retención máxima 24 horas, persistidos únicamente en localStorage del navegador/WebView; filtro estricto de nombres de evento, motivo, fase, modo «guest/session» y latencia. **No registra ni exporta nombre, teléfono, PIN, ruta, lat/lng, tokens, ID de reserva ni IP; no envía eventos a servidor**. Menú **Mi cuenta → Diagnóstico de llegada** permite expandir, copiar JSON seguro y borrar, también disponible a visitantes.
+- Visualmente reemplaza «Actualizado ahora · Se actualiza solo» por **«Disponibilidad comprobada ahora · La llegada se calcula por separado»**. Mensaje `login_required` para visitantes indica ETA temporalmente no disponible sin afirmar que *sea obligatorio* identificarse; si es sesión autenticada, invita a revisar Mi cuenta. Nunca se generan km/min sintéticos. Mantener restricciones y cuotas SQL y control por sesión; no introducir llamadas Edge adicionales.
+- La APK **Cliente Premium v16/code204** sigue apuntando a la misma URL PWA, mismo paquete `uy.com.traslados.cliente` y firma histórica comprobada contra Cliente R12. Identifica UA `TrasladosClienteNative/16` y aprovecha el registro persistente de WebView. Nuevo workflow RELEASE `build-cliente-premium-v16.yml`, guarda APK versionada y suma `PREMIUM-v16-SHA256SUMS.txt`. El flujo de v15 queda solo manual para evitar reemplazar binarios viejos. R25.20 Mapa, Conductor, agenda Supabase y base no se modifican.
+- Antes de publicar: CI web/PWA, regresiones ETA v67, almacenamiento seguro v70, Android DEBUG y RELEASE v16 firmada con checksum/certificado; prueba Samsung real pendiente.
+
+
+
 ## Mapa Trayectos R25.20 — APK PUBLICADA Y FIRMADA (14/10/2026 15:02 UYT)
 
 - Pedido desde capturas reales Samsung 14:20-14:21 UYT. Dejar la cartografía clara de R25.19 y la traza verde jade; recuperar el estilo de gesto deslizante para fin de jornada, eliminando el cuadrado de 36×34 px/dp que se confundía con ejecución directa. La zona Shangrilá del encabezado era demasiado pequeña.
