@@ -49,6 +49,16 @@ jobs:
           test "$(stat -c %s mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3)" -eq 33062
           file mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
 
+      - name: Embed Manrope premium font, licensed and offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+          test -s mapatrayectos/assets/OFL-Manrope.txt
+          file mapatrayectos/src/main/assets/manrope.ttf
+
       - name: Java 17
         uses: actions/setup-java@v4
         with:
@@ -105,6 +115,8 @@ jobs:
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
           grep -q "versionName '0.1-R25.12'" mapatrayectos/build.gradle
           grep -q "versionCode 64" mapatrayectos/build.gradle
+          grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=374' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -137,7 +149,7 @@ jobs:
           test -s conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
-          grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=307" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -179,7 +191,7 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=307" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
