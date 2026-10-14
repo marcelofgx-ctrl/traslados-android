@@ -359,7 +359,7 @@ jobs:
           grep -q "expandedDay=null" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
           grep -q "new Intent(this,HistoryActivity.class)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class TexturedDrawable" mapatrayectos/src/main/java/uy/com/mapatrayectos/TexturedDrawable.java
-          grep -q "premiumGradient(Color.rgb(2,29,40)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "premiumGradient(Color.rgb(1,20,30)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "maxSheetState" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "BUBBLE_SHOW_DELAY_MS=320L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "signalTrackingUi(true)" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
