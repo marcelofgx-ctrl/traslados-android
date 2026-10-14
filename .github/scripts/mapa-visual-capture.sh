@@ -2,7 +2,7 @@
 set -euo pipefail
 mkdir -p docs/visual-qa
 # Do not mistake an old source-controlled image for a screenshot from this run.
-rm -f docs/visual-qa/mapa-preview-idle.png docs/visual-qa/mapa-preview-shift-active.png
+rm -f docs/visual-qa/mapa-preview-idle.png docs/visual-qa/mapa-preview-shift-active.png docs/visual-qa/mapa-preview-shift-close-expanded.png
 APP=uy.com.mapatrayectos
 adb shell wm size 1080x2400
 adb shell wm density 440
@@ -137,5 +137,52 @@ print('Verified jornada: inicial INICIAR JORNADA -> shift_active true')
 PY
 adb shell uiautomator dump /sdcard/active-ui.xml >/dev/null 2>&1 || true
 adb exec-out cat /sdcard/active-ui.xml > docs/visual-qa/active-ui.xml 2>/dev/null || true
+
+# R25.20: UI test of the real circular opener and secondary reverse slider.
+# A simple tap must NEVER close the journey. Read its physical touch area from
+# accessibility, not from coordinates hardcoded to a specific Samsung model.
+orb_coords=""
+for attempt in 1 2 3 4; do
+  adb shell uiautomator dump /sdcard/shift-orb.xml >/dev/null 2>&1 || true
+  adb exec-out cat /sdcard/shift-orb.xml > docs/visual-qa/orb-ui.xml 2>/dev/null || true
+  orb_coords="$(python3 - <<'PY'
+import xml.etree.ElementTree as ET,re
+try:
+    root=ET.parse('docs/visual-qa/orb-ui.xml').getroot()
+    for node in root.iter():
+        if 'Desplegar el deslizador para finalizar jornada' in node.get('content-desc',''):
+            vals=list(map(int,re.findall(r'\d+',node.get('bounds',''))))
+            if len(vals)==4:
+                print((vals[0]+vals[2])//2,(vals[1]+vals[3])//2)
+                break
+except (ET.ParseError,OSError):
+    pass
+PY
+)"
+  if [ -n "$orb_coords" ]; then break; fi
+  sleep 3
+done
+test -n "$orb_coords" || { echo "QA: no apareció el círculo desplegable" >&2; exit 1; }
+echo "QA: expanding jornada circle at $orb_coords"
+adb shell input tap $orb_coords
+sleep 3
+capture_window docs/visual-qa/mapa-preview-shift-close-expanded.png
+if is_modal docs/visual-qa/mapa-preview-shift-close-expanded.png; then
+  echo "QA BLOCKED: no controls after circular expansion" >&2
+  exit 1
+fi
+adb shell run-as "$APP" cat shared_prefs/tracking_state.xml > docs/visual-qa/state-after-orb.xml
+adb shell uiautomator dump /sdcard/expanded-ui.xml >/dev/null 2>&1 || true
+adb exec-out cat /sdcard/expanded-ui.xml > docs/visual-qa/expanded-ui.xml 2>/dev/null || true
+python3 - <<'PY'
+import xml.etree.ElementTree as ET
+root=ET.parse('docs/visual-qa/state-after-orb.xml').getroot()
+active=[n for n in root.iter('boolean') if n.get('name')=='shift_active']
+assert active and active[0].get('value')=='true','Tocar círculo finalizó jornada incorrectamente'
+ui=ET.parse('docs/visual-qa/expanded-ui.xml').getroot()
+labels=' '.join((n.get('text','')+' '+n.get('content-desc','')) for n in ui.iter())
+assert 'DESLIZAR ← FINALIZAR JORNADA' in labels,'Falta el deslizador inverso luego de tocar círculo'
+print('Verified: círculo expande deslizador de fin, jornada sigue activa')
+PY
 adb logcat -d -t 700 | grep -E 'FATAL EXCEPTION|AndroidRuntime:.*Process: uy.com.mapatrayectos' > docs/visual-qa/fatal-log.txt || true
 test ! -s docs/visual-qa/fatal-log.txt
