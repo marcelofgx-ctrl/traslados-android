@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.17 — refinamiento sobre R25.16 (14/10/2026; en validación)
+
+- Rama `feature/mapa-r25-17-visual-cierre-seguro`: refina únicamente el círculo nativo de 48dp para que su plataforma sea legible sin una flecha de segunda línea; el texto completo permanece en el resumen y TalkBack. El borde enfatiza cuándo el servicio está realmente activo; selección planificada y servicio registrado siguen separados.
+- Jornada inactiva/activa sin viaje: resumen muestra claramente la plataforma elegida o solicita elegirla; el cambio en el círculo refresca inmediatamente el panel.
+- **Corrección funcional de seguridad:** Personal y Otro ya no finalizan un viaje en forma instantánea tras deslizar. Los cuatro tipos muestran confirmación de completado/cancelado e importe opcional, sin forzar cobrar; una cifra inválida no se transforma silenciosamente en cero.
+- Mantiene GPS, mapa nocturno, historiales, notificaciones, globito, Conductor integrado, base SQLite/Supabase, horario/ETA, rutas, gestos de deslizamiento y cierre de jornada existentes.
+- **Estado: código de propuesta, no APK publicada**. Exigir pruebas JVM, compilación Android DEBUG, inspección de captura y RELEASE firmada con checksum antes de cambiar el enlace de descarga. QA físico Samsung continúa pendiente.
+
+
 ## Publicación verificada Mapa R25.16 — 14/10/2026
 
 - PR #87 fusionado. APK **Mapa Trayectos 0.1-R25.16 versionCode 68** publicado y firmado por GitHub Actions <https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38575295583> (SUCCESS).
