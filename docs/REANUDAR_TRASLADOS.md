@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Limpieza de avisos GitHub después de despliegues (13/10/2026)
+
+**Pedido del usuario:** al finalizar los despliegues verificados, limpiar de `marcelof.gx@gmail.com` las notificaciones automáticas de GitHub cuyos asuntos comiencen `[marcelofgx-ctrl/<repositorio>]` y sean avisos técnicos de workflows como `Run failed:` o `PR run failed:`.
+
+**Reglas operativas:** (1) comprobar primero que el despliegue/build esperado de ese proyecto ha terminado y revisar el resultado en Actions; (2) localizar en Gmail solo notificaciones técnicas de GitHub asociadas al proyecto; (3) mover a **Papelera** los mensajes informativos de ejecuciones ya cerradas cuando ya no haya error pendiente que atender; (4) no limpiar correos de comentarios humanos/bots en PR (`Re:`), mensajes marcados IMPORTANT/STARRED, ni fallos no resueltos, ni correos de otras empresas; (5) informar el número real de mensajes movidos, sin afirmar borrado permanente. **La acción Gmail disponible solo mueve a Papelera; no puede vaciarla definitivamente.** No crear tokens GitHub/Gmail en workflows ni exponerlos en repositorios. Una automatización programada, si está habilitada, se limita a una revisión posterior y nunca da por terminado un despliegue solamente por haber corrido un intervalo.
+
+
+
 ## Rediseño visual R25.12 — tercer mockup aprobado (13/10/2026)
 
 - El último mockup (variante 3, petróleo / mapa oscuro / turquesa / oro) es referencia visual de Mapa Trayectos, no sustitución de la aplicación por imagen. Manrope oficial incorporada como fuente local dentro de la APK (licencia OFL), con fallback Android si faltara el recurso.
