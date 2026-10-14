@@ -297,7 +297,7 @@ public class MainActivity extends Activity {
                     boolean major=id.contains("major")||id.contains("primary")||
                             id.contains("motorway")||id.contains("trunk");
                     ((LineLayer)layer).setProperties(PropertyFactory.lineColor(
-                            major?Color.rgb(210,165,89):Color.rgb(144,117,73)));
+                            major?Color.rgb(200,164,99):Color.rgb(130,118,88)),PropertyFactory.lineOpacity(0.79f));
                 }else if(layer instanceof FillLayer && id.contains("water")){
                     ((FillLayer)layer).setProperties(PropertyFactory.fillColor(Color.rgb(6,46,69)));
                 }else if(layer instanceof BackgroundLayer){
@@ -1626,11 +1626,19 @@ public class MainActivity extends Activity {
             super.onDraw(c);
             float w=getWidth(),h=getHeight(),pad=dpv(4);track.set(pad,pad,w-pad,h-pad);
 
-            p.setStyle(Paint.Style.FILL);p.setShader(new LinearGradient(0,0,w,0,dark(),bright(),Shader.TileMode.CLAMP));c.drawRoundRect(track,h/2,h/2,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(.85f));p.setColor(Color.argb(185,239,225,190));c.drawRoundRect(track,h/2,h/2,p);
+            p.setStyle(Paint.Style.FILL);
+            p.setShader(new LinearGradient(0,0,w,0,dark(),bright(),Shader.TileMode.CLAMP));
+            c.drawRoundRect(track,h/2,h/2,p);p.setShader(null);
+            // The luminous outline is decorative; drag thresholds remain unchanged.
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.25f));
+            p.setColor(accent());p.setShadowLayer(dpv(5),0,0,Color.argb(180,36,242,170));
+            c.drawRoundRect(track,h/2,h/2,p);p.clearShadowLayer();
+            p.setStrokeWidth(dpv(.75f));p.setColor(Color.argb(180,246,217,143));
+            c.drawRoundRect(new RectF(track.left+dpv(4),track.top+dpv(4),
+                track.right-dpv(4),track.bottom-dpv(4)),h/2,h/2,p);
             p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(45,255,255,255));c.drawRoundRect(new RectF(track.left+dpv(24),track.top+dpv(6),track.right-dpv(24),track.top+dpv(7.5f)),dpv(2),dpv(2),p);
             // Delicate arrows signal a directional gesture, never a separate action.
-            if((mode==MODE_PICKUP||mode==MODE_SHIFT_START)&&!dragging&&w>dpv(245)){
+            if(!isDual()&&!dragging&&w>dpv(245)){
                 p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.8f));
                 p.setStrokeCap(Paint.Cap.ROUND);p.setColor(Color.argb(196,128,255,207));
                 for(int j=0;j<3;j++){float x=dpv(73+j*10),y=h*.5f;
@@ -1671,9 +1679,21 @@ public class MainActivity extends Activity {
             if(isReverse()){arrow.moveTo(cx+a,cy-a);arrow.lineTo(cx-a,cy);arrow.lineTo(cx+a,cy+a);}else{arrow.moveTo(cx-a,cy-a);arrow.lineTo(cx+a,cy);arrow.lineTo(cx-a,cy+a);}arrow.close();c.drawPath(arrow,p);
 
             if(!isDual()){
+                // Reserve a protected label region beyond the thumb and three arrows.
+                float left=dpv(112),right=w-dpv(15),allowed=Math.max(dpv(100),right-left);
                 p.setTextAlign(Paint.Align.CENTER);p.setTypeface(sliderFace);
-                p.setTextSize((getHeight()<dpv(55)?9.0f:10.2f)*getResources().getDisplayMetrics().scaledDensity);p.setColor(Color.rgb(251,248,241));
-                Paint.FontMetrics fm=p.getFontMetrics();float offset=isReverse()?-dpv(8):dpv(10),textX=w/2f+offset,textY=h/2f-(fm.ascent+fm.descent)/2f;c.drawText(label,textX,textY,p);
+                float textSp=11.9f*getResources().getDisplayMetrics().scaledDensity;
+                p.setTextSize(textSp);
+                float measured=p.measureText(label);
+                if(measured>allowed)p.setTextSize(textSp*Math.max(.75f,allowed/measured));
+                p.setColor(Color.rgb(253,251,245));
+                Paint.FontMetrics fm=p.getFontMetrics();
+                float textX=(left+right)/2f,textY=h/2f-(fm.ascent+fm.descent)/2f;
+                p.setStyle(Paint.Style.FILL);
+                c.drawText(label,textX,textY,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1f));
+                p.setColor(Color.argb(190,225,246,242));
+                c.drawLine(dpv(109),h*.29f,dpv(109),h*.71f,p);
             }
         }
 
