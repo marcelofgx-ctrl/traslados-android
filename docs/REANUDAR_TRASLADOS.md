@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Publicación verificada Mapa R25.16 — 14/10/2026
+
+- PR #87 fusionado. APK **Mapa Trayectos 0.1-R25.16 versionCode 68** publicado y firmado por GitHub Actions <https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38575295583> (SUCCESS).
+- APK: `web-pasajero/downloads/mapa-trayectos-r25.16.apk` en `main`. SHA-256 **8f821317ee7350b1f96844cbc28337a3275ef98d17f99c4a7b229c8a3244279a** en `MAPA-R25.16-SHA256SUMS.txt`. Descarga desde GitHub raw (Pages 404 histórico; no asumir Pages hasta comprobar).
+- GitHub QA modular **SUCCESS** y previsualización Android **SUCCESS**, además prueba `TripPlatformChoiceTest` y firma **SUCCESS** en release. La selección del tipo en la cabecera requiere intervención del conductor: **NO** detecta ni controla automáticamente Uber o Cabify ni sus globitos externos.
+- Círculo cabecera `ELEGIR` al inicio sin plataforma. Pulsar abre selector Uber/Cabify/Personal/Otro; la elección del próximo viaje queda en `ui_prefs.service_selected_platform` sin falsificar `trip_type`. Deslizar «Iniciar servicio» aplica selección al registro. Durante un viaje el círculo refleja el tipo real del `tracking_state` y la selección está bloqueada hasta cerrar el servicio. Pulsación larga sigue siendo cierre controlado de la app. Las demás funciones de jornada, GPS, panel y burbuja no se alteraron.
+- Comprobar experiencia final en Samsung cuando el usuario esté detenido. No pedir pruebas mientras conduce.
+
+
 ## Mapa R25.16 — círculo de cabecera como selector de plataforma (14/10/2026)
 
 - Propuesta aceptada: los globitos superpuestos de Uber/Cabify son ventanas de otras apps y **no deben manipularse**. El círculo propio de cabecera, antes rotulado estáticamente Uber, **no debe indicar falsamente Uber** si el conductor realiza otro servicio.
