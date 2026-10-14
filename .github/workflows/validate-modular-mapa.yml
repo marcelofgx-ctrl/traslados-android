@@ -87,6 +87,17 @@ jobs:
           grep -q 'NavigationHeadingPolicy.camera(realCamera,lastBearing)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'navigation_course_fresh' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'NavigationHeadingPolicy.course' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+      - name: Responsive metric timer typography regression R25.22
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-metric-type
+          javac -d /tmp/mapa-metric-type \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/MetricTypographyPolicy.java \
+            mapatrayectos/tests/MetricTypographyPolicyTest.java
+          java -cp /tmp/mapa-metric-type MetricTypographyPolicyTest
+          grep -q 'MetricValueView' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'MetricTypographyPolicy.fitSp' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
       - name: Passenger chat integration regression
         shell: bash
         run: |
