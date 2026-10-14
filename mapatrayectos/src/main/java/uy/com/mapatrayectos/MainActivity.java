@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private TextView floatingAccessBanner;
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
-    private SlideActionView slider;
+    private SlideActionView slider; private TextView endShiftAction;
     private FrameLayout rootFrame;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=236,SHEET_FULL_DP=374;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=320;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
     private void buildUi(Bundle b){
         FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(8),dp(5),dp(8),dp(5));top.setBackground(headerGradient());top.setElevation(dp(7));
-        TextView brand=text("➤",18,CHAMPAGNE,true);brand.setGravity(Gravity.CENTER);brand.setContentDescription("Mapa Trayectos");brand.setBackground(premiumGradient(Color.rgb(2,14,22),Color.rgb(3,32,39),Color.argb(230,234,193,99),24f,1.2f));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(35),dp(35));brandLp.setMargins(0,0,dp(5),0);top.addView(brand,brandLp);
+        TextView brand=text("Uber\n➜",14.0f,TEXT,true);brand.setGravity(Gravity.CENTER);brand.setIncludeFontPadding(false);brand.setLineSpacing(0,0.92f);brand.setContentDescription("Mapa Trayectos · conductor");brand.setBackground(premiumGradient(Color.rgb(0,5,11),Color.rgb(1,17,23),Color.argb(248,234,193,99),30f,1.6f));LinearLayout.LayoutParams brandLp=new LinearLayout.LayoutParams(dp(53),dp(53));brandLp.setMargins(0,0,dp(7),0);top.addView(brand,brandLp);
         brand.setContentDescription("Mapa Trayectos. Mantené pulsado para cerrar el mapa si no hay jornada.");
         brand.setOnLongClickListener(v->{
             SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
@@ -155,7 +155,7 @@ public class MainActivity extends Activity {
                 }).show();
             return true;
         });
-        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",12.5f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,12,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.5f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
+        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.8f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(51),dp(44)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(44),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
         });
         bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(44));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
         maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(44));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
-        FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(64),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
+        FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(69),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
          // A foreground tap can reliably open system Settings on Android 16.
          // Show a visible action when permission has not been granted yet.
          floatingAccessBanner=text("GLOBITO INACTIVO  ·  ACTIVAR PERMISO",12,Color.WHITE,true);
@@ -180,12 +180,12 @@ public class MainActivity extends Activity {
          root.addView(floatingAccessBanner,accessLp);
          updateFloatingAccessBanner();
 
-        speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(96),dp(96),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(80),dp(12),0);root.addView(speedGauge,spdLp);
-        gpsText=text("●  GPS buscando…",11.2f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GREEN));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(134),dp(34),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(82),0,0);root.addView(gpsText,gpsLp);
-        compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(52),dp(52),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(80),0,0);root.addView(compassView,compassLp);
+        speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(116),dp(105),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(80),dp(12),0);root.addView(speedGauge,spdLp);
+        gpsText=text("●  GPS buscando…",11.6f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GREEN));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(145),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(82),0,0);root.addView(gpsText,gpsLp);
+        compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(57),dp(57),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(80),0,0);root.addView(compassView,compassLp);
 
-        TextView quickActions=text("✦",22,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions,currentSpeedKmh));
-        FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(44),dp(44),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
+        TextView quickActions=text("✦",26,CHAMPAGNE,true);quickActions.setGravity(Gravity.CENTER);quickActions.setContentDescription("Acciones rápidas: enviar tarjeta, contacto VCF, reservas y descargas");quickActions.setElevation(dp(8));quickActions.setBackground(premiumGradient(Color.rgb(7,48,56),Color.rgb(9,82,85),Color.argb(235,231,202,130),22f,1f));quickActions.setOnClickListener(v->QuickActionsMenu.show(this,quickActions,currentSpeedKmh));
+        FrameLayout.LayoutParams qaLp=new FrameLayout.LayoutParams(dp(46),dp(46),Gravity.TOP|Gravity.RIGHT);qaLp.setMargins(0,dp(232),dp(14),0);root.addView(quickActions,qaLp);
         quickActionsAnchor=quickActions;
         transferBadge=text("0",10,Color.WHITE,true);
         transferBadge.setGravity(Gravity.CENTER);
@@ -204,17 +204,17 @@ public class MainActivity extends Activity {
             }
         });
 
-        bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(14),dp(5),dp(14),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
+        bottomSheet=new LinearLayout(this);bottomSheet.setOrientation(LinearLayout.VERTICAL);bottomSheet.setPadding(dp(14),dp(6),dp(14),dp(10));bottomSheet.setBackground(panelGradient());bottomSheet.setElevation(dp(8));
 
         FrameLayout handleBar=new FrameLayout(this);handleBar.setContentDescription("Panel de jornada. Deslizá hacia arriba o abajo para abrir y cerrar.");sheetHandle=handleBar;
         View grip=new View(this);grip.setBackground(rounded(Color.rgb(132,162,166),3,0,0));FrameLayout.LayoutParams gripLp=new FrameLayout.LayoutParams(dp(52),dp(4),Gravity.CENTER);handleBar.addView(grip,gripLp);handleBar.setOnTouchListener(this::onSheetTouch);bottomSheet.addView(handleBar,new LinearLayout.LayoutParams(-1,dp(16)));
 
         LinearLayout head=new LinearLayout(this);head.setTag("sheet_head");head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(dp(2),0,0,0);head.setOnTouchListener(this::onSheetTouch);
-        modeText=text("LISTO PARA JORNADA",15.8f,TEXT,true);modeText.setSingleLine(true);modeText.setLetterSpacing(.006f);modeText.setAutoSizeTextTypeUniformWithConfiguration(11,16,1,android.util.TypedValue.COMPLEX_UNIT_SP);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));
+        modeText=text("LISTO PARA JORNADA",18.1f,TEXT,true);modeText.setSingleLine(true);modeText.setLetterSpacing(.006f);modeText.setAutoSizeTextTypeUniformWithConfiguration(12,18,1,android.util.TypedValue.COMPLEX_UNIT_SP);head.addView(modeText,new LinearLayout.LayoutParams(0,-2,1));
         sheetChevron=text("⌄",22,CHAMPAGNE,true);sheetChevron.setGravity(Gravity.CENTER);sheetChevron.setContentDescription("Expandir o contraer panel");sheetChevron.setOnClickListener(v->cycleSheetState());head.addView(sheetChevron,new LinearLayout.LayoutParams(dp(38),dp(38)));
-        bottomSheet.addView(head,new LinearLayout.LayoutParams(-1,dp(38)));
+        bottomSheet.addView(head,new LinearLayout.LayoutParams(-1,dp(41)));
 
-        sheetMetaText=text("Preparado · GPS y recorridos",10.8f,CHAMPAGNE,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(22)));
+        sheetMetaText=text("Preparado · GPS y recorridos",11.6f,MUTED,false);sheetMetaText.setGravity(Gravity.CENTER_VERTICAL);sheetMetaText.setTag("sheet_meta");sheetMetaText.setSingleLine(true);sheetMetaText.setLetterSpacing(.008f);bottomSheet.addView(sheetMetaText,new LinearLayout.LayoutParams(-1,dp(24)));
 
         // The three journey totals are independent premium cards, even during a service.
         LinearLayout shiftCards=new LinearLayout(this);
@@ -224,11 +224,11 @@ public class MainActivity extends Activity {
         shiftStripText=shiftCard(shiftCards,"JORNADA","00:00:00");
         shiftKmText=shiftCard(shiftCards,"KM","0.0 km");
         shiftTripsText=shiftCard(shiftCards,"VIAJES","0");
-        LinearLayout.LayoutParams stripLp=new LinearLayout.LayoutParams(-1,dp(49));
+        LinearLayout.LayoutParams stripLp=new LinearLayout.LayoutParams(-1,dp(57));
         stripLp.setMargins(0,dp(2),0,dp(3));
         bottomSheet.addView(shiftCards,stripLp);
 
-        idleText=text("Sin viaje 00:00   ·   Vel. máx. 0 km/h",10.8f,Color.rgb(202,214,216),false);idleText.setTag("sheet_detail");idleText.setGravity(Gravity.CENTER_VERTICAL);idleText.setSingleLine(true);bottomSheet.addView(idleText,new LinearLayout.LayoutParams(-1,dp(22)));
+        idleText=text("Sin viaje 00:00   ·   Vel. máx. 0 km/h",10.8f,Color.rgb(202,214,216),false);idleText.setTag("sheet_detail");idleText.setGravity(Gravity.CENTER_VERTICAL);idleText.setSingleLine(true);bottomSheet.addView(idleText,new LinearLayout.LayoutParams(-1,dp(24)));
 
         LinearLayout metrics=new LinearLayout(this);metrics.setTag("sheet_metrics");metrics.setOrientation(LinearLayout.HORIZONTAL);metrics.setGravity(Gravity.CENTER_VERTICAL);
         distanceText=metric(metrics,"0.0","KM",MetricIconView.DISTANCE);
@@ -240,16 +240,26 @@ public class MainActivity extends Activity {
         fourthMetricLabel=(TextView)((LinearLayout)stoppedText.getParent()).getChildAt(2);
         thirdMetricIcon=(MetricIconView)((LinearLayout)movingText.getParent()).getChildAt(0);
         fourthMetricIcon=(MetricIconView)((LinearLayout)stoppedText.getParent()).getChildAt(0);
-        bottomSheet.addView(metrics,new LinearLayout.LayoutParams(-1,dp(66)));
+        bottomSheet.addView(metrics,new LinearLayout.LayoutParams(-1,dp(75)));
 
         FrameLayout actionWrap=new FrameLayout(this);actionWrap.setTag("sheet_action");slider=new SlideActionView(this);slider.setOnCompleted(this::performSliderAction);slider.setOnMidpointCompleted(this::performMidpointAction);
-        FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(54));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);
-        LinearLayout.LayoutParams actionWrapLp=new LinearLayout.LayoutParams(-1,dp(64));actionWrapLp.setMargins(0,dp(7),0,0);bottomSheet.addView(actionWrap,actionWrapLp);
+        FrameLayout.LayoutParams actionLp=new FrameLayout.LayoutParams(-1,dp(61));actionLp.setMargins(dp(1),0,dp(1),0);actionWrap.addView(slider,actionLp);
+        LinearLayout.LayoutParams actionWrapLp=new LinearLayout.LayoutParams(-1,dp(72));actionWrapLp.setMargins(0,dp(7),0,0);bottomSheet.addView(actionWrap,actionWrapLp);
+        endShiftAction=text("■   FINALIZAR JORNADA",11.8f,CHAMPAGNE,true);
+        endShiftAction.setTag("sheet_end_shift_action");
+        endShiftAction.setGravity(Gravity.CENTER);
+        endShiftAction.setContentDescription("Finalizar jornada: confirmar y guardar el historial");
+        endShiftAction.setBackground(premiumGradient(Color.rgb(3,34,43),Color.rgb(5,54,55),
+            Color.argb(220,234,193,99),20f,0.9f));
+        endShiftAction.setOnClickListener(v->showEndShiftConfirmation());
+        LinearLayout.LayoutParams endActionLp=new LinearLayout.LayoutParams(-1,dp(38));
+        endActionLp.setMargins(dp(3),dp(2),dp(3),0);
+        bottomSheet.addView(endShiftAction,endActionLp);
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
         root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(79);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(81);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(79);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
-        setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",1)));setSheetState(sheetState,false);updateUi();
+        setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",2)));setSheetState(sheetState,false);updateUi();
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
             style=s;applyNightCartography(style);style.addImage(DRIVER_IMAGE,driverArrow());
             GeoJsonSource ds=new GeoJsonSource(DRIVER_SOURCE,pointGeoJson(-34.88,-56.08,0));style.addSource(ds);
