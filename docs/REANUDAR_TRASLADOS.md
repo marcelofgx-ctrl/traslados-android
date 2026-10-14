@@ -1,5 +1,17 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Depuración de pruebas Supabase — 13/10/2026 (23:15 aprox. UYT)
+
+**Pedido:** datos de testing prescindibles, sin generar copia; preservar configuraciones, acceso del conductor, login/sesiones y estructura de tablas. Proyecto Supabase `zetaudvvutlouiqxopvg`.
+
+**Ejecutado y verificado en la nube:** eliminadas 4 jornadas ya cerradas y, por cascada de FK, 13 trayectos y 42.991 puntos GPS; además 230 logs informativos >1 día, 44 consultas ETA de clientes >1 día, 22 solicitudes ETA públicas >1 día, 3 desafíos passkey caducados y 9 resultados de caché vial >7 días. Total **43.316 filas**. No se creó copia extra; fue una eliminación real sobre la base de testing.
+
+**Después:** 3 jornadas (2 sin cierre), 3 trayectos, 1.533 puntos GPS, 10 logs, 11 entradas caché, 8 reservas de las cuales **5 pendientes con is_demo=false**, 21 dispositivos, 1 registro `driver_access` y 1 `driver_settings`. No se modificaron reservas, clientes, PIN, sesiones, configuración, dispositivos, disponibilidad ni ubicación/viaje activos. No ejecutar un `TRUNCATE ... CASCADE` indiscriminado.
+
+**Precauciones:** (1) la app Samsung tiene otra SQLite local (captura previa: 2 jornadas, 0 trayectos y 1.048 puntos); **no fue limpiada**. En Mapa → ☰ → Mantenimiento → Empezar de cero, con jornada cerrada, existe «Seguir sin copia» + escribir BORRAR, que elimina solo los registros locales y preserva parámetros y recordatorios. (2) Postgres conservó aproximadamente 24 MB de archivo asignado a `mapa_trayectos_points` tras el DELETE: el espacio se reutiliza, pero el indicador de 64,5 MB/500 MB **no tiene por qué disminuir inmediatamente**. No ejecutar VACUUM FULL mientras hay usuarios o GPS activo por su bloqueo. (3) Reservas: antes de eliminar las 5 pendientes, confirmar que son pruebas; no están marcadas como demo. (4) Dos jornadas cloud abiertas requieren revisión con la app sin servicio activo, no forzar fin de jornada en producción ni borrar puntos recientes en vivo.
+
+
+
 ## Mapa R25.14 — acciones de jornada sin romper diseño 3 (13/10/2026)
 
 - **Inicio de jornada** queda exclusivamente en el deslizador grande inferior cuando la jornada está cerrada; sigue usando el servicio real de GPS, sin cambiar el umbral ni la lógica de permisos.
