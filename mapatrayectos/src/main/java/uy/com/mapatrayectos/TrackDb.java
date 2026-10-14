@@ -229,17 +229,18 @@ public final class TrackDb extends SQLiteOpenHelper {
     public JSONArray unsyncedIdlePoints(String shiftId) { return many("select * from points where synced=0 and shift_id=? and trip_id is null order by recorded_at_ms",new String[]{shiftId}); }
 
     /** Do not mark a freshly edited record synced if a previous network request is still in flight. */
-    public void markTripSynced(String tripId,JSONObject sent){
+    public boolean markTripSynced(String tripId,JSONObject sent){
         JSONObject fresh=getTrip(tripId);
-        if(fresh==null||sent==null)return;
-        if(!fresh.optString("trip_type","").equals(sent.optString("trip_type","")))return;
-        if(!fresh.optString("trip_status","").equals(sent.optString("trip_status","")))return;
-        if(fresh.optLong("ended_at_ms",-1)!=sent.optLong("ended_at_ms",-1))return;
+        if(fresh==null||sent==null)return false;
+        if(!fresh.optString("trip_type","").equals(sent.optString("trip_type","")))return false;
+        if(!fresh.optString("trip_status","").equals(sent.optString("trip_status","")))return false;
+        if(fresh.optLong("ended_at_ms",-1)!=sent.optLong("ended_at_ms",-1))return false;
         boolean a=fresh.isNull("amount_uyu"),b=sent.isNull("amount_uyu");
-        if(a!=b||(!a&&Double.compare(fresh.optDouble("amount_uyu"),sent.optDouble("amount_uyu"))!=0))return;
+        if(a!=b||(!a&&Double.compare(fresh.optDouble("amount_uyu"),sent.optDouble("amount_uyu"))!=0))return false;
         ContentValues v=new ContentValues();v.put("synced",1);
         getWritableDatabase().update("trips",v,"trip_id=?",new String[]{tripId});
         getWritableDatabase().update("points",v,"trip_id=?",new String[]{tripId});
+        return true;
     }
     public void markShiftSynced(String shiftId, boolean includeIdlePoints) { ContentValues v=new ContentValues();v.put("synced",1);getWritableDatabase().update("shifts",v,"shift_id=?",new String[]{shiftId});if(includeIdlePoints)getWritableDatabase().update("points",v,"shift_id=? and trip_id is null",new String[]{shiftId}); }
 
