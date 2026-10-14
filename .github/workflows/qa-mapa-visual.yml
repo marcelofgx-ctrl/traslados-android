@@ -79,7 +79,11 @@ jobs:
               im=Image.open(p).convert('RGB')
               w,h=im.size
               assert w>=700 and h>=1400,(p,w,h)
-              assert sum(ImageStat.Stat(im).mean)/3<135,(p,'theme not dark')
+              # The R25.19 VECTOR MAP is intentionally light. Only the cockpit,
+              # not the cartography, must remain dark: reject washed-out HUD.
+              header=im.crop((int(w*.12),int(h*.045),int(w*.85),int(h*.12)))
+              hud=sum(ImageStat.Stat(header).mean)/3
+              assert hud<155,(p,'cockpit lost its petroleum contrast',hud)
               # The script checks Android view hierarchy for actual system modals.
               # Never reject a legitimate bright map road/vehicle pixel.
               images.append(im)
