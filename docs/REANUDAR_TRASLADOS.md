@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## R25.19: CARTOGRAFÍA CLARA + TRAZA VERDE JADE — EN VALIDACIÓN (14/10/2026)
+
+- Pedido y diseño aprobados: reemplazar en Mapa la cartografía nocturna oscura por un fondo **marfil/piedra** claro texturado, construcciones gris cálido, parques salvia, agua celeste y caminos beige/champagne; conservar HUD petróleo/negro con dorado.
+- Base **vectorial** real `https://tiles.openfreemap.org/styles/liberty` (confirmada en [guía oficial OpenFreeMap](https://openfreemap.org/quick_start/)); no es una imagen sintética inerte. Código `MainActivity.applyLightCartography` ajusta capas del mapa (independiente de geoposicionamiento, rutas y gestos). Sobre esta base traza verde jade `#27946C`, halo `#64B391`, borde marfil y paradas legibles sin flúo; mantiene ruta de regreso diferenciada.
+- Versión preparada `0.1-R25.19` code71, **no confundir fuentes con APK firmada**. Branch `feature/mapa-r25-19-cartografia-clara-esmeralda`. Revisar CI modular, QA visual emulador y RELEASE antes de distribuir. Nunca sobrescribir R25.18; mantener checksum y respaldo. Instalar encima sin desinstalar.
+- Esta entrega ajusta la validación de QA que antes obligaba a que TODA la imagen fuera oscura, para que evalúe el HUD oscuro y permita mapa claro real. La coherencia con una maqueta generativa se comprueba mediante captura Android real (no reproducción exacta de sombras ilustradas).
+
+
 ## Mapa R25.18 — PUBLICADA Y FIRMADA (14/10/2026 12:25 UYT)
 
 - **PR #90 fusionado** en `main` commit `1da1de27af31`, con corrección del pipeline `65a902be1d6d`. **RELEASE firmada SUCCESS** [run 38588827364](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38588827364). APK `0.1-R25.18`, `versionCode 70`, publicación binaria commit `2e7e5c78a6`: `web-pasajero/downloads/mapa-trayectos-r25.18.apk`. **SHA-256:** `5720ff074cccde7aba100f5d7dbee7c67bfe49efca000fcbae8576b273b8adff`. R25.17 se conserva intacta para rollback. Referencias Samsung de jornada activa, en posiciones media y extendida (14/10 11:54/11:55 UYT).
