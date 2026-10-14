@@ -123,7 +123,7 @@ jobs:
           grep -q 'ShiftEndPolicy.canEndShift(shiftActive,tripActive)' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           ! grep -q 'sheet_shift_close' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'SHEET_FULL_DP=330' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=334' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'SHEET_MID_DP=230' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'liveStyle.getLayers()' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(mode==MODE_SHIFT_START)return Color.rgb(2,57,61)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
