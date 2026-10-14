@@ -1,5 +1,12 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Actualización QA R25.15 — 14/10/2026
+
+- Artefacto real `38558352583` guardado: captura de jornada activa con SEGUIR en una línea, encabezado completo y FINALIZAR JORNADA totalmente visible. Se ve cartografía azul/gris con edificios más legibles. **Capturas Android, transición de jornada (SharedPreferences) e inspección geométrica pasaron**; el único paso fallido fue hacer `git push` de capturas mientras la rama cambiaba. Por eso el workflow ya no publica capturas en Git; quedan en artefactos.
+- Nuevo reintento `38559325699` volvió a fallar por una alerta intermitente del Launcher del emulador, antes de capturas; NO fue error de compilación ni reportó crash propio de la APK. No falsear un éxito total de QA. Las pruebas de integración modular sí pasaron.
+- Último commit visual relevante `b1e60197a29551546733b003d09eb13fd9347489` agregó estilos de fondo, agua, edificios, parques. Correcciones de layout en `58e4305c2cbbfc1b499cec1e8d1662d82dd84909`. Todo sigue solo en PR #86. Nunca ofrecer un APK R25.15 antes de merge + release confirmada.
+- Siguientes pasos: estabilizar emulador sin alertas o usar otro método de QA; contrastar ciudad, brújula, velocímetro y controles con render aprobado; verificar dos estados y cancelación segura de fin jornada; recién luego fusionar y generar APK firmada.
+
 ## R25.15 · QA gráfica y funciones, estado 14/10/2026 08:4x UYT
 
 - El **PR #86** sigue abierto; NO fusionar ni ofrecer APK final todavía. `main` sigue R25.14.
