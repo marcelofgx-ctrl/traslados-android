@@ -1,0 +1,102 @@
+name: Mapa Trayectos — Visual QA Android
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mapatrayectos/**'
+      - '.github/workflows/qa-mapa-visual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  visual-qa:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 1
+      - name: Reproducir recursos originales
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          test -s mapatrayectos/src/main/assets/manrope.ttf
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: SDK Android del runner (sin setup-android obsoleto)
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK de previsualización
+        shell: bash
+        run: gradle :mapatrayectos:assembleDebug --stacktrace
+      - name: Preparar detector de overlays para QA
+        run: python3 -m pip -q install pillow
+      - name: Preparar aceleración de hardware del emulador
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; ls -l /dev/kvm; fi
+          df -h /tmp
+      - name: Capturas Android (inicio y jornada activa)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: default
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash .github/scripts/mapa-visual-capture.sh
+      - name: Inspección geométrica y visual de capturas
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from PIL import Image,ImageStat,ImageChops
+          from pathlib import Path
+          files=[Path('docs/visual-qa/mapa-r25.15-'+x+'.png') for x in ('idle','shift-active')]
+          images=[]
+          for p in files:
+              im=Image.open(p).convert('RGB')
+              w,h=im.size
+              assert w>=700 and h>=1400,(p,w,h)
+              assert sum(ImageStat.Stat(im).mean)/3<135,(p,'theme not dark')
+              assert sum(im.getpixel((w//2,h//2)))/3<160,(p,'system overlay')
+              images.append(im)
+              print(p,w,h)
+          diff=ImageChops.difference(images[0],images[1]).convert('L')
+          strong=sum(diff.histogram()[36:])/(diff.width*diff.height)
+          print('Strong pixel difference:',round(strong*100,2),'%')
+          assert strong>0.008,'Jornada sin transición visual apreciable'
+          PY
+      - name: Guardar capturas de previsualización (incluso si falla QA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-mapa-r25-15
+          path: |
+            docs/visual-qa/mapa-r25.15-*.png
+            docs/visual-qa/*ui.xml
+            docs/visual-qa/last-window.xml
+            docs/visual-qa/fatal-log.txt
+            docs/visual-qa/state-after-start.xml
+          if-no-files-found: warn

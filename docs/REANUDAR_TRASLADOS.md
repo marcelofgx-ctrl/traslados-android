@@ -1,5 +1,30 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Actualización QA R25.15 — 14/10/2026
+
+- Artefacto real `38558352583` guardado: captura de jornada activa con SEGUIR en una línea, encabezado completo y FINALIZAR JORNADA totalmente visible. Se ve cartografía azul/gris con edificios más legibles. **Capturas Android, transición de jornada (SharedPreferences) e inspección geométrica pasaron**; el único paso fallido fue hacer `git push` de capturas mientras la rama cambiaba. Por eso el workflow ya no publica capturas en Git; quedan en artefactos.
+- Nuevo reintento `38559325699` volvió a fallar por una alerta intermitente del Launcher del emulador, antes de capturas; NO fue error de compilación ni reportó crash propio de la APK. No falsear un éxito total de QA. Las pruebas de integración modular sí pasaron.
+- Último commit visual relevante `b1e60197a29551546733b003d09eb13fd9347489` agregó estilos de fondo, agua, edificios, parques. Correcciones de layout en `58e4305c2cbbfc1b499cec1e8d1662d82dd84909`. Todo sigue solo en PR #86. Nunca ofrecer un APK R25.15 antes de merge + release confirmada.
+- Siguientes pasos: estabilizar emulador sin alertas o usar otro método de QA; contrastar ciudad, brújula, velocímetro y controles con render aprobado; verificar dos estados y cancelación segura de fin jornada; recién luego fusionar y generar APK firmada.
+
+## R25.15 · QA gráfica y funciones, estado 14/10/2026 08:4x UYT
+
+- El **PR #86** sigue abierto; NO fusionar ni ofrecer APK final todavía. `main` sigue R25.14.
+- Compilación Android debug correcta, y capturas reales en emulador (no imagen generada) recuperadas de artefactos `38556108788` y `38557501675`.
+- La captura real verificó el **gesto de iniciar jornada** (`tracking_state.xml shift_active=true`) y el botón **FINALIZAR JORNADA**. Se corrigieron: SEGUIR quebrado, título de zona recortado, botón inferior cortado; última captura `38557501675` muestra esas tres correcciones completas.
+- La primera QA recurrente fallaba por aviso de Launcher/ANR del emulador. Se evitó deshabilitar `com.android.launcher3`. Además se eliminó la dependencia dura de una segunda captura `uiautomator` inaccesible; validación de transición ahora utiliza SharedPreferences reales y la imagen de pantalla.
+- Comparación maestra (local, no parte del repo) demostró que el mapa seguía casi negro contra la referencia azul-gris. Se implementó ajuste de fondo, agua, edificios, parques y landuse en `applyNightCartography`; pendiente resultado de CI `38558352583` y revisión visual posterior.
+- Pendiente: **1)** QA emulador limpia, comparación final con mockup #3 sin anomalías visibles; **2)** comprobar que colores nocturnos no comprometen rutas ni texto; **3)** fusionar PR solo si supera QA; **4)** compilar RELEASE firmada code67, checksum y archivo; **5)** verificar enlace real; **6)** prueba Samsung, con UI de inicio y fin de jornada, permiso burbuja y seguimiento. NO inventar descarga antes de que exista.
+
+## Mapa R25.15 — implementación visual estricta del mockup #3 (14/10/2026)
+
+- Pedido explícito: asumir rol de diseñador/programador senior; no publicar otra APK «parecida». Capturas R25.14 Samsung comparadas contra `mapa_trayectos_diseno_3_aprobado.png`; fallos: panel vacío, slider apagado y texto minúsculo, velocímetro circular en vez de tarjeta, controles jornada poco visibles.
+- Cambios: fuente Manrope; logo circular negro/dorado; velocímetro rectangular 116×105dp con arco luminiscente; GPS/compás/HUD refinados; tarjetas de totales 57dp, métricas 75dp, slider 61dp con trazo brillante y texto escalado; panel dinámico 230/330dp + 40dp cuando hay jornada activa sin viaje. Título y colores de alto contraste, calles oro atenuadas. No se cambia cálculo de GPS, rutas, registro ni Conductor.
+- Inicio de jornada: `DESLIZAR · INICIAR JORNADA` en slider cuando no hay jornada. Durante jornada sin viaje: `DESLIZAR · INICIAR SERVICIO` y botón secundario `FINALIZAR JORNADA` visible con confirmación, además de menú ☰. Durante viaje se oculta el cierre por seguridad.
+- `feature/mapa-r25-15-master-visual-qa` trae workflow `qa-mapa-visual.yml` para compilar debug y tomar screenshots reales en emulador Android de estados sin jornada/con jornada, con artefacto para revisión **antes de fusionar/publicar**. Publicación R25.15 code67 y QA real Samsung permanecen pendientes hasta verificarse.
+
+
+
 ## Estado ACTUAL: Supabase de testing reiniciada, configuración preservada (13/10/2026, ~23:21 UYT)
 
 **Pedido confirmado:** el usuario desinstaló Mapa Trayectos de su Samsung y ordenó dejar la base en cero salvo configuración. Se ejecutó una transacción COMMIT exitosa sobre Supabase `zetaudvvutlouiqxopvg`, **sin backup adicional**, eliminando las ocho reservas de prueba (más sus 13 eventos, 7 mensajes y una parada mediante FK CASCADE), clientes y sesiones de test, passkeys y códigos de recuperación, desafíos, dispositivos, puntos, trayectos y jornadas, presencia activa, registros, consultas ETA y caché de rutas. `auth.users` ya tenía cero registros antes de la operación; no se tocaron secretos de autenticación.
