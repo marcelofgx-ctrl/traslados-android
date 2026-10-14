@@ -17,10 +17,15 @@ public final class TripFlowDialogs {
     public interface StartCallback { void onSelected(String type); }
     public interface CloseCallback { void onClosed(String status,double amountUyu); }
 
-    public static void chooseTripType(Activity a,StartCallback cb){
+    public static void chooseTripType(Activity a,StartCallback cb){chooseTripType(a,"",cb);}
+    /** The remembered header platform is a hint, never an implicit authorization to record a trip. */
+    public static void chooseTripType(Activity a,String suggested,StartCallback cb){
         LinearLayout box=baseBox(a);
-        TextView title=text(a,"¿CON QUÉ PLATAFORMA?",19,TEXT,true);box.addView(title);
-        TextView sub=text(a,"Elegí para tu próximo servicio. Se registrará en el historial al iniciar el viaje.",12,MUTED,false);box.addView(sub,lp(a,5,12));
+        TextView title=text(a,"INICIAR SERVICIO",19,TEXT,true);box.addView(title);
+        String hint=TripPlatformChoice.canonical(suggested);
+        TextView sub=text(a,(hint.isEmpty()?"Elegí una plataforma":"Última selección: "+TripPlatformChoice.display(hint))+
+            ". Confirmá para registrar este nuevo viaje.",12,MUTED,false);
+        box.addView(sub,lp(a,5,12));
         AlertDialog dlg=new AlertDialog.Builder(a).setView(box).create();
         addChoice(a,box,"UBER","Viaje de Uber",Color.rgb(28,122,82),()->{dlg.dismiss();cb.onSelected("uber");});
         addChoice(a,box,"CABIFY","Viaje de Cabify",Color.rgb(88,54,126),()->{dlg.dismiss();cb.onSelected("cabify");});
@@ -34,7 +39,7 @@ public final class TripFlowDialogs {
         // Always confirm; Personal and Otro must not end instantly after a swipe.
         LinearLayout box=baseBox(a);String label=TripPlatformChoice.display(type);
         TextView title=text(a,"CERRAR VIAJE "+label,19,TEXT,true);box.addView(title);
-        TextView sub=text(a,"Confirmá si se completó o canceló. El importe es opcional; dejalo vacío si no corresponde.",12,MUTED,false);box.addView(sub,lp(a,5,10));
+        TextView sub=text(a,"Para completar el viaje ingresá un importe mayor a $0. Si no se realizó, elegí VIAJE CANCELADO.",12,MUTED,false);box.addView(sub,lp(a,5,10));
         EditText amount=new EditText(a);amount.setTextColor(TEXT);amount.setHintTextColor(MUTED);amount.setHint("Importe en UYU  ·  ej. 380");amount.setSingleLine(true);amount.setTextSize(18);amount.setPadding(dp(a,14),0,dp(a,14),0);amount.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);amount.setBackground(rounded(a,Color.rgb(11,49,57),16,1,Color.rgb(55,98,107)));box.addView(amount,new LinearLayout.LayoutParams(-1,dp(a,54)));
         AlertDialog dlg=new AlertDialog.Builder(a).setView(box).create();
         Button completed=button(a,"✓  COMPLETADO",GREEN);
@@ -48,11 +53,11 @@ public final class TripFlowDialogs {
                     amount.requestFocus();
                     return;
                 }
-                if(!Double.isFinite(value)||value<0){
-                    amount.setError("El importe debe ser mayor o igual a cero");
-                    amount.requestFocus();
-                    return;
-                }
+            }
+            if(!TripClosePolicy.validCompletedAmount(value)){
+                amount.setError("Para completar ingresá un importe mayor a $0");
+                amount.requestFocus();
+                return;
             }
             dlg.dismiss();
             cb.onClosed("completed",value);
