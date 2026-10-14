@@ -482,14 +482,20 @@ public class MainActivity extends Activity {
         else idleText.setText("Sin viaje  "+formatDuration(idle)+"    ·    Vel. máx.  "+String.format(Locale.getDefault(),"%.0f km/h",tripMax));
 
         if(!shiftActive){
-            sheetMetaText.setText("Preparado · GPS y recorridos");modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR · INICIAR JORNADA");
+            sheetMetaText.setText(TripPlatformChoice.shouldPrompt(selectedTripPlatform)
+                ?"Elegí plataforma en el círculo superior"
+                :"Próximo: "+TripPlatformChoice.display(selectedTripPlatform)+" · GPS y recorridos");
+            modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR · INICIAR JORNADA");
         }else if(shiftPaused){
             sheetMetaText.setText(zone+" · en pausa · total "+formatDuration(shiftPauseMs));
             modeText.setText("JORNADA EN PAUSA");
             slider.setMode(SlideActionView.MODE_TRIP_START);
             slider.setLabel("DESLIZAR PARA REANUDAR JORNADA");
         }else if(!tripActive){
-            sheetMetaText.setText(zone+" · listo para un nuevo servicio");modeText.setText("JORNADA ACTIVA");slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR · INICIAR SERVICIO");
+            sheetMetaText.setText(TripPlatformChoice.shouldPrompt(selectedTripPlatform)
+                ?"Elegí plataforma · círculo superior"
+                :"Próximo: "+TripPlatformChoice.display(selectedTripPlatform)+" · deslizar para iniciar");
+            modeText.setText("JORNADA ACTIVA");slider.setMode(SlideActionView.MODE_TRIP_START);slider.setLabel("DESLIZAR · INICIAR SERVICIO");
         }else if("to_pickup".equals(tripStage)){
             sheetMetaText.setText(typeLabel(tripType)+" · etapa 1/2 · trayecto hacia la recogida");setModeTitle("EN CAMINO A RECOGER",typeLabel(tripType));slider.setMode(SlideActionView.MODE_PICKUP);slider.setLabel("DESLIZAR · PASAJERO RECOGIDO");
         }else if(stopActive){
@@ -552,6 +558,7 @@ public class MainActivity extends Activity {
         getSharedPreferences("ui_prefs",MODE_PRIVATE).edit()
             .putString("service_selected_platform",selectedTripPlatform).apply();
         refreshPlatformBadge();
+        updateUi();
         Toast.makeText(this,"Próximo servicio: "+TripPlatformChoice.display(normalized),
             Toast.LENGTH_SHORT).show();
     }
@@ -562,12 +569,17 @@ public class MainActivity extends Activity {
         int rim="CABIFY".equals(shown)?Color.rgb(185,137,241):
             "PERSONAL".equals(shown)?Color.rgb(94,221,197):
             "OTRO".equals(shown)?Color.rgb(218,181,123):CHAMPAGNE;
-        tripSourceBadge.setText(shown+"\n➜");
-        tripSourceBadge.setMaxLines(2);
+        // The physical 48dp circle must never shrink "PERSONAL" to unreadable text.
+        // Role/state is communicated by rim and full accessibility label, not a tiny arrow.
+        tripSourceBadge.setText(TripPlatformChoice.badgeLabel(selectedTripPlatform,tripActive,tripType));
+        tripSourceBadge.setSingleLine(true);
+        tripSourceBadge.setMaxLines(1);
+        tripSourceBadge.setIncludeFontPadding(false);
         tripSourceBadge.setAutoSizeTextTypeUniformWithConfiguration(
-            8,14,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+            9,12,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        tripSourceBadge.setTextColor(tripActive?Color.rgb(230,255,246):TEXT);
         tripSourceBadge.setBackground(premiumGradient(Color.rgb(0,5,11),
-            Color.rgb(1,17,23),rim,30f,1.6f));
+            Color.rgb(1,17,23),rim,30f,tripActive?2.2f:1.4f));
         tripSourceBadge.setContentDescription((tripActive?"Servicio activo: ":"Próximo servicio: ")+
             shown+". Tocá para "+(tripActive?"ver la plataforma registrada":"elegir plataforma")+
             ". Mantener pulsado: cerrar Mapa Trayectos si no hay jornada.");
