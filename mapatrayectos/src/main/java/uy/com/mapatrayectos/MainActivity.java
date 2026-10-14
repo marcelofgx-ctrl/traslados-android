@@ -74,6 +74,8 @@ public class MainActivity extends Activity {
     private final Handler uiHandler=new Handler(Looper.getMainLooper());
     private LocationManager previewLm; private long lastCameraAt=0,lastRouteDbSyncAt=0;
     private double lastLat=Double.NaN,lastLon=Double.NaN; private float lastBearing=0f,currentSpeedKmh=0f,cameraBearing=0f;
+    private boolean navigationCourseFresh=false;
+    private long previewNavigationCourseTs=0L;
     private float previewLastSpeed=0f; private long previewLastTs=0L;
     private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
 
@@ -125,11 +127,22 @@ public class MainActivity extends Activity {
     private final BroadcastReceiver stateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){if(TrackingService.ACTION_STATE.equals(i.getAction()))applyState(i);}};
     private final LocationListener previewListener=loc->{
         if(loc==null)return;float accuracy=loc.hasAccuracy()?loc.getAccuracy():50f;if(accuracy>45f)return;long ts=loc.getTime()>0?loc.getTime():System.currentTimeMillis();boolean isGps=LocationManager.GPS_PROVIDER.equals(loc.getProvider());float raw=loc.hasSpeed()?Math.max(0f,loc.getSpeed()*3.6f):0f;if(raw>160f)return;
-        if(previewLastLocation==null){boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;previewMoving=isGps&&accuracy<=10f&&speedAccuracyGood&&raw>=15f;previewMovingEvidence=previewStoppedEvidence=0;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=previewMoving?raw:0f;float shown=previewMoving?raw:0f;if(shown<3f)shown=0f;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);return;}
+        if(previewLastLocation==null){boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;previewMoving=isGps&&accuracy<=10f&&speedAccuracyGood&&raw>=15f;previewMovingEvidence=previewStoppedEvidence=0;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=previewMoving?raw:0f;float shown=previewMoving?raw:0f;if(shown<3f)shown=0f;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());
+            float initialCourse=NavigationHeadingPolicy.course(loc.hasBearing(),loc.getBearing(),
+                loc.hasBearingAccuracy(),loc.hasBearingAccuracy()?loc.getBearingAccuracyDegrees():99f,
+                raw,accuracy,accuracy,0,0,0);
+            if(Float.isFinite(initialCourse)){lastBearing=initialCourse;previewNavigationCourseTs=ts;}
+            navigationCourseFresh=previewNavigationCourseTs>0&&ts-previewNavigationCourseTs<=4200;
+            updateDriver(loc.getLatitude(),loc.getLongitude(),lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);return;}
         long dt=ts-previewLastTs;if(dt<=0)return;double sec=dt/1000.0;double dist=previewLastLocation.distanceTo(loc);float derived=(float)((dist/sec)*3.6);if(derived>160f||(dt<800L&&derived>60f))return;float candidate=loc.hasSpeed()?raw:derived;if(candidate>previewLastSpeed&&previewLastTs>0){double accel=((candidate-previewLastSpeed)/3.6)/Math.max(.25,sec);if(accel>7.0)candidate=derived;}if(candidate>160f)return;
         float lastAccuracy=previewLastLocation.hasAccuracy()?previewLastLocation.getAccuracy():accuracy;float noiseRadius=Math.max(3.0f,Math.min(14.0f,(lastAccuracy+accuracy)*0.30f));float movementThreshold=Math.max(1.8f,Math.min(4.5f,noiseRadius*0.35f));boolean displacementSupportsMove=dist>=movementThreshold&&derived>=3.5f;boolean speedAccuracyGood=!loc.hasSpeedAccuracy()||loc.getSpeedAccuracyMetersPerSecond()*3.6f<=5.0f;boolean strongGpsSpeed=isGps&&accuracy<=12f&&speedAccuracyGood&&candidate>=14f;boolean movementEvidenceNow=candidate>=5f&&(displacementSupportsMove||strongGpsSpeed);boolean stationaryGeometry=dist<=movementThreshold;boolean stoppedEvidenceNow=candidate<=2.5f||(stationaryGeometry&&candidate<13f);
         if(previewMoving){previewMovingEvidence=0;if(stoppedEvidenceNow){previewStoppedEvidence++;if(previewStoppedEvidence>=2){previewMoving=false;previewStoppedEvidence=0;}}else previewStoppedEvidence=0;}else{previewStoppedEvidence=0;if(movementEvidenceNow){previewMovingEvidence++;if(previewMovingEvidence>=2){previewMoving=true;previewMovingEvidence=0;}}else previewMovingEvidence=0;}
-        float shown=previewMoving?candidate:0f;if(stationaryGeometry&&candidate<13f)shown=0f;if(shown<3f)shown=0f;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=shown;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()&&shown>=5f?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);
+        float shown=previewMoving?candidate:0f;if(stationaryGeometry&&candidate<13f)shown=0f;if(shown<3f)shown=0f;float measuredCourse=NavigationHeadingPolicy.course(loc.hasBearing(),loc.getBearing(),
+            loc.hasBearingAccuracy(),loc.hasBearingAccuracy()?loc.getBearingAccuracyDegrees():99f,
+            Math.max(raw,shown),accuracy,lastAccuracy,dist,previewLastLocation.bearingTo(loc),sec);
+        if(Float.isFinite(measuredCourse)){lastBearing=measuredCourse;previewNavigationCourseTs=ts;}
+        navigationCourseFresh=previewNavigationCourseTs>0&&ts-previewNavigationCourseTs<=4200;
+        previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=shown;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);
     };
 
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.rgb(246,242,234));getWindow().setNavigationBarColor(BG);getWindow().getDecorView().setSystemUiVisibility(getWindow().getDecorView().getSystemUiVisibility()|View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);shiftPaused=live.getBoolean("shift_paused",false);shiftPauseMs=live.getLong("total_pause_ms",0);tripActive=live.getBoolean("trip_active",false);stopActive=live.getBoolean("stop_active",false);tripType=live.getString("trip_type","other");selectedTripPlatform=TripPlatformChoice.canonical(getSharedPreferences("ui_prefs",MODE_PRIVATE).getString("service_selected_platform",""));tripStage=live.getString("trip_stage",tripActive?"onboard":"none");pickupAt=live.getLong("pickup_at",0);stopStarted=live.getLong("stop_started",0);Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
@@ -462,7 +475,7 @@ public class MainActivity extends Activity {
         boolean justStarted=!oldTrip&&tripActive;
         if(justStarted){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
         boolean hasLoc=i.getBooleanExtra("has_location",false);
-        if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
+        if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);navigationCourseFresh=i.getBooleanExtra("navigation_course_fresh",false)&&age<=4200L;if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
         if(!tripActive&&(oldTrip||!route.isEmpty()||routeEnded)){clearActiveRoute();if(oldTrip)Toast.makeText(this,"✓ Viaje guardado · mapa limpio",Toast.LENGTH_SHORT).show();}
         refreshPlatformBadge();
         if(tripActive){
@@ -1470,13 +1483,31 @@ public class MainActivity extends Activity {
     private float smoothBearing(float current,float target,float factor){float delta=((target-current+540f)%360f)-180f;return normalizeBearing(current+delta*factor);}
     private float normalizeBearing(float b){float x=b%360f;return x<0?x+360f:x;}
     private void updateDriver(double lat,double lon,float bearing,boolean maybeFollow){
-        lastLat=lat;lastLon=lon;if(currentSpeedKmh>=4.5f)lastBearing=normalizeBearing(bearing);if(style==null||map==null)return;
-        float markerBearing=follow?0f:lastBearing;GeoJsonSource s=style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lat,lon,markerBearing));
-        if(maybeFollow&&follow&&System.currentTimeMillis()-lastCameraAt>1300){lastCameraAt=System.currentTimeMillis();if(currentSpeedKmh>=4.5f)cameraBearing=smoothBearing(cameraBearing,lastBearing,0.34f);CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lat,lon)).zoom(followZoom()).tilt(16).bearing(cameraBearing).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),480);}
+        lastLat=lat;lastLon=lon;
+        // The last RELIABLE ground course is independent of the filtered speed
+        // shown in the speedometer. Do not reset north when stopped or GPS stale.
+        if(navigationCourseFresh&&Float.isFinite(bearing))lastBearing=NavigationHeadingPolicy.normalize(bearing);
+        if(style==null||map==null)return;
+        float markerBearing=follow?0f:lastBearing;
+        GeoJsonSource s=style.getSourceAs(DRIVER_SOURCE);
+        if(s!=null)s.setGeoJson(pointGeoJson(lat,lon,markerBearing));
+        if(maybeFollow&&follow&&System.currentTimeMillis()-lastCameraAt>1050L){
+            lastCameraAt=System.currentTimeMillis();
+            if(navigationCourseFresh){
+                // Read ACTUAL MapLibre camera heading: users may rotate the map
+                // or MapLibre may interrupt the previous ease animation.
+                float realCamera=(float)map.getCameraPosition().bearing;
+                cameraBearing=NavigationHeadingPolicy.camera(realCamera,lastBearing);
+            }
+            CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lat,lon))
+                .zoom(followZoom()).tilt(16).bearing(cameraBearing).build();
+            map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),380);
+        }
         if(compassView!=null)compassView.setMapBearing(follow?cameraBearing:0f);
     }
     private void northUpFreeMode(){if(map==null)return;cameraBearing=0f;if(compassView!=null)compassView.setMapBearing(0f);if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,lastBearing));}CameraPosition old=map.getCameraPosition();CameraPosition cp=new CameraPosition.Builder().target(old.target).zoom(old.zoom).tilt(0).bearing(0).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),420);}
-    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");cameraBearing=currentSpeedKmh>=4.5f?lastBearing:cameraBearing;if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,0));lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(16).bearing(cameraBearing).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),450);}if(compassView!=null)compassView.setMapBearing(cameraBearing);}
+    private void recenter(){if(map==null)return;follow=true;followBtn.setText("SEGUIR");
+        cameraBearing=navigationCourseFresh?lastBearing:(float)map.getCameraPosition().bearing;if(!Double.isNaN(lastLat)){GeoJsonSource s=style==null?null:style.getSourceAs(DRIVER_SOURCE);if(s!=null)s.setGeoJson(pointGeoJson(lastLat,lastLon,0));lastCameraAt=System.currentTimeMillis();CameraPosition cp=new CameraPosition.Builder().target(new LatLng(lastLat,lastLon)).zoom(followZoom()).tilt(16).bearing(cameraBearing).build();map.easeCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(cp),450);}if(compassView!=null)compassView.setMapBearing(cameraBearing);}
     private void addRoutePoint(double lat,double lon){if(!route.isEmpty()){double[] p=route.get(route.size()-1);float[] out=new float[1];Location.distanceBetween(p[0],p[1],lat,lon,out);if(out[0]<1.5f)return;}route.add(new double[]{lat,lon});if(route.size()>6000)route.remove(0);refreshRoute();}
     private void clearActiveRoute(){route.clear();loadedTripId="";routeEnded=false;lastRouteDbSyncAt=0;refreshRoute();}
     private int returnSplitIndex(List<double[]> pts){if(pts==null||pts.size()<8)return -1;double[] start=pts.get(0);float maxDist=0f,endDist=0f;int maxIndex=-1;float[] out=new float[1];for(int i=1;i<pts.size();i++){double[] p=pts.get(i);Location.distanceBetween(start[0],start[1],p[0],p[1],out);float d=out[0];if(d>maxDist){maxDist=d;maxIndex=i;}if(i==pts.size()-1)endDist=d;}if(maxDist<300f||maxIndex<3||maxIndex>pts.size()-4)return -1;if(endDist>maxDist*0.78f)return -1;double returnMeters=0;for(int i=maxIndex+1;i<pts.size();i++){double[] a=pts.get(i-1),b=pts.get(i);Location.distanceBetween(a[0],a[1],b[0],b[1],out);returnMeters+=out[0];}if(returnMeters<Math.max(180.0,maxDist*0.22))return -1;return maxIndex;}
@@ -1552,7 +1583,7 @@ public class MainActivity extends Activity {
         }
     }
     private void startPreview(){if(shiftActive||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;if(previewLm==null)previewLm=(LocationManager)getSystemService(LOCATION_SERVICE);if(previewLm==null)return;try{boolean gps=previewLm.isProviderEnabled(LocationManager.GPS_PROVIDER);Location l=previewLm.getLastKnownLocation(gps?LocationManager.GPS_PROVIDER:LocationManager.NETWORK_PROVIDER);if(l!=null&&Math.abs(System.currentTimeMillis()-l.getTime())<120000L)previewListener.onLocationChanged(l);if(gps)previewLm.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500L,1f,previewListener,Looper.getMainLooper());else if(previewLm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))previewLm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000L,12f,previewListener,Looper.getMainLooper());}catch(Exception ignored){}}
-    private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}previewLastLocation=null;previewLastTs=0L;previewLastSpeed=0f;previewMoving=false;previewMovingEvidence=previewStoppedEvidence=0;}
+    private void stopPreview(){if(previewLm!=null)try{previewLm.removeUpdates(previewListener);}catch(Exception ignored){}previewLastLocation=null;previewLastTs=0L;previewNavigationCourseTs=0L;previewLastSpeed=0f;previewMoving=false;previewMovingEvidence=previewStoppedEvidence=0;}
 
     private TextView text(String s,float size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setTypeface(font(bold));t.setFontFeatureSettings("tnum");return t;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(10.2f);b.setTextColor(TEXT);b.setTypeface(font(true));b.setAllCaps(false);b.setPadding(dp(5),0,dp(5),0);b.setBackground(rounded(PANEL,16,1,Color.rgb(50,91,100)));b.setElevation(dp(2));return b;}
