@@ -59,8 +59,8 @@ public class MainActivity extends Activity {
     private int sheetState=1;
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
-    private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=330;
+    private boolean sheetDragging=false; private int lastSheetLayoutVariant=-1;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=334;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -156,14 +156,14 @@ public class MainActivity extends Activity {
             return true;
         });
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.8f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
-        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(51),dp(44)));
-        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(44),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
+        followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(46),dp(44)));
+        historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(39),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
         bubbleBtn=button("◎");bubbleBtn.setTextSize(18);bubbleBtn.setContentDescription("Burbuja flotante: disponible al minimizar, aun sin jornada, sin GPS");bubbleBtn.setOnClickListener(v->{
             if(!Settings.canDrawOverlays(this))openBubblePermission();
             else showBubbleDiagnostics();
         });
-        bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(40),dp(44));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
-        maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(40),dp(44));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
+        bubbleBtn.setOnLongClickListener(v->{showBubbleDiagnostics();return true;});LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(37),dp(44));bp.setMargins(dp(3),0,0,0);top.addView(bubbleBtn,bp);
+        maintenanceBtn=button("☰");maintenanceBtn.setTextSize(19);maintenanceBtn.setContentDescription("Menú principal: mapa, Traslados, historial, recordatorios y mantenimiento");maintenanceBtn.setBackground(headerButtonGradient(GOLD,Color.argb(48,224,193,111)));maintenanceBtn.setOnClickListener(this::showMainMenu);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(39),dp(44));mp.setMargins(dp(3),0,0,0);top.addView(maintenanceBtn,mp);
         FrameLayout.LayoutParams topLp=new FrameLayout.LayoutParams(-1,dp(69),Gravity.TOP);topLp.setMargins(dp(10),dp(8),dp(10),0);root.addView(top,topLp);
          // A foreground tap can reliably open system Settings on Android 16.
          // Show a visible action when permission has not been granted yet.
@@ -1241,7 +1241,14 @@ public class MainActivity extends Activity {
     private int maxSheetHeightDp(){return sheetHeightDp(maxSheetState());}
     private void setSheetHeightPx(int heightPx){if(bottomSheet==null)return;FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();lp.height=Math.max(dp(SHEET_PEEK_DP),Math.min(dp(maxSheetHeightDp()),heightPx));bottomSheet.setLayoutParams(lp);}
     private void applySheetVisibility(int state){if(bottomSheet==null)return;View head=bottomSheet.findViewWithTag("sheet_head"),meta=bottomSheet.findViewWithTag("sheet_meta"),strip=bottomSheet.findViewWithTag("sheet_shift_strip"),detail=bottomSheet.findViewWithTag("sheet_detail"),metrics=bottomSheet.findViewWithTag("sheet_metrics"),action=bottomSheet.findViewWithTag("sheet_action");boolean peek=state<=0;if(head!=null)head.setVisibility(peek?View.GONE:View.VISIBLE);if(meta!=null)meta.setVisibility(peek?View.GONE:View.VISIBLE);if(strip!=null)strip.setVisibility(peek?View.GONE:View.VISIBLE);if(detail!=null)detail.setVisibility(state>=2?View.VISIBLE:View.GONE);if(metrics!=null)metrics.setVisibility(state>=2?View.VISIBLE:View.GONE);if(action!=null)action.setVisibility(peek?View.GONE:View.VISIBLE);if(endShiftAction!=null)endShiftAction.setVisibility(!peek&&shiftActive&&!tripActive?View.VISIBLE:View.GONE);if(sheetChevron!=null)sheetChevron.setText(state>=2?"⌄":"⌃");}
-    private void updateSheetContentVisibility(){applySheetVisibility(sheetState);setSheetHeightPx(dp(sheetHeightDp(sheetState)));}
+    private void updateSheetContentVisibility(){
+        applySheetVisibility(sheetState);
+        int variant=shiftActive&&!tripActive?1:0;
+        if(variant!=lastSheetLayoutVariant){
+            lastSheetLayoutVariant=variant;
+            if(!sheetDragging)setSheetHeightPx(dp(sheetHeightDp(sheetState)));
+        }
+    }
     private void previewSheetVisibilityForHeight(int heightPx){int low=(dp(SHEET_PEEK_DP)+dp(SHEET_MID_DP))/2;if(maxSheetState()<2){applySheetVisibility(heightPx<low?0:1);return;}int high=(dp(SHEET_MID_DP)+dp(SHEET_FULL_DP))/2;applySheetVisibility(heightPx<low?0:(heightPx<high?1:2));}
     private void animateSheetHeight(int targetPx){if(bottomSheet==null)return;int start=bottomSheet.getLayoutParams().height;if(start==targetPx){setSheetHeightPx(targetPx);return;}android.animation.ValueAnimator a=android.animation.ValueAnimator.ofInt(start,targetPx);a.setDuration(220);a.setInterpolator(new android.view.animation.DecelerateInterpolator());a.addUpdateListener(x->setSheetHeightPx((Integer)x.getAnimatedValue()));a.start();}
     private void setSheetState(int state,boolean animate){if(bottomSheet==null)return;sheetState=Math.max(0,Math.min(maxSheetState(),state));applySheetVisibility(sheetState);int target=dp(sheetHeightDp(sheetState));if(animate)animateSheetHeight(target);else setSheetHeightPx(target);getSharedPreferences("ui_prefs",MODE_PRIVATE).edit().putInt("dashboard_sheet_state_r13",sheetState).apply();}
