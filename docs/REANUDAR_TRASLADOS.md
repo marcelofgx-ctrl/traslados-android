@@ -1,12 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
-## Mapa Trayectos R25.20 — círculo expandible, deslizador de jornada, zona legible (14/10/2026, EN VALIDACIÓN)
+## Mapa Trayectos R25.20 — APK PUBLICADA Y FIRMADA (14/10/2026 15:02 UYT)
 
 - Pedido desde capturas reales Samsung 14:20-14:21 UYT. Dejar la cartografía clara de R25.19 y la traza verde jade; recuperar el estilo de gesto deslizante para fin de jornada, eliminando el cuadrado de 36×34 px/dp que se confundía con ejecución directa. La zona Shangrilá del encabezado era demasiado pequeña.
 - Rama `feature/mapa-r25-20-circulo-deslizante-jornada-zona`: `MainActivity` muestra un círculo `⇠` de 44dp con contorno champagne, visible **solo con jornada activa y sin viaje**. Al tocarlo despliega en estado operativo un rail secundario `DESLIZAR ← FINALIZAR JORNADA` (modo reverse desde derecha hacia izquierda). Tocar círculo **no cierra** jornada; deslizar exige todavía diálogo confirmatorio y `ShiftEndPolicy` más guardas reales de TrackingService. Nuevo toque `×` colapsa el rail. El deslizador principal de inicio/viaje/recogida/parada/finalizar queda separado. Durante viaje no hay opción de fin jornada.
 - Mantener **tres alturas reales** (compacta 86dp, operativa 246dp, extendida 349dp, o +70dp temporalmente cuando se despliega el fin de jornada), con área útil del mapa preservada. Tocar el círculo desde la vista compacta abre la vista operativa con rail; no cerrar por error.
 - Zona superior con Manrope nativo más grande (13.4sp), champagne luminoso, autoajuste sin recortes, sombreado leve, contenido accesible dinámico.
-- Versión prevista **R25.20/versionCode 72**. Pendiente QA modular, imágenes Android reales, RELEASE firmada, SHA y descarga verificable. Nunca sobrescribir R25.19, ni tocar Supabase, web v69, Conductor o DB.
+- **RELEASE SUCCESS** [#38611541777](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38611541777) a las **15:02 UYT**. R25.20 / `versionCode=72`, firmada con v2 y un firmante, APK `web-pasajero/downloads/mapa-trayectos-r25.20.apk`, commit de publicación `aaacbb241ae`, commit de código PR #92 `889ea339c3f`. SHA-256 **`bdfe01e603560bbaf5408c0a44a02e1a7fed2a5241e923d91453672cc65435ee`**, idéntico tras descargar el artefacto oficial de GitHub Actions a `/mnt/data/mapa-trayectos-r25.20.apk` (52.661.587 bytes). R25.19 permanece intacta con su propio checksum. Descargar e instalar encima sin desinstalar. No hubo cambios en Supabase, web v69, Conductor ni DB.
+- **Pruebas**: CI modular [SUCCESS #38609937585](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38609937585). Validación táctil automatizada usa círculo real a la izquierda de chevron a partir de bounds accesibles, comprueba que `shift_active` sigue true y captura tres estados. La captura expandida real del emulador ya fue inspeccionada: muestra dos sliders independientes y texto de zona legible; en primer intento job #38609937496 falló solo porque el criterio de brillo medía el panel oscuro como mapa claro (mapa visiblemente claro en la parte superior). Se corrigió ese criterio en PR #92 y corre validación final [#38611452545](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38611452545). Prueba física en Samsung pendiente.
+
 
 
 
