@@ -38,7 +38,8 @@ public class MainActivity extends Activity {
     private TextView zoneText,modeText,distanceText,elapsedText,movingText,stoppedText,idleText,gpsText,sheetMetaText,sheetChevron,shiftStripText,shiftKmText,shiftTripsText,secondMetricLabel,thirdMetricLabel,fourthMetricLabel;
     private Button historyBtn,followBtn,bubbleBtn,maintenanceBtn;
     private Boolean lastBubblePermissionUi=null;
-    private TextView floatingAccessBanner;
+    private TextView floatingAccessBanner,tripSourceBadge;
+    private String selectedTripPlatform="";
     private SpeedGaugeView speedGauge; private CompassView compassView;
     private MetricIconView thirdMetricIcon,fourthMetricIcon;
     private SlideActionView slider; private TextView endShiftAction;
@@ -130,7 +131,7 @@ public class MainActivity extends Activity {
         float shown=previewMoving?candidate:0f;if(stationaryGeometry&&candidate<13f)shown=0f;if(shown<3f)shown=0f;previewLastLocation=new Location(loc);previewLastTs=ts;previewLastSpeed=shown;currentSpeedKmh=shown;zone=ZoneResolver.resolve(loc.getLatitude(),loc.getLongitude());updateDriver(loc.getLatitude(),loc.getLongitude(),loc.hasBearing()&&shown>=5f?loc.getBearing():lastBearing,true);speedGauge.setSpeed(shown);zoneText.setText(zone);setGpsBadge(accuracy,0);
     };
 
-    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);shiftPaused=live.getBoolean("shift_paused",false);shiftPauseMs=live.getLong("total_pause_ms",0);tripActive=live.getBoolean("trip_active",false);stopActive=live.getBoolean("stop_active",false);tripType=live.getString("trip_type","other");tripStage=live.getString("trip_stage",tripActive?"onboard":"none");pickupAt=live.getLong("pickup_at",0);stopStarted=live.getLong("stop_started",0);Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
+    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=live.getBoolean("shift_active",false);shiftPaused=live.getBoolean("shift_paused",false);shiftPauseMs=live.getLong("total_pause_ms",0);tripActive=live.getBoolean("trip_active",false);stopActive=live.getBoolean("stop_active",false);tripType=live.getString("trip_type","other");selectedTripPlatform=TripPlatformChoice.canonical(getSharedPreferences("ui_prefs",MODE_PRIVATE).getString("service_selected_platform",""));tripStage=live.getString("trip_stage",tripActive?"onboard":"none");pickupAt=live.getLong("pickup_at",0);stopStarted=live.getLong("stop_started",0);Api.init(this);MapLibre.getInstance(this);buildUi(b);requestNeededPermissions();new Thread(()->{TelemetryQuality.repairHistoricalMaxima(getApplicationContext());Api.syncPendingAsync();},"repair-telemetry").start();}
 
     private void buildUi(Bundle b){
         FrameLayout root=new FrameLayout(this);rootFrame=root;root.setBackgroundColor(BG);mapView=new MapView(this);mapView.onCreate(b);root.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
@@ -155,6 +156,9 @@ public class MainActivity extends Activity {
                 }).show();
             return true;
         });
+        tripSourceBadge=brand;
+        brand.setOnClickListener(v->chooseUpcomingTripPlatform());
+        refreshPlatformBadge();
         LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,10.8f,CHAMPAGNE,true);zoneText.setSingleLine(true);labels.addView(title);labels.addView(zoneText);top.addView(labels,new LinearLayout.LayoutParams(0,-1,1));
         followBtn=button("SEGUIR");followBtn.setBackground(headerButtonGradient(GOLD,Color.argb(62,224,193,111)));followBtn.setSingleLine(true);followBtn.setMaxLines(1);followBtn.setAutoSizeTextTypeUniformWithConfiguration(8,11,1,android.util.TypedValue.COMPLEX_UNIT_SP);followBtn.setMinWidth(0);followBtn.setMinimumWidth(0);followBtn.setPadding(dp(2),0,dp(2),0);followBtn.setOnClickListener(v->{follow=!follow;if(follow){followBtn.setText("SEGUIR");recenter();}else{followBtn.setText("LIBRE");northUpFreeMode();}});top.addView(followBtn,new LinearLayout.LayoutParams(dp(53),dp(44)));
         historyBtn=button("HIST.");historyBtn.setBackground(headerButtonGradient(GOLD,Color.argb(72,224,193,111)));historyBtn.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(39),dp(44));hp.setMargins(dp(3),0,0,0);top.addView(historyBtn,hp);
@@ -387,7 +391,18 @@ public class MainActivity extends Activity {
     private void performSliderAction(){
         if(!shiftActive){if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0))maybeOfferBubblePermission();return;}
         if(shiftPaused){sendAction(TrackingService.ACTION_RESUME_SHIFT,null,null,0);return;}
-        if(!tripActive){TripFlowDialogs.chooseTripType(this,type->sendAction(TrackingService.ACTION_START_TRIP,type,null,0));return;}
+        if(!tripActive){
+            if(!TripPlatformChoice.shouldPrompt(selectedTripPlatform)){
+                sendAction(TrackingService.ACTION_START_TRIP,selectedTripPlatform,null,0);
+            }else{
+                TripFlowDialogs.chooseTripType(this,type->{
+                    if(tripActive||getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("trip_active",false))return;
+                    rememberUpcomingTripPlatform(type);
+                    sendAction(TrackingService.ACTION_START_TRIP,selectedTripPlatform,null,0);
+                });
+            }
+            return;
+        }
         if("to_pickup".equals(tripStage)){sendAction(TrackingService.ACTION_PICKUP_PASSENGER,null,null,0);return;}
         if(stopActive){sendAction(TrackingService.ACTION_END_STOP,null,null,0);return;}
         TripFlowDialogs.closeTrip(this,tripType,(status,amount)->sendAction(TrackingService.ACTION_STOP_TRIP,null,status,amount));
@@ -403,6 +418,7 @@ public class MainActivity extends Activity {
         boolean hasLoc=i.getBooleanExtra("has_location",false);
         if(hasLoc){double lat=i.getDoubleExtra("lat",0),lon=i.getDoubleExtra("lon",0);float bearing=i.getFloatExtra("bearing",0),speed=i.getFloatExtra("speed",0),accuracy=i.getFloatExtra("accuracy",0);long age=i.getLongExtra("location_age_ms",0);if(age>SPEED_UI_STALE_MS||speed<3f)speed=0f;currentSpeedKmh=speed;speedGauge.setSpeed(speed);setGpsBadge(accuracy,age);updateDriver(lat,lon,bearing,true);if(tripActive)addRoutePoint(lat,lon);}
         if(!tripActive&&(oldTrip||!route.isEmpty()||routeEnded)){clearActiveRoute();if(oldTrip)Toast.makeText(this,"✓ Viaje guardado · mapa limpio",Toast.LENGTH_SHORT).show();}
+        refreshPlatformBadge();
         if(tripActive){
             if(!justStarted&&!tripId.equals(loadedTripId))loadRoute(tripId);
             long now=System.currentTimeMillis();if(now-lastRouteDbSyncAt>=3500L){lastRouteDbSyncAt=now;reconcileRouteFromDb(tripId);}
@@ -510,6 +526,51 @@ public class MainActivity extends Activity {
                 android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         modeText.setText(span);
+    }
+
+    /** Our own header selector, not the floating icons owned by Uber/Cabify. */
+    private void chooseUpcomingTripPlatform(){
+        boolean recording=tripActive||getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("trip_active",false);
+        if(recording){
+            new AlertDialog.Builder(this).setTitle("Servicio en curso")
+                .setMessage("Este viaje está registrado como "+TripPlatformChoice.display(tripType)+
+                    ". Su plataforma no puede modificarse hasta que finalices el servicio.")
+                .setPositiveButton("ENTENDIDO",null).show();
+            return;
+        }
+        TripFlowDialogs.chooseTripType(this,this::rememberUpcomingTripPlatform);
+    }
+
+    private void rememberUpcomingTripPlatform(String platform){
+        if(tripActive||getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("trip_active",false)){
+            Toast.makeText(this,"Terminá el viaje antes de cambiar de plataforma",Toast.LENGTH_LONG).show();
+            return;
+        }
+        String normalized=TripPlatformChoice.canonical(platform);
+        if(normalized.isEmpty())return;
+        selectedTripPlatform=normalized;
+        getSharedPreferences("ui_prefs",MODE_PRIVATE).edit()
+            .putString("service_selected_platform",selectedTripPlatform).apply();
+        refreshPlatformBadge();
+        Toast.makeText(this,"Próximo servicio: "+TripPlatformChoice.display(normalized),
+            Toast.LENGTH_SHORT).show();
+    }
+
+    private void refreshPlatformBadge(){
+        if(tripSourceBadge==null)return;
+        String shown=TripPlatformChoice.forBadge(selectedTripPlatform,tripActive,tripType);
+        int rim="CABIFY".equals(shown)?Color.rgb(185,137,241):
+            "PERSONAL".equals(shown)?Color.rgb(94,221,197):
+            "OTRO".equals(shown)?Color.rgb(218,181,123):CHAMPAGNE;
+        tripSourceBadge.setText(shown+"\\n➜".replace("\\n","\\n"));
+        tripSourceBadge.setMaxLines(2);
+        tripSourceBadge.setAutoSizeTextTypeUniformWithConfiguration(
+            8,14,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        tripSourceBadge.setBackground(premiumGradient(Color.rgb(0,5,11),
+            Color.rgb(1,17,23),rim,30f,1.6f));
+        tripSourceBadge.setContentDescription((tripActive?"Servicio activo: ":"Próximo servicio: ")+
+            shown+". Tocá para "+(tripActive?"ver la plataforma registrada":"elegir plataforma")+
+            ". Mantener pulsado: cerrar Mapa Trayectos si no hay jornada.");
     }
 
     private String typeLabel(String s){if("uber".equals(s))return "UBER";if("cabify".equals(s))return "CABIFY";if("personal".equals(s))return "PERSONAL";return "OTRO";}
@@ -1541,7 +1602,7 @@ public class MainActivity extends Activity {
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
             sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
         else stopService(new Intent(this,TrackingService.class));
-        startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();updateUi();
+        startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();}
     @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
