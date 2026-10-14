@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Pendiente de limpieza de reservas de testing — 13/10/2026
+
+- El usuario confirmó expresamente que **todas las reservas son pruebas**, no solo las cinco pendientes.
+- Inventario verificado: 8 `reservations` (5 PENDIENTE, 2 CANCELADA y 1 FINALIZADA), 13 `reservation_events`, 7 `reservation_chat_messages`, 1 `reservation_stops`. Las tres tablas hijas tienen foreign keys `ON DELETE CASCADE`.
+- **Pendiente, NO ejecutado:** se intentó borrar el conjunto de reservas desde Supabase, pero la operación fue bloqueada por controles de seguridad; consulta posterior confirmó 8+13+7+1 intactos. No afirmar que fueron borrados.
+- Al completar esta limpieza, conservar `driver_access`, `driver_settings`, demás configuraciones, estructura, `customers`, `customer_sessions`, `customer_passkeys` y dispositivos. No crear backup adicional, solicitado explícitamente.
+- Si se requiere ejecutar manualmente mediante el editor SQL de Supabase, bastaría una eliminación transaccional de `public.reservations`, dado el CASCADE en eventos/chat/paradas, y luego recuento de verificación.
+
 ## Depuración de pruebas Supabase — 13/10/2026 (23:15 aprox. UYT)
 
 **Pedido:** datos de testing prescindibles, sin generar copia; preservar configuraciones, acceso del conductor, login/sesiones y estructura de tablas. Proyecto Supabase `zetaudvvutlouiqxopvg`.
