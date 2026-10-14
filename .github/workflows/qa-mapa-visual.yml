@@ -84,6 +84,11 @@ jobs:
               header=im.crop((int(w*.12),int(h*.045),int(w*.85),int(h*.12)))
               hud=sum(ImageStat.Stat(header).mean)/3
               assert hud<155,(p,'cockpit lost its petroleum contrast',hud)
+              map_window=im.crop((int(w*.2),int(h*.38),int(w*.8),int(h*.60)))
+              map_mean=sum(ImageStat.Stat(map_window).mean)/3
+              assert map_mean>135,(p,'light map is missing or tiles did not load',map_mean)
+              assert map_mean>hud+45,(p,'insufficient contrast between map and HUD',map_mean,hud)
+              print('Daylight map:',round(map_mean,1),'Petroleum HUD:',round(hud,1))
               # The script checks Android view hierarchy for actual system modals.
               # Never reject a legitimate bright map road/vehicle pixel.
               images.append(im)
