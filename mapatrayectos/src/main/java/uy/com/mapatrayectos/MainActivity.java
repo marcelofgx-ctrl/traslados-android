@@ -281,7 +281,7 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams closeLp=new FrameLayout.LayoutParams(-1,dp(61));
         closeLp.setMargins(dp(1),0,dp(1),0);closeWrap.addView(endShiftSlider,closeLp);
         LinearLayout.LayoutParams closeWrapLp=new LinearLayout.LayoutParams(-1,dp(70));
-        closeWrapLp.setMargins(0,dp(4),0,0);bottomSheet.addView(closeWrap,closeWrapLp);
+        closeWrapLp.setMargins(0,0,0,0);bottomSheet.addView(closeWrap,closeWrapLp);
         closeWrap.setVisibility(View.GONE);
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
