@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.16 — círculo de cabecera como selector de plataforma (14/10/2026)
+
+- Propuesta aceptada: los globitos superpuestos de Uber/Cabify son ventanas de otras apps y **no deben manipularse**. El círculo propio de cabecera, antes rotulado estáticamente Uber, **no debe indicar falsamente Uber** si el conductor realiza otro servicio.
+- Ahora tocar el círculo permite marcar Uber, Cabify, Personal u Otro antes de iniciar el próximo viaje. Se conserva en preferencias locales `ui_prefs.service_selected_platform`, sin modificar `tracking_state` ni parámetros de Supabase. Primera instalación muestra `ELEGIR`; no se inventa una plataforma.
+- El deslizador para iniciar servicio usa la plataforma ya elegida sin preguntar otra vez; sin elección previa, se muestra el selector habitual y el usuario escoge. Al iniciarse, el servicio guarda el tipo real de viaje en SQLite/Supabase. Durante el viaje, el círculo muestra el tipo real registrado y no permite alterarlo hasta finalizar, previniendo historia inconsistente. Pulsación larga del círculo sigue permitiendo el cierre seguro de Mapa cuando no hay jornada.
+- R25.16 code68 propuesta, sin cambios en GPS, rutas, globito externo, seguridad de jornada, contabilidad ni flujo de etapas. Tests `TripPlatformChoiceTest` para selección ausente, 4 categorías y prevalencia de tipo registrado sobre el planificado. Confirmar CI + firma y publicar release antes de comunicar APK disponible.
+
+
+
 ## Estado PUBLICADO — Mapa Trayectos R25.15, 14/10/2026 ~10:05 UYT
 
 - PR #86 fusionado en `main` mediante commit `93fcba7afe70a98883e38f02759e0ba3b8eae13d`. Corrección de aserción obsoleta de gradiente en CI commit `1c42bdebe1e5db2aad059273ae029433e7998f9e`.
