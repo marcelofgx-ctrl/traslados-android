@@ -6,8 +6,8 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 | Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |
 |---|---|---|---|
-| Pasajero PWA | v69 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 14/10/2026 13:49 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38600869823) · commit 9dc8dad51 |
-| Cliente Premium | 15.0-Premium · code 203 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
+| Pasajero PWA | v70 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 14/10/2026 15:08 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38612219775) · commit a9ad5a6fe |
+| Cliente Premium | 16.0-Premium · code 204 | **NO PUBLICADA EN REPOSITORIO** | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.20 · code 72 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.20.apk) | [SUCCESS · 14/10/2026 15:02 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38611541777) · commit 889ea339c |
 
@@ -17,7 +17,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 15:02 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38611541777) · commit 889ea339c · Build Mapa Trayectos RELEASE.
-**Último cambio de código verificado:** 14/10/2026 15:02 UYT · [Web pasajero / aaacbb241a](https://github.com/marcelofgx-ctrl/traslados-android/commit/aaacbb241ae577a286532978bb742315ec3de71e) — Publicar Mapa Trayectos R25.20 APK firmada.
+**Último cambio de código verificado:** 14/10/2026 16:06 UYT · [Web pasajero / a61562254d](https://github.com/marcelofgx-ctrl/traslados-android/commit/a61562254df937f15cd631b9af55a0260d23d976) — Pasajeros PWA v70 y Cliente Premium v16: registro seguro de disponibilidad y ETA.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
