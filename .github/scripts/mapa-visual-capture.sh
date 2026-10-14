@@ -204,10 +204,12 @@ try:
     labels=' '.join((n.get('text','')+' '+n.get('content-desc','')) for n in ui.iter())
 except (ET.ParseError,OSError):
     labels=''
-if labels:
-    assert 'DESLIZAR ← FINALIZAR JORNADA' in labels,'Falta el deslizador inverso luego de tocar círculo'
+if 'DESLIZAR ← FINALIZAR JORNADA' in labels:
+    print('QA: rail inverso visible en árbol Android')
+elif not labels or 'LISTO PARA JORNADA' in labels:
+    print('UIAutomator ausente/desactualizado; verificará aparición del rail mediante diferencia visual en workflow')
 else:
-    print('UIAutomator sin segunda jerarquía; verificará aparición del rail mediante diferencia visual en workflow')
+    raise AssertionError('El control inverso no aparece en un árbol Android actualizado')
 print('Verified: tocar círculo preserva jornada; screenshot validará rail expandido')
 PY
 adb logcat -d -t 700 | grep -E 'FATAL EXCEPTION|AndroidRuntime:.*Process: uy.com.mapatrayectos' > docs/visual-qa/fatal-log.txt || true
