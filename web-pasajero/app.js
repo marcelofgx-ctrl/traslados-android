@@ -175,6 +175,7 @@ let lastVerifiedEtaResult=null;
 let etaRetryNotBefore=0,etaRetryIdentity="";
 let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
+let lastPickupPaintSignature="";
 function pickupIdentityKey(){
   if(selectedPickupMode==="schedule"||!record.origin)return "";
   const {lat,lng}=record.origin;
@@ -201,6 +202,13 @@ function forgetPickupEta(){
 function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estimateNote="",checked="",phase="idle"}){
   const host=$("pickup-presence");
   if(host){host.dataset.presence=presence;host.dataset.phase=phase;}
+  // Only transitions enter the persisted, allowlisted diagnostics. No text,
+  // coordinates, URL, tokens, names, or other passenger content is recorded.
+  const sig=presence+"|"+phase+"|"+(Number.isFinite(km)&&Number.isFinite(minutes)?"eta":"no_eta");
+  if(sig!==lastPickupPaintSignature){
+    lastPickupPaintSignature=sig;
+    window.TrasladosPickupHealth?.recordContext?.("card",phase,phase,authReady()?"session":"guest");
+  }
 /* Recorrido decorativo sin leyenda redundante; la información operativa
    * sigue en el título, el subtítulo y las métricas verificadas. */
   const main=$("pickup-presence-title");
@@ -240,7 +248,9 @@ async function publicDriverAvailability(force=false){
   publicPresencePending=(async()=>{
     const started=Date.now();
     const v=await window.TrasladosETA.availability({api:API,publishableKey:KEY});
-    window.TrasladosPickupHealth?.record?.("availability",v?(v.available?"available":"unavailable"):"network_error",Date.now()-started);
+    window.TrasladosPickupHealth?.recordContext?.("availability",
+      v?(v.available?"available":"unavailable"):"network_error",
+      v?(v.available?"ready":"blocked"):"issue",authReady()?"session":"guest",Date.now()-started);
     if(!v)return null;
     publicPresenceCache=v;
     publicPresenceAt=Date.now();
@@ -295,9 +305,11 @@ async function refreshPickupPresence(force=false){
   // checkedAt refleja la consulta al servidor, NO una lectura nueva del GPS.
   // Un estado negativo no identifica por sí solo si faltan datos de ubicación,
   // red, consentimiento u horarios. Evitar un falso diagnóstico al pasajero.
-  const checkedLabel=(elapsedCheck===null?"Estado reciente":elapsedCheck<25?"Actualizado ahora":
-    elapsedCheck<60?"Actualizado hace "+elapsedCheck+" s":"Actualizado hace "+Math.floor(elapsedCheck/60)+" min")+
-    " · Se actualiza solo";
+  const checkedLabel=(elapsedCheck===null?"Disponibilidad consultada":
+    elapsedCheck<25?"Disponibilidad comprobada ahora":
+    elapsedCheck<60?"Disponibilidad consultada hace "+elapsedCheck+" s":
+    "Disponibilidad consultada hace "+Math.floor(elapsedCheck/60)+" min")+
+    " · La llegada se calcula por separado";
   if(!driver.available){
     forgetPickupEta();
     // Backend confirms only a combined public yes/no. Its cause is private and
@@ -348,7 +360,10 @@ async function refreshPickupPresence(force=false){
   const cooling=etaRetryIdentity===identity&&Date.now()<etaRetryNotBefore;
   const cadence=key===lastPickupEtaKey&&Date.now()-lastPickupEtaAt<etaInterval;
   if(cooling||cadence){
-    showWaiting(lastEtaFailureKey===key?lastEtaFailureMessage:"Actualizando la llegada…");
+    // A failed ETA is not a confirmed driver arrival. Keep its reason visible
+    // during the approved cooldown instead of looking like endless loading.
+    showWaiting(lastEtaFailureKey===key?lastEtaFailureMessage:
+      cooling?"Reintentaremos el cálculo de llegada en breve.":"Actualizando la llegada…");
     return;
   }
   lastPickupEtaKey=key;lastPickupEtaAt=Date.now();
@@ -361,7 +376,9 @@ async function refreshPickupPresence(force=false){
     api:API,publishableKey:KEY,originLat:lat,originLng:lng,
     sessionToken:signedIn?session.token:null
   }).then(data=>{
-    window.TrasladosPickupHealth?.record?.("eta",data?.available?"success":String(data?.reason||"other"),Date.now()-etaStart);
+    window.TrasladosPickupHealth?.recordContext?.("eta",
+      data?.available?"success":String(data?.reason||"other"),
+      data?.available?"ready":"issue",signedIn?"session":"guest",Date.now()-etaStart);
     if(!etaResultStillApplies(key))return;
     if(data?.available&&Number.isFinite(data.distanceKm)&&data.distanceKm>=0
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
@@ -393,7 +410,9 @@ async function refreshPickupPresence(force=false){
         etaRetryNotBefore=Math.max(etaRetryNotBefore,Date.now()+90000);
       }
       const text=reason==="rate_limited"?"La llegada se actualizará en breve.":
-        reason==="login_required"?"Iniciá sesión para consultar la llegada.":
+        reason==="login_required"?(signedIn
+          ?"La sesión no permitió calcular la llegada. Revisá Mi cuenta."
+          :"La llegada para visitantes no está disponible ahora. Reintentaremos."):
         reason==="route_unavailable"?"Por ahora no hay tiempo estimado de llegada. Reintentaremos.":
         "No pudimos calcular la llegada. Reintentaremos.";
       lastEtaFailureKey=key;lastEtaFailureMessage=text;
@@ -401,7 +420,8 @@ async function refreshPickupPresence(force=false){
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }
   }).catch(()=>{
-    window.TrasladosPickupHealth?.record?.("eta","network_error",Date.now()-etaStart);
+    window.TrasladosPickupHealth?.recordContext?.("eta","network_error","issue",
+      signedIn?"session":"guest",Date.now()-etaStart);
     if(!etaResultStillApplies(key))return;
     lastEtaFailureKey=key;lastEtaFailureMessage="No pudimos calcular la llegada. Reintentaremos.";
     showWaiting(lastEtaFailureMessage);
@@ -952,6 +972,38 @@ function renderAccount(){
     $("person-name").value="";$("person-phone").value="";
     syncAuthUI();tell("Sesión cerrada");
   });
+}
+/** Account-only support UI. Diagnostics live on this device and never leave
+ * it except by explicit user copy. A readonly text box remains as fallback
+ * for Android WebView versions without clipboard API permissions. */
+function refreshPickupDiagnosticsPreview(){
+  const box=$("pickup-diagnostics-preview");
+  if(!box)return;
+  const rows=window.TrasladosPickupHealth?.summary?.()||[];
+  box.value=window.TrasladosPickupHealth?.exportSafe?.()||
+    '{"events":[]}';
+  const count=$("pickup-diagnostics-count");
+  if(count)count.textContent=rows.length+" evento(s) conservados por hasta 24 horas en este dispositivo.";
+}
+async function copyPickupDiagnostics(){
+  refreshPickupDiagnosticsPreview();
+  const txt=$("pickup-diagnostics-preview").value;
+  let copied=false;
+  try{
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(txt);
+      copied=true;
+    }
+  }catch{}
+  if(!copied){
+    try{
+      const field=$("pickup-diagnostics-preview");
+      field.focus();field.select();
+      copied=Boolean(document.execCommand("copy"));
+    }catch{}
+  }
+  tell(copied?"Diagnóstico técnico copiado, sin datos personales.":
+    "Seleccioná el contenido para copiar el diagnóstico.");
 }
 function setAccountMode(register){
   registerMode=register;
@@ -1781,6 +1833,15 @@ function init(){
   });
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>shiftView(tab.dataset.view));
   document.querySelectorAll("[data-open-login]").forEach(x=>x.addEventListener("click",()=>shiftView("cuenta")));
+  $("pickup-diagnostics").addEventListener("toggle",()=>{
+    if($("pickup-diagnostics").open)refreshPickupDiagnosticsPreview();
+  });
+  $("pickup-diagnostics-copy").addEventListener("click",()=>void copyPickupDiagnostics());
+  $("pickup-diagnostics-clear").addEventListener("click",()=>{
+    window.TrasladosPickupHealth?.clear?.();
+    refreshPickupDiagnosticsPreview();
+    tell("Diagnóstico local borrado.");
+  });
   document.querySelectorAll("[data-when]").forEach(b=>b.addEventListener("click",()=>setWhen(b.dataset.when)));
   // Bounded refresh only while a foreground visitor requests an urgent pickup.
   pickupEtaTimer=setInterval(()=>{
