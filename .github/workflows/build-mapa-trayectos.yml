@@ -49,6 +49,16 @@ jobs:
           test "$(stat -c %s mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3)" -eq 33062
           file mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
 
+      - name: Embed Manrope premium font, licensed and offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+          test -s mapatrayectos/assets/OFL-Manrope.txt
+          file mapatrayectos/src/main/assets/manrope.ttf
+
       - name: Java 17
         uses: actions/setup-java@v4
         with:
@@ -103,8 +113,10 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
-          grep -q "versionName '0.1-R25.11'" mapatrayectos/build.gradle
-          grep -q "versionCode 63" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R25.12'" mapatrayectos/build.gradle
+          grep -q "versionCode 64" mapatrayectos/build.gradle
+          grep -q 'manrope.ttf' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'SHEET_FULL_DP=374' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class MetricIconView" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "brand.setOnLongClickListener" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "mapCloseRequested" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -137,7 +149,7 @@ jobs:
           test -s conductor/src/main/java/uy/com/traslados/conductor/DemandMapActivity.java
           test -s conductor/src/main/res/raw/reserva_calida.wav
           test -s conductor/src/main/res/raw/viaje_proximo.wav
-          grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=307" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "CHAMPAGNE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'c.drawText("1/2 PARADA"' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "QuickActionsMenu.show" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -179,7 +191,7 @@ jobs:
           test -s sound-status.txt
           grep -q "vibrateDualHalfStop" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "vibrateDualFinish" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "SHEET_MID_DP=290" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "SHEET_MID_DP=307" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "DB_VERSION = 5" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'clearLocalTripHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
           grep -q 'confirmResetDatabase' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -312,7 +324,7 @@ jobs:
           grep -q "STATIONARY_GHOST_KMH=13.0f" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "expireStaleMotion" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "ROUTE_GLOW_LAYER" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q "https://tiles.openfreemap.org/styles/liberty" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "https://tiles.openfreemap.org/styles/dark" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "START_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "END_SOURCE" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "cameraBearing" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
@@ -336,7 +348,7 @@ jobs:
           grep -q "expandedDay=null" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
           grep -q "new Intent(this,HistoryActivity.class)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "class TexturedDrawable" mapatrayectos/src/main/java/uy/com/mapatrayectos/TexturedDrawable.java
-          grep -q "premiumGradient(Color.rgb(4,48,57)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q "premiumGradient(Color.rgb(2,28,38)" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "maxSheetState" mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q "BUBBLE_SHOW_DELAY_MS=320L" mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q "signalTrackingUi(true)" mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryActivity.java
@@ -483,8 +495,8 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
-          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_11_RELEASE.apk
-          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_11_RELEASE.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK" artifacts/Mapa_Trayectos_v0.1_R25_12_RELEASE.apk
+          sha256sum artifacts/Mapa_Trayectos_v0.1_R25_12_RELEASE.apk | tee artifacts/SHA256SUMS.txt
           cp signing.txt artifacts/SIGNING.txt
           cp sound-status.txt artifacts/SOUND_STATUS.txt
           printf '\nR23.1: bubble even without journey; GPS off while idle 2.04 s reminder MP3 embedded; original SHA256 5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0\n' >> artifacts/SOUND_STATUS.txt
@@ -492,9 +504,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-Trayectos-v0.1-R25-11-RELEASE
+          name: Mapa-Trayectos-v0.1-R25-12-RELEASE
           path: |
-            artifacts/Mapa_Trayectos_v0.1_R25_11_RELEASE.apk
+            artifacts/Mapa_Trayectos_v0.1_R25_12_RELEASE.apk
             artifacts/SHA256SUMS.txt
             artifacts/SIGNING.txt
             artifacts/SOUND_STATUS.txt
@@ -510,6 +522,7 @@ jobs:
           (cd web-pasajero/downloads && sha256sum -c MAPA-R24.9-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.9-SHA256SUMS.txt)
           (cd web-pasajero/downloads && sha256sum -c MAPA-R25.10-SHA256SUMS.txt)
+          (cd web-pasajero/downloads && sha256sum -c MAPA-R25.11-SHA256SUMS.txt)
           git config user.name "Traslados Release CI"
           git config user.email "actions@users.noreply.github.com"
           # Always build publication on the latest main. Concurrent docs/Pages
@@ -518,17 +531,17 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             mkdir -p web-pasajero/downloads
-            cp artifacts/Mapa_Trayectos_v0.1_R25_11_RELEASE.apk \
-              web-pasajero/downloads/mapa-trayectos-r25.11.apk
-            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.11.apk > MAPA-R25.11-SHA256SUMS.txt)
-            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.11-SHA256SUMS.txt)
-            git add web-pasajero/downloads/mapa-trayectos-r25.11.apk \
-                    web-pasajero/downloads/MAPA-R25.11-SHA256SUMS.txt
+            cp artifacts/Mapa_Trayectos_v0.1_R25_12_RELEASE.apk \
+              web-pasajero/downloads/mapa-trayectos-r25.12.apk
+            (cd web-pasajero/downloads && sha256sum mapa-trayectos-r25.12.apk > MAPA-R25.12-SHA256SUMS.txt)
+            (cd web-pasajero/downloads && sha256sum -c MAPA-R25.12-SHA256SUMS.txt)
+            git add web-pasajero/downloads/mapa-trayectos-r25.12.apk \
+                    web-pasajero/downloads/MAPA-R25.12-SHA256SUMS.txt
             if git diff --cached --quiet; then
-              echo 'APK Mapa R25.11 ya publicada sin alterar binario'
+              echo 'APK Mapa R25.12 ya publicada sin alterar binario'
               exit 0
             fi
-            git commit -m 'Publicar Mapa Trayectos R25.11 APK firmada'
+            git commit -m 'Publicar Mapa Trayectos R25.12 APK firmada'
             if git push origin HEAD:main; then exit 0; fi
             echo "Publicación concurrente, reintentando sobre main actual (${retry}/5)"
           done

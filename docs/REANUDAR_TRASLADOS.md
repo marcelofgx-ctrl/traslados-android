@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Rediseño visual R25.12 — tercer mockup aprobado (13/10/2026)
+
+- El último mockup (variante 3, petróleo / mapa oscuro / turquesa / oro) es referencia visual de Mapa Trayectos, no sustitución de la aplicación por imagen. Manrope oficial incorporada como fuente local dentro de la APK (licencia OFL), con fallback Android si faltara el recurso.
+- Se adopta OpenFreeMap Dark para el mapa vivo, con vías doradas y agua azul petróleo mediante capas opcionales (sin afectar rutas ni GPS), velocímetro con arco de progreso, cabecera compacta adaptable a Samsung, superficies profundas, borde fino teal/dorado y tipografía jerarquizada con acento para el tipo de servicio.
+- Se refina el deslizador de recogida con gradiente turquesa/verde y flechas; nunca cambia los umbrales de arrastre, haptics ni acciones del viaje. Se conservan brújula, GPS real, globito, notificaciones, Conductor integrado, lógica de jornada, rutas y base.
+- Hoja desplegable ajustada a 307/374dp para evitar cortar el control de recogida en Samsung. APK propuesta R25.12 code64; publicación y firma deben verificarse en CI. El tercer render es inspiración visual y no garantiza que los píxeles de cada tamaño de pantalla sean idénticos. QA Samsung pendiente.
+
+
 ## Mejora R25.11 — prueba real del globito (13/10/2026)
 
 - Se distingue **permiso otorgado** de **globito realmente dibujado** al salir. El indicador de última vista solo se actualiza al mostrar, jamás al ocultar; evita falsos positivos en el diagnóstico.
