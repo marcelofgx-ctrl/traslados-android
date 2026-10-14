@@ -13,6 +13,10 @@ adb emu geo fix -56.084 -34.880 || true
 
 # The Pixel 6 Launcher repeatedly throws an ANR on a busy CI emulator.
 # This process is not used by our app; disable it on this test device only.
+# Quickstep on Google APIs images is AOSP Launcher3, not NexusLauncher.
+# Disable only on this disposable emulator, never on a user's phone.
+adb shell pm list packages | grep -Ei '(launcher|quickstep)' || true
+adb shell pm disable-user --user 0 com.android.launcher3 || true
 adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher || true
 adb shell am start -n "$APP/.MainActivity"
 sleep 14
@@ -59,6 +63,7 @@ PY
   else
     adb shell input keyevent KEYCODE_BACK
   fi
+  adb shell am force-stop com.android.launcher3 || true
   adb shell am force-stop com.google.android.apps.nexuslauncher || true
   adb shell am start -n "$APP/.MainActivity" || true
   sleep 5
