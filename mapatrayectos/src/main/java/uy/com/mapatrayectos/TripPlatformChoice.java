@@ -22,6 +22,12 @@ public final class TripPlatformChoice {
         if("other".equals(v))return "OTRO";
         return "ELEGIR";
     }
+    /** Short, legible label for the fixed 48dp circle; full category remains in TalkBack and panel. */
+    public static String badgeLabel(String planned, boolean tripActive, String recordedTripType){
+        String source=canonical(tripActive?recordedTripType:planned);
+        if("personal".equals(source))return "PERS.";
+        return display(source);
+    }
     public static String forBadge(String planned, boolean tripActive, String recordedTripType){
         return display(tripActive?recordedTripType:planned);
     }

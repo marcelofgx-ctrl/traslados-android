@@ -47,6 +47,18 @@ jobs:
           java -cp /tmp/mapa-system-status SystemStatusPolicyTest
           grep -q 'driver_system_status_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
           grep -q 'SystemStatusActivity' mapatrayectos/src/main/AndroidManifest.xml
+      - name: Platform badge and safe-close regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-platform-test
+          javac -d /tmp/mapa-platform-test \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/TripPlatformChoice.java \
+            mapatrayectos/tests/TripPlatformChoiceTest.java
+          java -cp /tmp/mapa-platform-test TripPlatformChoiceTest
+          grep -q 'CERRAR VIAJE' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
+          grep -q 'amount.setError' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
+          ! grep -q 'if(!"uber".equals(type)&&!"cabify".equals(type))' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripFlowDialogs.java
       - name: Passenger chat integration regression
         shell: bash
         run: |

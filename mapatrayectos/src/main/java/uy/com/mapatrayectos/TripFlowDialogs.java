@@ -20,7 +20,7 @@ public final class TripFlowDialogs {
     public static void chooseTripType(Activity a,StartCallback cb){
         LinearLayout box=baseBox(a);
         TextView title=text(a,"¿CON QUÉ PLATAFORMA?",19,TEXT,true);box.addView(title);
-        TextView sub=text(a,"La selección se aplicará al próximo viaje y quedará registrada en el historial.",12,MUTED,false);box.addView(sub,lp(a,5,12));
+        TextView sub=text(a,"Elegí para tu próximo servicio. Se registrará en el historial al iniciar el viaje.",12,MUTED,false);box.addView(sub,lp(a,5,12));
         AlertDialog dlg=new AlertDialog.Builder(a).setView(box).create();
         addChoice(a,box,"UBER","Viaje de Uber",Color.rgb(28,122,82),()->{dlg.dismiss();cb.onSelected("uber");});
         addChoice(a,box,"CABIFY","Viaje de Cabify",Color.rgb(88,54,126),()->{dlg.dismiss();cb.onSelected("cabify");});
@@ -31,13 +31,33 @@ public final class TripFlowDialogs {
     }
 
     public static void closeTrip(Activity a,String type,CloseCallback cb){
-        if(!"uber".equals(type)&&!"cabify".equals(type)){cb.onClosed("completed",0);return;}
-        LinearLayout box=baseBox(a);String label="uber".equals(type)?"UBER":"CABIFY";
+        // Always confirm; Personal and Otro must not end instantly after a swipe.
+        LinearLayout box=baseBox(a);String label=TripPlatformChoice.display(type);
         TextView title=text(a,"CERRAR VIAJE "+label,19,TEXT,true);box.addView(title);
-        TextView sub=text(a,"Si se completó, podés registrar ahora el importe cobrado.",12,MUTED,false);box.addView(sub,lp(a,5,10));
+        TextView sub=text(a,"Confirmá si se completó o canceló. El importe es opcional; dejalo vacío si no corresponde.",12,MUTED,false);box.addView(sub,lp(a,5,10));
         EditText amount=new EditText(a);amount.setTextColor(TEXT);amount.setHintTextColor(MUTED);amount.setHint("Importe en UYU  ·  ej. 380");amount.setSingleLine(true);amount.setTextSize(18);amount.setPadding(dp(a,14),0,dp(a,14),0);amount.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);amount.setBackground(rounded(a,Color.rgb(11,49,57),16,1,Color.rgb(55,98,107)));box.addView(amount,new LinearLayout.LayoutParams(-1,dp(a,54)));
         AlertDialog dlg=new AlertDialog.Builder(a).setView(box).create();
-        Button completed=button(a,"✓  COMPLETADO",GREEN);completed.setOnClickListener(v->{double value=0;try{String s=amount.getText().toString().trim().replace(',','.');if(!s.isEmpty())value=Double.parseDouble(s);}catch(Exception ignored){}dlg.dismiss();cb.onClosed("completed",Math.max(0,value));});box.addView(completed,lp(a,12,0));
+        Button completed=button(a,"✓  COMPLETADO",GREEN);
+        completed.setOnClickListener(v->{
+            String raw=amount.getText().toString().trim().replace(',','.');
+            double value=0;
+            if(!raw.isEmpty()){
+                try{value=Double.parseDouble(raw);}
+                catch(NumberFormatException invalid){
+                    amount.setError("Ingresá un importe válido");
+                    amount.requestFocus();
+                    return;
+                }
+                if(!Double.isFinite(value)||value<0){
+                    amount.setError("El importe debe ser mayor o igual a cero");
+                    amount.requestFocus();
+                    return;
+                }
+            }
+            dlg.dismiss();
+            cb.onClosed("completed",value);
+        });
+        box.addView(completed,lp(a,12,0));
         Button cancelled=button(a,"×  VIAJE CANCELADO",RED);cancelled.setOnClickListener(v->{dlg.dismiss();cb.onClosed("cancelled",0);});box.addView(cancelled,lp(a,8,0));
         Button back=button(a,"VOLVER AL VIAJE",PANEL);back.setOnClickListener(v->dlg.dismiss());box.addView(back,lp(a,8,0));
         dlg.setOnShowListener(x->{Window w=dlg.getWindow();if(w!=null){w.setBackgroundDrawableResource(android.R.color.transparent);w.setLayout((int)(a.getResources().getDisplayMetrics().widthPixels*.90f),WindowManager.LayoutParams.WRAP_CONTENT);}});dlg.show();
