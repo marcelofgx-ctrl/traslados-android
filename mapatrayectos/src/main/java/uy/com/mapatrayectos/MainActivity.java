@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     private float sheetDownY=0f;
     private int sheetStartHeight=0;
     private boolean sheetDragging=false;
-    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=320;
+    private static final int SHEET_PEEK_DP=34,SHEET_MID_DP=230,SHEET_FULL_DP=330;
     private boolean shiftActive=false,tripActive=false,stopActive=false,shiftPaused=false,follow=true,routeEnded=false;
     private long shiftPauseMs=0;
     private int shiftCompletedTrips=0;
@@ -1575,28 +1575,26 @@ public class MainActivity extends Activity {
         public void setSpeed(float v){speed=v<3f?0f:Math.max(0f,Math.min(199f,v));setContentDescription(String.format(Locale.getDefault(),"Velocidad %.0f kilómetros por hora",speed));invalidate();}
         @Override protected void onDraw(Canvas c){
             super.onDraw(c);
-            float w=getWidth(),h=getHeight(),cx=w/2f,cy=h/2f;
-            float radius=Math.min(w,h)/2f-dpv(2.8f);
+            float w=getWidth(),h=getHeight(),cx=w/2f;
+            RectF surface=new RectF(dpv(1),dpv(1),w-dpv(1),h-dpv(1));
+            float corners=dpv(26);
             p.setStyle(Paint.Style.FILL);
-            p.setShader(new RadialGradient(cx-radius*.35f,cy-radius*.47f,radius*1.6f,
-                    Color.rgb(6,64,70),Color.rgb(2,25,38),Shader.TileMode.CLAMP));
-            c.drawCircle(cx,cy,radius,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dpv(1.25f));
-            p.setColor(Color.argb(240,234,193,99));
-            c.drawCircle(cx,cy,radius,p);
-            RectF arc=new RectF(cx-radius+dpv(10),cy-radius+dpv(10),
-                                cx+radius-dpv(10),cy+radius-dpv(10));
+            p.setShader(new LinearGradient(0,0,w,h,Color.rgb(4,52,62),Color.rgb(1,22,35),Shader.TileMode.CLAMP));
+            c.drawRoundRect(surface,corners,corners,p);p.setShader(null);
+            p.setStrokeWidth(dpv(1.35f));p.setStyle(Paint.Style.STROKE);
+            p.setColor(Color.rgb(244,201,104));c.drawRoundRect(surface,corners,corners,p);
             p.setStrokeCap(Paint.Cap.ROUND);
-            p.setStrokeWidth(dpv(4.2f));p.setColor(Color.argb(125,69,149,154));
-            c.drawArc(arc,149f,242f,false,p);
-            if(speed>0f){
-                p.setColor(Color.rgb(66,231,174));
-                c.drawArc(arc,149f,242f*Math.min(1f,speed/130f),false,p);
-            }
+            RectF arc=new RectF(cx-dpv(39),h*.18f,cx+dpv(39),h*.94f);
+            p.setStrokeWidth(dpv(3.2f));
+            p.setColor(Color.argb(120,51,127,151));c.drawArc(arc,147f,246f,false,p);
+            p.setColor(Color.rgb(51,236,191));
+            c.drawArc(arc,147f,speed<=0?58f:Math.min(246f,58f+188f*speed/130f),false,p);
             p.setStyle(Paint.Style.FILL);
-            drawCentered(c,"VELOCIDAD",7.4f,Color.rgb(201,220,218),cy-radius*.42f,false);
-            drawCentered(c,String.format(Locale.getDefault(),"%.0f",speed),31.5f,Color.WHITE,cy-radius*.01f,true);
-            drawCentered(c,"km/h",10.2f,GOLD,cy+radius*.49f,true);
+            p.setColor(Color.rgb(242,203,114));
+            c.drawRoundRect(new RectF(w*.35f,dpv(7),w*.65f,dpv(8.8f)),dpv(2),dpv(2),p);
+            drawCentered(c,"VELOCIDAD",8.4f,Color.rgb(224,236,235),h*.28f,false);
+            drawCentered(c,String.format(Locale.getDefault(),"%.0f",speed),37f,Color.WHITE,h*.54f,true);
+            drawCentered(c,"km/h",12.1f,GOLD,h*.80f,true);
         }
         private void drawCentered(Canvas c,String s,float sp,int color,float cy,boolean bold){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextAlign(Paint.Align.CENTER);p.setTypeface(bold?boldFace:regularFace);p.setTextSize(sp*getResources().getDisplayMetrics().scaledDensity);Paint.FontMetrics fm=p.getFontMetrics();c.drawText(s,getWidth()/2f,cy-(fm.ascent+fm.descent)/2f,p);}
         private float dpv(float v){return v*getResources().getDisplayMetrics().density;}
