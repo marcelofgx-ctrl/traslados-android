@@ -762,11 +762,11 @@ public class MainActivity extends Activity {
         }
         long elapsed=Math.max(0,shiftMoving+shiftStopped);
         String summary="Tiempo de jornada: "+formatClock(elapsed)
-            +"\\nKilómetros: "+String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0)
-            +"\\nViajes completados: "+shiftCompletedTrips;
+            +"\nKilómetros: "+String.format(Locale.getDefault(),"%.1f km",shiftDistance/1000.0)
+            +"\nViajes completados: "+shiftCompletedTrips;
         new AlertDialog.Builder(this)
             .setTitle("Finalizar jornada")
-            .setMessage(summary+"\\n\\n¿Querés cerrar la jornada y detener su seguimiento GPS? El historial se conserva.")
+            .setMessage(summary+"\n\n¿Querés cerrar la jornada y detener su seguimiento GPS? El historial se conserva.")
             .setNegativeButton("CANCELAR",null)
             .setPositiveButton("FINALIZAR",(dialog,which)->{
                 SharedPreferences fresh=getSharedPreferences("tracking_state",MODE_PRIVATE);
