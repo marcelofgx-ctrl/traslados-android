@@ -100,14 +100,3 @@ jobs:
             docs/visual-qa/fatal-log.txt
             docs/visual-qa/state-after-start.xml
           if-no-files-found: warn
-      - name: Publicar capturas de revisión en esta rama
-        if: always() && github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "Mapa Visual QA"
-          git config user.email "actions@users.noreply.github.com"
-          git add docs/visual-qa/mapa-r25.15-idle.png docs/visual-qa/mapa-r25.15-shift-active.png
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "docs: capturas de QA visual real [skip ci]"
-          git push origin "HEAD:${{ github.head_ref }}"
