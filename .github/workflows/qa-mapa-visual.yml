@@ -73,7 +73,7 @@ jobs:
           python3 - <<'PY'
           from PIL import Image,ImageStat,ImageChops
           from pathlib import Path
-          files=[Path('docs/visual-qa/mapa-preview-'+x+'.png') for x in ('idle','shift-active')]
+          files=[Path('docs/visual-qa/mapa-preview-'+x+'.png') for x in ('idle','shift-active','shift-close-expanded')]
           images=[]
           for p in files:
               im=Image.open(p).convert('RGB')
@@ -97,6 +97,10 @@ jobs:
           strong=sum(diff.histogram()[36:])/(diff.width*diff.height)
           print('Strong pixel difference:',round(strong*100,2),'%')
           assert strong>0.008,'Jornada sin transición visual apreciable'
+          expanded=ImageChops.difference(images[1],images[2]).convert('L')
+          expanded_ratio=sum(expanded.histogram()[35:])/(expanded.width*expanded.height)
+          print('Circular expansion pixel difference:',round(expanded_ratio*100,2),'%')
+          assert expanded_ratio>0.004,'El círculo no produjo cambio visual suficiente'
           PY
       - name: Guardar capturas de previsualización (incluso si falla QA)
         if: always()
@@ -109,4 +113,5 @@ jobs:
             docs/visual-qa/last-window.xml
             docs/visual-qa/fatal-log.txt
             docs/visual-qa/state-after-start.xml
+            docs/visual-qa/state-after-orb.xml
           if-no-files-found: warn
