@@ -19,15 +19,15 @@ assert.deepEqual(entries.map(x=>[x.step,x.outcome,x.latencyMs]),[
 assert.equal(log.length,3);
 assert(!JSON.stringify(entries).includes("abc"));
 assert(entries.every(e=>Object.keys(e).sort().join(",")==="at,latencyMs,outcome,step"));
-for(let i=0;i<40;i++)health.record("availability","available",2);
+for(let i=0;i<70;i++)health.record("availability","available",2);
 assert.equal(health.summary().length,60,"Short, bounded in-memory diagnostic history");
 const html=file("index.html"),css=file("styles.css"),js=file("app.js"),sw=file("sw.js");
 assert(html.includes('id="pickup-route-animation"')&&!html.includes('id="pickup-route-caption"'));
 assert(html.includes('pickup-observability.js?v=2'));
 assert(html.includes("app.js?v=70")&&html.includes("styles.css?v=70"));
 assert(sw.includes("traslados-cliente-pwa-v70")&&sw.includes("pickup-observability.js"));
-assert(js.includes('window.TrasladosPickupHealth?.record?.("availability"'));
-assert(js.includes('window.TrasladosPickupHealth?.record?.("eta"'));
+assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("availability"'));
+assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("eta"'));
 assert(js.includes('presence:"busy",title:"Recogida inmediata sin confirmar"'));
 assert(js.includes('phase:"blocked"')&&js.includes('phase:"checking"'));
 assert(js.includes('phase:"ready"')&&js.includes('phase:"issue"'));
