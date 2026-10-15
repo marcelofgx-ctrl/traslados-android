@@ -133,3 +133,24 @@ Desarrollo **solo en rama draft, sin fusionar a main**.
 **La portada sigue SIN FIDELIDAD EXACTA:** el fondo fotográfico se acercó al lenguaje visual pero no existe aún el automóvil fotográfico aprobado ni composición idéntica. Seguimiento 6–8 no tiene streaming autorizado de posición del conductor; solo estado real y mapa de ruta si las coordenadas están disponibles. Email opcional y consentimiento de guardado requieren contrato claro antes de persistencia.
 
 **Bloqueantes absolutos para merge:** fotografía+composición aprobadas, cartografía confirmada con origen/destino reales, flujos 6–8 finales con backend autorizado, privacidad/email, E2E seguros de inmediata vs programada, chat, matrícula APP-0061, presupuesto, pruebas Samsung y QA de 8 escenas. Publicar solo tras verificación integral. La web pública continúa PWA v74.
+
+
+---
+
+## QA DE OCHO ESCENAS — 15/10/2026, 12:18 UY — PR #99, TODAVÍA DRAFT
+
+**Revisión de estado al retomar:** HEAD código de esta iteración `6a1faed41832c433da8fa0f400b08ecc72113bea`. No fusionar ni publicar aún. Branch: `feature/tu-viaje-premium-visual-20261015`.
+
+**Correcciones reales guardadas en el PR:**
+- Se reparó la política `Content-Security-Policy`: la directiva `img-src` ahora habilita **solo** `https://tile.openstreetmap.org` para los mosaicos cartográficos del módulo premium. Antes el navegador bloqueaba las teselas aunque las rutas se renderizaban.
+- En `Tu viaje / Recorrido`, el buscador ahora ocupa un ancho útil completo con un botón de lupa accesible; el GPS queda en segunda línea. La estructura de `Tu reserva` no se modificó.
+- Se ampliaron los tests móviles Chromium a **8 escenas × 3 anchos**: las cinco pantallas de la solicitud y tres de seguimiento (Buscando, En camino, En viaje). Las últimas tres son **fixtures sintéticos explícitamente rotulados SOLO QA**, no reservas reales ni promesas de posición de vehículo/ETA.
+- Se agregaron aserciones para permiso CSP a OSM, ancho mínimo del buscador (165px a 360/393/412) y visibilidad del GPS. La QA nunca envía reservas reales ni escribe a Supabase.
+
+**Resultado de GitHub Actions:** los cuatro workflows sobre `6a1faed` finalizaron **SUCCESS**: PWA review, WebView parity, Verify and package passenger PWA, y QA premium visual. QA específica: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38758791414 ; artifact `premium-mobile-qa-capturas` (24 PNG, tres resoluciones, cinco escenas iniciales + tres de seguimiento simulado).
+
+**Observación visual comparada con las referencias adjuntas:** mejoras verificables en escritura de direcciones, mapa técnicamente permitido y estados veraces. **Aún no reproduce exactamente el mockup de ocho pantallas**: portada no tiene coche fotográfico en primer plano, mapa de recorrido depende de geometría real y tiles, seguimiento de conductor no recibe GPS en vivo/ETA autorizada, «Tus datos» no tiene email persistido ni consentimiento backend. No falsificar estos elementos para que una captura parezca bonita.
+
+**Siguiente trabajo imprescindible:** seleccionar/generar un asset de vehículo de calidad equivalente a la referencia con autorización; terminar enfoque full-screen de seguimiento; conectar email y consentimiento tras fijar contrato de backend; E2E en entorno seguro + Samsung físico. Revalidar streaming de posición/ETA autorizado o presentar solo estados existentes y mapa de ruta, sin inventar coche en movimiento.
+
+**Versión pública deliberadamente intacta:** PWA v74, Cliente v16, Conductor 11.5-R8 y Mapa R25.25. No se actualizó service worker ni versión publicada.
