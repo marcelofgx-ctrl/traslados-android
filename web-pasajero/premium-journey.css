@@ -511,3 +511,24 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
 }
 @keyframes premiumStatusPulse{50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){#view-seguimiento .premium-tracking-pill span{animation:none}}
+
+
+/* QA Samsung: el seguimiento cabe encima de la navegación inferior.
+   La información extensa se desplaza, nunca se tapa con una barra fija. */
+@media(max-width:650px){
+  .shell:has(#view-seguimiento.active)>.footer{display:none!important}
+  #view-seguimiento.premium-tracking-view{padding:4px 14px calc(105px + env(safe-area-inset-bottom));}
+  #view-seguimiento .premium-tracking-toolbar{padding-bottom:8px}
+  #view-seguimiento .premium-tracking-hero{padding:12px 14px;margin:0 0 8px}
+  #view-seguimiento .premium-tracking-hero h2{font-size:21px;margin:8px 0 5px}
+  #view-seguimiento .premium-tracking-map{min-height:178px}
+  #view-seguimiento .premium-tracking-disclaimer{margin:5px 8px 9px}
+  #view-seguimiento .premium-tracking-card{padding:12px 13px}
+  #view-seguimiento .premium-tracking-stephead{padding-bottom:8px}
+  #view-seguimiento .premium-tracking-timeline{gap:4px;padding:9px 0 4px}
+  #view-seguimiento .premium-tracking-step{min-height:31px;gap:8px}
+  #view-seguimiento .premium-tracking-route{gap:5px;padding:9px 0 4px;margin-top:7px}
+  #view-seguimiento .premium-tracking-vehicle{margin-top:6px}
+  #view-seguimiento .premium-tracking-actions{margin:9px 0 0;gap:7px}
+  #view-seguimiento .premium-tracking-action{min-height:45px}
+}
