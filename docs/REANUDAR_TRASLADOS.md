@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## PWA Pasajeros v71 — causa comprobada de ETA 401 con sesión visualmente iniciada (14/10/2026, EN VALIDACIÓN)
+
+- Captura Samsung a las ~20:54 de `web-pasajero`: disponibilidad verde y `La sesión no permitió calcular la llegada`. Usuario **confirma sesión visible abierta**. Supabase `function_edge_logs` registró **2 × HTTP 401 /functions/v1/pickup-eta** entre 23:35Z y 00:10Z. Consultado solo lectura: `customer_sessions` válidas **0** y `customers` activas **0** tras limpieza de testing. Por lo tanto no es fallo del GPS; `localStorage` conservó una sesión que ya no existe en DB. Reingresar con la cuenta anterior no funciona hasta crear una nueva cuenta de testing; no restaurar ni inventar cuentas.
+- `eta-engine.js`: ante 401 `login_required` de sesión autenticada, hace **solo una** consulta pública a la misma Edge y conserva el motivo `sessionInvalid`; cachea la invalidación de ese token en memoria para no repetir peticiones 401 en siguientes ciclos. Si el token se renueva se permite consulta autenticada. No se saltean cuotas ni se infieren kilómetros o minutos.
+- `app.js`: invalida automáticamente la sesión local si la Edge señala `sessionInvalid`, sin tocar reservas backend; reinicia el estado del historial para no mostrar datos de cuenta inválida y muestra en Mi cuenta aviso de que debe iniciar sesión o crear cuenta nuevamente. Si la consulta pública da km/min reales se muestran como estimación de visitante; si falla, mensaje honesto. La tarjeta sigue separando presencia y ETA.
+- Web **PWA v71** y Service Worker v71, con assets cache-busted `app.js?v=71` y `eta-engine.js?v=3`; panel de diagnóstico local v71. Cliente Premium **v16 no requiere otra APK**, porque es WebView de esa misma URL. Mapa R25.22, Conductor y base de datos sin cambios.
+- CI con `pickup-expired-session-v71-smoke.cjs` verifica 401→visitante→resultado real, caché de sesión rechazada, renovación de token, respeto de rate limit, invalidación local y versión de assets. Antes de liberar: web QA, deploy y verificar Pages. QA Samsung físico posterior.
+
+
 ## Mapa Trayectos R25.22 — tarjetas con temporizadores legibles (PUBLICADA 14/10/2026, 18:54 UYT)
 
 - Captura Samsung de las 18:32: viaje Uber «EN CAMINO A RECOGER», cuatro métricas horizontales; el tiempo de SERVICIO y DET. se desbordaba o cortaba el último dígito dentro de su tarjeta. No era un contador de tiempo incorrecto; era un problema del autoajuste tipográfico de Android al mostrar HH:MM:SS en un ancho de ~65dp.
