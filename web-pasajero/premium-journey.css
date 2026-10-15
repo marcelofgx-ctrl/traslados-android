@@ -267,3 +267,5 @@
 @media(max-width:650px){
   .shell:has(#view-inicio.active)>.footer,.shell:has(#view-viaje.active)>.footer{display:none}
 }
+
+#view-viaje[data-premium-step]:not([data-premium-step="when"]) .premium-when-extras{display:none!important}
