@@ -63,7 +63,7 @@
   }
   function summary(){return events.map(e=>({...e}));}
   function exportSafe(){
-    return JSON.stringify({product:"Traslados Pasajero",version:"PWA v70",
+    return JSON.stringify({product:"Traslados Pasajero",version:"PWA v71",
       scope:"Diagnóstico técnico local de disponibilidad y ETA; sin datos personales",
       generatedAt:new Date().toISOString(),events:summary()},null,2);
   }

@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=70">
+  <link rel="stylesheet" href="./styles.css?v=71">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -342,6 +342,9 @@
       <div class="section-heading"><p class="eyebrow">DATOS PROTEGIDOS</p><h2 id="cuenta-title">Tu cuenta</h2><p>Iniciá sesión con tu teléfono y PIN de seis dígitos para gestionar reservas y agregar paradas.</p></div>
       <div id="account-session" class="card" hidden></div>
       <div id="account-form" class="card">
+        <p id="account-session-expired" class="account-session-expired" role="status" hidden>
+          La sesión guardada ya no existe en el servidor. Podés seguir consultando la llegada como visitante. Para gestionar traslados, ingresá nuevamente o creá una cuenta si fue eliminada durante las pruebas.
+        </p>
         <div class="quick-times" role="group"><button id="mode-login" class="choice active" type="button">Ingresar</button><button id="mode-register" class="choice" type="button">Crear cuenta</button></div>
         <label id="register-name-wrap" hidden>Nombre y apellido<input id="register-name" autocomplete="name" placeholder="Nombre completo"></label>
         <label>Teléfono<input id="login-phone" autocomplete="tel" inputmode="tel" placeholder="+598 99 123 456"></label>
@@ -418,7 +421,7 @@
   <script src="./geo-search.js?v=4" defer></script>
   <script src="./address-engine.js?v=1" defer></script>
   <script src="./route-engine.js?v=56" defer></script>
-  <script src="./eta-engine.js?v=2" defer></script>
+  <script src="./eta-engine.js?v=3" defer></script>
   <script src="./booking-contracts.js?v=1" defer></script>
   <script src="./rpc-client.js?v=1" defer></script>
   <script src="./booking-steps.js?v=1" defer></script>
@@ -427,6 +430,6 @@
   <script src="./trip-board.js?v=6" defer></script>
   <script src="./service-home.js?v=3" defer></script>
   <script src="./owned-pickup.js?v=1" defer></script>
-  <script src="./app.js?v=70" defer></script>
+  <script src="./app.js?v=71" defer></script>
 </body>
 </html>
