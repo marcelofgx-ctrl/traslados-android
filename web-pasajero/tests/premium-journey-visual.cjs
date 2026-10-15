@@ -131,6 +131,7 @@ const {chromium}=require("playwright-core");
           quote_status:"SIN_PRESUPUESTO",quote_final_total:null
         };
         if(typeof reservationView!=="function")return false;
+        tripRows=[row];tripLoaded=true; // Datos sintéticos solo en este navegador QA.
         const card=reservationView(row);
         const board=document.querySelector("#trips-list");
         board.replaceChildren(card);
@@ -152,6 +153,22 @@ const {chromium}=require("playwright-core");
         "No permitir cancelar/finalizar unilateralmente un viaje activo");
       await page.screenshot({path:path.join(dest,kind+"-"+width+".png"),
         fullPage:true,animations:"disabled"});
+      if(kind!=="buscando"){
+        const full=page.locator("#view-viajes .premium-open-tracking");
+        assert.equal(await full.count(),1,"Falta acceso a seguimiento independiente");
+        await full.click();
+        assert.equal(await page.locator("#view-seguimiento.active").count(),1,
+          "Seguimiento no abrió su pantalla");
+        assert.equal(await page.locator("#view-seguimiento .premium-tracking-timeline [aria-current='step']").count(),1,
+          "Fase activa inconsistente en pantalla completa");
+        assert.equal(await page.locator("#view-seguimiento .premium-tracking-disclaimer").count(),2,
+          "Falta advertencia de no mostrar GPS en vivo");
+        assert.equal(await page.locator("#view-seguimiento button").filter({hasText:/Finalizar viaje/i}).count(),0,
+          "El pasajero no puede finalizar el viaje");
+        await page.screenshot({path:path.join(dest,kind+"-pantalla-"+width+".png"),
+          fullPage:true,animations:"disabled"});
+        await page.locator("#premium-tracking-back").click();
+      }
     }
     await page.close();
   }
