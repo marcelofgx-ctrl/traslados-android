@@ -6,18 +6,18 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 | Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |
 |---|---|---|---|
-| Pasajero PWA | v72 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 14/10/2026 23:15 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38669824801) · commit fdefb2e85 |
+| Pasajero PWA | v72 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | Sin resultado verificable en esta consulta |
 | Cliente Premium | 16.0-Premium · code 204 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | Sin resultado verificable en esta consulta |
 
-**PWA CI:** [ERROR · 14/10/2026 23:24 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670775476) · commit 444a2dd9e.
+**PWA CI:** [ERROR · 14/10/2026 23:25 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670812291) · commit eb88b8766.
 **Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
 
 ### Fecha y hora de la última compilación y del último cambio
 
-**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:21 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670413584) · commit 482d0bd64 · Verify and package passenger PWA (GitHub Pages via branch).
-**Último cambio de código verificado:** 14/10/2026 23:24 UYT · [Web pasajero / 99ebd31741](https://github.com/marcelofgx-ctrl/traslados-android/commit/99ebd31741c53e069487c15e21ba95dd93677c4b) — test(web): align GPS diagnostic smoke with PWA v72.
+**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c · Build Traslados Cliente Premium v15 RELEASE.
+**Último cambio de código verificado:** 14/10/2026 23:25 UYT · [Web pasajero / 9e7698f1f4](https://github.com/marcelofgx-ctrl/traslados-android/commit/9e7698f1f4d6048c2d9eeb5f094478b70a59b52e) — test(web): advance stale service worker smoke to v72.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
