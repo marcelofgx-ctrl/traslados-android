@@ -369,3 +369,12 @@ Corte Git de referencia previo a este documento: Android `6de4cafd046a192b876129
 - [Arquitectura modular/compilación](ARQUITECTURA_MODULAR_Y_COMPILACION.md)
 - [Retomar exclusivamente Mapa Trayectos](RETOMAR_MAPA_TRAYECTOS.md)
 - [Backend y reparación de ORS](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/PICKUP_ETA_PROVIDER_RECOVERY_20261013.md)
+
+
+## Revisión v18 — recorrido compacto (15/10/2026 14:14:15 UYT)
+
+- APK `18.0-PR99-Prueba`, code206, fuente `e8947b148225d4392b4631713a20d3b5d07e7bae`. Archivo real 903.079 bytes, SHA256 `b39a660d22a52c985a9daa0fb357da972e127f79acaa34610b04feb54e1145af`, firma v2 y certificado original verificados. La próxima versión operativa requiere code >206.
+- Recorrido inmediato: tarjeta conjunta compacta, departamentos progresivos al editar, GPS legible, paradas desplegables y mapa geográfico visible. Reutiliza los controles reales; Tu reserva conserva sus controles. El mapa inicial no representa GPS ni ruta calculada; solo dibuja recorrido cuando existe geometría verificada.
+- Compilación firmada SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775384634 ; QA Android35 SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775384621 ; escenas móviles 360/393/412 SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775390439 . 47 smoke locales PASS. Selección real de POIs locales Carrasco/Punta Carretas sin crear reserva. Escenas de seguimiento del harness siguen siendo fixtures de QA, ausentes en APK.
+- Continúa aislamiento de backend/autenticación/rutas remotas/contactos; no reservas reales. No despliegue main ni web pública. No prueba física Samsung. El producto completo y la fidelidad de las ocho pantallas siguen pendientes; esta entrega mejora Recorrido.
+- Descarga independiente: https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v18-prueba.apk
