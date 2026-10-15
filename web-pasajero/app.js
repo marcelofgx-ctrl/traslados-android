@@ -72,7 +72,7 @@ function refreshBookingSteps(){
   const d=$("pickup-date")?.value||"",t=$("pickup-time")?.value||"";
   const scheduled=selectedPickupMode==="schedule";
   let label=scheduled?(d&&t?d.slice(8,10)+"/"+d.slice(5,7)+" · "+t+" · "+passengerText:"Elegí fecha y hora"):
-    (selectedPickupMode==="10"?"En 10 min":"Ahora")+" · "+passengerText;
+    (selectedPickupMode==="now"?"Ahora":"En "+selectedPickupMode+" min")+" · "+passengerText;
   const validSchedule=Boolean(d&&t&&Date.parse(d+"T"+t+":00-03:00")>=Date.now()-20000);
   bookingSteps.summary("when",label,p>=1&&p<=8&&(!scheduled||validSchedule));
   const name=authReady()?session.customer?.full_name:$("person-name")?.value;
@@ -451,7 +451,7 @@ function setWhen(kind){
   // no debe disparar nuevas ETA ni eludir la cuota de privacidad.
   selectedPickupMode=kind;
   const serviceCaption=$("booking-service-caption");
-  if(serviceCaption)serviceCaption.textContent=kind==="schedule"?"VIAJE PROGRAMADO":kind==="10"?"RECOGIDA EN 10 MIN":"RECOGIDA AHORA";
+  if(serviceCaption)serviceCaption.textContent=kind==="schedule"?"VIAJE PROGRAMADO":kind==="now"?"RECOGIDA AHORA":"RECOGIDA EN "+kind+" MIN";
   clearBookingFeedback();
   document.querySelectorAll("[data-when]").forEach(x=>x.classList.toggle("active",x.dataset.when===kind));
   const urgent=kind!=="schedule";
@@ -459,11 +459,11 @@ function setWhen(kind){
   $("pickup-datetime-block").hidden=urgent;
   $("when-next").hidden=urgent;
   $("pickup-mode-caption").hidden=!urgent;
-  $("pickup-mode-caption").textContent=kind==="10"
-    ?"Recogida en 10 minutos · Horario fijado por el servidor"
-    :"Recogida ahora · Horario fijado por el servidor";
-  $("urgent-actions-title").textContent=kind==="10"
-    ?"¿Te recogemos en 10 minutos?":"¿Necesitás viajar ahora?";
+  $("pickup-mode-caption").textContent=kind==="now"
+    ?"Recogida ahora · Horario fijado por el servidor"
+    :"Recogida en "+kind+" minutos · Horario fijado por el servidor";
+  $("urgent-actions-title").textContent=kind==="now"
+    ?"¿Necesitás viajar ahora?":"¿Te recogemos en "+kind+" minutos?";
   $("urgent-actions-description").textContent="Enviá tu recorrido al conductor. Recibirás un código para seguir la solicitud, que quedará pendiente de su confirmación.";
   $("booking-success").hidden=true;
   $("urgent-actions").hidden=!urgent;
@@ -482,10 +482,30 @@ function setWhen(kind){
     $("availability").textContent="Reserva programada: los horarios disponibles se comprueban antes de enviar.";
     refreshBookingSteps();refreshPickupPresence();return;
   }
-  const when=currentUY(kind==="10"?10:0);
+  const when=currentUY(kind==="now"?0:Number(kind)||0);
   $("pickup-date").value=when.day;$("pickup-time").value=when.time;
   $("availability").textContent="La hora se registra automáticamente al enviar. La solicitud queda pendiente de respuesta del conductor.";
   refreshBookingSteps();refreshPickupPresence();
+}
+// Dos experiencias de presentación independientes, con el mismo motor validado
+// de búsqueda, GPS, identidad y contratos. Mover nodos conserva listeners y valores.
+function enterService(kind){
+  const quick=kind!=="schedule";
+  const host=$(quick?"journey-field-host":"reserve-field-host");
+  if(!host)return;
+  for(const key of ["route","when","passenger"]){
+    const card=document.querySelector('[data-booking-step="'+key+'"]');
+    if(card&&card.parentElement!==host)host.appendChild(card);
+  }
+  const urgent=$("urgent-actions");
+  if(quick&&urgent.parentElement!==host)host.appendChild(urgent);
+  if(!quick&&urgent.parentElement===host)$("booking-preview").insertAdjacentElement("afterend",urgent);
+  document.body.classList.toggle("journey-mode-quick",quick);
+  setWhen(kind);
+  if(quick&&$("journey-when-select"))$("journey-when-select").value=kind;
+  routeStepAutoAdvanced=false;
+  bookingSteps.open("route");
+  shiftView(quick?"viaje":"reservar");
 }
 function shiftView(name){
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
@@ -1209,9 +1229,9 @@ function renderBookingSuccess(result,mode="schedule"){
     :"Recibimos tu solicitud. El conductor revisará el horario y podrá ofrecerte un presupuesto; el viaje se confirma únicamente cuando lo aceptes.");
   text(box,"div",result.code,"code");
   if(urgent&&result.pickup_date&&result.pickup_time){
-    text(box,"p",mode==="10"
-      ?"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+"."
-      :"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+".");
+    text(box,"p",mode==="now"
+      ?"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+"."
+      :"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+".");
   }
   text(box,"p","Podés seguir el estado en Mis traslados. No se realiza ningún cobro al enviar.");
   button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
@@ -1919,14 +1939,34 @@ function init(){
   // Service cards are navigation-only; the existing native/backend contracts
   // keep full responsibility for preparing and sending transport requests.
   window.TrasladosServiceHome.mount(document,{
-    onSelect:kind=>{
-      setWhen(kind);
-      bookingSteps.open("route");
-      shiftView("reservar");
-    },
-    onNavigate:shiftView
+    onSelect:kind=>enterService(kind),
+    onNavigate:target=>target==="reservar"?enterService("schedule"):shiftView(target)
   });
-  for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>shiftView(tab.dataset.view));
+  for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>tab.dataset.view==="reservar"?enterService("schedule"):shiftView(tab.dataset.view));
+  $("journey-when-select").addEventListener("change",()=>{
+    const mode=$("journey-when-select").value;
+    if(mode!=="now"&&!/^(10|15|20|30|45|60)$/.test(mode))return;
+    setWhen(mode);
+  });
+  $("journey-clock-action").addEventListener("click",()=>{
+    const input=$("journey-clock-input");
+    input.hidden=false;
+    input.focus({preventScroll:true});
+    try{if(typeof input.showPicker==="function")input.showPicker();}catch{}
+  });
+  $("journey-clock-input").addEventListener("change",()=>{
+    const time=$("journey-clock-input").value;
+    if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time))return;
+    const today=currentUY();
+    let target=Date.parse(today.day+"T"+time+":00-03:00");
+    let delay=Math.ceil((target-Date.now())/60000);
+    if(delay<1||delay>120){tell("Tu viaje permite elegir una recogida dentro de las próximas 2 horas. Para más adelante, usá Tu reserva.");return;}
+    setWhen(String(delay));
+    $("journey-when-select").value="custom";
+    $("journey-custom-time-label").textContent="Recogida solicitada hacia las "+time+" h (sujeta a confirmación)";
+    $("journey-custom-time-label").hidden=false;
+    input.hidden=true;
+  });
   document.querySelectorAll("[data-open-login]").forEach(x=>x.addEventListener("click",()=>shiftView("cuenta")));
   $("pickup-diagnostics").addEventListener("toggle",()=>{
     if($("pickup-diagnostics").open)refreshPickupDiagnosticsPreview();
