@@ -107,12 +107,16 @@ jobs:
           cp artifacts/* preview-artifacts/
           git config user.name "Traslados Preview CI"
           git config user.email "actions@users.noreply.github.com"
-          git add preview-artifacts
-          git commit -m "APK PR99 v20 prueba firmada: sin producción"
           for attempt in 1 2 3; do
-            if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
+            # Reapply artifacts to the latest remote tree. Never rebase binary
+            # APKs or rewrite another commit; only this disposable CI checkout resets.
             git fetch origin feature/tu-viaje-premium-visual-20261015
-            git rebase origin/feature/tu-viaje-premium-visual-20261015
+            git reset --hard origin/feature/tu-viaje-premium-visual-20261015
+            mkdir -p preview-artifacts
+            cp artifacts/* preview-artifacts/
+            git add preview-artifacts
+            git diff --cached --quiet && exit 0
+            git commit -m "APK PR99 v20 prueba firmada: sin producción"
+            if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
           done
           exit 1
-
