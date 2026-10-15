@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 390" role="img" aria-label="SUV de Traslados al atardecer">
+<defs>
+  <linearGradient id="body" x1="0" y1="0" x2=".32" y2="1">
+    <stop stop-color="#203845"/><stop offset=".23" stop-color="#071a28"/><stop offset=".49" stop-color="#152935"/><stop offset=".74" stop-color="#08141c"/><stop offset="1" stop-color="#020c12"/>
+  </linearGradient>
+  <linearGradient id="glass" x1="0" y1="0" x2=".6" y2="1">
+    <stop stop-color="#638192" stop-opacity=".76"/><stop offset=".38" stop-color="#193545"/><stop offset="1" stop-color="#071623"/>
+  </linearGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#e6c38a"/><stop offset=".42" stop-color="#8c704b"/><stop offset="1" stop-color="#1f262c"/>
+  </linearGradient>
+  <linearGradient id="light" x1="0" y1="0" x2="1" y2="0">
+    <stop stop-color="#fae3a4"/><stop offset="1" stop-color="#bb8b4b" stop-opacity=".1"/>
+  </linearGradient>
+  <radialGradient id="wheel"><stop stop-color="#263a42"/><stop offset=".46" stop-color="#0d1920"/><stop offset=".79" stop-color="#020709"/><stop offset="1" stop-color="#171c1f"/></radialGradient>
+  <filter id="shadow" x="-30%" y="-40%" width="160%" height="210%"><feGaussianBlur stdDeviation="18"/></filter>
+  <filter id="shine" x="-50%" y="-80%" width="200%" height="260%"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<ellipse cx="498" cy="339" rx="403" ry="24" fill="#030b12" opacity=".8" filter="url(#shadow)"/>
+<path d="M93 233Q104 213 143 205L250 190Q274 178 311 150L372 109Q401 86 466 85L680 90Q741 97 786 132L844 194Q889 203 907 229L918 286Q915 316 890 321H820Q810 261 756 257Q696 255 686 321H322Q308 259 252 255Q195 252 181 322H120Q87 311 86 287Z" fill="url(#body)" stroke="#3b5660" stroke-width="6"/>
+<path d="M305 182L382 117Q409 103 469 101L643 106Q672 111 693 130L762 190Z" fill="url(#glass)" stroke="#c5a670" stroke-width="5"/>
+<path d="M474 103L467 194M660 110L695 196" stroke="#10242b" stroke-width="12"/>
+<path d="M476 102L469 192M657 109L691 195" stroke="#e0bd78" stroke-width="2.5" opacity=".7"/>
+<path d="M93 232Q205 204 304 188H766Q830 201 888 231" fill="none" stroke="#d0a060" stroke-width="3.5" opacity=".9"/>
+<path d="M105 249H901M321 258H684" stroke="#254653" stroke-width="6"/>
+<path d="M119 281H177M824 279H902" stroke="#a47b42" stroke-width="7" opacity=".65"/>
+<path d="M179 291Q204 242 256 240Q306 241 326 291" stroke="#42555e" fill="none" stroke-width="9"/>
+<path d="M683 291Q703 242 757 239Q813 241 825 291" stroke="#42555e" fill="none" stroke-width="9"/>
+<path d="M541 207H587M357 207H390" stroke="#a87c43" stroke-width="6" stroke-linecap="round"/>
+<path d="M880 230L911 243L906 260L865 255" fill="#ffe7ab"/>
+<path d="M897 243L965 220" stroke="url(#light)" stroke-width="16" stroke-linecap="round" opacity=".65" filter="url(#shine)"/>
+<path d="M105 235L79 245L88 265L115 254" fill="#e7a75b"/>
+<path d="M84 250L24 231" stroke="url(#light)" stroke-width="12" opacity=".35" filter="url(#shine)"/>
+<path d="M111 297H177M824 297H890" stroke="#8d754c" stroke-width="5"/>
+<g>
+  <circle cx="255" cy="299" r="59" fill="url(#wheel)" stroke="#17252a" stroke-width="12"/>
+  <circle cx="255" cy="299" r="42" fill="#24343a" stroke="#b4b3a5" stroke-width="4"/>
+  <circle cx="255" cy="299" r="34" fill="#101c21"/>
+  <g stroke="#829ba1" stroke-width="8"><path d="M255 267V331M223 299H287M232 276L278 322M278 276L232 322"/></g>
+  <circle cx="255" cy="299" r="9" fill="#dbbe89"/>
+</g>
+<g>
+  <circle cx="756" cy="299" r="59" fill="url(#wheel)" stroke="#17252a" stroke-width="12"/>
+  <circle cx="756" cy="299" r="42" fill="#24343a" stroke="#b4b3a5" stroke-width="4"/>
+  <circle cx="756" cy="299" r="34" fill="#101c21"/>
+  <g stroke="#829ba1" stroke-width="8"><path d="M756 267V331M724 299H788M733 276L779 322M779 276L733 322"/></g>
+  <circle cx="756" cy="299" r="9" fill="#dbbe89"/>
+</g>
+<path d="M125 314H181M328 314H684M826 313H888" stroke="#9b7845" stroke-width="4" opacity=".7"/>
+</svg>
