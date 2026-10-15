@@ -302,7 +302,7 @@ jobs:
           mkdir -p /tmp/mapa-share-tests
           javac -d /tmp/mapa-share-tests mapatrayectos/src/main/java/uy/com/mapatrayectos/ShareLinkPolicy.java mapatrayectos/tests/ShareLinkPolicyTest.java
           java -cp /tmp/mapa-share-tests ShareLinkPolicyTest
-          grep -q 'marcelofgx-ctrl.github.io/traslados-android/web-pasajero/' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q 'marcelofgx-ctrl.github.io/traslados-android/web-pasajero/' mapatrayectos/src/main/java/uy/com/mapatrayectos/ShareLinkPolicy.java
           grep -q 'getResources().getDisplayMetrics().widthPixels-dp(20)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           if grep -q 'private static final String BOOKING_URL="https://traslados-web' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java; then echo 'Backend Worker must never be the passenger booking link' >&2; exit 1; fi
           grep -q 'LISTA «APARECER ENCIMA»' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
