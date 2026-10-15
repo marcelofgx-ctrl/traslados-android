@@ -34,13 +34,11 @@ import android.util.Base64;
 
 public final class QuickActionsMenu {
     private static final String PHONE="+598 97 228 175";
-    // Public, customer-facing Pages UI, never the technical Cloudflare Worker.
-    private static final String BOOKING_URL=
-        "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/";
-    private static final String DOWNLOAD_URL=
-        "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk";
-    // Previous defaults are kept only to migrate links saved on existing phones.
-    private static final String PREVIOUS_BOOKING_URL="https://traslados-con-reserva.lovable.app/";
+    // Public booking UI and current signed client APK. Centralized so a
+    // released old official URL cannot outlive the latest installed client.
+    private static final String BOOKING_URL=ShareLinkPolicy.BOOKING_URL;
+    private static final String DOWNLOAD_URL=ShareLinkPolicy.CLIENT_APK_URL;
+    // Legacy default kept as a named anchor for old QA and migration history.
     private static final String PREVIOUS_WORKER_URL="https://traslados-web.marcelof-gx.workers.dev/";
     private static final String PREVIOUS_DOWNLOAD_URL="https://traslados-con-reserva.lovable.app/descargas";
     private static final int GOLD=Color.rgb(231,202,130),WHITE=Color.rgb(247,246,241),
@@ -315,12 +313,10 @@ public final class QuickActionsMenu {
         // Previous installs may retain an obsolete Worker/Lovable link.
         // Migrate only known former defaults, and ask before sharing.
         // Custom URLs chosen by the owner must remain untouched.
-        boolean staleBooking="booking_url".equals(key)&&
-            (PREVIOUS_BOOKING_URL.equals(current)||PREVIOUS_WORKER_URL.equals(current));
-        boolean staleDownload="download_url".equals(key)&&
-            PREVIOUS_DOWNLOAD_URL.equals(current);
-        if(staleBooking||staleDownload){
-            current=proposed;
+        boolean staleOfficialLink=ShareLinkPolicy.needsMigration(key,current);
+        if(staleOfficialLink){
+            current=ShareLinkPolicy.updatedDestination(key,current);
+            // Even previously confirmed v15 links must be reviewed again.
             prefs.edit().putString(key,current).putBoolean(key+"_confirmed",false).apply();
         }
         if(prefs.getBoolean(key+"_confirmed",false)&&validUrl(current)){
