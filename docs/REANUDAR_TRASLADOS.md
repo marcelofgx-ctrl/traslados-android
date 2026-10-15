@@ -3,6 +3,15 @@
 > **DECISIÓN DE ARQUITECTURA 14/10/2026:** [Configuración remota compartida Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Auditoría constató links nativos compilados y ausencia de catálogo general en Supabase; documento de propuesta con rollout offline-first. **No implementado; no sustituye la APK vigente.**
 
 
+## Mapa R25.24 — Configuración central de enlaces (PUBLICADA 14/10/2026, 23:12 UYT)
+
+- Supabase `zetaudvvutlouiqxopvg`: catálogo `app_internal.public_config` privado, RPC solo lectura `public_app_config_v1` probada con rol `anon`, revisión **2** con enlaces oficiales y hash firmados. SQL reproducible en repo `traslados-web` migración `20261015_public_app_config_read_only_v1.sql`.
+- Mapa R25.24/versionCode **76** lee configuración asincrónica al abrir y al acceder a centro rápido, intervalo de recuperación ~30 min y `SharedPreferences` de caché. Sin conexión conserva datos válidos previos y fallbacks compilados, sin bloquear GPS, viajes, jornada o mapa.
+- Enlace «APP PARA PASAJEROS» se obtiene del catálogo central; las URL oficiales cambian sin recompilar Mapa cuando se publica correctamente otra versión de Cliente. Enlaces personalizados se conservan; actualización de un enlace oficial vuelve a requerir confirmación para compartir.
+- Compilación + firma + publicación SUCCESS [run #38669473570](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38669473570). APK `web-pasajero/downloads/mapa-trayectos-r25.24.apk`, SHA256 **aa4accdf9dbb438ecaccedb4e991f3bd5aca29f9d527b726ff01375f32bb6092**. R25.23 disponible como rollback. Código, flujo y límites detallados en [CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md).
+- **Límites:** QA real Samsung (caché/actualización/offline) pendiente; cambio de URL real futuro no ejecutado porque v17 aún no existe; no se alteraron Web PWA v71, Cliente Premium v16, Conductor independiente R6, histórico, GPS ni reservas. Un cambio de código nativo sigue requiriendo APK.
+
+
 ## Mapa R25.23 — Enlaces y contacto / cliente actualizado (PUBLICADA 14/10/2026, 21:42 UYT)
 
 - Captura Samsung 21:27 del menú «Enlaces y contacto» en Mapa R25.22. Auditando `QuickActionsMenu`: «WEB DE RESERVAS» usa URL Pages correcta y contiene PWA v71, «CONTACTO .VCF» comparte tarjeta de contacto, pero «APP PARA PASAJEROS» apuntaba por defecto a **Cliente Premium v15** (obsoleto; actual **v16/code204**). Más grave: las URL oficiales previamente confirmadas se guardan en SharedPreferences `share_links` y se compartían sin volver a mostrar confirmación, por lo que cambiar solo la constante no era suficiente.
