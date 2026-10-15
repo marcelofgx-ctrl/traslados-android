@@ -106,17 +106,28 @@ function suggestBookingStep(error){
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
 let expiredPassengerSessionNotice=false;
-let publicVehiclePlate="";
-async function refreshPublicVehiclePlate(){
+// La matrícula nunca se publica fuera de una reserva propia y en curso.
+const vehiclePlateByReservation=new Map(),vehiclePlatePending=new Set();
+async function refreshVehiclePlateForTrip(r,guestToken){
+  const id=String(r?.id||"");
+  if(!id||(!guestToken&&!authReady()))return;
+  if(r.status!=="EN_VIAJE"&&!["EN_CAMINO","EN_PUNTO"].includes(r.pickup_phase))return;
+  const cache=vehiclePlateByReservation.get(id);
+  if((cache&&Date.now()-cache.at<60000)||vehiclePlatePending.has(id))return;
+  const token=guestToken||session?.token||"";
+  vehiclePlatePending.add(id);
   try{
-    const data=await rpc("driver_public_vehicle_v1",{});
-    const plate=String(data?.plate||"").trim().toUpperCase();
-    if(!/^[A-Z0-9]{2,4}-[A-Z0-9]{3,5}$/.test(plate))return;
-    if(publicVehiclePlate!==plate){
-      publicVehiclePlate=plate;
-      if(tripLoaded)renderTripsBoard();
-    }
-  }catch{ /* Identity card is hidden if the public endpoint is unavailable. */ }
+    const data=await rpc("customer_reservation_vehicle_v1",{
+      p_reservation_id:id,p_session_token:guestToken?null:token,p_public_token:guestToken||null
+    });
+    if(!guestToken&&(!authReady()||session?.token!==token))return;
+    const candidate=String(data?.plate||"").trim().toUpperCase();
+    const plate=/^[A-Z0-9]{2,4}-[A-Z0-9]{3,5}$/.test(candidate)?candidate:"";
+    const previous=vehiclePlateByReservation.get(id)?.plate||"";
+    vehiclePlateByReservation.set(id,{plate,at:Date.now()});
+    if(previous!==plate&&tripLoaded)renderTripsBoard({reset:true});
+  }catch{vehiclePlateByReservation.set(id,{plate:"",at:Date.now()});}
+  finally{vehiclePlatePending.delete(id);}
 }
 
 let urgentAttempt=null;
@@ -1003,6 +1014,7 @@ function syncAuthUI(){
 }
 function clearPassengerSessionLocally(){
   session=null;localStorage.removeItem(SESSION_KEY);
+  vehiclePlateByReservation.clear();vehiclePlatePending.clear();
   closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
   $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
   $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
@@ -1571,7 +1583,9 @@ function reservationView(r,guestToken){
     const copy=text(live,"div","","trip-live-copy");
     text(copy,"strong",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Tu conductor está en camino");
     text(copy,"span",onBoard?"El traslado ya comenzó.":arrived?"Está en el punto de recogida.":"Va hacia el lugar donde te recogerá.");
-    if(publicVehiclePlate)text(copy,"span","Matrícula · "+publicVehiclePlate,"trip-live-vehicle-plate");
+    const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
+    if(plate)text(copy,"span","Matrícula · "+plate,"trip-live-vehicle-plate");
+    if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
   }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
@@ -1953,7 +1967,6 @@ function installUI(){
 }
 function init(){
   session=jsonStorage(SESSION_KEY,null);
-  void refreshPublicVehiclePlate();
   bookingSteps=window.TrasladosBookingSteps.mount(document);
   // Service cards are navigation-only; the existing native/backend contracts
   // keep full responsibility for preparing and sending transport requests.
