@@ -2158,3 +2158,48 @@ body.trip-chat-modal-open{overflow:hidden}
 
 /* v71 — estado de cuenta borrada en DB sin presentar sesión ficticia */
 .account-session-expired{margin:.4rem 0 1rem;padding:.9rem 1rem;border:1px solid #c59f66;border-radius:.85rem;background:#15373a;color:#f5dda7;font-weight:600;line-height:1.5}
+
+/* PWA v73 — Estado de recogida como dato principal, no badge diminuto.
+ * Movimiento reducido: no se anima con preferencias de accesibilidad. */
+#view-viajes .trip-live-spotlight{
+  display:flex;align-items:center;gap:12px;margin:12px 0 10px;
+  padding:13px 12px;min-width:0;border:1px solid rgba(115,226,202,.62);
+  border-left:4px solid #e6cb88;border-radius:13px;
+  background:linear-gradient(115deg,rgba(27,90,81,.59),rgba(5,48,54,.90));
+  box-shadow:inset 0 1px 0 rgba(255,242,201,.10),0 3px 14px rgba(0,18,18,.16)
+}
+#view-viajes .trip-live-symbol{
+  flex:0 0 32px;width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;color:#103b38;background:#b7f0d3;
+  font-size:17px;font-weight:850;box-shadow:0 0 0 5px rgba(177,234,209,.10)
+}
+#view-viajes .trip-live-copy{flex:1 1 auto;min-width:0;display:grid;gap:3px}
+#view-viajes .trip-live-copy strong{
+  display:block;color:#fff4d8;font-size:14.5px;font-weight:850;
+  line-height:1.3;letter-spacing:-.015em
+}
+#view-viajes .trip-live-copy span{color:#d9e9de;font-size:11.4px;line-height:1.4}
+#view-viajes .trip-live-spotlight[data-stage="arrived"]{
+  border-color:rgba(235,206,139,.75);background:linear-gradient(110deg,rgba(113,87,36,.48),rgba(9,49,51,.93))
+}
+#view-viajes .trip-live-spotlight[data-stage="trip"]{border-left-color:#85dad3}
+#view-viajes .trip-card[data-tone="moving"] .trip-focus-message{
+  padding:10px 11px;border:1px solid rgba(139,221,195,.34);
+  border-radius:9px;color:#ebf8ef;font-size:12px;line-height:1.5;
+  background:rgba(46,113,96,.17)
+}
+#view-viajes .trips-focus.is-live{
+  border-left:3px solid #b9e5d0;padding-left:11px;
+  color:#e7f7e7;font-weight:700
+}
+@keyframes tripLivePulseV73{50%{box-shadow:0 0 0 7px rgba(177,234,209,.04)}}
+#view-viajes .trip-live-spotlight[data-stage="approach"] .trip-live-symbol{
+  animation:tripLivePulseV73 2.8s ease-in-out infinite
+}
+@media(max-width:370px){
+  #view-viajes .trip-live-spotlight{gap:9px;padding:11px 10px}
+  #view-viajes .trip-live-copy strong{font-size:13.3px}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-viajes .trip-live-symbol{animation:none!important}
+}

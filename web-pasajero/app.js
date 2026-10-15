@@ -1316,7 +1316,7 @@ function tripDisplayKey(rows){
 }
 let tripsScope="upcoming",tripsGroupBy="day",tripsFilter="all",tripFocused=null,tripPreviouslyFocused=null;
 let tripsScopeChosen=false,openTripCards=new Set(),openTripGroups=new Set(),openTripDetails=new Set();
-let activeTripChat=null,tripChatPreviouslyFocused=null;
+let activeTripChat=null,tripChatPreviouslyFocused=null,tripChatPollTimer=null;
 const tripChatDrafts=new Map(),tripChatAttempts=new Map();
 let tripAlertAudio=null;
 function statusName(s){return states[s]||s||"Sin estado";}
@@ -1372,6 +1372,7 @@ function closeTripChat(){
   const sheet=$("trip-chat-sheet");
   if(!sheet||sheet.hidden)return;
   sheet.hidden=true;document.body.classList.remove("trip-chat-modal-open");
+  if(tripChatPollTimer!==null){clearInterval(tripChatPollTimer);tripChatPollTimer=null;}
   activeTripChat=null;
   const prev=tripChatPreviouslyFocused;tripChatPreviouslyFocused=null;
   if(prev?.isConnected)prev.focus();
@@ -1403,6 +1404,18 @@ function openTripChat(r,guestToken,trigger){
   sheet.hidden=false;document.body.classList.add("trip-chat-modal-open");
   $("trip-chat-dialog-close").focus();
   void loadTripChat(r,guestToken,feed);
+  if(tripChatPollTimer!==null)clearInterval(tripChatPollTimer);
+  tripChatPollTimer=null;
+  // Consultar solo con chat visible, sesión activa, internet y app en primer plano.
+  // La agenda sigue con su propio intervalo: mensajes nuevos no esperan su refresco.
+  if(!activeTripChat.closed)tripChatPollTimer=setInterval(()=>{
+    if(document.visibilityState!=="visible"||navigator.onLine===false||sheet.hidden)return;
+    const conversation=activeTripChat;
+    if(!conversation||conversation.closed)return;
+    const current=tripRows.find(row=>String(row.id)===String(conversation.id));
+    const currentFeed=content.querySelector(".trip-chat-feed");
+    if(current&&currentFeed)void loadTripChat(current,conversation.token,currentFeed);
+  },6000);
 }
 function mountTripChat(parent,r,guestToken){
   if(!r.id)return;
@@ -1420,12 +1433,20 @@ async function loadTripChat(r,guestToken,feed){
   feed.dataset.loading="1";
   try{
     const messages=await rpc("customer_trip_chat_v1",{...tripChatAuth(r,guestToken),p_after_id:0});
-    if(!feed.isConnected)return;
+    if(!feed.isConnected||$("trip-chat-sheet").hidden||
+       String(activeTripChat?.id)!==String(r.id))return;
+    // Una consulta sin mensajes nuevos no debe borrar, repintar ni desplazar el chat.
+    const items=Array.isArray(messages)?messages:[];
+    const signature=JSON.stringify(items.map(m=>[m.id,m.sender_role,m.body,m.created_at]));
+    if(feed.dataset.signature===signature)return;
+    const initial=!feed.dataset.signature;
+    const following=feed.scrollHeight-feed.scrollTop-feed.clientHeight<=72;
     clear(feed);
-    if(!Array.isArray(messages)||!messages.length){
+    feed.dataset.signature=signature;
+    if(!items.length){
       text(feed,"p","Todavía no hay mensajes. Podés consultar los detalles de tu traslado.","trip-chat-empty");
     }else{
-      for(const item of messages){
+      for(const item of items){
         const bubble=text(feed,"div","","trip-chat-bubble");
         bubble.classList.add(item.sender_role==="customer"?"from-customer":"from-driver");
         text(bubble,"small",item.sender_role==="customer"?"Vos":"Conductor");
@@ -1433,9 +1454,14 @@ async function loadTripChat(r,guestToken,feed){
         const when=tripDateTime(item.created_at);
         if(when)text(bubble,"time",when);
       }
-      feed.scrollTop=feed.scrollHeight;
+      if(initial||following)feed.scrollTop=feed.scrollHeight;
     }
-  }catch(e){if(feed.isConnected){clear(feed);text(feed,"p","No se pudieron actualizar los mensajes. Intentá nuevamente.","trip-chat-empty");}}
+  }catch(e){
+    // Una falla temporal no debe borrar la conversación que ya está visible.
+    if(feed.isConnected&&!feed.dataset.signature){
+      clear(feed);text(feed,"p","No se pudieron actualizar los mensajes. Intentá nuevamente.","trip-chat-empty");
+    }
+  }
   finally{feed.dataset.loading="0";}
 }
 async function sendTripChat(r,guestToken,feed,input,send){
@@ -1497,6 +1523,18 @@ function reservationView(r,guestToken){
   text(v,"strong",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5));
   text(v,"small",r.code||"Solicitud");
   const badge=text(head,"span","","trip-status");text(badge,"span","","trip-status-dot");text(badge,"span",meta.label);
+  if(meta.tone==="moving"){
+    // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
+    const onBoard=r.status==="EN_VIAJE";
+    const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
+    const live=text(top,"div","","trip-live-spotlight");
+    live.dataset.stage=onBoard?"trip":arrived?"arrived":"approach";
+    live.setAttribute("role","status");
+    text(live,"span",onBoard?"◆":arrived?"✓":"●","trip-live-symbol").setAttribute("aria-hidden","true");
+    const copy=text(live,"div","","trip-live-copy");
+    text(copy,"strong",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Tu conductor está en camino");
+    text(copy,"span",onBoard?"El traslado ya comenzó.":arrived?"Está en el punto de recogida.":"Va hacia el lugar donde te recogerá.");
+  }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
     const row=text(route,"div","","trip-route-stop");
@@ -1612,8 +1650,12 @@ function renderTripsBoard({reset=false}={}){
   $("trips-attention-count").hidden=attention===0;$("trips-attention-count").textContent=String(attention);
   const focus=$("trips-focus");
   if(focus){
+    const liveTrip=tripRows.find(r=>tripBoard.metadata(r).tone==="moving");
+    const liveVisible=Boolean(liveTrip&&!["history","attention"].includes(tripsScope));
+    focus.classList.toggle("is-live",liveVisible&&attention===0);
     focus.textContent=attention>0
       ?"Tenés "+attention+" presupuesto"+(attention===1?"":"s")+" para responder. Entrá en Responder para continuar."
+      :liveVisible?tripBoard.metadata(liveTrip).label+" · "+tripBoard.guidance(liveTrip)
       :tripsScope==="history"?"Historial de servicios. Abrí un traslado si necesitás consultar sus detalles."
       :tripsScope==="all"?"Viendo todos tus traslados, incluidos los finalizados."
       :"Tus próximas recogidas y solicitudes pendientes se muestran aquí.";
@@ -2000,9 +2042,16 @@ function init(){
   });
   $("trip-alert-overlay").addEventListener("click",e=>{if(e.target===$("trip-alert-overlay"))closeTripNotice();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("trip-alert-overlay").hidden)closeTripNotice();});
+  let lastBackgroundTripsCheck=0;
   setInterval(()=>{
-    if(tripLoaded&&navigator.onLine&&document.visibilityState==="visible")void loadTrips({background:true});
-  },20000);
+    if(!tripLoaded||navigator.onLine===false||document.visibilityState!=="visible")return;
+    const inTrips=$("view-viajes")?.classList.contains("active");
+    const activeTrip=inTrips&&tripRows.some(r=>!tripBoard.isHistory(r));
+    const cadence=activeTrip?8000:20000;
+    if(Date.now()-lastBackgroundTripsCheck<cadence)return;
+    lastBackgroundTripsCheck=Date.now();
+    void loadTrips({background:true});
+  },4000);
   $("mode-login").addEventListener("click",()=>setAccountMode(false));
   $("mode-register").addEventListener("click",()=>setAccountMode(true));
   $("account-submit").addEventListener("click",()=>void accountSubmit());
