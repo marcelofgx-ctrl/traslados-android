@@ -579,3 +579,18 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
     mask-image:linear-gradient(180deg,transparent 0%,#000 30%,#000 66%,transparent 94%);
   }
 }
+
+
+/* Última corrección del car-overlay: el borde superior nunca debe crear
+   una franja brillante separada del paisaje. Si no hay continuidad visual,
+   será sustituido en la validación fotográfica final por un asset integrado. */
+@media(max-width:650px){
+  #view-inicio .home-hero::before{
+    height:156px;bottom:-2px;
+    background-size:112% auto;
+    background-position:center bottom 11px;
+    opacity:.62;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,transparent 35%,#0009 64%,#000 76%,transparent 100%);
+    mask-image:linear-gradient(180deg,transparent 0%,transparent 35%,#0009 64%,#000 76%,transparent 100%);
+  }
+}
