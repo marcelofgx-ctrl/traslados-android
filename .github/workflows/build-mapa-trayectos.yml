@@ -296,7 +296,7 @@ jobs:
           grep -q 'COPIAR INFORME' mapatrayectos/src/main/java/uy/com/mapatrayectos/BubbleSettingsPanel.java
           grep -q 'Settings.ACTION_APP_NOTIFICATION_SETTINGS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'REQ_NOTIF_SETTINGS' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
-          grep -q 'PREVIOUS_WORKER_URL.equals(current)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q 'https://traslados-web.marcelof-gx.workers.dev/' mapatrayectos/src/main/java/uy/com/mapatrayectos/ShareLinkPolicy.java
           grep -q 'ShareLinkPolicy.needsMigration(key,current)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           grep -q 'private static final String DOWNLOAD_URL=ShareLinkPolicy.CLIENT_APK_URL;' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
           mkdir -p /tmp/mapa-share-tests
