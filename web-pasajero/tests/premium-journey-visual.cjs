@@ -59,7 +59,15 @@ const {chromium}=require("playwright-core");
     await page.locator(".premium-when-extras>summary").click();
     assert.equal(await page.locator("#passengers").isVisible(),true,"Cantidad de pasajeros preservada");
     await page.locator(".premium-when-extras>summary").click();
-        const footerClear=await page.evaluate(()=>{
+        await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
+    const ctaVisible=await page.evaluate(()=>{
+      const next=document.querySelector("#view-viaje .premium-next").getBoundingClientRect();
+      const nav=document.querySelector(".tabs").getBoundingClientRect();
+      return {bottom:next.bottom,navTop:nav.top};
+    });
+    assert(ctaVisible.bottom<=ctaVisible.navTop-5,
+      "CONTINUAR tapado por menú inferior "+width+": "+JSON.stringify(ctaVisible));
+    const footerClear=await page.evaluate(()=>{
       const extras=document.querySelector("#view-viaje .premium-when-extras")?.getBoundingClientRect();
       const actions=document.querySelector("#view-viaje .premium-actions")?.getBoundingClientRect();
       return Boolean(extras&&actions&&actions.top>=extras.bottom-2);
