@@ -58,6 +58,7 @@ jobs:
             sleep 15
             testResult=0
             gradle -p cliente-premium :app:connectedDebugAndroidTest --no-daemon --stacktrace || testResult=$?
+            adb install -r cliente-premium/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n uy.com.traslados.cliente.debug/uy.com.traslados.cliente.MainActivity
             adb shell uiautomator dump /sdcard/pr99-ui.xml
             adb pull /sdcard/pr99-ui.xml android-pr99-ui.xml
