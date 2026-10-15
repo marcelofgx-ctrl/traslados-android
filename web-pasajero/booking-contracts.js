@@ -40,7 +40,7 @@
     };
   }
   function immediatePickup(sessionToken,p,requestId){
-    if(p.pickupMode!=="now"&&(!/^\\d{1,3}$/.test(String(p.pickupMode))||Number(p.pickupMode)<1||Number(p.pickupMode)>120))throw new Error("Modalidad inmediata inválida");
+    if(p.pickupMode!=="now"&&(!/^\d{1,3}$/.test(String(p.pickupMode))||Number(p.pickupMode)<1||Number(p.pickupMode)>120))throw new Error("Modalidad inmediata inválida");
     return {
       p_request_id:requestId,
       p_mode:p.pickupMode,

@@ -24,7 +24,7 @@
   }
   function isImmediateRequest(r){
     const mode=String(r?.pickup_mode||"");
-    if(mode==="now"||(/^\\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
+    if(mode==="now"||(/^\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
     if(mode==="schedule")return false;
     // Legacy authorized v15 / guest v4 JSON omits pickup_mode. An urgent
     // pickup is timestamped by Supabase now or now + 10m; scheduled slots
