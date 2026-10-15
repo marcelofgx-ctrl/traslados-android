@@ -1785,7 +1785,7 @@ function renderPremiumTracking(){
       {api:API,publishableKey:KEY}).then(route=>{
         if(!mapHost.isConnected||premiumTrackingKey!==String(r.id||r.code||""))return;
         if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||
-          !window.TrasladosPremiumMap?.render(mapHost,route.geometry)){
+          !window.TrasladosPremiumMap?.render(mapHost,route.geometry,{height:178})){
           loader.textContent="No pudimos mostrar el mapa verificado en este momento.";
         }
       }).catch(()=>{
