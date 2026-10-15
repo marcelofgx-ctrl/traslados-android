@@ -437,3 +437,77 @@
 
 /* El nuevo formulario local pertenece solo a Tu viaje, no modifica Tu reserva. */
 body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
+
+
+/* Seguimiento premium real – vista dedicada, visible solo al abrir viaje propio. */
+#view-seguimiento.premium-tracking-view{max-width:540px;margin:0 auto;padding:12px 14px 110px;color:#f9f2e2}
+#view-seguimiento .premium-tracking-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 13px}
+#view-seguimiento .premium-tracking-back,#view-seguimiento .premium-tracking-return{
+  color:#f0d391;border:1px solid #ad96675c;border-radius:12px;background:#092f38;
+  min-height:39px;padding:9px 12px;font-size:12px;cursor:pointer}
+#view-seguimiento .premium-tracking-brand{font:750 14px Georgia,serif;letter-spacing:.09em;color:#f5d99a}
+#view-seguimiento .premium-tracking-hero{margin:2px 0 12px;padding:15px 16px;
+  background:linear-gradient(145deg,#0d4145,#09202b);border:1px solid #ad9b627c;
+  border-radius:17px;box-shadow:inset 0 1px #ffffff0e,0 10px 28px #0004}
+#view-seguimiento .premium-tracking-pill{display:inline-flex;align-items:center;gap:9px;min-height:29px;
+  color:#c5f4db;background:#1457449c;border:1px solid #57b88b91;
+  border-radius:40px;padding:5px 11px;font-size:11px}
+#view-seguimiento .premium-tracking-pill span{color:#36db9b;animation:premiumStatusPulse 2s infinite}
+#view-seguimiento .premium-tracking-hero h2{font:760 clamp(21px,6vw,27px)/1.22 Manrope,Arial,sans-serif;
+  letter-spacing:-.02em;margin:12px 0 5px;color:#fcf4e6}
+#view-seguimiento .premium-tracking-hero p{color:#c7dfd3;margin:0;font-size:12px;line-height:1.45}
+#view-seguimiento .premium-tracking-map{min-height:220px;border:1px solid #74a8aa63;
+  background:radial-gradient(circle at 50% 40%,#184a56,#061c27 80%);border-radius:18px;
+  overflow:hidden;display:grid;place-items:center;box-shadow:0 11px 29px #0006}
+#view-seguimiento .premium-real-map{position:relative;overflow:hidden;width:100%;border-radius:16px}
+#view-seguimiento .premium-map-tiles{position:absolute;inset:0;overflow:hidden;
+  filter:grayscale(.47) saturate(.85) hue-rotate(160deg) brightness(.7) contrast(1.16)}
+#view-seguimiento .premium-map-tiles img{position:absolute;max-width:none;width:256px;height:256px}
+#view-seguimiento .premium-map-overlays{position:absolute;inset:0;width:100%;height:100%}
+#view-seguimiento .premium-map-credit{position:absolute;bottom:4px;right:5px;border-radius:5px;
+  background:#06222bc9;color:#ecf6ea;font:9px Arial,sans-serif;padding:4px}
+#view-seguimiento .premium-tracking-map-message{padding:34px 18px;color:#cbdacf;text-align:center;
+  font-size:12px;line-height:1.55;max-width:290px}
+#view-seguimiento .premium-tracking-disclaimer{font-size:10px;line-height:1.55;color:#b8cbc5;text-align:center;margin:8px 8px 14px}
+#view-seguimiento .premium-tracking-card{border:1px solid #a8a2786b;border-radius:17px;
+  background:linear-gradient(150deg,#0c313a,#071e28);padding:16px 15px;
+  box-shadow:0 12px 24px #0003}
+#view-seguimiento .premium-tracking-stephead{display:flex;justify-content:space-between;gap:10px;
+  padding:0 0 13px;border-bottom:1px solid #7b8b7f42}
+#view-seguimiento .premium-tracking-stephead strong{font-size:14px;color:#f0dbb0}
+#view-seguimiento .premium-tracking-stephead small{font-size:10px;color:#b1cac0}
+#view-seguimiento .premium-tracking-timeline{position:relative;padding:14px 0 7px;display:grid;gap:11px}
+#view-seguimiento .premium-tracking-step{display:grid;grid-template-columns:30px 1fr;
+  align-items:center;gap:11px;min-height:38px}
+#view-seguimiento .premium-tracking-step-dot{width:27px;height:27px;display:grid;
+  place-items:center;border:1px solid #57777c;background:#14323a;
+  color:#a5b7b9;border-radius:50%;font-size:12px;font-weight:800}
+#view-seguimiento [data-stage="complete"] .premium-tracking-step-dot{border-color:#38be83;
+  background:#14583b;color:#aff7c2}
+#view-seguimiento [data-stage="current"] .premium-tracking-step-dot{background:#f0c777;
+  border-color:#ffe0a4;color:#0c292e;box-shadow:0 0 0 4px #c5a44e25}
+#view-seguimiento .premium-tracking-step-text strong{display:block;color:#bfcbc4;font-size:12px}
+#view-seguimiento [data-stage="current"] .premium-tracking-step-text strong{color:#ffdda3}
+#view-seguimiento .premium-tracking-step-text small{display:block;color:#b8cfc7;font-size:11px;line-height:1.35;margin-top:3px}
+#view-seguimiento .premium-tracking-route{display:grid;gap:9px;padding:14px 0 9px;
+  border-top:1px solid #86978943;margin-top:9px}
+#view-seguimiento .premium-tracking-place small{display:block;font-size:10px;color:#b2c9be}
+#view-seguimiento .premium-tracking-place strong{display:block;font-size:12px;line-height:1.45;
+  color:#fff2db;overflow-wrap:anywhere;margin-top:3px}
+#view-seguimiento .premium-tracking-vehicle{margin:9px 0 0;color:#efd39b;font-size:11px;line-height:1.5}
+#view-seguimiento .premium-tracking-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;margin:14px 0 0}
+#view-seguimiento .premium-tracking-action{display:grid;place-items:center;padding:10px 5px;min-height:49px;
+  border:1px solid #d6b3747c;color:#f7dbab;text-decoration:none;border-radius:13px;
+  background:linear-gradient(160deg,#12424c,#0b2a34);font:750 12px/1.4 Manrope,Arial,sans-serif;
+  text-align:center;cursor:pointer;min-width:0}
+#view-seguimiento .premium-tracking-action:focus-visible{outline:2px solid #f6d89d;outline-offset:3px}
+#view-viajes .premium-open-tracking{display:block;max-width:100%;width:100%;margin:9px 0 0;
+  padding:11px;border:1px solid #e9c778;border-radius:10px;background:#deaf60;color:#112d32;
+  font-size:12px;font-weight:800;cursor:pointer}
+@media(max-width:650px){
+ body:has(#view-seguimiento.active)>.header{display:none}
+ #view-seguimiento.premium-tracking-view{padding-top:3px}
+}
+@keyframes premiumStatusPulse{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){#view-seguimiento .premium-tracking-pill span{animation:none}}
