@@ -47,16 +47,21 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_2
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 -cores 2
           script: |
-            gradle -p cliente-premium :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            sleep 15
+            testResult=0
+            gradle -p cliente-premium :app:connectedDebugAndroidTest --no-daemon --stacktrace || testResult=$?
             adb shell am start -n uy.com.traslados.cliente.debug/uy.com.traslados.cliente.MainActivity
             adb shell uiautomator dump /sdcard/pr99-ui.xml
             adb pull /sdcard/pr99-ui.xml android-pr99-ui.xml
             adb exec-out screencap -p > android-pr99-webview.png
+            adb logcat -d > android-pr99-logcat.txt
+            exit "$testResult"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -66,4 +71,5 @@ jobs:
             cliente-premium/app/build/outputs/androidTest-results/
             android-pr99-ui.xml
             android-pr99-webview.png
+            android-pr99-logcat.txt
           if-no-files-found: warn
