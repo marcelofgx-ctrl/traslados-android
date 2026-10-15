@@ -48,7 +48,7 @@
     extraWhen.append(extraSummary,extraHint);
     function mountWhenExtras(){
       const whenCard=doc.querySelector('[data-booking-step="when"]');
-      if(!whenCard)return;
+      if(!whenCard||whenCard.parentElement===extraWhen)return;
       if(extraWhen.parentElement!==whenCard.parentElement)
         whenCard.insertAdjacentElement("afterend",extraWhen);
       if(whenCard.parentElement!==extraWhen)extraWhen.appendChild(whenCard);
