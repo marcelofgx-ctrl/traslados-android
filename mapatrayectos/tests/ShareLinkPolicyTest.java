@@ -20,6 +20,25 @@ public final class ShareLinkPolicyTest {
             "https://example.org/custom.apk"),"do not overwrite user custom download URL");
         truth(!ShareLinkPolicy.needsMigration("download_url",url),"up to date should not migrate");
         truth(!ShareLinkPolicy.needsMigration("booking_url",ShareLinkPolicy.BOOKING_URL),"web current");
+        
+        // New server-published Client v17 must reach existing R25.24 installs
+        // without rebuilding Mapa, while private URLs remain unchanged.
+        String v17="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v17.apk";
+        is(v17,ShareLinkPolicy.resolve("download_url",url,v17,url),
+            "confirmed previous central official default follows new release");
+        is(v17,ShareLinkPolicy.resolve("download_url",url,v17,""),
+            "legacy current official v16 migrates even without marker");
+        is(v17,ShareLinkPolicy.resolve("download_url",
+            "https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk",v17,""),
+            "pre-v16 official still migrates to newest central release");
+        is("https://example.org/custom.apk",
+            ShareLinkPolicy.resolve("download_url","https://example.org/custom.apk",v17,url),
+            "custom owner link never changes");
+        is(v17,ShareLinkPolicy.resolve("download_url",v17,v17,url),
+            "already current official does not change");
+        is(ShareLinkPolicy.BOOKING_URL,ShareLinkPolicy.resolve("booking_url",
+            ShareLinkPolicy.BOOKING_URL,ShareLinkPolicy.BOOKING_URL,""),
+            "booking URL remains consistent");
         System.out.println("PASS R25.23: official Client Premium v16 and safe migration of confirmed v15 link");
     }
 }
