@@ -2163,11 +2163,14 @@ function init(){
     try{if(typeof input.showPicker==="function")input.showPicker();}catch{}
   });
   $("journey-clock-input").addEventListener("change",()=>{
-    const time=$("journey-clock-input").value;
-    if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time))return;
+    const input=$("journey-clock-input");
+    const time=input.value;
+    if(!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time))return;
     const today=currentUY();
     let target=Date.parse(today.day+"T"+time+":00-03:00");
-    let delay=Math.ceil((target-Date.now())/60000);
+    const now=Date.now();
+    if(target<=now)target+=24*60*60*1000;
+    let delay=Math.ceil((target-now)/60000);
     if(delay<1||delay>120){
       tell("Tu viaje permite elegir una recogida dentro de las próximas 2 horas. Para más adelante, usá Tu reserva.");
       $("journey-when-select").value=["now","10","15","20","30","45","60"].includes(selectedPickupMode)?selectedPickupMode:"custom";

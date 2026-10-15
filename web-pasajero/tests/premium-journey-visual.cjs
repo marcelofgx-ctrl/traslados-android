@@ -76,6 +76,17 @@ const {chromium}=require("playwright-core");
     await page.locator(".premium-time-choice[data-pickup='10']").click();
     assert.equal(await page.locator("#journey-when-select").inputValue(),"10");
     assert.equal(await page.locator("#journey-clock-action").isVisible(),true,"Reloj 24 h debe estar visible");
+    const customTime=await page.evaluate(()=>{
+      const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"America/Montevideo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+30*60000));
+      return parts.find(p=>p.type==="hour").value+":"+parts.find(p=>p.type==="minute").value;
+    });
+    await page.locator("#journey-clock-action").click();
+    await page.locator("#journey-clock-input").fill(customTime);
+    await page.locator("#journey-clock-input").evaluate(el=>el.dispatchEvent(new Event("change",{bubbles:true})));
+    assert.equal(await page.locator("#journey-when-select").inputValue(),"custom","La hora manual debe aplicarse");
+    assert.equal(await page.locator("#journey-custom-time-label").isVisible(),true,"Hora manual seleccionada visible");
+    assert.equal(await page.locator("#journey-clock-input").isVisible(),false,"El reloj debe cerrarse sin ReferenceError");
+    await page.locator(".premium-time-choice[data-pickup='10']").click();
     assert.equal(await page.locator(".premium-when-extras").count(),1,"Disponibilidad y pasajeros deben permanecer accesibles");
     assert.equal(await page.locator(".premium-when-extras").evaluate(e=>e.open),false,"Panel secundario plegado por defecto");
     await page.locator(".premium-when-extras>summary").click();

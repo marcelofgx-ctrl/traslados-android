@@ -4,6 +4,7 @@ on:
     branches: [feature/tu-viaje-premium-visual-20261015]
     paths:
       - 'scripts/prepare_premium_preview.py'
+      - 'web-pasajero/**'
       - '.github/workflows/build-cliente-pr99-preview.yml'
   workflow_dispatch:
 permissions:

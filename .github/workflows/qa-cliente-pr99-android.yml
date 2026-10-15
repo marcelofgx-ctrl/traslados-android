@@ -5,6 +5,7 @@ on:
     paths:
       - 'cliente-premium/preview-tests/**'
       - 'scripts/prepare_premium_preview.py'
+      - 'web-pasajero/**'
       - '.github/workflows/qa-cliente-pr99-android.yml'
   workflow_dispatch:
 permissions:
@@ -24,6 +25,7 @@ jobs:
           gradle-version: '8.9'
       - name: Prepare isolated PR99 app and platform instrumentation
         run: |
+          node web-pasajero/tests/premium-clock-24h-smoke.cjs
           python3 scripts/prepare_premium_preview.py
           mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
           cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
