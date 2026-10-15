@@ -18,6 +18,17 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
     }
     private void loaded() throws Exception {
         getActivity();
+        WebView w=web();
+        // evaluateJavascript during navigation can lose its callback when the
+        // initial JS context is replaced. Wait for native page completion first.
+        boolean complete=false;
+        for(int i=0;i<300;i++) {
+            final int[] progress={0};
+            getInstrumentation().runOnMainSync(()->progress[0]=w.getProgress());
+            if(progress[0]==100){complete=true;break;}
+            Thread.sleep(100);
+        }
+        assertTrue("Native page load completed",complete);
         for(int i=0;i<150;i++) {
             if("true".equals(js("Boolean(document.querySelector('#view-inicio.active [data-service=now]') && document.querySelector('.premium-next') && document.readyState==='complete')")))return;
             Thread.sleep(100);
