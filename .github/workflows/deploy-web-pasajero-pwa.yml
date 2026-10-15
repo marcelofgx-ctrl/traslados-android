@@ -131,6 +131,7 @@ jobs:
           node web-pasajero/tests/public-branding-smoke.cjs
           node web-pasajero/tests/install-flow-smoke.cjs
           node web-pasajero/tests/public-config-v72-smoke.cjs
+          node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node --check web-pasajero/sw.js
           python3 - <<'PYCHECK'
           import json,pathlib
