@@ -940,7 +940,7 @@ function renderRouteSummary(){
   const details=document.createElement("details");
   details.className="route-extra";
   // Mostrar el trazado vial al completar Tu viaje; la reserva conserva su acordeón.
-  details.open=document.body.classList.contains("journey-mode-quick");
+  details.open=Boolean(document.body?.classList?.contains("journey-mode-quick"));
   host.appendChild(details);
   text(details,"summary","Detalles de la estimación");
   const detailCaption=text(details,"p","","route-map-caption");
