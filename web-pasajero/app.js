@@ -1617,6 +1617,24 @@ function reservationView(r,guestToken){
     if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
     // El conductor es la única fuente de verdad de fases: no crear ETA ni GPS ficticios.
     const actualStage=onBoard?2:arrived?1:0;
+    // Si esta reserva autorizada incluye coordenadas de ambos puntos, cargar
+    // SOLO el trayecto vial verificado. No representar la ubicación del auto:
+    // ese dato requiere un endpoint privado de seguimiento por reserva.
+    const from=[Number(r.origin_lat),Number(r.origin_lng)];
+    const to=[Number(r.destination_lat),Number(r.destination_lng)];
+    if(from.every(Number.isFinite)&&to.every(Number.isFinite)&&
+       isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
+       (from[0]!==to[0]||from[1]!==to[1])){
+      const mapShell=text(top,"div","","premium-active-map-shell");
+      const mapStage=text(mapShell,"div","","premium-active-route-map");
+      text(mapShell,"small","Mapa del trayecto contratado, no posición del conductor.","premium-active-map-note");
+      void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
+        {api:API,publishableKey:KEY}).then(route=>{
+          if(!mapStage.isConnected)return;
+          if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||route.geometry.length<2||
+            !window.TrasladosPremiumMap?.render(mapStage,route.geometry))mapShell.remove();
+        }).catch(()=>mapShell.remove());
+    }
     const liveSteps=text(top,"div","","premium-trip-timeline");
     liveSteps.setAttribute("aria-label","Estado de recogida y traslado informado por el conductor");
     for(const [index,label] of ["En camino","En el punto de recogida","Durante el viaje"].entries()){
