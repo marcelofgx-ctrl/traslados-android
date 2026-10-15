@@ -40,6 +40,41 @@
     const timeLayout=make(doc,"div","premium-clock-layout");
     timeLayout.append(options,clockButton);
     doc.querySelector(".journey-time-controls").insertAdjacentElement("afterend",timeLayout);
+    // Controles secundarios siguen presentes y funcionando, pero no desplazan
+    // la selección horaria en la pantalla principal de "Cuándo".
+    const extraWhen=make(doc,"details","premium-when-extras");
+    const extraSummary=make(doc,"summary","","Disponibilidad y pasajeros · ver detalles");
+    const extraHint=make(doc,"p","premium-when-extras-note","Consultá la disponibilidad y ajustá la cantidad de pasajeros antes de enviar.");
+    extraWhen.append(extraSummary,extraHint);
+    function mountWhenExtras(){
+      const whenCard=doc.querySelector('[data-booking-step="when"]');
+      if(!whenCard)return;
+      if(extraWhen.parentElement!==whenCard.parentElement)
+        whenCard.insertAdjacentElement("afterend",extraWhen);
+      if(whenCard.parentElement!==extraWhen)extraWhen.appendChild(whenCard);
+    }
+    // Solo etiquetas realmente elegidas por el pasajero, nunca destinos fingidos.
+    const routeCard=make(doc,"section","premium-confirm-route");
+    routeCard.hidden=true;
+    routeCard.setAttribute("aria-label","Recorrido a confirmar");
+    function renderConfirmRoute(){
+      const origin=doc.querySelector("#origin-picker .location-selected-label")?.textContent?.trim();
+      const destination=doc.querySelector("#destination-picker .location-selected-label")?.textContent?.trim();
+      routeCard.replaceChildren();
+      if(!origin||!destination){routeCard.hidden=true;return;}
+      routeCard.hidden=false;
+      const stops=[...doc.querySelectorAll("#stops .location-selected-label")].map(n=>n.textContent.trim()).filter(Boolean);
+      [[origin,"●","Origen"],...stops.map(v=>[v,"•","Parada"]),[destination,"●","Destino"]].forEach(([place,dot,type],idx)=>{
+        const row=make(doc,"div","premium-confirm-place");
+        row.dataset.kind=idx===0?"origin":idx===stops.length+1?"destination":"stop";
+        row.append(make(doc,"span","premium-confirm-dot",dot));
+        const copy=make(doc,"div","premium-confirm-copy");
+        copy.append(make(doc,"small","",type),make(doc,"strong","",place));
+        row.append(copy);routeCard.append(row);
+      });
+    }
+    const requestHost=doc.getElementById("urgent-actions");
+    requestHost.querySelector(".request-hero").insertAdjacentElement("afterend",routeCard);
     const actions=make(doc,"footer","premium-actions"),warning=make(doc,"p","premium-error"),back=make(doc,"button","premium-previous","← Atrás"),next=make(doc,"button","premium-next","Continuar →");
     back.type="button";next.type="button";warning.setAttribute("role","alert");warning.hidden=true;
     actions.append(warning,back,next);screen.querySelector("#journey-field-host").insertAdjacentElement("afterend",actions);
@@ -63,6 +98,8 @@
         const toggle=doc.querySelector('[data-booking-step="'+name+'"] [data-step-toggle]');
         if(toggle?.getAttribute("aria-expanded")!=="true")toggle?.click();
       }
+      if(name==="when")mountWhenExtras();
+      if(name==="confirm")renderConfirmRoute();
       warning.hidden=true;back.hidden=name==="route";next.hidden=name==="confirm";
       next.textContent=name==="passenger"?"Revisar mi viaje →":"Continuar →";
       updateTimes();header.scrollIntoView?.({block:"start",behavior:"smooth"});
