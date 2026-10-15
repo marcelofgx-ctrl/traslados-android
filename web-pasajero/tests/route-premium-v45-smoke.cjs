@@ -14,7 +14,7 @@ assert(html.includes('id="pickup-presence"'),"Preserve live pickup");
 assert(html.includes('id="booking-final"'),"Preserve booking submit flow");
 assert(html.includes('src="./app.js?v=71"')&&html.includes('href="./styles.css?v=71"'),
   "Both asset versions must be coherent");
-assert(sw.includes('traslados-cliente-pwa-v71'),"Refresh SW for embedded client");
+assert(sw.includes('traslados-cliente-pwa-v72'),"Refresh SW for embedded client");
 assert(html.includes("Elegí el recorrido, revisá la estimación"),"Booking intro should be brief and contextual");
 assert(/class="wayline" aria-hidden="true"/.test(html),"Route connector is decorative");
 assert(js.includes('box.dataset.locationKind=name'),"Style origin vs destination without hardcoding location data");
