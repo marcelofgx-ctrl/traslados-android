@@ -1733,19 +1733,41 @@ function installUI(){
   const copyButton=$("install-copy-link");
   const apkOption=$("install-apk-option"),apkLink=$("install-apk-link");
   const apkGuideButton=$("install-apk-web-guide");
+  const catalog=window.TrasladosPublicConfig;
   const android=/Android/i.test(navigator.userAgent||"");
   let apkReady=false,installConfirmed=false;
+  function applyPublishedApk(){
+    if(!catalog)return;
+    const published=catalog.get();
+    if(!published?.clientApkUrl)return;
+    const version=String(published.clientVersion||"");
+    if(!/^[1-9][0-9]*$/.test(version))return;
+    if(apkLink.href===published.clientApkUrl)return;
+    apkLink.href=published.clientApkUrl;
+    apkLink.download="Traslados_Cliente_Premium_v"+version+"_RELEASE.apk";
+    const hint=$("install-apk-hint");
+    if(hint)hint.textContent="Cliente Premium v"+version+
+      ", firmada y con la misma interfaz de Traslados con Reserva. Las reservas necesitan conexión a Internet. Android puede pedir autorización para instalar aplicaciones descargadas.";
+    apkReady=false;
+    updateUI();
+    void checkVerifiedApk();
+  }
   const isReady=()=>Boolean(installEvent);
   // No suponer que una URL existe: comprobar HEAD y tipo binario antes de
   // mostrar el botón de descarga; nunca dar un enlace al workflow de GitHub.
   async function checkVerifiedApk(){
     if(!android||isStandaloneTraslados())return;
+    const candidate=apkLink.href;
+    let verified=false;
     try{
-      const response=await fetch(apkLink.href,{method:"HEAD",cache:"no-store"});
+      const response=await fetch(candidate,{method:"HEAD",cache:"no-store"});
       const type=(response.headers.get("content-type")||"").toLowerCase();
       const length=Number(response.headers.get("content-length")||"0");
-      apkReady=response.ok&&length>10000&&!/text\/html|application\/json|text\/plain/.test(type);
-    }catch{apkReady=false;}
+      verified=response.ok&&length>10000&&!/text\/html|application\/json|text\/plain/.test(type);
+    }catch{verified=false;}
+    // An old HEAD reply must never re-enable a superseded APK link.
+    if(apkLink.href!==candidate)return;
+    apkReady=verified;
     updateUI();
   }
   function showGuide(){
@@ -1839,6 +1861,9 @@ function installUI(){
   });
   apkGuideButton.addEventListener("click",showGuide);
   updateUI();
+  applyPublishedApk(); // Apply any valid cached remote release immediately.
+  catalog?.subscribe?.(applyPublishedApk);
+  void catalog?.refresh?.(); // Bounded background fetch, never blocks booking.
   void checkVerifiedApk();
   if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self){
     const register=()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});
