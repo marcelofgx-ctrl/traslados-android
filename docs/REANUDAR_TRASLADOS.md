@@ -1,5 +1,13 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Mapa R25.23 — Enlaces y contacto / cliente actualizado (14/10/2026, EN VALIDACIÓN)
+
+- Captura Samsung 21:27 del menú «Enlaces y contacto» en Mapa R25.22. Auditando `QuickActionsMenu`: «WEB DE RESERVAS» usa URL Pages correcta y contiene PWA v71, «CONTACTO .VCF» comparte tarjeta de contacto, pero «APP PARA PASAJEROS» apuntaba por defecto a **Cliente Premium v15** (obsoleto; actual **v16/code204**). Más grave: las URL oficiales previamente confirmadas se guardan en SharedPreferences `share_links` y se compartían sin volver a mostrar confirmación, por lo que cambiar solo la constante no era suficiente.
+- R25.23: `ShareLinkPolicy.CLIENT_APK_URL` apunta al APK firmado `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk`; `ShareLinkPolicy.BOOKING_URL` mantiene PWA oficial. Migra automáticamente solo las direcciones predeterminadas oficiales antiguas, **incluida v15 previamente confirmada**, a v16 y **revoca confirmación** para revisar antes de compartir. Respeta URL personalizada guardada, sin modificaciones silenciosas.
+- Nueva prueba JVM `ShareLinkPolicyTest` verifica enlaces actuales, v15→v16, legacy Lovable/Worker, ninguna migración de URL personalizadas y re-confirmación. CI modular y firma Android comprueban cambios. Versión Mapa **R25.23/code75** en APK separada, sin sobrescribir R25.22. No cambia navegación heading-up, GPS, histórico, Supabase, Conductor, web v71 ni Cliente Premium v16.
+- Pendiente CI modular y QA visual Android, RELEASE firmada SHA-256 y pruebas del diálogo de compartir en Samsung.
+
+
 ## PWA Pasajeros v71 — causa comprobada de ETA 401 con sesión visualmente iniciada (14/10/2026, EN VALIDACIÓN)
 
 - Captura Samsung a las ~20:54 de `web-pasajero`: disponibilidad verde y `La sesión no permitió calcular la llegada`. Usuario **confirma sesión visible abierta**. Supabase `function_edge_logs` registró **2 × HTTP 401 /functions/v1/pickup-eta** entre 23:35Z y 00:10Z. Consultado solo lectura: `customer_sessions` válidas **0** y `customers` activas **0** tras limpieza de testing. Por lo tanto no es fallo del GPS; `localStorage` conservó una sesión que ya no existe en DB. Reingresar con la cuenta anterior no funciona hasta crear una nueva cuenta de testing; no restaurar ni inventar cuentas.
