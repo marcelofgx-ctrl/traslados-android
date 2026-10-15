@@ -964,7 +964,13 @@ function renderRouteSummary(){
         ? "Ruta guardada, calculada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo."
         : "Ruta estimada por carretera. Datos cartográficos © OpenStreetMap contributors. No incluye tráfico en vivo.";
       clear(map);
-      if(Array.isArray(data.geometry)&&data.geometry.length>1)addRoadDiagram(map,data.geometry);
+      if(Array.isArray(data.geometry)&&data.geometry.length>1){
+        // La polilínea sigue el servidor vial. Nunca dibujar una línea recta.
+        // Tu reserva conserva su esquema liviano y el mismo motor de rutas.
+        const useMap=document.body.classList.contains("journey-mode-quick");
+        const drawn=useMap&&window.TrasladosPremiumMap?.render(map,data.geometry);
+        if(!drawn)addRoadDiagram(map,data.geometry);
+      }
     }else{
       latestRoad=null;
       distance.textContent="—";duration.textContent="—";reference.textContent="A confirmar";
