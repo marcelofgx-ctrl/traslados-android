@@ -1576,6 +1576,25 @@ function reservationView(r,guestToken){
   text(v,"strong",tripBoard.compactDay(r.pickup_date)+" · "+String(r.pickup_time||"").slice(0,5));
   text(v,"small",r.code||"Solicitud");
   const badge=text(head,"span","","trip-status");text(badge,"span","","trip-status-dot");text(badge,"span",meta.label);
+  // Solicitud inmediata enviada: radar es animación decorativa, NO localización.
+  // La confirmación siempre llega por el estado de la reserva en Supabase.
+  if(meta.tone==="pending"&&tripBoard.isImmediateRequest(r)&&!expired){
+    const searching=text(top,"section","","premium-search");
+    searching.setAttribute("aria-label","Seguimiento de solicitud en espera");
+    const radar=text(searching,"div","","premium-search-radar");
+    radar.setAttribute("aria-hidden","true");
+    text(radar,"span","◎","premium-search-target");
+    const message=text(searching,"div","","premium-search-copy");
+    text(message,"strong","Esperando respuesta del conductor");
+    text(message,"small","Tu solicitud fue recibida. Todavía no está confirmada; te avisaremos cuando el conductor responda.");
+    const milestones=text(searching,"div","","premium-search-phases");
+    for(const [idx,label] of ["Recibida","En espera","Confirmada"].entries()){
+      const item=text(milestones,"div","","premium-search-phase");
+      item.dataset.state=idx===0?"done":idx===1?"current":"future";
+      text(item,"i").setAttribute("aria-hidden","true");
+      text(item,"span",label);
+    }
+  }
   if(meta.tone==="moving"){
     // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
     const onBoard=r.status==="EN_VIAJE";
@@ -1603,12 +1622,22 @@ function reservationView(r,guestToken){
       if(index===actualStage)item.setAttribute("aria-current","step");
     }
     const quick=text(top,"div","","premium-trip-contact");
-    const call=text(quick,"a","☎ Llamar al conductor","premium-trip-call");
+    const call=text(quick,"a","☎ Llamar","premium-trip-call");
     call.href="tel:+59897228175";
     call.setAttribute("aria-label","Llamar al conductor de Traslados");
-    button(quick,"◉ Ver detalles y chat","premium-trip-chat-link",()=>{
-      d.open=true;d.scrollIntoView({block:"start",behavior:"smooth"});
+    // Enlaces externos oficiales: no se comunica el código ni datos personales.
+    const whatsapp=text(quick,"a","◉ WhatsApp","premium-trip-whatsapp");
+    whatsapp.href="https://wa.me/59897228175";
+    whatsapp.rel="noopener noreferrer";whatsapp.target="_blank";
+    whatsapp.setAttribute("aria-label","Abrir WhatsApp del conductor");
+    const chatAction=button(quick,"✉ Chat","premium-trip-chat-link",()=>{
+      d.open=true;
+      const trigger=d.querySelector(".trip-chat-open");
+      if(trigger)trigger.click();else d.scrollIntoView({block:"start",behavior:"smooth"});
     });
+    // Evita que los tres botones activen además el desplegable <summary>.
+    for(const action of [call,whatsapp,chatAction])
+      action.addEventListener("click",event=>event.stopPropagation());
     text(top,"p",onBoard
       ?"El inicio fue informado por el conductor. La finalización se actualizará al cerrar el traslado."
       :arrived?"El conductor registró su llegada al punto de recogida."
