@@ -154,3 +154,30 @@ Desarrollo **solo en rama draft, sin fusionar a main**.
 **Siguiente trabajo imprescindible:** seleccionar/generar un asset de vehículo de calidad equivalente a la referencia con autorización; terminar enfoque full-screen de seguimiento; conectar email y consentimiento tras fijar contrato de backend; E2E en entorno seguro + Samsung físico. Revalidar streaming de posición/ETA autorizado o presentar solo estados existentes y mapa de ruta, sin inventar coche en movimiento.
 
 **Versión pública deliberadamente intacta:** PWA v74, Cliente v16, Conductor 11.5-R8 y Mapa R25.25. No se actualizó service worker ni versión publicada.
+
+---
+
+## AVANCE PRODUCTO — 15/10/2026, 12:50 UY
+
+Se continuó el desarrollo en PR #99 **solo en rama draft**, sin publicar ni fusionar. No confundir CI con producto final.
+
+### Cambios de código
+- Pantalla «Tus datos» en Tu viaje incorpora email opcional validado y un consentimiento explícito para recordar nombre, teléfono y correo **solo en este dispositivo**, con borrado al desactivar. El email NO se envía al conductor/Supabase porque la RPC vigente no lo admite. La UI de Tu reserva permanece independiente.
+- Pantalla específica `view-seguimiento` de viaje activo, accesible desde cada traslado autorizado en fase de movimiento; conserva estado real, origen/destino, datos del vehículo con matrícula solo si está autorizada, botones telefónico/WhatsApp/chat, timeline basada en `status` y `pickup_phase`. No hay posición falsa, ETA falsa ni botón para finalizar el viaje desde el cliente.
+- Mapa de seguimiento usa geometría vial verificada cuando la reserva trae coordenadas; sin ellas se muestra mensaje de ausencia honesto. El módulo cartográfico acepta altura compacta para Android sin distorsionar el encuadre.
+- La barra fija de navegación ya no oculta los botones de contacto; se usan acciones en un dock independiente y espaciado de scroll.
+- Portada: incorporado asset local `premium-car-crop.webp` derivado de la referencia aprobada (Git blob SHA `b90ffd42ea1f4fad1d3e230266970b3997f16b5e`), junto con fondo local de Montevideo y precache SW; tras captura QA se ajustó el tamaño para no tapar el cielo. La fidelidad visual sigue siendo evaluada y NO está aprobada.
+- QA visual: ahora revisa email, consentimiento/borrado local, pantalla completa en estados EN_CAMINO/EN_VIAJE, ausencia de finalizar del pasajero, acciones visibles por encima de navegación en 360/393/412 px, y recursos fotográficos offline. Chrome QA se cierra correctamente ante aserciones fallidas (no se queda bloqueado hasta el timeout).
+
+### Estado
+Los cuatro workflows habían pasado en el commit `c26baf9` y capturas de la pantalla de seguimiento corregida fueron revisadas (sin choque con barra inferior). Consultar Actions sobre HEAD más reciente `207c923` antes de declarar un estado final.
+No se enviaron viajes ni se escribieron datos en la DB durante QA. PWA pública continúa en v74. Sin despliegue ni entrega final.
+
+### Bloqueantes reales para lanzamiento
+- QA visual final de portada completa contra referencia (fragmento fotográfico integrado es provisional); otras pantallas deben alcanzar el mismo nivel.
+- Contrato backend para email opcional de reserva si se quiere almacenar/enviar: consentimiento claro, validaciones y migración auditada. Persistencia actual únicamente local bajo consentimiento.
+- Seguimiento **en vivo** de vehículo / ETA con permisos de lectura por reserva: no inventar ni reutilizar GPS abierto para todos.
+- Pruebas de extremo a extremo contra entorno seguro de Supabase, rutas, horarios, presupuesto, cancelación, chat, identidad y matrícula APP-0061, sin generar viajes accidentales en producción.
+- Prueba física Samsung y paridad APK Cliente con WebView. Solo después: versionado coordinado, service worker, merge y publicación.
+
+Criterio: la aplicación final no es un informe ni un mockup; terminar funcionalidades, QA visual humana y pruebas reales antes de decir «lista».
