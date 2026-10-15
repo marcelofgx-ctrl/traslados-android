@@ -2203,3 +2203,89 @@ body.trip-chat-modal-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   #view-viajes .trip-live-symbol{animation:none!important}
 }
+
+
+/* Tu viaje · experiencia independiente de la agenda programada (PWA v74).
+   Presentación solamente: autocompletado, GPS, tarifas y contratos existentes. */
+#view-viaje.quick-journey-screen{
+  max-width:760px;margin-inline:auto;padding-bottom:28px;
+  --journey-gold:#f0d095;--journey-deep:#072c33;
+}
+#view-viaje .journey-back{margin:2px 0 13px;color:#e8d0a0}
+#view-viaje .journey-hero{
+  position:relative;overflow:hidden;isolation:isolate;text-align:center;
+  padding:22px 18px 24px;margin:0 0 13px;
+  border:1px solid rgba(239,204,136,.48);border-radius:26px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(220,180,103,.21),transparent 57%),
+    linear-gradient(155deg,#104b53,#072e37 63%,#05252f);
+  box-shadow:0 16px 38px rgba(0,9,13,.25),inset 0 1px 0 rgba(255,242,208,.08);
+}
+#view-viaje .journey-hero:after{
+  content:"";position:absolute;inset:auto -15% -58px;height:100px;z-index:-1;
+  border:1px solid rgba(240,208,149,.12);border-radius:50%;transform:rotate(-7deg);
+}
+#view-viaje .journey-halo{
+  width:112px;height:112px;margin:0 auto 11px;padding:7px;border-radius:50%;
+  color:#f1c983;background:radial-gradient(circle at 35% 25%,rgba(252,229,175,.2),transparent 59%),
+    linear-gradient(135deg,#144e57,#042a34);
+  border:2px solid #d3aa60;box-shadow:0 0 0 5px rgba(226,187,111,.10),
+    0 12px 24px rgba(0,0,0,.28),inset 0 0 18px rgba(239,208,143,.13);
+}
+#view-viaje .journey-halo svg{display:block;width:100%;height:100%}
+#view-viaje .journey-hero .eyebrow{font-size:10px;letter-spacing:.18em;color:#ebd0a0}
+#view-viaje .journey-hero h2{font-size:clamp(24px,5.5vw,34px);font-weight:800;line-height:1.14;
+  letter-spacing:-.05em;margin:7px auto 10px;max-width:390px;color:#fff5e5}
+#view-viaje .journey-hero h2 em{font-style:normal;color:#f2d095}
+#view-viaje .journey-hero>p:last-child{
+  font-size:12.5px;line-height:1.6;color:#bedbd3;max-width:340px;margin:auto}
+#view-viaje .journey-when-compact{
+  display:grid;gap:11px;border:1px solid rgba(232,201,136,.35);border-radius:20px;
+  background:linear-gradient(145deg,rgba(22,75,80,.96),rgba(8,46,55,.95));
+  padding:17px 15px;margin-bottom:12px;box-shadow:0 9px 28px rgba(0,8,13,.22)
+}
+#view-viaje .journey-when-compact>div:first-child{display:grid;gap:4px}
+#view-viaje .journey-when-compact strong{font-size:15px;color:#fff4df}
+#view-viaje .journey-when-compact small{font-size:11.5px;color:#bad6cd}
+#view-viaje .journey-time-controls{display:flex;align-items:stretch;gap:8px;min-width:0}
+#view-viaje #journey-when-select{
+  min-width:0;flex:1;height:51px;border:1px solid rgba(238,205,143,.63);
+  border-radius:14px;padding:0 11px;color:#fff4db;font-size:14px;font-weight:700;
+  background-color:#113f47;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+}
+#view-viaje #journey-when-select option{background-color:#10353d;color:#fff}
+#view-viaje .journey-clock-action{
+  flex:0 0 52px;min-width:52px;min-height:51px;border-radius:14px;
+  font-size:28px;line-height:1;color:#f0d095;border:1px solid rgba(238,205,143,.6);
+  background:linear-gradient(145deg,#174952,#0a323b);
+}
+#view-viaje #journey-clock-input{width:100%;min-height:48px;font-size:17px;color:#fff4db;
+  background:#113d45;border:1px solid #d9b875;border-radius:13px;padding:7px 13px}
+#view-viaje .journey-time-note{font-size:11px;line-height:1.55;color:#bcd1c8;margin:0}
+#view-viaje .journey-form-host{display:grid;gap:10px;min-width:0}
+#view-viaje .booking-step-card{
+  border-color:rgba(239,207,148,.32);border-radius:21px;
+  background:linear-gradient(147deg,rgba(15,60,68,.98),rgba(7,42,50,.98));
+  box-shadow:0 8px 26px rgba(0,14,20,.17);margin:0
+}
+#view-viaje .booking-step-card.is-open{border-color:rgba(238,208,142,.62)}
+#view-viaje .booking-step-number{background:#daba76;color:#133740}
+#view-viaje .booking-step-card[data-booking-step="when"] .quick-times,
+#view-viaje #pickup-datetime-block,
+#view-viaje #when-next{display:none!important}
+#view-viaje .urgent-actions{border:1px solid rgba(230,191,120,.4);border-radius:21px;
+  margin-top:3px;padding:17px 15px;background:linear-gradient(140deg,#0c3d43,#072c36)}
+#view-viaje .booking-main-cta{border-radius:14px;min-height:56px;
+  background:linear-gradient(125deg,#c99e58,#f4d58e 55%,#d0a760);color:#102f36}
+#view-viaje .location-pane,#view-viaje .route-overview{min-width:0}
+#view-viaje .booking-step-toggle{min-height:70px}
+#view-viaje .booking-step-content:not([hidden]){animation:journeyReveal .24s ease-out both}
+@keyframes journeyReveal{from{opacity:.7;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:380px){
+  #view-viaje .journey-hero{padding:18px 12px 20px}
+  #view-viaje .journey-when-compact{padding:13px 10px}
+  #view-viaje #journey-when-select{font-size:12.2px;padding-inline:8px}
+  #view-viaje .journey-clock-action{flex-basis:48px;min-width:48px}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-viaje .booking-step-content:not([hidden]){animation:none}
+}
