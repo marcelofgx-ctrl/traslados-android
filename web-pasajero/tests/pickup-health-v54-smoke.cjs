@@ -24,7 +24,7 @@ assert.equal(health.summary().length,60,"Short, bounded in-memory diagnostic his
 const html=file("index.html"),css=file("styles.css"),js=file("app.js"),sw=file("sw.js");
 assert(html.includes('id="pickup-route-animation"')&&!html.includes('id="pickup-route-caption"'));
 assert(html.includes('pickup-observability.js?v=2'));
-assert(html.includes("app.js?v=71")&&html.includes("styles.css?v=71"));
+assert(html.includes("app.js?v=72")&&html.includes("styles.css?v=72"));
 assert(sw.includes("traslados-cliente-pwa-v72")&&sw.includes("pickup-observability.js"));
 assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("availability"'));
 assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("eta"'));
