@@ -83,3 +83,34 @@ Portada con tres servicios INDEPENDIENTES, cada icono circular abre su propia pa
 
 ### Comando de reanudación actualizado
 «Retomar Traslados desde GitHub; leer `docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md` en `feature/tu-viaje-premium-visual-20261015`, abrir PR #99 y los resultados de QA visual. Continuar el rediseño fiel de las 8 pantallas desde código existente, sin publicar hasta comparar capturas con las dos imágenes adjuntas. No perder contratos, backend, APP-0061 ni flujo separado Tu viaje / Tu reserva.»
+
+---
+
+## AVANCE 15/10/2026, 11:00 URUGUAY — PR #99 SIN PUBLICAR
+
+Se trabajó exclusivamente sobre la rama feature/tu-viaje-premium-visual-20261015.
+
+### Cambios comprobados en código
+- Reloj original de 24 horas visible junto a las opciones rápidas, conservando sus eventos y validaciones.
+- Mejoras de composición de portada (círculos y paleta petróleo/champagne), navegación compacta y botones dorados. Se agregó fotografía de Montevideo por Unsplash como mejora progresiva con SVG local de respaldo. En CI la foto remota NO llegó a mostrarse: todavía falta incorporar imagen de calidad local verificable.
+- Disponibilidad/pasajeros permanece accesible en panel plegable en «Cuándo», sin eliminar lógica de validación y recogida.
+- Confirmación: eliminado el icono gigantesco heredado; se muestran origen, destino y paradas SOLO cuando el pasajero realmente los eligió; no se inventan precios/km.
+- Solicitudes inmediatas pendientes: radar animado decorativo y mensaje veraz de espera de respuesta; NUNCA GPS, ubicación o conductor ficticios. Viajes en fase activa: timeline vinculada al status/pickup_phase real, matrícula autorizada, llamada, WhatsApp y chat.
+- QA mejorado: capturas estables sin capturar transiciones; 360/393/412 px, cinco vistas por ancho, comprobación de reloj visible, cantidad de pasajeros accesible e icono acotado.
+
+### Evidencia
+- Commit 0123411 (antes de corrección menor de texto): pasaron cuatro workflows, incluido el visual: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38746638755
+- Artifact de QA: premium-mobile-qa-capturas (15 capturas: 5 etapas × 3 anchos). No son las 8 escenas completas ni una prueba real de Supabase.
+- Se revisaron capturas humanas frente a ambas láminas: mejoró la jerarquía, pero todavía NO cumple fidelidad visual exacta. Falta fotografía/coche principal, mapa cartográfico y experiencias 6–8 de seguimiento.
+- Aún no se hizo prueba física Samsung ni un E2E de producción o test completo. El PR debe seguir en draft.
+
+### Bloqueantes antes de publicar
+1. Hero fotográfico local de calidad comparable a la referencia y garantías offline/licencias.
+2. Mapa real en recorrido, conductor en camino y viaje, solo con geometría o ubicación legítima.
+3. Escenas 6–8 con una UI tan cuidada como la lámina, sin datos falsos ni botón de finalización desde pasajero.
+4. Contrato backend para email opcional, privacidad y consentimiento si se guarda información.
+5. Regresión de inmediata vs programada, identidad/PIN, presupuesto, cancelación, chat, matrícula APP-0061 y WebView.
+6. Revisión final a 360/393/412 px y Samsung físico; recién después bump, SW, merge y publicación.
+
+### Versiones públicas vigentes (sin cambios)
+PWA v74; Cliente Premium v16; Conductor 11.5-R8 / code130; Mapa R25.25 / code77.
