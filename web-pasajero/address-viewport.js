@@ -26,11 +26,18 @@
   root.addEventListener("resize",schedule);
   viewport()?.addEventListener("resize",schedule);
   viewport()?.addEventListener("scroll",schedule);
+  root.document.addEventListener("focusin",event=>{
+    if(active&&event.target!==active.input&&!active.results.contains(event.target))stop();
+  });
   function attach(input,results){
     const entry={input,results};
     input.addEventListener("focus",()=>{active=entry;schedule();});
     input.addEventListener("input",()=>{if(root.document.activeElement===input){active=entry;schedule();}});
-    input.addEventListener("blur",()=>{if(active===entry)stop();});
+    input.addEventListener("blur",event=>{
+      // A suggestion receives focus before click. Keep its position stable
+      // until the selection commits (especially during remote resolution).
+      if(active===entry&&!results.contains(event.relatedTarget))stop();
+    });
     const observer=new MutationObserver(()=>{if(active===entry)schedule();});
     observer.observe(results,{childList:true});
     // Removed stop pickers must not be retained by window resize handlers.
