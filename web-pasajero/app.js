@@ -105,6 +105,7 @@ function suggestBookingStep(error){
 }
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
+let expiredPassengerSessionNotice=false;
 let urgentAttempt=null;
 
 function jsonStorage(key,defaultValue){try{return JSON.parse(localStorage.getItem(key)||"null")??defaultValue;}catch{return defaultValue;}}
@@ -380,6 +381,16 @@ async function refreshPickupPresence(force=false){
       data?.available?"success":String(data?.reason||"other"),
       data?.available?"ready":"issue",signedIn?"session":"guest",Date.now()-etaStart);
     if(!etaResultStillApplies(key))return;
+    if(data?.sessionInvalid&&signedIn){
+      // The server rejected the saved token. Browser localStorage is not a
+      // verified login. Keep the valid guest ETA returned by the trusted Edge.
+      window.TrasladosPickupHealth?.recordContext?.("eta","login_required",
+        "issue","session",Date.now()-etaStart);
+      invalidatePassengerSession();
+      const guestKey=pickupIdentityKey();
+      lastPickupEtaKey=guestKey;
+      lastPickupEtaAt=Date.now();
+    }
     if(data?.available&&Number.isFinite(data.distanceKm)&&data.distanceKm>=0
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
       const km=data.distanceKm,minutes=data.etaMin;
@@ -389,7 +400,9 @@ async function refreshPickupPresence(force=false){
       etaRetryNotBefore=0;etaRetryIdentity="";
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
         subtitle:"Llegada aproximada hasta tu origen.",
-        km,minutes,estimateNote:"Distancia y tiempo aproximados. La recogida requiere confirmación.",
+        km,minutes,estimateNote:data?.sessionInvalid?
+          "Estimación pública. La sesión anterior venció; volvé a ingresar o creá una cuenta desde Mi cuenta.":
+          "Distancia y tiempo aproximados. La recogida requiere confirmación.",
         checked:checkedLabel,phase:"ready"});
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }else{
@@ -406,16 +419,18 @@ async function refreshPickupPresence(force=false){
       }
       if(reason==="rate_limited"){
         // Espera prudente para no insistir sobre una cuota aún agotada.
-        etaRetryIdentity=identity;
+        etaRetryIdentity=authReady()?session.token:"visitante";
         etaRetryNotBefore=Math.max(etaRetryNotBefore,Date.now()+90000);
       }
-      const text=reason==="rate_limited"?"La llegada se actualizará en breve.":
+      const text=data?.sessionInvalid?
+        "La sesión anterior ya no es válida. La llegada pública no está disponible por ahora; podés usar Mi cuenta para volver a ingresar o registrarte.":
+        reason==="rate_limited"?"La llegada se actualizará en breve.":
         reason==="login_required"?(signedIn
           ?"La sesión no permitió calcular la llegada. Revisá Mi cuenta."
           :"La llegada para visitantes no está disponible ahora. Reintentaremos."):
         reason==="route_unavailable"?"Por ahora no hay tiempo estimado de llegada. Reintentaremos.":
         "No pudimos calcular la llegada. Reintentaremos.";
-      lastEtaFailureKey=key;lastEtaFailureMessage=text;
+      lastEtaFailureKey=pickupIdentityKey();lastEtaFailureMessage=text;
       showWaiting(text);
       lastPickupEtaMessage=$("pickup-presence-status")?.textContent||"";
     }
@@ -949,9 +964,31 @@ function syncAuthUI(){
   $("passenger-account-phone").textContent=logged?(session.customer.phone||"Sin teléfono"):"";
   renderAccount();renderStops();refreshBookingSteps();
 }
+function clearPassengerSessionLocally(){
+  session=null;localStorage.removeItem(SESSION_KEY);
+  closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+  $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
+  $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
+  for(const tab of document.querySelectorAll("[data-trips-scope]")){
+    const selected=tab.dataset.tripsScope==="upcoming";
+    tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
+  }
+  openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
+  tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
+  $("person-name").value="";$("person-phone").value="";
+  syncAuthUI();
+}
+function invalidatePassengerSession(){
+  if(!authReady())return;
+  expiredPassengerSessionNotice=true;
+  clearPassengerSessionLocally();
+  tell("La sesión guardada ya no existe en el servidor. Podés consultar como visitante; ingresá o creá una cuenta en Mi cuenta.");
+}
 function renderAccount(){
   const logged=authReady();
   $("account-session").hidden=!logged;$("account-form").hidden=logged;
+  const warning=$("account-session-expired");
+  if(warning)warning.hidden=!expiredPassengerSessionNotice;
   if(!logged)return;
   const c=$("account-session");clear(c);
   text(c,"h3","Sesión iniciada");
@@ -959,18 +996,8 @@ function renderAccount(){
   button(c,"CERRAR SESIÓN","secondary full",async()=>{
     if(!window.confirm("¿Cerrar sesión en este dispositivo?"))return;
     try{await rpc("customer_logout",{p_session_token:session.token});}catch{}
-    session=null;localStorage.removeItem(SESSION_KEY);
-    closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
-    $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
-    $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
-    for(const tab of document.querySelectorAll("[data-trips-scope]")){
-      const selected=tab.dataset.tripsScope==="upcoming";
-      tab.classList.toggle("active",selected);tab.setAttribute("aria-pressed",String(selected));
-    }
-    openTripCards.clear();openTripGroups.clear();openTripDetails.clear();tripChatDrafts.clear();tripChatAttempts.clear();
-    tripsScopeChosen=false;tripsScope="upcoming";tripsFilter="all";$("trips-status-filter").value="all";
-    $("person-name").value="";$("person-phone").value="";
-    syncAuthUI();tell("Sesión cerrada");
+    expiredPassengerSessionNotice=false;
+    clearPassengerSessionLocally();tell("Sesión cerrada");
   });
 }
 /** Account-only support UI. Diagnostics live on this device and never leave
@@ -1026,6 +1053,7 @@ async function accountSubmit(){
       await rpc("customer_login",{p_phone:phone,p_pin:pin,p_device_label:"PWA Traslados Cliente"});
     if(!result?.session_token||!result.customer)throw new Error("No se recibió una sesión válida.");
     session={token:result.session_token,customer:result.customer};
+    expiredPassengerSessionNotice=false;
     closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
     $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
     $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
