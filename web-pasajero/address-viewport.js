@@ -38,7 +38,10 @@
       // until the selection commits (especially during remote resolution).
       if(active===entry&&!results.contains(event.relatedTarget))stop();
     });
-    const observer=new MutationObserver(()=>{if(active===entry)schedule();});
+    const observer=new MutationObserver(()=>{
+      if(active!==entry)return;
+      if(input.offsetParent===null)stop();else schedule();
+    });
     observer.observe(results,{childList:true});
     // Removed stop pickers must not be retained by window resize handlers.
     // The only global reference is the focused entry, released on blur/layout.
