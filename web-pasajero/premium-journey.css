@@ -120,3 +120,119 @@
 #view-viajes .premium-trip-contact a:focus-visible,#view-viajes .premium-trip-contact button:focus-visible{outline:2px solid #f6d89d;outline-offset:3px}
 #view-viajes .premium-trip-truth{margin:7px 3px 0;font-size:10.5px;line-height:1.5;color:#c1d3cc}
 @media(max-width:359px){#view-viajes .premium-trip-contact{grid-template-columns:1fr}}
+
+
+/* Fidelidad visual, iteración 15/10: captura maestra 8 pantallas.
+   Recursos de terceros solo como fondo; skyline.svg sigue siendo respaldo offline.
+   Fotografía: Pedro Fleitas, Montevideo 2023, Unsplash License.
+   No se representa ni GPS ni un conductor artificial en estas capas. */
+@media (max-width:650px){
+  #view-inicio.home-screen{background:#041821}
+  #view-inicio .home-hero{
+    min-height:255px;
+    padding-top:19px;
+    background-image:
+      linear-gradient(180deg,rgba(1,17,24,.39) 0%,rgba(3,20,29,.16) 35%,rgba(3,18,25,.6) 68%,#041821 100%),
+      url("https://images.unsplash.com/photo-1693192357825-b50aa54738ab?auto=format&fit=crop&w=1200&q=80"),
+      url("./premium-skyline.svg");
+    background-position:center,center 53%,center 43%;
+    background-size:cover,cover,cover;
+    background-repeat:no-repeat;
+  }
+  #view-inicio .home-hero .eyebrow{font-size:10px;letter-spacing:.11em;color:#fff0c7;text-shadow:0 2px 5px #000}
+  #view-inicio .home-hero h1{font-family:Manrope,Arial,sans-serif;font-size:clamp(23px,6.8vw,29px);font-weight:750;line-height:1.25;margin-top:14px;max-width:285px;text-shadow:0 2px 10px #001b27}
+  #view-inicio .service-list{margin-top:-63px;row-gap:0}
+  #view-inicio .service-card-featured{max-width:212px;margin-bottom:0}
+  #view-inicio .service-card-featured .service-card-icon{width:128px!important;height:128px!important;flex-basis:128px}
+  #view-inicio .service-card-icon{width:108px!important;height:108px!important;flex-basis:108px;box-shadow:0 0 0 4px #082b2ba9,0 0 0 6px #c59b5366,0 9px 21px #0009!important}
+  #view-inicio .service-card-body{align-items:center!important;justify-content:center;max-width:100%}
+  #view-inicio .service-card-name{font-family:Manrope,Arial,sans-serif!important;font-weight:750!important;font-size:18px!important}
+  #view-inicio .service-card-featured .service-card-name{font-size:21px!important}
+  #view-inicio .service-card-description{font-size:11px;color:#dce1dc;max-width:170px}
+  #view-inicio .service-card-soon{opacity:.92}
+  #view-inicio .tabs{box-shadow:0 -12px 26px #0008}
+}
+#view-viaje.quick-journey-screen{position:relative;padding-top:8px}
+#view-viaje .journey-back{
+  position:absolute;top:17px;left:13px;z-index:4;
+  width:37px;height:37px;min-height:37px;padding:0;
+  display:grid;place-items:center;font-size:0;line-height:1;
+  background:#061d24;border:1px solid #32535b;color:#f4d391;
+  box-shadow:0 3px 15px #0007;
+}
+#view-viaje .journey-back::before{content:"←";font:650 23px/1 Arial,sans-serif}
+#view-viaje .premium-journey-header{padding:8px 0 12px}
+#view-viaje .premium-brand{gap:10px;min-height:63px;margin-bottom:12px;padding:0 36px}
+#view-viaje .premium-car{width:52px;height:52px;flex:0 0 52px;box-shadow:inset 0 0 9px #d9b67e35,0 0 0 2px #091d2588}
+#view-viaje .premium-brand strong{font:750 18px/1.25 Manrope,Arial,sans-serif}
+#view-viaje .premium-brand small{display:none}
+#view-viaje .premium-number{width:26px;height:26px;font-size:11px;margin-bottom:4px}
+#view-viaje .premium-step:not(:last-child)::after{top:13px;left:calc(50% + 16px);right:calc(-50% + 16px)}
+#view-viaje .premium-step small{font-size:10px}
+#view-viaje .premium-intro{margin:16px 4px 13px}
+#view-viaje .premium-intro h2{font:750 22px/1.2 Manrope,Arial,sans-serif;letter-spacing:-.035em}
+#view-viaje[data-premium-step="route"] .premium-intro{display:none}
+#view-viaje .booking-step-card{border-radius:14px;background:linear-gradient(146deg,#122c34,#091d25);border-color:#607f7969}
+#view-viaje .booking-step-content{padding:12px!important}
+#view-viaje .route-overview{border-radius:14px}
+#view-viaje .route-road-map{max-width:100%;overflow:hidden}
+#view-viaje .route-road-map svg{display:block;width:100%;max-height:245px;object-fit:contain}
+#view-viaje .premium-clock-layout{display:grid;grid-template-columns:minmax(0,1fr) 53px;gap:10px;align-items:start}
+#view-viaje .premium-time-options{gap:0;border:1px solid #567178;background:linear-gradient(160deg,#112e36,#091c24);border-radius:14px;overflow:hidden;box-shadow:0 8px 22px #0004}
+#view-viaje .premium-time-choice{
+  border:none;border-bottom:1px solid #64747639;border-radius:0;
+  background:transparent;min-height:42px;padding:8px 12px;gap:10px;
+  font-family:Manrope,Arial,sans-serif;
+}
+#view-viaje .premium-time-choice:last-child{border-bottom:0}
+#view-viaje .premium-time-choice.is-selected{background:linear-gradient(110deg,#fce5ac,#daa85f);color:#0b262c;border-color:transparent;border-radius:10px;box-shadow:0 2px 8px #0005}
+#view-viaje .premium-clock-symbol{font-size:17px;width:24px}
+#view-viaje .premium-time-choice:not(.is-selected) .premium-clock-symbol{color:#c7aa70}
+#view-viaje .premium-time-choice strong{font-weight:700;font-size:12px}
+#view-viaje #journey-clock-action{
+  display:grid!important;place-items:center;
+  width:53px;height:53px;margin:0;padding:0;border-radius:12px;
+  border:1.5px solid #dcb063;background:radial-gradient(circle at 50% 30%,#1d4b4f,#092129 80%);
+  color:#f3d490;font-size:31px;line-height:1;
+  box-shadow:inset 0 0 15px #daa95e2b,0 6px 14px #0006;
+}
+#view-viaje #journey-clock-action:focus-visible{outline:2px solid #f6dda3;outline-offset:3px}
+#view-viaje .journey-time-note{font-size:11px;line-height:1.5;color:#cad5cd}
+#view-viaje #journey-custom-time-label:not([hidden]){margin:10px 0;padding:8px 11px;border-radius:9px;background:#17464b;color:#f6d99b}
+#view-viaje .premium-actions{padding:8px 10px;margin-top:10px;bottom:72px;border-radius:13px}
+#view-viaje .premium-next{min-height:50px;border-radius:11px;background:linear-gradient(180deg,#ffe5aa,#e7b665 85%,#bd8442);font:800 14px Manrope,Arial,sans-serif}
+#view-viaje .premium-previous{min-height:33px}
+#view-viaje[data-premium-step="confirm"] .urgent-actions{border-radius:15px;border:1px solid #b79b6761;box-shadow:0 8px 24px #0005}
+#view-viaje[data-premium-step="confirm"] #urgent-send{min-height:52px;border-radius:12px;background:linear-gradient(180deg,#ffe3a3,#dbaa63);color:#09262c}
+#view-viaje .premium-intro p{color:#cbd8d2}
+#view-viajes .trip-card[data-tone="pending"] .premium-search{
+  margin:10px 0 9px;border-radius:16px;overflow:hidden;
+  border:1px solid #bfa66d50;background:linear-gradient(155deg,#0b343e,#041d27);
+  box-shadow:inset 0 1px #bbd0b421;
+}
+#view-viajes .premium-search-radar{
+  position:relative;margin:13px auto;width:120px;height:120px;border-radius:50%;
+  display:grid;place-items:center;isolation:isolate;
+  background:repeating-radial-gradient(circle,#28d7a300 0 19px,#37cca956 20px 21px,#28d7a300 22px 39px),radial-gradient(circle,#1aa5882b,#0c3b3f28 72%);
+}
+#view-viajes .premium-search-radar::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 30deg,#36c99f8f,transparent 32%,transparent);
+  animation:premiumRadarSweep 4s linear infinite;
+  opacity:.7;
+}
+#view-viajes .premium-search-target{font-size:40px;color:#d5ebde;position:relative;z-index:1;text-shadow:0 2px 16px #1db598}
+#view-viajes .premium-search-copy{padding:0 15px 10px;text-align:center}
+#view-viajes .premium-search-copy strong{display:block;font-size:14px;color:#f9e2ae}
+#view-viajes .premium-search-copy small{display:block;margin-top:5px;font-size:11px;line-height:1.5;color:#c9d8d4}
+#view-viajes .premium-search-phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:11px 9px 15px;border-top:1px solid #5372734d}
+#view-viajes .premium-search-phase{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;min-width:0;font-size:10px;color:#a5b5b6}
+#view-viajes .premium-search-phase i{width:9px;height:9px;border-radius:50%;border:1px solid #6f898b;background:#152a33}
+#view-viajes .premium-search-phase[data-state="done"] i{background:#43daa5;box-shadow:0 0 0 3px #39c29421}
+#view-viajes .premium-search-phase[data-state="current"] i{background:#e9bb68;border-color:#f6d99b;box-shadow:0 0 0 3px #e2a84627}
+#view-viajes .premium-trip-contact{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#view-viajes .premium-trip-contact a,#view-viajes .premium-trip-contact button{min-height:46px;padding:5px 2px;font-size:10px}
+#view-viajes .premium-trip-driver{margin:8px 0 0;font-size:11px;color:#d6d2c3}
+@keyframes premiumRadarSweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#view-viajes .premium-search-radar::before{animation:none}}
+@media(max-width:359px){#view-viajes .premium-trip-contact{grid-template-columns:1fr 1fr 1fr}#view-viaje .premium-clock-layout{grid-template-columns:minmax(0,1fr) 47px}#view-viaje #journey-clock-action{width:47px;height:47px}}
