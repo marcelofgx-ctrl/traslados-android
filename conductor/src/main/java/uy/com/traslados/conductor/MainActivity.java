@@ -1005,12 +1005,12 @@ public class MainActivity extends Activity {
         activeChatRefresh[0]=()->{
             if(!dialog.isShowing())return;
             refreshReservationChat(id,messages,scroll,true);
-            handler.postDelayed(activeChatRefresh[0],15000L);
+            handler.postDelayed(activeChatRefresh[0],8000L);
         };
         dialog.setOnDismissListener(v->handler.removeCallbacks(activeChatRefresh[0]));
         showDriverDialog(dialog,shell,.94f,.86f);
         refreshReservationChat(id,messages,scroll);
-        handler.postDelayed(activeChatRefresh[0],15000L);
+        handler.postDelayed(activeChatRefresh[0],8000L);
     }
 
     private void refreshReservationChat(String id,LinearLayout list,ScrollView scroll){
