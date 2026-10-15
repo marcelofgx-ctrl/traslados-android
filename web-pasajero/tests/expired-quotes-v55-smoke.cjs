@@ -38,7 +38,7 @@ assert(app.includes('/^(null|undefined|n\\/a|-)$/i.test(includes)'),"Literal nul
 assert(app.includes('HORARIO_YA_NO_DISPONIBLE|HORARIO_NO_DISPONIBLE'));
 assert(app.includes('La solicitud inmediata venci[oó]'));
 assert(html.includes("app.js?v=73")&&html.includes("styles.css?v=73")&&html.includes("trip-board.js?v=6"));
-assert(sw.includes("traslados-cliente-pwa-v73"));
+assert(sw.includes("traslados-cliente-pwa-v74"));
 assert(css.includes('.trip-card[data-tone="expired"]'));
 assert(css.includes('.trip-expired-note'));
 console.log("PASS v55 expired quotes, backend 90-min policy, date safety, no null labels or raw error codes");

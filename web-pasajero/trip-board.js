@@ -24,7 +24,7 @@
   }
   function isImmediateRequest(r){
     const mode=String(r?.pickup_mode||"");
-    if(mode==="now"||mode==="10")return true;
+    if(mode==="now"||(/^\\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
     if(mode==="schedule")return false;
     // Legacy authorized v15 / guest v4 JSON omits pickup_mode. An urgent
     // pickup is timestamped by Supabase now or now + 10m; scheduled slots
@@ -42,7 +42,7 @@
     if(r?.status!=="PENDIENTE"||r?.quote_status!=="ENVIADO")return false;
     const pickup=pickupTimeMs(r),mode=String(r.pickup_mode||"");
     if(expiredImmediate(r,at))return true; // v13 backend's strict 90-min deadline
-    if(mode==="now"||mode==="10")return false;
+    if(isImmediateRequest(r))return false;
     if(mode==="schedule"&&pickup!==null)return at>=pickup;
     // Unknown legacy booking: the original conservative behavior remains.
     return pickup!==null&&at-pickup>=QUOTE_WINDOW_MS;

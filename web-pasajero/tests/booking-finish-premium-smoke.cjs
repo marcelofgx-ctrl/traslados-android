@@ -19,7 +19,7 @@ assert(css.includes("appearance:none;-webkit-appearance:none"),"Replace OS defau
 assert(css.includes(".booking-cta-arrow")&&css.includes(".booking-final-note"),"Premium action details must remain");
 assert(css.includes("repeating-linear-gradient"),"Preserve approved card texture");
 assert(html.includes('styles.css?v=73')&&html.includes('app.js?v=73'));
-assert(sw.includes('traslados-cliente-pwa-v73'));
+assert(sw.includes('traslados-cliente-pwa-v74'));
 assert(js.includes('$("booking-final").hidden=urgent'),"Urgent pickups must not show scheduled booking CTA");
 assert(js.includes('$("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=false;'),"Only review unlocks submission");
 assert(js.includes('JSON.stringify(bookingData())!==JSON.stringify(pendingReview)'),"Guard against edited data after review");
