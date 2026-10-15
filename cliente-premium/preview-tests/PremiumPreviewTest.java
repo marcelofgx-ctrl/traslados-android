@@ -76,10 +76,10 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         js("(()=>{const el=document.querySelector('#destination-picker input[type=search]');el.value='Punta Carretas';el.dispatchEvent(new Event('input',{bubbles:true}));})()");
         boolean visible=false;
         for(int i=0;i<150;i++){
-            if("true".equals(js("(()=>{const el=document.querySelector('#destination-picker input[type=search]'),r=document.querySelector('#destination-picker .result');if(!r)return false;const a=el.getBoundingClientRect(),b=r.getBoundingClientRect();return a.top>=0&&a.bottom<=visualViewport.height&&b.bottom<=visualViewport.height&&document.body.classList.contains('address-search-active');})()"))){visible=true;break;}
+            if("true".equals(js("(()=>{const el=document.querySelector('#destination-picker input[type=search]'),r=document.querySelector('#destination-picker .result');if(!r)return false;const a=el.getBoundingClientRect(),b=r.getBoundingClientRect();const top=visualViewport.offsetTop,bottom=top+visualViewport.height;return a.top>=top&&a.bottom<=bottom&&b.bottom<=bottom&&document.body.classList.contains('address-search-active');})()"))){visible=true;break;}
             Thread.sleep(100);
         }
-        assertTrue("Focused destination and real catalog suggestions remain in the visible viewport",visible);
+        assertTrue("Focused destination and real catalog suggestions remain in the visible viewport: "+js("JSON.stringify({active:document.activeElement?.outerHTML?.slice(0,120),body:document.body.className,field:document.querySelector('#destination-picker input[type=search]').getBoundingClientRect().toJSON(),result:document.querySelector('#destination-picker .result')?.getBoundingClientRect().toJSON(),height:visualViewport.height,offset:visualViewport.offsetTop})"),visible);
         getInstrumentation().runOnMainSync(()->{
             android.view.inputmethod.InputMethodManager ime=(android.view.inputmethod.InputMethodManager)getActivity().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
             ime.hideSoftInputFromWindow(w.getWindowToken(),0);
