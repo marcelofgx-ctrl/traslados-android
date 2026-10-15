@@ -395,7 +395,7 @@ async function refreshPickupPresence(force=false){
        &&Number.isFinite(data.etaMin)&&data.etaMin>=0){
       const km=data.distanceKm,minutes=data.etaMin;
       lastVerifiedEtaResult={km,minutes,coarse:data.estimateType==="coarse"};
-      lastVerifiedEtaKey=key;lastVerifiedEtaAt=Date.now();
+      lastVerifiedEtaKey=pickupIdentityKey();lastVerifiedEtaAt=Date.now();
       lastPickupEtaIsEstimate=true;
       etaRetryNotBefore=0;etaRetryIdentity="";
       paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
