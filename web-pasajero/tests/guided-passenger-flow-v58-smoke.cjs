@@ -56,7 +56,7 @@ assert(css.includes('.trip-chat-sheet')&&css.includes('.trip-chat-archived')&&
   css.includes('.trip-detail-disclosure'));
 assert(css.includes('.trip-card:not([open]) .trip-route-label')&&
   css.includes('-webkit-line-clamp:unset'),"Long airport destinations must remain readable");
-assert(html.includes("app.js?v=73")&&html.includes("styles.css?v=73")&&
+assert(html.includes("app.js?v=74")&&html.includes("styles.css?v=74")&&
   sw.includes("traslados-cliente-pwa-v74"),"Release must bust stale Samsung caches");
 assert(!/serviceWorker\.ready\.then\(reg=>reg\.pushManager\.subscribe/.test(app),
   "No fake push with app closed");
