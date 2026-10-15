@@ -28,6 +28,19 @@ const {chromium}=require("playwright-core");
       });
     });
     assert.equal(localPhoto,true,"Portada sin imagen local verificada");
+    const localCar=await page.evaluate(async()=>{
+      const hero=document.querySelector("#view-inicio .home-hero");
+      if(!getComputedStyle(hero,"::before").backgroundImage.includes("premium-car-crop.webp"))
+        return false;
+      const img=new Image();
+      return await new Promise(resolve=>{
+        img.onload=()=>resolve(img.naturalWidth>=300);
+        img.onerror=()=>resolve(false);
+        img.src="./premium-car-crop.webp";
+      });
+    });
+    assert(localCar,"La foto del auto no está disponible como asset local");
+
     // El mapa cartográfico no debe quedar bloqueado por nuestra propia CSP.
     const csp=await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
     assert(csp?.includes("img-src 'self' data: https://tile.openstreetmap.org"),
