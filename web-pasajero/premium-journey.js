@@ -32,7 +32,14 @@
     const custom=make(doc,"button","premium-time-choice premium-custom-time");
     custom.type="button";custom.append(make(doc,"span","premium-clock-symbol","◷"),make(doc,"strong","","Elegir otra hora"),make(doc,"span","premium-check","→"));
     custom.addEventListener("click",()=>doc.getElementById("journey-clock-action").click());options.appendChild(custom);
-    doc.querySelector(".journey-time-controls").insertAdjacentElement("afterend",options);
+    // El reloj original conserva sus listeners y el selector nativo de 24 h.
+    // Lo movemos fuera del contenedor oculto para que sea accesible y visible.
+    const clockButton=doc.getElementById("journey-clock-action");
+    clockButton.setAttribute("aria-label","Elegir hora de recogida, formato 24 horas");
+    clockButton.textContent="◷";
+    const timeLayout=make(doc,"div","premium-clock-layout");
+    timeLayout.append(options,clockButton);
+    doc.querySelector(".journey-time-controls").insertAdjacentElement("afterend",timeLayout);
     const actions=make(doc,"footer","premium-actions"),warning=make(doc,"p","premium-error"),back=make(doc,"button","premium-previous","← Atrás"),next=make(doc,"button","premium-next","Continuar →");
     back.type="button";next.type="button";warning.setAttribute("role","alert");warning.hidden=true;
     actions.append(warning,back,next);screen.querySelector("#journey-field-host").insertAdjacentElement("afterend",actions);
