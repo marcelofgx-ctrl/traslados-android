@@ -10,6 +10,11 @@ const {chromium}=require("playwright-core");
   const widths=[360,393,412],errors=[];
   for(const width of widths){
     const page=await browser.newPage({viewport:{width,height:852},deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:"reduce"});
+    await page.addInitScript(()=>{
+      const timers=[],original=window.setInterval.bind(window);
+      window.setInterval=(...args)=>{const id=original(...args);timers.push(id);return id;};
+      window.__qaStopPolling=()=>timers.forEach(id=>clearInterval(id));
+    });
     page.on("pageerror",e=>errors.push(width+": "+e.message));
     await page.route(/https:\/\/(zetaudvvutlouiqxopvg\.supabase\.co|direcciones\.ide\.uy|traslados-web\.marcelof-gx\.workers\.dev)\/.*/,r=>r.abort());
     await page.goto("http://127.0.0.1:8099/web-pasajero/",{waitUntil:"domcontentloaded"});
@@ -156,6 +161,9 @@ const {chromium}=require("playwright-core");
     assert(await page.locator("#urgent-send").count()===1);
     // Las últimas tres capturas son SOLO fixtures sintéticos en Chromium.
     // Nunca se guardan en Supabase ni aparecen en la PWA real.
+    // Fixtures must not be replaced by the application's real background poll.
+    // Keep every status assertion; only stop timers in this synthetic QA phase.
+    await page.evaluate(()=>window.__qaStopPolling());
     for(const [kind,status,phase] of [
       ["buscando","PENDIENTE",""],
       ["en-camino","CONFIRMADA","EN_CAMINO"],
