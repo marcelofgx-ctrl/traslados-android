@@ -54,17 +54,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 -cores 2
-          script: |
-            sleep 15
-            testResult=0
-            gradle -p cliente-premium :app:connectedDebugAndroidTest --no-daemon --stacktrace || testResult=$?
-            adb install -r cliente-premium/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am start -n uy.com.traslados.cliente.debug/uy.com.traslados.cliente.MainActivity
-            adb shell uiautomator dump /sdcard/pr99-ui.xml
-            adb pull /sdcard/pr99-ui.xml android-pr99-ui.xml
-            adb exec-out screencap -p > android-pr99-webview.png
-            adb logcat -d > android-pr99-logcat.txt
-            exit "$testResult"
+          script: bash scripts/qa_premium_preview_android.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -75,4 +65,5 @@ jobs:
             android-pr99-ui.xml
             android-pr99-webview.png
             android-pr99-logcat.txt
+            android-pr99-ui-note.txt
           if-no-files-found: warn
