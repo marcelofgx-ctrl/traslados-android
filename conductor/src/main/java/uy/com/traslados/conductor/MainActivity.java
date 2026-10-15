@@ -254,10 +254,10 @@ public class MainActivity extends Activity {
             alertPrefs.setOnClickListener(v->showDriverAlertSettings());pricePrefs.setOnClickListener(v->showPricingPresetDialog());gpsPrefs.setOnClickListener(v->showTelemetrySettings());
             box.addView(tools,lpMatch(dp(46),0,7));
             LinearLayout tools2=new LinearLayout(this);tools2.setGravity(Gravity.CENTER_VERTICAL);
-            Button diagBtn=secondaryButton("DIAGNÓSTICO"),testBtn=secondaryButton("MODO PRUEBA");diagBtn.setTextSize(10);testBtn.setTextSize(10);
+            Button diagBtn=secondaryButton("DIAGNÓSTICO"),testBtn=secondaryButton("MODO PRUEBA"),vehicleBtn=secondaryButton("VEHÍCULO");diagBtn.setTextSize(10);testBtn.setTextSize(10);vehicleBtn.setTextSize(10);
             applyActionIcon(diagBtn,R.drawable.ic_diagnostics);applyActionIcon(testBtn,R.drawable.ic_lab);
-            tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools2,6);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(46),1));
-            diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());box.addView(tools2,lpMatch(dp(46),0,7));
+            tools2.addView(diagBtn,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools2,6);tools2.addView(testBtn,new LinearLayout.LayoutParams(0,dp(46),1));spacerH(tools2,6);tools2.addView(vehicleBtn,new LinearLayout.LayoutParams(0,dp(46),1));
+            diagBtn.setOnClickListener(v->showDiagnostics());testBtn.setOnClickListener(v->showTestMode());vehicleBtn.setOnClickListener(v->showVehicleSettings());box.addView(tools2,lpMatch(dp(46),0,7));
             gpsPreflightStatus=body("● Comprobando GPS…",12,MUTED);gpsPreflightStatus.setPadding(dp(12),dp(10),dp(12),dp(10));gpsPreflightStatus.setBackground(rounded(PANEL_2,LINE,14));gpsPreflightStatus.setClickable(true);gpsPreflightStatus.setOnClickListener(v->corregirGpsPreflight());box.addView(gpsPreflightStatus,lpMatch(-2,0,8));handler.postDelayed(this::actualizarGpsPreflightSilencioso,120);
         }
         if(!history){
@@ -1493,6 +1493,63 @@ public class MainActivity extends Activity {
     private void openTelemetryMap(JSONObject r){String u=TripTelemetryService.mapsUrl(this,r.optString("id",""));if(u==null){toast("La traza todavía no tiene suficientes puntos");return;}try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(u)));}catch(Exception e){toast("No pude abrir el recorrido");}}
     private void exportGpx(JSONObject r){pendingGpx=TripTelemetryService.buildGpx(this,r.optString("id",""),r.optString("code","Viaje"));if(pendingGpx==null||pendingGpx.isEmpty()){toast("No hay puntos GPS para exportar");return;}Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/gpx+xml");i.putExtra(Intent.EXTRA_TITLE,"Traslados_"+r.optString("code","viaje")+".gpx");try{startActivityForResult(i,REQ_EXPORT_GPX);}catch(Exception e){toast("No pude abrir el selector de archivos");}}
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){super.onActivityResult(requestCode,resultCode,data);if(requestCode==REQ_EXPORT_GPX&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null&&!pendingGpx.isEmpty()){try(java.io.OutputStream out=getContentResolver().openOutputStream(data.getData())){out.write(pendingGpx.getBytes("UTF-8"));toast("Traza GPX guardada");}catch(Exception e){toast("No pude guardar el GPX");}finally{pendingGpx="";}}}
+    // Matrícula compartida con el pasajero. El conductor autenticado puede
+    // modificarla desde ajustes; el valor remoto es la fuente de verdad.
+    private void showVehicleSettings(){
+        final String cached=getSharedPreferences("driver_vehicle_settings",MODE_PRIVATE).getString("plate","APP-0061");
+        pool.execute(()->{
+            String plate=cached;
+            try{
+                JSONObject config=Api.getVehicleSettings(pin);
+                String remote=config.optString("plate",cached).trim();
+                if(remote.matches("[A-Z0-9]{2,4}-[A-Z0-9]{3,5}"))plate=remote;
+            }catch(Exception ignored){}
+            final String value=plate;
+            runOnUiThread(()->showVehicleSettingsDialog(value));
+        });
+    }
+
+    private void showVehicleSettingsDialog(String existing){
+        final Dialog d=new Dialog(this);
+        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout shell=driverDialogShell("VEHÍCULO · MATRÍCULA",
+          "Este dato se muestra al pasajero cuando su traslado está confirmado y el conductor se encuentra en camino. Podés cambiarlo desde aquí.");
+        EditText plateField=availabilityField(shell,"Matrícula del vehículo",existing,false);
+        plateField.setSingleLine(true);
+        plateField.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(10)});
+        plateField.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
+        TextView hint=body("Formato ejemplo: APP-0061 · Los cambios se guardan en el servidor.",11,MUTED);
+        shell.addView(hint,lpMatch(-2,4,6));
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
+        Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");
+        actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));
+        spacerH(actions,8);
+        actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));
+        shell.addView(actions,lpMatch(dp(58),10,0));
+        cancel.setOnClickListener(v->d.dismiss());
+        save.setOnClickListener(v->{
+            String plate=plateField.getText().toString().trim().toUpperCase(Locale.ROOT);
+            if(!plate.matches("[A-Z0-9]{2,4}-[A-Z0-9]{3,5}")){
+                plateField.setError("Formato válido: APP-0061");
+                return;
+            }
+            save.setEnabled(false);
+            pool.execute(()->{
+                try{
+                    JSONObject answer=Api.setVehiclePlate(pin,plate);
+                    String confirmed=answer.optString("plate","");
+                    if(!plate.equals(confirmed))throw new Exception("El servidor no confirmó la matrícula");
+                    getSharedPreferences("driver_vehicle_settings",MODE_PRIVATE)
+                      .edit().putString("plate",confirmed).apply();
+                    runOnUiThread(()->{toast("Matrícula actualizada");d.dismiss();});
+                }catch(Exception error){
+                    runOnUiThread(()->{save.setEnabled(true);toast("No se guardó la matrícula: "+friendly(error));});
+                }
+            });
+        });
+        showDriverDialog(d,shell,.92f,.57f);
+    }
+
     private void showTelemetrySettings(){android.content.SharedPreferences p=getSharedPreferences("telemetry_settings",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("GPS Y TELEMETRÍA","Durante EN VIAJE se registra la traza completa en este teléfono, incluso con la app minimizada.");LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);android.widget.CheckBox radar=new android.widget.CheckBox(this);radar.setText("Alertas audibles de cámaras OSM (experimental)");radar.setTextColor(TEXT);radar.setChecked(p.getBoolean("radar_osm",true));box.addView(radar);box.addView(body("Las cámaras se consultan en OpenStreetMap/Overpass y pueden estar incompletas o desactualizadas. El aviso es complementario; respetá siempre la señalización vial.",11,MUTED),lpMatch(-2,4,0));shell.addView(box,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(52),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(52),1));shell.addView(actions,lpMatch(dp(56),8,0));cancel.setOnClickListener(v->d.dismiss());save.setOnClickListener(v->{p.edit().putBoolean("radar_osm",radar.isChecked()).apply();toast("Preferencias GPS guardadas");d.dismiss();});showDriverDialog(d,shell,.92f,.64f);}
 
     private void showDriverAlertSettings(){android.content.SharedPreferences p=getSharedPreferences("driver_alert_settings",MODE_PRIVATE);final Dialog d=new Dialog(this);d.requestWindowFeature(Window.FEATURE_NO_TITLE);LinearLayout shell=driverDialogShell("AVISOS","Elegí qué señales querés recibir. Cada evento importante suena/vibra una sola vez.");ScrollView sc=new ScrollView(this);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);sc.addView(box);shell.addView(sc,new LinearLayout.LayoutParams(-1,0,1));android.widget.CheckBox n=new android.widget.CheckBox(this);n.setText("Sonido de nueva solicitud");n.setTextColor(TEXT);n.setChecked(p.getBoolean("new_sound",true));android.widget.CheckBox c=new android.widget.CheckBox(this);c.setText("Sonido de cambios del cliente");c.setTextColor(TEXT);c.setChecked(p.getBoolean("change_sound",true));android.widget.CheckBox t=new android.widget.CheckBox(this);t.setText("Sonido al iniciar / finalizar");t.setTextColor(TEXT);t.setChecked(p.getBoolean("trip_sound",true));android.widget.CheckBox r=new android.widget.CheckBox(this);r.setText("Aviso inteligente de próximo viaje");r.setTextColor(TEXT);r.setChecked(p.getBoolean("trip_reminder",true));android.widget.CheckBox v=new android.widget.CheckBox(this);v.setText("Vibración");v.setTextColor(TEXT);v.setChecked(p.getBoolean("vibrate",true));for(CheckBox x:new CheckBox[]{n,c,t,r,v})box.addView(x);EditText prep=availabilityField(box,"Avisarme antes de la hora recomendada de salida (min)",String.valueOf(p.getInt("trip_reminder_lead_min",10)),true);TextView explain=body("Ejemplo: si para llegar con margen deberías salir 09:30 y elegís 10 min, recibirás un aviso de preparación 09:20 y otro HORA DE SALIR a las 09:30.",11,MUTED);box.addView(explain,lpMatch(-2,4,6));Button test=secondaryButton("🧪 PROBAR AVISOS");test.setOnClickListener(x->showTestMode());box.addView(test,lpMatch(dp(48),4,5));LinearLayout actions=new LinearLayout(this);Button cancel=secondaryButton("CANCELAR"),save=primaryButton("GUARDAR");actions.addView(cancel,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,7);actions.addView(save,new LinearLayout.LayoutParams(0,dp(50),1));shell.addView(actions,lpMatch(dp(54),8,0));cancel.setOnClickListener(x->d.dismiss());save.setOnClickListener(x->{p.edit().putBoolean("new_sound",n.isChecked()).putBoolean("change_sound",c.isChecked()).putBoolean("trip_sound",t.isChecked()).putBoolean("trip_reminder",r.isChecked()).putBoolean("vibrate",v.isChecked()).putInt("trip_reminder_lead_min",Math.max(0,Math.min(60,intValue(prep,10)))).apply();toast("Preferencias de avisos guardadas");d.dismiss();});showDriverDialog(d,shell,.92f,.82f);}

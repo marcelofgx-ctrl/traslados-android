@@ -1,11 +1,11 @@
 "use strict";
-// PWA v73 — chat consultado en primer plano, sin repintado y estados operativos evidentes.
+// PWA v74 — chat consultado en primer plano, sin repintado y estados operativos evidentes.
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const root=path.join(__dirname,"..");
 const read=name=>fs.readFileSync(path.join(root,name),"utf8");
 const js=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
-assert(html.includes('app.js?v=73')&&html.includes('styles.css?v=73'));
-assert(sw.includes('traslados-cliente-pwa-v73'));
+assert(html.includes('app.js?v=74')&&html.includes('styles.css?v=74'));
+assert(sw.includes('traslados-cliente-pwa-v74'));
 const chat=js.slice(js.indexOf('function closeTripChat()'),js.indexOf('function armTripSound()'));
 assert(chat.includes('},6000);'),"Open conversation should poll every six seconds");
 assert(chat.includes('document.visibilityState!=="visible"'),"No rapid background polling");
@@ -31,4 +31,4 @@ assert.equal(board.metadata(toPickup).label,"Conductor en camino");
 assert.equal(board.metadata(arrived).label,"Conductor llegó");
 assert.equal(board.metadata({...base,status:"EN_VIAJE"}).label,"En viaje");
 assert.notEqual(board.metadata(base).tone,"moving","Never invent movement without confirmed backend phase");
-console.log("PASS v73: foreground-only chat polling, no redundant reflow, live journey spotlight, server-authoritative phases");
+console.log("PASS v74: foreground-only chat polling, no redundant reflow, live journey spotlight, server-authoritative phases");

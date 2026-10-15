@@ -27,7 +27,7 @@ assert 'if(archived)send.setVisibility(View.GONE)' in main
 assert 'com.equalsIgnoreCase("null")' in main
 assert 'installedConductorVersion()' in main
 assert 'WHATSAPP · ESTOY EN CAMINO' in quick
-assert 'handler.postDelayed(activeChatRefresh[0],15000L)' in main
+assert 'handler.postDelayed(activeChatRefresh[0],8000L)' in main
 assert 'dialog.setOnDismissListener(v->handler.removeCallbacks(activeChatRefresh[0]))' in main
 assert 'if(signature.equals(list.getTag()))return;' in main
 assert '!list.isAttachedToWindow()||!requestPin.equals(pin)' in main

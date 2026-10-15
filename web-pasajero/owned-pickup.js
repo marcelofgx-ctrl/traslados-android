@@ -19,7 +19,7 @@
       const urgentFromServer=Number.isFinite(created)&&Number.isFinite(pickupStamp)&&
         pickupStamp-created>=-120000&&pickupStamp-created<=12*60000;
       if(row.pickup_mode==="schedule"||
-        (!["now","10"].includes(row.pickup_mode)&&!urgentFromServer))return false;
+        (!(row.pickup_mode==="now"||(/^\d{1,3}$/.test(String(row.pickup_mode))&&Number(row.pickup_mode)>=1&&Number(row.pickup_mode)<=120))&&!urgentFromServer))return false;
       // Never collapse a genuinely different multi-stop booking into this route.
       const savedStops=row.stops;
       if(Array.isArray(savedStops)&&savedStops.length)return false;

@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=73">
+  <link rel="stylesheet" href="./styles.css?v=74">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -30,7 +30,7 @@
   <main class="shell">
     <nav class="tabs" aria-label="Secciones principales">
       <button class="tab active" data-view="inicio" type="button" aria-current="page">Inicio</button>
-      <button class="tab" data-view="reservar" type="button">Reservar</button>
+      <button class="tab" data-view="reservar" type="button">Tu reserva</button>
       <button class="tab" data-view="viajes" type="button">Mis traslados</button>
       <button class="tab" data-view="cuenta" type="button">Mi cuenta</button>
     </nav>
@@ -115,6 +115,39 @@
       <p class="home-assurance">Atención directa con tu conductor · Uruguay</p>
     </section>
 
+    <section id="view-viaje" class="view quick-journey-screen" aria-labelledby="journey-title">
+      <button type="button" class="booking-back-services journey-back" data-open-view="inicio">← Volver al inicio</button>
+      <div class="journey-hero">
+        <div class="journey-halo" aria-hidden="true">
+          <svg viewBox="0 0 100 100" focusable="false"><circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" stroke-width=".7" stroke-dasharray="2 5"/><path d="M18 70Q41 23 68 44Q86 55 76 76" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><circle cx="18" cy="70" r="5" fill="#37c893"/><circle cx="76" cy="76" r="5" fill="#f4c986"/><path d="M38 58l6-15h16l6 15z M35 59h34v9H35z M40 68v5m24-5v5" stroke="#f8e4ac" stroke-width="2" fill="#0a3540" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="eyebrow">TRASLADOS · TU VIAJE</p>
+        <h2 id="journey-title">Tu próximo viaje <em>empieza acá.</em></h2>
+        <p>Ahora, fácil y a tu ritmo. Tu conductor te responde personalmente.</p>
+      </div>
+      <div class="journey-when-compact">
+        <div><strong>¿Cuándo pasamos a buscarte?</strong><small>Tu solicitud será revisada por el conductor.</small></div>
+        <div class="journey-time-controls">
+          <label for="journey-when-select" class="sr-only">Hora de recogida</label>
+          <select id="journey-when-select" aria-label="Elegir cuándo viajar">
+            <option value="now">Ahora · lo antes posible</option>
+            <option value="10">En 10 minutos</option>
+            <option value="15">En 15 minutos</option>
+            <option value="20">En 20 minutos</option>
+            <option value="30">En 30 minutos</option>
+            <option value="45">En 45 minutos</option>
+            <option value="60">En 1 hora</option>
+            <option value="custom">Hora personalizada</option>
+          </select>
+          <button type="button" id="journey-clock-action" class="journey-clock-action" aria-label="Ver las opciones de horario" title="Opciones de horario">◷</button>
+        </div>
+        <input id="journey-clock-input" type="time" lang="es-UY" aria-label="Elegí la hora exacta para tu recogida" hidden>
+        <p id="journey-custom-time-label" class="journey-time-note" hidden></p>
+        <p class="journey-time-note">Elegí una recogida para las próximas 2 horas. Para otro día, usá Tu reserva desde Inicio: nunca cambiaremos de servicio sin que lo elijas.</p>
+      </div>
+      <div id="journey-field-host" class="journey-form-host"></div>
+    </section>
+
     <section id="view-reservar" class="view" aria-labelledby="reserva-title">
       <div class="booking-entry-nav">
         <button type="button" class="booking-back-services" data-open-view="inicio">← Ver servicios</button>
@@ -129,6 +162,7 @@
         <div id="booking-progress-bar" class="booking-progress-track" role="progressbar" aria-label="Secciones completadas" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><span id="booking-progress-fill"></span></div>
       </div>
 
+      <div id="reserve-field-host" class="reserve-field-host">
       <div class="card booking-step-card is-open" data-booking-step="route">
         <button type="button" class="booking-step-toggle" data-step-toggle aria-expanded="true" aria-controls="booking-step-route">
           <span class="booking-step-number" aria-hidden="true">01</span>
@@ -252,6 +286,7 @@
         </div>
       </div>
 
+      </div><!-- /reserve-field-host; quick mode temporarily moves the interactive cards -->
       <div id="booking-final" class="booking-final">
         <p class="booking-final-eyebrow">ÚLTIMO PASO</p>
         <h3>Tu viaje, a un paso.</h3>
@@ -431,6 +466,6 @@
   <script src="./service-home.js?v=3" defer></script>
   <script src="./owned-pickup.js?v=1" defer></script>
   <script src="./public-config.js?v=1" defer></script>
-  <script src="./app.js?v=73" defer></script>
+  <script src="./app.js?v=74" defer></script>
 </body>
 </html>
