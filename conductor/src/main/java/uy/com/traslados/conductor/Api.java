@@ -195,6 +195,14 @@ public final class Api {
     }
 
     public static JSONObject checkRouteFitV114(String pin,String reservationId) throws Exception {JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_reservation_id",reservationId);return new JSONObject(postRpc("driver_check_route_fit_v11_4",b));}
+    public static JSONObject getVehicleSettings(String pin) throws Exception {
+        JSONObject args=new JSONObject();args.put("p_pin",pin);
+        return new JSONObject(postRpc("driver_get_vehicle_settings_v1",args));
+    }
+    public static JSONObject setVehiclePlate(String pin,String plate) throws Exception {
+        JSONObject args=new JSONObject();args.put("p_pin",pin);args.put("p_plate",plate);
+        return new JSONObject(postRpc("driver_set_vehicle_plate_v1",args));
+    }
     public static JSONObject getAvailabilitySettings(String pin) throws Exception {JSONObject b=new JSONObject();b.put("p_pin",pin);return new JSONObject(postRpc("driver_get_availability_settings_v11_3",b));}
     public static JSONObject setAvailabilitySettings(JSONObject b) throws Exception {return new JSONObject(postRpc("driver_set_availability_settings_v12",b));}
     public static org.json.JSONArray listScheduleBlocks(String pin,String from,String to) throws Exception {JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_from",from);b.put("p_to",to);return new org.json.JSONArray(postRpc("driver_list_schedule_blocks_v11_3",b));}
