@@ -19,7 +19,7 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
     private void loaded() throws Exception {
         getActivity();
         for(int i=0;i<80;i++) {
-            if("true".equals(js("Boolean(document.querySelector('#view-inicio.active [data-service=now]'))")))return;
+            if("true".equals(js("Boolean(document.querySelector('#view-inicio.active [data-service=now]') && document.querySelector('.premium-next') && document.readyState==='complete')")))return;
             Thread.sleep(100);
         }
         fail("Premium PR99 page did not load in Android WebView");
