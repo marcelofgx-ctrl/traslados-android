@@ -105,3 +105,18 @@
 #view-viaje [hidden],#view-inicio [hidden]{display:none!important}
 @media(max-width:380px){#view-viaje .premium-intro{margin:13px 1px 12px}#view-viaje .premium-step small{font-size:9px}#view-viaje .premium-brand{margin-bottom:13px}}
 @media(prefers-reduced-motion:reduce){#view-viaje .booking-step-content:not([hidden]){animation:none!important}#view-inicio .service-card-icon{transition:none!important}}
+
+/* Estados 6–8 · seguimiento sin datos simulados; fases de la reserva real. */
+#view-viajes .premium-trip-timeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;margin:12px 0 8px;padding:5px 0;list-style:none}
+#view-viajes .premium-trip-phase{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;min-width:0}
+#view-viajes .premium-trip-phase:not(:last-child):after{content:"";position:absolute;top:15px;left:calc(50% + 18px);right:calc(-50% + 18px);height:1px;background:#526c6d}
+#view-viajes .premium-trip-phase-dot{width:31px;height:31px;display:grid;place-items:center;border:1px solid #5f7777;border-radius:50%;color:#d0dad2;background:#0e353b;font-size:12px;font-weight:800;position:relative;z-index:1}
+#view-viajes [data-phase-status="completed"] .premium-trip-phase-dot{border-color:#83c4ab;background:#144b40;color:#bcf3cd}
+#view-viajes [data-phase-status="current"] .premium-trip-phase-dot{border:1px solid #ffe0a2;background:linear-gradient(135deg,#f4d79c,#c99a50);color:#102e35;box-shadow:0 0 0 4px #dbb56d25}
+#view-viajes .premium-trip-phase-label{font-size:10px;line-height:1.3;color:#a8bfbb;max-width:100px;overflow-wrap:anywhere}
+#view-viajes [data-phase-status="current"] .premium-trip-phase-label{color:#f4dfaf;font-weight:800}
+#view-viajes .premium-trip-contact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 4px}
+#view-viajes .premium-trip-contact a,#view-viajes .premium-trip-contact button{display:grid;place-items:center;min-height:45px;border-radius:12px;border:1px solid #cda7666e;background:#0c3640;color:#eed096;text-align:center;font:750 11px/1.35 Manrope,Arial,sans-serif;text-decoration:none;cursor:pointer}
+#view-viajes .premium-trip-contact a:focus-visible,#view-viajes .premium-trip-contact button:focus-visible{outline:2px solid #f6d89d;outline-offset:3px}
+#view-viajes .premium-trip-truth{margin:7px 3px 0;font-size:10.5px;line-height:1.5;color:#c1d3cc}
+@media(max-width:359px){#view-viajes .premium-trip-contact{grid-template-columns:1fr}}
