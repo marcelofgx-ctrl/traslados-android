@@ -107,7 +107,9 @@ jobs:
             mapatrayectos/src/main/java/uy/com/mapatrayectos/ShareLinkPolicy.java \
             mapatrayectos/tests/ShareLinkPolicyTest.java
           java -cp /tmp/mapa-share-links ShareLinkPolicyTest
-          grep -q 'ShareLinkPolicy.needsMigration(key,current)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
+          grep -q 'public_app_config_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/RemoteAppConfig.java
+          grep -q 'RemoteAppConfig.refreshIfStale(this)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'ShareLinkPolicy.resolve(key,current,proposed,previouslyPublished)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
       - name: Passenger chat integration regression
         shell: bash
         run: |
