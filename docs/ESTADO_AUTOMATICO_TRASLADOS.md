@@ -11,12 +11,12 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | Sin resultado verificable en esta consulta |
 
-**PWA CI:** [ERROR · 14/10/2026 23:28 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671126780) · commit 5e5f75ca7.
+**PWA CI:** [SUCCESS · 14/10/2026 23:29 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671130412) · commit f18c4e9b8.
 **Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
 
 ### Fecha y hora de la última compilación y del último cambio
 
-**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c · Build Traslados Cliente Premium v15 RELEASE.
+**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:29 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671130412) · commit f18c4e9b8 · Verify and package passenger PWA (GitHub Pages via branch).
 **Último cambio de código verificado:** 14/10/2026 23:27 UYT · [Web pasajero / f18c4e9b88](https://github.com/marcelofgx-ctrl/traslados-android/commit/f18c4e9b88934b5c760b1c837ca18bc585abe127) — test(web): replace obsolete v71 HTML asset assertions.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
