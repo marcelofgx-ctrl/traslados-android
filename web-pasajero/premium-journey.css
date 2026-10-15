@@ -334,3 +334,11 @@
 #view-viajes .trip-card[data-tone="moving"] .trip-live-spotlight[data-stage="trip"]{
   border-color:#76d5ec;background:linear-gradient(100deg,#173e4f,#082e3b)}
 #view-viajes .trip-card[data-tone="moving"] .premium-trip-timeline{margin-top:16px}
+
+/* Corrección QA visual 393px: el botón no tapa disponibilidad ni la barra inferior. */
+#view-viaje .premium-actions{
+  position:relative;bottom:auto;z-index:1;margin-top:13px;
+  box-shadow:0 6px 18px #0004;
+}
+#view-viaje .premium-when-extras{position:relative;z-index:1}
+#view-viaje[data-premium-step="when"] .premium-actions{margin-bottom:6px}
