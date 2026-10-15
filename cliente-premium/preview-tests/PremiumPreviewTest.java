@@ -62,17 +62,23 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
             WebResourceResponse response=client.shouldInterceptRequest(w,request(url));
             assertNotNull(url,response); assertEquals(url,503,response.getStatusCode());
         }
+        assertNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1?x=1")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1")));
+        assertEquals("true",js("document.querySelector('#urgent-send').disabled && document.querySelector('#confirm-booking').disabled"));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1","POST")));
         WebResourceResponse root=client.shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
         assertEquals(200,root.getStatusCode());
-        assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self';\")"));
+        assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co;\")"));
     }
-    private WebResourceRequest request(String url) {
+    private WebResourceRequest request(String url) { return request(url,"GET"); }
+    private WebResourceRequest request(String url,String method) {
         return new WebResourceRequest() {
             public Uri getUrl(){return Uri.parse(url);}
             public boolean isForMainFrame(){return false;}
             public boolean isRedirect(){return false;}
             public boolean hasGesture(){return false;}
-            public String getMethod(){return "GET";}
+            public String getMethod(){return method;}
             public Map<String,String> getRequestHeaders(){return Collections.emptyMap();}
         };
     }

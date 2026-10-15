@@ -3,6 +3,7 @@
 /* Traslados con Reserva — web + installable PWA; same live backend as native Cliente/Conductor. */
 const API="https://zetaudvvutlouiqxopvg.supabase.co";
 const KEY="sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9";
+const PREVIEW_READ_ONLY=Boolean(document.querySelector('meta[name="traslados-preview"]'));
 const SESSION_KEY="traslados.passenger.session.v1";
 const GUEST_KEY="traslados.passenger.guest-trips.v1";
 const DEPTS=["Montevideo","Canelones","Artigas","Cerro Largo","Colonia","Durazno","Flores","Florida","Lavalleja","Maldonado","Paysandú","Río Negro","Rivera","Rocha","Salto","San José","Soriano","Tacuarembó","Treinta y Tres"];
@@ -150,6 +151,10 @@ function showError(e,fallback="No se pudo completar la acción"){
     msg="Este presupuesto ya no admite esa respuesta. Actualizá Mis traslados para ver su estado.";
   else if(/^[A-Z][A-Z0-9_]{5,}$/.test(msg))
     msg="No pudimos completar la operación. Actualizá Mis traslados antes de volver a intentar.";
+  if(e?.remote&&!/HORARIO_YA_NO_DISPONIBLE|HORARIO_NO_DISPONIBLE|La solicitud inmediata venci[oó]|No hay un presupuesto pendiente|presupuesto ya recibi[oó] una respuesta/i.test(String(e.message||"")))
+    msg="No pudimos completar la acción. Intentá nuevamente en unos momentos.";
+  if(/Failed to fetch|NetworkError|Load failed|fetch failed/i.test(msg))
+    msg="No pudimos conectarnos. Revisá tu conexión e intentá nuevamente.";
   tell(msg);
 }
 function loading(el,value){
@@ -187,7 +192,7 @@ async function rpc(name,payload={}){
   guardConnection();
   return window.TrasladosRpc.call({api:API,publishableKey:KEY,name,payload});
 }
-function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;$("urgent-send").disabled=offline;if(offline)tell("Sin conexión: no podés enviar solicitudes hasta reconectarte.");}
+function updateConnectivity(){const offline=!navigator.onLine;$("offline-band").hidden=!offline;$("confirm-booking").disabled=offline;$("urgent-send").disabled=offline||PREVIEW_READ_ONLY;$("confirm-booking").disabled=offline||PREVIEW_READ_ONLY;if(offline)tell("Sin conexión: no podés enviar solicitudes hasta reconectarte.");}
 function currentUY(offsetMinutes=0){
   const dt=new Date(Date.now()+offsetMinutes*60000);
   const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"America/Montevideo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(dt).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
@@ -321,7 +326,7 @@ async function refreshPickupPresence(force=false){
   if(!driver){
     forgetPickupEta();
     paintPickupCard({presence:"unknown",title:"No pudimos comprobar la disponibilidad",
-      subtitle:"Reintentaremos la consulta. Podés enviar tu solicitud.",phase:"issue"});
+      subtitle:PREVIEW_READ_ONLY?"La consulta se actualizará automáticamente.":"Reintentaremos la consulta. Podés enviar tu solicitud.",phase:"issue"});
     return;
   }
   const serverAge=Date.parse(driver.checkedAt||"");
@@ -339,15 +344,20 @@ async function refreshPickupPresence(force=false){
     forgetPickupEta();
     // Backend confirms only a combined public yes/no. Its cause is private and
     // may be agenda, activity, GPS or a request temporarily holding a slot.
-    paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
-      subtitle:"No podemos asegurar una recogida ahora. Podés enviar una solicitud para que el conductor la revise; no confirma el viaje.",
+    paintPickupCard({presence:"busy",title:"Sin disponibilidad inmediata",
+      subtitle:PREVIEW_READ_ONLY?"Consultá nuevamente en unos momentos.":"No podemos asegurar una recogida ahora. Podés enviar una solicitud para que el conductor la revise; no confirma el viaje.",
       checked:checkedLabel,phase:"blocked"});
     return;
   }
   if(!record.origin){
     paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
-      subtitle:"Elegí tu origen para ver cuánto tardaría en llegar.",
+      subtitle:PREVIEW_READ_ONLY?"La recogida siempre requiere su confirmación.":"Elegí tu origen para ver cuánto tardaría en llegar.",
       checked:checkedLabel,phase:"origin"});
+    return;
+  }
+  if(PREVIEW_READ_ONLY){
+    paintPickupCard({presence:"online",title:"Conductor disponible",
+      subtitle:"La llegada se confirmará al solicitar el viaje en la versión operativa.",checked:checkedLabel,phase:"preview"});
     return;
   }
   const signedIn=authReady();
@@ -436,7 +446,7 @@ async function refreshPickupPresence(force=false){
         // La consulta ETA puede perder la frescura del GPS entre la lectura
         // de disponibilidad y la petición de ruta. No atribuirlo a desconexión.
         publicPresenceCache=null;publicPresenceAt=0;
-        paintPickupCard({presence:"busy",title:"Recogida inmediata sin confirmar",
+        paintPickupCard({presence:"busy",title:"Sin disponibilidad inmediata",
           subtitle:"No podemos confirmar la recogida en este momento. Podés enviar una solicitud para revisión.",
           checked:checkedLabel,phase:"blocked"});
         return;
@@ -528,6 +538,7 @@ function enterService(kind){
   const success=$("booking-success");
   if(quick&&success.parentElement!==host)host.appendChild(success);
   if(!quick&&success.parentElement===host)$("submit-actions").insertAdjacentElement("afterend",success);
+  premiumJourney?.placePresence(quick);
   document.body.classList.toggle("journey-mode-quick",quick);
   setWhen(kind);
   if(quick&&$("journey-when-select"))$("journey-when-select").value=kind;
@@ -1283,6 +1294,7 @@ function renderBookingSuccess(result,mode="schedule"){
   box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function submitUrgentPickup(){
+  if(PREVIEW_READ_ONLY){tell("Esta vista de prueba no envía solicitudes.");return;}
   if(selectedPickupMode==="schedule"||busy)return;
   const notice=$("urgent-send-error");notice.hidden=true;
   const same=window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops);
@@ -1311,13 +1323,13 @@ async function submitUrgentPickup(){
     const msg=String(e?.message||"");
     notice.textContent=/solicitud reciente pendiente|Demasiadas solicitudes/i.test(msg)
       ?"Ya existe una solicitud reciente o alcanzaste el límite. Revisá Mis traslados antes de enviar otra."
-      :"No pudimos comprobar el envío. Si reintentás sin cambiar los datos, el servidor reutilizará el mismo identificador y evitará duplicados.";
+      :"No pudimos confirmar si se envió tu solicitud. Revisá Mis traslados antes de volver a intentar.";
     notice.hidden=false;
-    showError(e);
   }finally{busy=false;loading(btn,false);}
 }
 
 async function submitBooking(){
+  if(PREVIEW_READ_ONLY){tell("Esta vista de prueba no envía solicitudes.");return;}
   if(selectedPickupMode!=="schedule"){tell("Para ahora o en 10 minutos, tocá Enviar solicitud.");return;}
   if(busy||!pendingReview)return;
   clearBookingFeedback();

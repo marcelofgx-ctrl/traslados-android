@@ -66,6 +66,7 @@ const {chromium}=require("playwright-core");
     await page.locator('#view-inicio [data-service="now"]').click();
     await page.waitForSelector('#view-viaje[data-premium-step="route"]',{timeout:10000});
     assert.equal(await page.locator(".premium-step").count(),4);
+    assert.equal(await page.locator("#view-viaje > .premium-live-presence #pickup-presence").isVisible(),true,"Disponibilidad visible sin desplegar campos");
     const searchWidth=await page.locator('#view-viaje #origin-picker input[type="search"]').evaluate(
       el=>el.getBoundingClientRect().width);
     assert(searchWidth>=165,"El buscador de origen queda demasiado estrecho: "+searchWidth+"px en "+width);
@@ -151,6 +152,16 @@ const {chromium}=require("playwright-core");
     await page.locator('[data-booking-step="passenger"]').evaluate(el=>el.classList.add("is-complete"));
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"confirm");
+    assert.equal(await page.locator("#pickup-presence").isVisible(),true,"Confirmación conserva disponibilidad visible");
+    await page.evaluate(()=>{const error=new Error("SQLSTATE XX000 server_secret_table unexpected_internal_detail");error.remote=true;showError(error);});
+    assert(!/SQLSTATE|server_secret_table|unexpected_internal_detail/.test(await page.locator("#toast").textContent()),"No exponer detalles del backend");
+    // Estado confirmado por respuesta pública de QA, sin coordenadas y sin reservas.
+    await page.route("**/rest/v1/rpc/public_driver_availability_v1",r=>r.fulfill({json:{available:false,status:"not_available",checkedAt:new Date().toISOString()}}));
+    await page.evaluate(()=>refreshPickupPresence(true));
+    assert.match(await page.locator("#pickup-presence-title").textContent(),/Sin disponibilidad inmediata/);
+    await page.route("**/rest/v1/rpc/public_driver_availability_v1",r=>r.fulfill({json:{available:true,status:"available_for_requests",checkedAt:new Date().toISOString()}}));
+    await page.evaluate(()=>refreshPickupPresence(true));
+    assert.match(await page.locator("#pickup-presence-title").textContent(),/Conductor disponible/);
     const iconSize=await page.locator("#view-viaje .request-hero-icon svg").evaluate(e=>e.getBoundingClientRect().width);
     assert(iconSize<=32,"SVG de confirmar desbordado: "+iconSize);
     assert.equal(await page.locator("#premium-confirm-fake-location").count(),0,"Nunca agregar ubicaciones ficticias");
@@ -232,3 +243,4 @@ const {chromium}=require("playwright-core");
   assert.equal(errors.length,0,"Errores de JavaScript: "+errors.join("; "));
   console.log("PASS visual mobile 360/393/412: portada, recorrido, cuándo, datos, confirmar, cero envíos y sin desbordamientos");
 })().catch(e=>{console.error(e);process.exit(1);});
+

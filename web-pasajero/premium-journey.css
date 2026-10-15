@@ -594,3 +594,21 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
     mask-image:linear-gradient(180deg,transparent 0%,transparent 35%,#0009 64%,#000 76%,transparent 100%);
   }
 }
+
+/* Disponibilidad persistente: fuera del formulario plegado en los cuatro pasos. */
+#view-viaje .premium-live-presence{margin:2px 0 14px}
+#view-viaje .premium-live-presence .pickup-presence{margin:0;padding:12px 14px;border:1px solid #526f68;border-radius:14px;background:#0b2a30}
+#view-viaje .premium-live-presence .pickup-route-animation{display:none}
+#view-viaje .premium-live-presence .pickup-card-header{display:flex;gap:10px;align-items:center}
+#view-viaje .premium-live-presence .pickup-card-heading strong{font-size:14px;line-height:1.4}
+#view-viaje .premium-live-presence .pickup-card-heading p{font-size:12px;line-height:1.45;margin:4px 0 0}
+#view-viaje .premium-live-presence .pickup-presence-meta{font-size:10px;line-height:1.4;margin:6px 0 0;color:#afc4bf}
+#view-viaje .premium-live-presence .pickup-presence-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#view-viaje .request-route-recap{display:block;margin:14px 0;padding:12px;border:1px solid #6e827555;border-radius:12px;background:#061e26}
+#view-viaje .request-recap-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:10px;color:#c0cdc4}
+#view-viaje .request-recap-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+#view-viaje .request-recap-metrics>span{display:flex;flex-direction:column;gap:5px;min-width:0}
+#view-viaje .request-recap-metrics small{font-size:9px;line-height:1.4;color:#afc4bf}
+#view-viaje .request-recap-metrics strong{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+#view-viaje .booking-send-error{padding:12px;border-radius:10px;background:#6b332b44;color:#ffe1c3;font-size:13px;line-height:1.5}
+#view-viaje #urgent-send:disabled{opacity:.65;cursor:default}

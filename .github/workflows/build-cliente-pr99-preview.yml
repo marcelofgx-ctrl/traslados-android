@@ -37,6 +37,17 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify public availability read-only GET contract
+        run: |
+          python3 - <<'PYGET'
+          import urllib.request,json
+          req=urllib.request.Request('https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1',headers={'apikey':'sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9','Accept':'application/json'})
+          data=json.load(urllib.request.urlopen(req,timeout=20))
+          assert type(data.get('available')) is bool
+          assert data.get('status') in ('available_for_requests','not_available')
+          assert not any(k in data for k in ('lat','lng','device_id'))
+          print('PASS public read-only availability GET; no private fields')
+          PYGET
       - name: Recover existing signing key
         env:
           KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
@@ -69,21 +80,21 @@ jobs:
           assert cert('artifacts/SIGNING.txt') == cert('/tmp/previous-signing.txt'), 'Certificate changed'
           badging=Path('artifacts/APK_INFO.txt').read_text()
           assert "package: name='uy.com.traslados.cliente'" in badging
-          assert "versionCode='206'" in badging
+          assert "versionCode='207'" in badging
           expected=json.loads(Path('preview-web-sha256.json').read_text())
           with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
               for name,digest in expected.items():
                   assert hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()==digest,name
-          print('PASS: SAME certificate as published v16; code206; all PR99 web assets verified inside APK')
+          print('PASS: SAME certificate as published v16; code207; all PR99 web assets verified inside APK')
           PY
-          cp "$APK" artifacts/traslados-cliente-premium-pr99-v18-prueba.apk
+          cp "$APK" artifacts/traslados-cliente-premium-pr99-v19-prueba.apk
           cp preview-web-sha256.json artifacts/
           git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
           date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
-          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v18-prueba.apk > SHA256SUMS.txt)
+          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v19-prueba.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
-          name: Cliente-PR99-v18-Prueba-Firmada
+          name: Cliente-PR99-v19-Prueba-Firmada
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
@@ -97,10 +108,11 @@ jobs:
           git config user.name "Traslados Preview CI"
           git config user.email "actions@users.noreply.github.com"
           git add preview-artifacts
-          git commit -m "APK PR99 v18 prueba firmada: sin producción"
+          git commit -m "APK PR99 v19 prueba firmada: sin producción"
           for attempt in 1 2 3; do
             if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
             git fetch origin feature/tu-viaje-premium-visual-20261015
             git rebase origin/feature/tu-viaje-premium-visual-20261015
           done
           exit 1
+

@@ -14,6 +14,17 @@
     header.setAttribute("aria-label","Tu viaje, cuatro pasos");
     header.innerHTML='<div class="premium-brand"><span class="premium-car" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M13 38l5-12c1-3 4-5 7-5h15c4 0 6 2 8 5l4 12" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path d="M11 38h42v10H11z" stroke="currentColor" stroke-width="2.7" stroke-linejoin="round"/><path d="M16 48v5m32-5v5M18 41h7m14 0h7M22 28h20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><span><small>TRASLADOS</small><strong>Tu viaje</strong></span></div><ol class="premium-progress" aria-label="Pasos del viaje"></ol>';
     screen.querySelector(".journey-back").insertAdjacentElement("afterend",header);
+    // Mover el estado real, no clonarlo: sus actualizaciones y acciones se conservan.
+    const presence=doc.getElementById("pickup-presence");
+    const presenceAnchor=doc.createComment("pickup-presence-original");
+    presence.before(presenceAnchor);
+    const presenceHost=make(doc,"section","premium-live-presence");
+    presenceHost.setAttribute("aria-label","Disponibilidad del conductor");
+    header.insertAdjacentElement("afterend",presenceHost);
+    function placePresence(quick){
+      if(quick)presenceHost.append(presence);
+      else presenceAnchor.after(presence);
+    }
     const progress=header.querySelector(".premium-progress");
     ["Recorrido","Cuándo","Tus datos","Confirmar"].forEach((label,index)=>{
       const item=make(doc,"li","premium-step"),circle=make(doc,"span","premium-number",String(index+1));
@@ -176,7 +187,13 @@
     back.addEventListener("click",()=>open(STAGES[Math.max(0,STAGES.indexOf(stage)-1)]));
     next.addEventListener("click",forward);select.addEventListener("change",updateTimes);
     doc.getElementById("journey-clock-input").addEventListener("change",updateTimes);
-    return Object.freeze({activate:()=>open("route"),open,current:()=>stage});
+    if(doc.querySelector('meta[name="traslados-preview"]')){
+      for(const id of ["urgent-send","confirm-booking"]){
+        const b=doc.getElementById(id);b.disabled=true;
+        const label=b.querySelector(".booking-cta-label");if(label)label.textContent="Vista de prueba · Sin envíos";
+      }
+    }
+    return Object.freeze({activate:()=>{placePresence(true);open("route");},placePresence,open,current:()=>stage});
   }
   root.TrasladosPremiumJourney=Object.freeze({mount});
 })(window);
