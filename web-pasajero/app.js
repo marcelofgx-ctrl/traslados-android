@@ -543,6 +543,7 @@ function shiftView(name){
     if(active)tab.setAttribute("aria-current","page");else tab.removeAttribute("aria-current");
   }
   if(name==="viajes")void loadTrips();
+  if(name==="seguimiento")renderPremiumTracking();
   if(name==="cuenta")renderAccount();
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -1602,6 +1603,9 @@ function reservationView(r,guestToken){
     }
   }
   if(meta.tone==="moving"){
+    const fullscreen=button(top,"◉ Abrir seguimiento","premium-open-tracking",()=>openPremiumTracking(r));
+    fullscreen.setAttribute("aria-label","Abrir seguimiento de este viaje en pantalla completa");
+    fullscreen.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
     // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
     const onBoard=r.status==="EN_VIAJE";
     const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
@@ -1736,6 +1740,94 @@ function reservationView(r,guestToken){
     });
   return d;
 }
+
+let premiumTrackingKey=null;
+function openPremiumTracking(r){
+  premiumTrackingKey=String(r?.id||r?.code||"");
+  if(!premiumTrackingKey)return;
+  shiftView("seguimiento");
+  renderPremiumTracking();
+}
+function renderPremiumTracking(){
+  const content=$("premium-tracking-content");
+  if(!content)return;
+  clear(content);
+  const r=tripRows.find(row=>String(row.id||row.code||"")===premiumTrackingKey);
+  if(!r){
+    text(content,"p","Ya no se encuentra este traslado entre tus solicitudes autorizadas.","premium-tracking-empty");
+    button(content,"← Volver a Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    return;
+  }
+  const meta=tripBoard.metadata(r);
+  if(meta.tone!=="moving"){
+    text(content,"p",tripBoard.guidance(r),"premium-tracking-empty");
+    button(content,"Ver estado en Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    return;
+  }
+  const onBoard=r.status==="EN_VIAJE";
+  const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
+  const phase=onBoard?2:arrived?1:0;
+  const hero=text(content,"section","","premium-tracking-hero");
+  const pill=text(hero,"div","","premium-tracking-pill");
+  text(pill,"span","●").setAttribute("aria-hidden","true");
+  text(pill,"strong",meta.label);
+  text(hero,"h2",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Conductor en camino");
+  text(hero,"p",tripBoard.guidance(r));
+  const mapHost=text(content,"section","","premium-tracking-map");
+  const from=[Number(r.origin_lat),Number(r.origin_lng)];
+  const to=[Number(r.destination_lat),Number(r.destination_lng)];
+  const coordinatesReal=from.every(Number.isFinite)&&to.every(Number.isFinite)&&
+    isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
+    (from[0]!==to[0]||from[1]!==to[1]);
+  if(coordinatesReal){
+    const loader=text(mapHost,"p","Cargando mapa de tu recorrido…","premium-tracking-map-message");
+    void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
+      {api:API,publishableKey:KEY}).then(route=>{
+        if(!mapHost.isConnected||premiumTrackingKey!==String(r.id||r.code||""))return;
+        if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||
+          !window.TrasladosPremiumMap?.render(mapHost,route.geometry)){
+          loader.textContent="No pudimos mostrar el mapa verificado en este momento.";
+        }
+      }).catch(()=>{
+        if(loader.isConnected)loader.textContent="El mapa está temporalmente no disponible.";
+      });
+  }else{
+    text(mapHost,"div","El recorrido se mostrará cuando estén disponibles sus coordenadas verificadas.","premium-tracking-map-message");
+  }
+  text(content,"p","Mapa del recorrido contratado. No muestra la posición en tiempo real del conductor.","premium-tracking-disclaimer");
+  const card=text(content,"section","","premium-tracking-card");
+  const stepHead=text(card,"div","","premium-tracking-stephead");
+  text(stepHead,"strong","Estado del viaje");
+  text(stepHead,"small",r.code||"Solicitud autorizada");
+  const timeline=text(card,"div","","premium-tracking-timeline");
+  for(const [i,label] of ["Conductor en camino","En el punto de recogida","Durante el viaje"].entries()){
+    const step=text(timeline,"div","","premium-tracking-step");
+    step.dataset.stage=i<phase?"complete":i===phase?"current":"upcoming";
+    const dot=text(step,"span",i<phase?"✓":String(i+1),"premium-tracking-step-dot");
+    dot.setAttribute("aria-hidden","true");
+    const body=text(step,"div","","premium-tracking-step-text");
+    text(body,"strong",label);
+    if(i===phase)text(body,"small",i===2?"El conductor marcó el inicio del viaje.":i===1?"El conductor informó su llegada.":"En camino según el estado informado por el conductor.");
+    if(i===phase)step.setAttribute("aria-current","step");
+  }
+  const route=text(card,"div","","premium-tracking-route");
+  for(const [name,value] of [["Origen",r.origin_text],["Destino",r.destination_text]]){
+    const item=text(route,"div","","premium-tracking-place");
+    text(item,"small",name);
+    text(item,"strong",String(value||"Dirección no disponible"));
+  }
+  const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
+  const car=text(card,"p","","premium-tracking-vehicle");
+  car.textContent=plate?"Vehículo: BYD Yuan Pro · Matrícula "+plate:"Vehículo: BYD Yuan Pro · Matrícula disponible para pasajeros autorizados";
+  if(r.id&&(authReady()||r.__guestToken))void refreshVehiclePlateForTrip(r,r.__guestToken||null);
+  const buttons=text(content,"nav","","premium-tracking-actions");
+  const phone=text(buttons,"a","☎ Llamar","premium-tracking-action");
+  phone.href="tel:+59897228175";
+  const whatsapp=text(buttons,"a","◉ WhatsApp","premium-tracking-action");
+  whatsapp.href="https://wa.me/59897228175";whatsapp.target="_blank";whatsapp.rel="noopener noreferrer";
+  const chat=button(buttons,"✉ Chat","premium-tracking-action",()=>openTripChat(r,r.__guestToken||null,chat));
+  text(content,"p","El conductor es quien registra la llegada, el inicio y la finalización del traslado.","premium-tracking-disclaimer");
+}
 async function decideQuote(id,accept,guestToken=null){
   if(!confirm(accept?"¿Aceptás el presupuesto definitivo?":"¿Rechazás este presupuesto?"))return;
   try{
@@ -1797,6 +1889,7 @@ function renderTripsBoard({reset=false}={}){
   if(!groups.length){
     text(list,"div",tripRows.length?"No hay traslados que coincidan con estos filtros.":"Todavía no hay reservas para mostrar.","trip-empty");return;
   }
+  if($("view-seguimiento")?.classList.contains("active"))renderPremiumTracking();
   groups.forEach((g,i)=>{
     const day=document.createElement("details");day.className="trips-day";day.dataset.key=g.key;
     day.open=openTripGroups.size?openTripGroups.has(g.key):i<2;
@@ -2175,6 +2268,7 @@ function init(){
   // Nunca reproducir sonidos sin el consentimiento guardado.
   document.addEventListener("pointerdown",armTripSound,{once:true});
   document.addEventListener("keydown",armTripSound,{once:true});
+  $("premium-tracking-back").addEventListener("click",()=>shiftView("viajes"));
   $("trip-alert-close").addEventListener("click",closeTripNotice);
   $("trip-alert-open").addEventListener("click",()=>{
     const target=tripFocused;closeTripNotice();
