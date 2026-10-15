@@ -41,6 +41,17 @@ eta = assets / "eta-engine.js"
 e = eta.read_text()
 e = e.replace('method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,', 'method:"GET",mode:"cors",cache:"no-store",signal:ctrl.signal,', 1)
 e = e.replace(',\n        body:"{}"', '', 1)
+start=e.index("  async function pickup(")
+end=e.index("  root.TrasladosETA=",start)
+e=e[:start]+'''  async function pickup({originLat,originLng,request=fetch}){
+    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),18000);
+    try{
+      const url="https://appassets.androidplatform.net/traslados-android/web-pasajero/_public/pickup-eta?lat="+encodeURIComponent(originLat)+"&lng="+encodeURIComponent(originLng);
+      const response=await request(url,{cache:"no-store",signal:ctrl.signal});
+      return await response.json();
+    }finally{clearTimeout(timer);}
+  }
+'''+e[end:]
 eta.write_text(e)
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
@@ -56,6 +67,14 @@ assert needle in j
 j = j.replace(needle, needle + """
             @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                if(official(uri) && (OFFICIAL_PATH+"_public/pickup-eta").equals(uri.getPath()) && "GET".equals(request.getMethod())) {
+                    try {
+                        double lat=Double.parseDouble(uri.getQueryParameter("lat")),lng=Double.parseDouble(uri.getQueryParameter("lng"));
+                        if(!Double.isFinite(lat)||!Double.isFinite(lng)||lat < -35.3||lat > -30||lng < -58.8||lng > -52.9) return blockedPreviewRequest();
+                        org.json.JSONObject body=new org.json.JSONObject();body.put("originLat",lat);body.put("originLng",lng);
+                        return previewPublicJson("https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta",body.toString());
+                    }catch(Exception invalid){return blockedPreviewRequest();}
+                }
                 if(official(uri) && "GET".equals(request.getMethod())) {
                     String relative = uri.getPath().length() <= OFFICIAL_PATH.length() ? "" : uri.getPath().substring(OFFICIAL_PATH.length());
                     if(relative.isEmpty()) relative = "index.html";
@@ -82,13 +101,10 @@ j = j.replace(needle, needle + """
                     return null;
                 // Public calculations/search only; no reservation/auth/contact APIs.
                 if("https".equals(uri.getScheme()) && "traslados-web.marcelof-gx.workers.dev".equals(uri.getHost())
-                    && "/api/public/route-estimate".equals(uri.getPath()) && "GET".equals(request.getMethod())) return null;
+                    && "/api/public/route-estimate".equals(uri.getPath()) && "GET".equals(request.getMethod())) return previewPublicJson(uri.toString(),null);
                 if("https".equals(uri.getScheme()) && "direcciones.ide.uy".equals(uri.getHost())
                     && java.util.Arrays.asList("/api/v1/geocode/candidates","/api/v1/geocode/direcUnica","/api/v1/geocode/reverse").contains(uri.getPath())
-                    && "GET".equals(request.getMethod())) return null;
-                if("https".equals(uri.getScheme()) && "zetaudvvutlouiqxopvg.supabase.co".equals(uri.getHost())
-                    && "/functions/v1/pickup-eta".equals(uri.getPath()) && uri.getQuery() == null
-                    && ("POST".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod()))) return null;
+                    && "GET".equals(request.getMethod())) return previewPublicJson(uri.toString(),null);
                 // Public raster map images.
                 if("https".equals(uri.getScheme()) && "tile.openstreetmap.org".equals(uri.getHost())
                     && "GET".equals(request.getMethod()) && uri.getPath().matches("/[0-9]+/[0-9]+/[0-9]+\\\\.png"))
@@ -97,6 +113,33 @@ j = j.replace(needle, needle + """
             }
 """)
 j = j.replace("    private boolean openExternal(Uri uri) {", """
+    // Native public calculations use no browser Origin or account credentials.
+    // No production CORS policy is changed; only these fixed contracts are reachable.
+    private android.webkit.WebResourceResponse previewPublicJson(String target,String body) {
+        java.net.HttpURLConnection connection=null;
+        try {
+            connection=(java.net.HttpURLConnection)new java.net.URL(target).openConnection();
+            connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(5000);connection.setReadTimeout(14000);
+            connection.setRequestProperty("Accept","application/json");
+            if(body!=null){
+                connection.setRequestMethod("POST");connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type","application/json");
+                connection.setRequestProperty("apikey","sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9");
+                try(java.io.OutputStream out=connection.getOutputStream()){out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+            }
+            int code=connection.getResponseCode();
+            if(code<200||code>=300)return blockedPreviewRequest();
+            java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();
+            try(java.io.InputStream in=connection.getInputStream()){
+                byte[] buf=new byte[4096];int n;
+                while((n=in.read(buf))!=-1){if(bytes.size()+n>524288)return blockedPreviewRequest();bytes.write(buf,0,n);}
+            }
+            java.util.Map<String,String> headers=new java.util.HashMap<>();
+            headers.put("Access-Control-Allow-Origin","https://appassets.androidplatform.net");headers.put("Cache-Control","no-store");
+            return new android.webkit.WebResourceResponse("application/json","UTF-8",200,"OK",headers,new java.io.ByteArrayInputStream(bytes.toByteArray()));
+        }catch(Exception unavailable){return blockedPreviewRequest();}
+        finally{if(connection!=null)connection.disconnect();}
+    }
     private android.webkit.WebResourceResponse blockedPreviewRequest() {
         return new android.webkit.WebResourceResponse("text/plain","UTF-8",503,"Preview isolated",
             java.util.Collections.singletonMap("Cache-Control","no-store"),

@@ -53,6 +53,18 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("!document.querySelector('.premium-error').hidden"));
         assertEquals("true",js("!navigator.serviceWorker.controller"));
     }
+    public void testPublicRoadEstimateWithoutBooking() throws Exception {
+        loaded();WebView w=web();final WebViewClient[] c={null};
+        getInstrumentation().runOnMainSync(()->c[0]=w.getWebViewClient());
+        WebResourceResponse r=c[0].shouldInterceptRequest(w,request("https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.016380%2C-34.836960%3B-56.158636%2C-34.924017"));
+        assertNotNull(r);assertEquals("Verified road estimate should be reachable from isolated APK",200,r.getStatusCode());
+        java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] buf=new byte[4096];int n;
+        while((n=r.getData().read(buf))!=-1)bytes.write(buf,0,n);
+        org.json.JSONObject data=new org.json.JSONObject(bytes.toString("UTF-8"));
+        assertTrue(data.getBoolean("available"));assertTrue(data.getDouble("distanceKm")>0);
+        assertTrue(data.getDouble("durationMin")>=0);
+        assertEquals("https://appassets.androidplatform.net",r.getResponseHeaders().get("Access-Control-Allow-Origin"));
+    }
     public void testAddressKeyboardKeepsSuggestionsVisible() throws Exception {
         loaded();WebView w=web();
         js("document.querySelector('[data-service=now]').click();document.querySelector('#destination-picker input[type=search]').focus()");
@@ -95,7 +107,8 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("document.querySelector('#urgent-send').disabled && document.querySelector('#confirm-booking').disabled"));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1","POST")));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1","POST")));
-        assertNull(client.shouldInterceptRequest(w,request("https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.1,-34.9;-56.2,-34.8")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=invalid")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta","POST")));
         WebResourceResponse root=client.shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
         assertEquals(200,root.getStatusCode());
         assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev;\")"));
