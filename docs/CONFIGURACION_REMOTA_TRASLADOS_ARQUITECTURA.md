@@ -1,6 +1,16 @@
 # Traslados — Configuración central remota, sin perder autonomía (decisión de arquitectura)
 
-**Fecha:** 14/10/2026 (UYT). **Estado:** diseño propuesto y relevamiento comprobado; **NO implementado ni desplegado**. Ninguna APK, tabla, reserva ni servicio operativo cambia por este documento.
+**Fecha:** 14/10/2026 (UYT). **Estado:** FASE 1 IMPLEMENTADA Y PUBLICADA — Supabase + Mapa R25.24. Las fases siguientes (Conductor independiente, admin visual, PWA remota) siguen pendientes. No se alteraron reservas, GPS, trayectos ni historial.
+
+## Implementación efectiva, 14/10/2026 · 23:12 UYT
+
+- **Supabase real** `zetaudvvutlouiqxopvg`: migración `public_app_config_read_only_v1` aplicada, función `public.public_app_config_v1()`, tabla privada `app_internal.public_config`; snapshot público SOLO enlaces y metadatos de release. Permisos `anon` permiten ejecutar la función, pero NO leer la tabla ni usar el esquema. Prueba `SET LOCAL ROLE anon` correcta. Config revisión **2**, catálogo Mapa **R25.24**, Cliente **v16**; el catálogo NO actualiza APK instaladas automáticamente.
+- Reproducción SQL en `traslados-web/supabase/migrations/20261015_public_app_config_read_only_v1.sql`. No se usa nuevo plan pagado.
+- **Android Mapa R25.24/code76**: `RemoteAppConfig.java` hace POST anónimo a la RPC pública en hilo secundario al abrir Mapa/centro rápido, con timeout 3,5+5 s, revalidación cada ~30 min, respuesta limitada a 16 KiB, validación esquema/revisión y dominio/ruta oficial HTTPS, último snapshot válido persistente y fallbacks locales R25.23. GPS y jornada no esperan este request. Se agregaron pruebas de `ShareLinkPolicy.resolve()`: al cambiar un enlace oficial conocido se pide reconfirmación; enlace personalizado se conserva sin sustitución.
+- **APK RELEASE firmado y publicado:** [GitHub Actions #38669473570](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38669473570) SUCCESS, **14/10/2026 23:12 UYT**; archivo `web-pasajero/downloads/mapa-trayectos-r25.24.apk`, checksum SHA-256 `aa4accdf9dbb438ecaccedb4e991f3bd5aca29f9d527b726ff01375f32bb6092`, `MAPA-R25.24-SHA256SUMS.txt` en GitHub. R25.23 preservada como respaldo. El pipeline verificó firma, paquete, Java policy, integración Conductor y sonido.
+- **Pendiente de comprobar:** respuesta de la RPC desde la app real instalada en Samsung, actualización remota tras publicar una futura Cliente v17, offline real y comportamiento de enlaces; QA visual/táctil, GPS/trayectos en movimiento no se repitieron para esta modificación de configuración. No declarar esos escenarios probados.
+- Para publicar un nuevo cliente: certificar APK y URL **primero**, luego aumentar `revision`, actualizar `payload.links.client_apk_url` y `payload.releases.cliente` con versión y hash, conservar rollback anterior y probar acceso anónimo. No modificar enlaces personalizados ni escribir credenciales/PII en el catálogo.
+- Supabase security linter puede mostrar el aviso genérico sobre una RPC pública `SECURITY DEFINER`; es intencional para este catálogo **sin parámetros y de solo lectura**, con tabla privada y `SET search_path=''`. Se deberán revisar los privilegios si se amplía el contrato; NO utilizar esta RPC para datos privados ni comandos.
 
 ## Motivo y evidencia verificable
 
