@@ -2289,3 +2289,11 @@ body.trip-chat-modal-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   #view-viaje .booking-step-content:not([hidden]){animation:none}
 }
+
+/* Matrícula real, sincronizada por Supabase, visible solo durante fase de trayecto. */
+.trip-live-copy .trip-live-vehicle-plate{
+  display:inline-flex;align-self:flex-start;max-width:100%;
+  margin-top:5px;padding:5px 10px;border-radius:9px;
+  border:1px solid rgba(240,207,146,.48);background:rgba(15,49,54,.48);
+  color:#f2d594;font-size:12px;font-weight:800;letter-spacing:.045em;
+}
