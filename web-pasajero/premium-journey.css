@@ -434,3 +434,6 @@
     grid-template-columns:1fr;gap:0
   }
 }
+
+/* El nuevo formulario local pertenece solo a Tu viaje, no modifica Tu reserva. */
+body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
