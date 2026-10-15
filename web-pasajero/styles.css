@@ -2155,3 +2155,6 @@ body.trip-chat-modal-open{overflow:hidden}
 #pickup-diagnostics-preview{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:7rem;padding:.7rem;border:1px solid #547974;border-radius:.85rem;background:#08282e;color:#dce9df;font:12px/1.45 ui-monospace,SFMono-Regular,monospace;resize:vertical}
 .pickup-diagnostics-actions{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:.75rem}
 .pickup-diagnostics-actions button{flex:1 1 10rem;min-height:44px}
+
+/* v71 — estado de cuenta borrada en DB sin presentar sesión ficticia */
+.account-session-expired{margin:.4rem 0 1rem;padding:.9rem 1rem;border:1px solid #c59f66;border-radius:.85rem;background:#15373a;color:#f5dda7;font-weight:600;line-height:1.5}
