@@ -37,6 +37,9 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
     }
     public void testProductionBlockedByNativePolicy() throws Exception {
         loaded(); WebView w=web();
+        final WebViewClient[] clients={null};
+        getInstrumentation().runOnMainSync(()->clients[0]=w.getWebViewClient());
+        WebViewClient client=clients[0];
         String[] blocked={
             "https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/preview_probe",
             "https://traslados-web.marcelof-gx.workers.dev/api/preview_probe",
@@ -45,10 +48,10 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
             "https://example.com/"
         };
         for(String url:blocked) {
-            WebResourceResponse response=w.getWebViewClient().shouldInterceptRequest(w,request(url));
+            WebResourceResponse response=client.shouldInterceptRequest(w,request(url));
             assertNotNull(url,response); assertEquals(url,503,response.getStatusCode());
         }
-        WebResourceResponse root=w.getWebViewClient().shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
+        WebResourceResponse root=client.shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
         assertEquals(200,root.getStatusCode());
         assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self';\")"));
     }
