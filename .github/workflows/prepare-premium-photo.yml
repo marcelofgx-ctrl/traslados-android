@@ -1,0 +1,47 @@
+name: Preparar foto Montevideo premium (solo rama draft)
+on:
+  push:
+    branches:
+      - feature/tu-viaje-premium-visual-20261015
+    paths:
+      - '.github/workflows/prepare-premium-photo.yml'
+permissions:
+  contents: write
+jobs:
+  photo:
+    if: github.ref_name == 'feature/tu-viaje-premium-visual-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/tu-viaje-premium-visual-20261015
+          persist-credentials: true
+      - name: Preparar fotografía autorizada en WebP
+        run: |
+          python3 -m pip install --user --disable-pip-version-check pillow
+          python3 - <<'PY'
+          from urllib.request import Request, urlopen
+          from PIL import Image
+          from io import BytesIO
+          from pathlib import Path
+          url="https://images.unsplash.com/photo-1693192357825-b50aa54738ab?auto=format&fit=crop&w=1400&q=85"
+          request=Request(url,headers={"User-Agent":"TrasladosDesignQA/1.0"})
+          with urlopen(request,timeout=25) as response:
+              raw=response.read(5000001)
+          if len(raw)>5000000: raise RuntimeError("Imagen demasiado grande")
+          picture=Image.open(BytesIO(raw)).convert("RGB")
+          picture.thumbnail((1300,1000),Image.Resampling.LANCZOS)
+          if min(picture.size)<200: raise RuntimeError("Fotografía ilegible")
+          dest=Path("web-pasajero/premium-montevideo.webp")
+          picture.save(dest,format="WEBP",quality=77,method=6)
+          print(f"Foto local preparada: {picture.size}, bytes={dest.stat().st_size}")
+          PY
+      - name: Guardar asset SOLO en PR draft
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web-pasajero/premium-montevideo.webp
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "assets: foto local licenciada de atardecer en Montevideo"
+          git push origin HEAD:feature/tu-viaje-premium-visual-20261015
