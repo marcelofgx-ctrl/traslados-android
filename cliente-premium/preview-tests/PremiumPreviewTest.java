@@ -67,13 +67,13 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
     }
     public void testAddressKeyboardKeepsSuggestionsVisible() throws Exception {
         loaded();WebView w=web();
+        getInstrumentation().runOnMainSync(()->w.requestFocus());
         js("document.querySelector('[data-service=now]').click();document.querySelector('#destination-picker input[type=search]').focus()");
         getInstrumentation().runOnMainSync(()->{
-            w.requestFocus();
             android.view.inputmethod.InputMethodManager ime=(android.view.inputmethod.InputMethodManager)getActivity().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
             ime.showSoftInput(w,android.view.inputmethod.InputMethodManager.SHOW_FORCED);
         });
-        js("(()=>{const el=document.querySelector('#destination-picker input[type=search]');el.value='Punta Carretas';el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+        js("(()=>{const el=document.querySelector('#destination-picker input[type=search]');el.focus();el.value='Punta Carretas';el.dispatchEvent(new Event('input',{bubbles:true}));})()");
         boolean visible=false;
         for(int i=0;i<150;i++){
             if("true".equals(js("(()=>{const el=document.querySelector('#destination-picker input[type=search]'),r=document.querySelector('#destination-picker .result');if(!r)return false;const a=el.getBoundingClientRect(),b=r.getBoundingClientRect();const top=visualViewport.offsetTop,bottom=top+visualViewport.height;return a.top>=top&&a.bottom<=bottom&&b.bottom<=bottom&&document.body.classList.contains('address-search-active');})()"))){visible=true;break;}
