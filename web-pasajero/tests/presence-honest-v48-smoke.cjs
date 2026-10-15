@@ -9,7 +9,7 @@ const app=fs.readFileSync(path.join(dir,"app.js"),"utf8");
 const html=fs.readFileSync(path.join(dir,"index.html"),"utf8");
 const sw=fs.readFileSync(path.join(dir,"sw.js"),"utf8");
 assert(html.includes("app.js?v=71")&&html.includes("styles.css?v=71"));
-assert(sw.includes("traslados-cliente-pwa-v71"));
+assert(sw.includes("traslados-cliente-pwa-v72"));
 assert(app.includes('const checkedLabel=(elapsedCheck===null?'),"Checked-at stays server age, not GPS");
 assert(!app.includes('const checkedLabel="Disponibilidad verificada"'));
 assert(!app.includes('title:"Conductor no disponible ahora"'));
