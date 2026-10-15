@@ -3,7 +3,7 @@
 (function(root){
   const STAGES=["route","when","passenger","confirm"];
   const TITLES={route:"¿Dónde te buscamos?",when:"¿Cuándo querés viajar?",passenger:"Tus datos",confirm:"Tu traslado"};
-  const NOTES={route:"Elegí origen, destino y paradas.",when:"Ahora por defecto. Hasta 2 horas; para otro día, elegí Tu reserva.",passenger:"Tus datos permiten coordinar el traslado.",confirm:"Revisá tu recorrido antes de solicitar el viaje."};
+  const NOTES={route:"Elegí origen, destino y paradas.",when:"Ahora o en las próximas 2 horas.",passenger:"Tus datos permiten coordinar el traslado.",confirm:"Revisá tu recorrido antes de solicitar el viaje."};
   function make(doc,tag,cls,content){
     const node=doc.createElement(tag);if(cls)node.className=cls;if(content!==undefined)node.textContent=content;return node;
   }

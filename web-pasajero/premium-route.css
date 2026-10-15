@@ -65,3 +65,8 @@ body.journey-mode-quick #view-viaje .premium-next,body.journey-mode-quick #view-
  body.journey-mode-quick .tabs .tab{min-height:42px;border:0;box-shadow:none!important;background:transparent!important;font-size:10px;color:#a6b8b2}
  body.journey-mode-quick .tabs .tab.active{color:#efd094}
 }
+/* La densidad del recorrido no debe agrandar Atrás ni la cabecera de Cuándo. */
+body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-brand{min-height:49px;margin-bottom:8px}
+body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-journey-header{padding-bottom:7px}
+body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-previous{min-height:36px;font-size:12px}
+body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-actions{gap:6px;margin-top:8px}
