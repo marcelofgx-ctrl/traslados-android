@@ -22,7 +22,7 @@ assert(app.includes('customer_list_reservations_v15'));
 assert(app.includes('get_reservation_by_token_v4'));
 assert(app.includes('if(r.pickup_phase==="EN_CAMINO")event('));
 assert(app.includes('if(r.pickup_phase==="EN_PUNTO")event('));
-assert(html.includes('app.js?v=73')&&html.includes('styles.css?v=73')&&html.includes('trip-board.js?v=6'));
+assert(html.includes('app.js?v=74')&&html.includes('styles.css?v=74')&&html.includes('trip-board.js?v=6'));
 assert(sw.includes('traslados-cliente-pwa-v74'));
 assert(read("styles.css").includes('.trip-card[data-tone="moving"] .trip-status-dot'));
 console.log("PASS v51: authenticated pickup-phase changes drive real moving and arrived badges");
