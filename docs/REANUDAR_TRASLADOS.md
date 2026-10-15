@@ -1,7 +1,16 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
-> **DECISIÓN DE ARQUITECTURA 14/10/2026:** [Configuración remota compartida Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Auditoría constató links nativos compilados y ausencia de catálogo general en Supabase; documento de propuesta con rollout offline-first. **No implementado; no sustituye la APK vigente.**
+> **CONFIGURACIÓN REMOTA — FASE 1 IMPLEMENTADA:** [Arquitectura central Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Catálogo público de enlaces de Supabase ya integrado con Mapa R25.24 y Web PWA v72+; Conductor conserva por ahora enlaces nativos. El sistema permanece offline-first, con respaldo válido.
 
+
+## Pasajeros PWA v73 + Conductor R7 — chat y fases visibles (15/10/2026, 00:33 UYT)
+
+- PWA **v73**: UX de seguimiento premium. Si la reserva pasa a fase validada `EN_CAMINO`, `EN_PUNTO` o `EN_VIAJE`, la tarjeta del pasajero muestra una banda grande en el resumen, incluso plegada. Se resalta también el mensaje de estado expandido y la orientación superior de Mis traslados; **no se inventa estado a partir de GPS/ETA**. Animaciones con `prefers-reduced-motion`.
+- Chat web abierto: polling solo **cada 6 s** cuando diálogo, documento visible y conexión presentes; cancela temporizador al cerrar. Compara huella de mensajes, no reconstruye conversación sin novedades, preserva scroll al leer historial y no borra mensajes ante falla temporal. Sin push ficticio ni lectura confirmada; envío sigue siendo RPC idempotente.
+- Mis traslados: polling **8 s** solo al estar en la pestaña de traslados con reservas activas visibles; en otros casos **20 s**. No repinta agenda si la firma no cambia. Contratos de reservas, GPS, rutas y presupuesto intactos. Cliente Premium v16 muestra esta PWA por WebView sin recompilar.
+- Conductor Android firmado **v11.5-R7 / versionCode 129**: consulta chat privado visible cada **8 s** en vez de 15 s. Conserva monitor de notificaciones y burbuja en segundo plano a 15 s. Firma original SHA256 cert `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d`; release anterior R6 preservada. Compilaciones [release 38676726000](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) SUCCESS y DEBUG [38676726119](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726119) SUCCESS.
+- APK publicada: `web-pasajero/downloads/traslados-conductor-r7.apk` (51.997.192 bytes). SHA256 `8de44de818b758b0c8be28fc3dcfae805e4744f3efdf462edb9176b9a3ab7317`, comprobado contra artefacto firmado. PWA [CI smoke 38676566799](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676566799) SUCCESS.
+- **Pendiente en Samsung:** validar tiempo real de ambos chats en red celular, contraste de nueva banda con zoom/scroll y estados durante recogida; no confundir smoke CI con prueba física. Pages puede estar pendiente de despliegue del commit final. Nadie debe borrar los datos de pruebas para instalar.
 
 ## Web/PWA Pasajeros v72 — catálogo central de descargas (14/10/2026, 23:29 UYT)
 
