@@ -342,3 +342,19 @@
 }
 #view-viaje .premium-when-extras{position:relative;z-index:1}
 #view-viaje[data-premium-step="when"] .premium-actions{margin-bottom:6px}
+
+/* Samsung 393x852: la barra inferior nunca debe cubrir CONTINUAR. */
+@media(max-width:650px){
+ #view-viaje[data-premium-step="when"] .premium-journey-header{padding-bottom:7px}
+ #view-viaje[data-premium-step="when"] .premium-brand{min-height:52px;margin-bottom:8px}
+ #view-viaje[data-premium-step="when"] .premium-intro{margin:8px 4px 9px}
+ #view-viaje[data-premium-step="when"] .premium-intro h2{font-size:20px;margin-bottom:4px}
+ #view-viaje[data-premium-step="when"] .premium-time-choice{min-height:36px;padding:5px 10px}
+ #view-viaje[data-premium-step="when"] .premium-time-choice strong{font-size:12px}
+ #view-viaje[data-premium-step="when"] .premium-when-extras{margin:8px 0 3px}
+ #view-viaje[data-premium-step="when"] .premium-when-extras>summary{padding:10px 12px}
+ #view-viaje[data-premium-step="when"] .premium-actions{padding:6px 9px;gap:5px;margin-top:8px}
+ #view-viaje[data-premium-step="when"] .premium-previous{min-height:28px}
+ #view-viaje[data-premium-step="when"] .premium-next{min-height:45px}
+ #view-viaje[data-premium-step="when"] .journey-time-note:not(#journey-custom-time-label){display:none}
+}
