@@ -16,8 +16,8 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 ### Fecha y hora de la última compilación y del último cambio
 
-**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:12 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38669473570) · commit 783c32493 · Build Mapa Trayectos RELEASE.
-**Último cambio de código verificado:** 14/10/2026 23:20 UYT · [Web pasajero / 28af3cc73b](https://github.com/marcelofgx-ctrl/traslados-android/commit/28af3cc73b4c1f678b78118e6d96183cc9b4ecce) — web v72: cache lightweight public catalog module and refresh PWA assets.
+**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:21 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670413584) · commit 482d0bd64 · Verify and package passenger PWA (GitHub Pages via branch).
+**Último cambio de código verificado:** 14/10/2026 23:21 UYT · [Web pasajero / 31432f096c](https://github.com/marcelofgx-ctrl/traslados-android/commit/31432f096ce89cd5a43d7e0eb2606eb0119e8f25) — test(web): public config TTL/offline/foreign URLs and dynamic installation v72.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
