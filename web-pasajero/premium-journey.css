@@ -269,3 +269,31 @@
 }
 
 #view-viaje[data-premium-step]:not([data-premium-step="when"]) .premium-when-extras{display:none!important}
+
+/* Cartografía real opcional: fondo OSM y polilínea obtenida de datos viales
+   verificados. Si no cargan los mosaicos, siguen visibles la ruta y la leyenda. */
+#view-viaje .route-extra{margin:12px 0 0}
+#view-viaje .route-extra>summary{display:none}
+#view-viaje .route-extra .route-map-caption{font-size:9.5px;line-height:1.4;margin:7px 3px;color:#adc1c0}
+#view-viaje .route-road-map{margin-top:0}
+#view-viaje .premium-real-map{
+  position:relative;width:100%;border-radius:15px;overflow:hidden;isolation:isolate;
+  border:1px solid #b79a547e;background:radial-gradient(ellipse at 37% 38%,#245869,#091d2b 74%);
+  box-shadow:0 10px 22px #0006,inset 0 0 40px #09252b;
+}
+#view-viaje .premium-map-tiles{position:absolute;inset:0;overflow:hidden;filter:grayscale(.55) saturate(.9) hue-rotate(166deg) brightness(.56) contrast(1.25)}
+#view-viaje .premium-map-tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none}
+#view-viaje .premium-map-overlays{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 2px 4px #00151f)}
+#view-viaje .premium-map-route{filter:drop-shadow(0 0 3px #2ed2ff)}
+#view-viaje .premium-map-credit{position:absolute;bottom:4px;right:5px;z-index:2;
+  border-radius:4px;background:#061c27e8;padding:3px 5px;color:#eff6e9;font:9px/1.2 Arial,sans-serif}
+#view-viaje .premium-real-map[aria-hidden="true"]{display:none}
+#view-viaje[data-premium-step="route"] .route-overview{
+  border:none;box-shadow:none;padding:0;background:transparent;
+}
+#view-viaje[data-premium-step="route"] .route-summary-heading,
+#view-viaje[data-premium-step="route"] .route-metrics,
+#view-viaje[data-premium-step="route"] .route-footer{display:none}
+#view-viaje[data-premium-step="route"] .route-extra:has(.premium-real-map){
+  margin-top:7px
+}
