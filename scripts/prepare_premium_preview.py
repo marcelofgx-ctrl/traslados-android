@@ -50,7 +50,7 @@ j = j.replace(needle, needle + """
             @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if(official(uri) && "GET".equals(request.getMethod())) {
-                    String relative = uri.getPath().substring(OFFICIAL_PATH.length());
+                    String relative = uri.getPath().length() <= OFFICIAL_PATH.length() ? "" : uri.getPath().substring(OFFICIAL_PATH.length());
                     if(relative.isEmpty()) relative = "index.html";
                     if(relative.contains("..") || relative.contains("\\\\") || relative.startsWith("/"))
                         return blockedPreviewRequest();
