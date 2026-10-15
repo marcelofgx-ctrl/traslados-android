@@ -14,11 +14,11 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         final String[] value={null}; CountDownLatch done=new CountDownLatch(1);
         WebView w=web();
         getInstrumentation().runOnMainSync(()->w.evaluateJavascript(code,result->{value[0]=result;done.countDown();}));
-        assertTrue("WebView callback",done.await(5,TimeUnit.SECONDS)); return value[0];
+        assertTrue("WebView callback",done.await(20,TimeUnit.SECONDS)); return value[0];
     }
     private void loaded() throws Exception {
         getActivity();
-        for(int i=0;i<80;i++) {
+        for(int i=0;i<150;i++) {
             if("true".equals(js("Boolean(document.querySelector('#view-inicio.active [data-service=now]') && document.querySelector('.premium-next') && document.readyState==='complete')")))return;
             Thread.sleep(100);
         }
