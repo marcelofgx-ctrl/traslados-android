@@ -50,3 +50,36 @@ Portada con tres servicios INDEPENDIENTES, cada icono circular abre su propia pa
 
 ## Comando para nueva sesión
 **«Retomar Traslados desde GitHub. Leé docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md. Quiero implementar en la PWA real, pantalla por pantalla, EXACTAMENTE el diseño de las imágenes que adjunto. No quiero otra imagen ni un diseño genérico. Conservar todo el motor, aplicar QA visual con capturas comparativas y solo después publicar. Informame versión y fecha/hora últimas compilaciones antes de empezar.»**
+
+---
+
+## AVANCE REAL DE LA NUEVA SESIÓN — RAMA DE DESARROLLO, NO PUBLICADO
+
+- **Branch:** `feature/tu-viaje-premium-visual-20261015`
+- **PR:** https://github.com/marcelofgx-ctrl/traslados-android/pull/99 — abierto en modo **draft**, deliberadamente NO fusionado en `main`.
+- **Último cambio visual/construcción:** verificar SHA del HEAD de la rama y los últimos Actions; el último observado después del commit de iconografía `8d7d1660` pasó cuatro workflows, y luego se incorporó una pequeña mejora del diagrama vial (`6b369809`), pendiente de contrastar con sus nuevos workflows.
+- **Web pública:** sigue en PWA v74, sin despliegue premium ni cambio de caché/versionado. No llamar v75 a algo publicado.
+
+### Implementado en código de la rama
+1. Portada con hero costero local (por ahora ilustración vectorial, no fotografía de calidad equivalente a la lámina), emblema de auto circular principal, otros dos accesos circulares (reserva y paquete).
+2. Flujo de `Tu viaje` con 4 estados: recorrido, cuándo, tus datos y confirmar, progresión accesible; validación al avanzar; regreso y edición. La agenda programada conserva su UI/motor.
+3. Opciones de tiempo «Ahora», 10/15/20/30/45/60 minutos y hora manual de hasta 120 minutos reutilizando `setWhen()` y su lógica del servidor; el usuario no es trasladado a una reserva programada.
+4. `premium-journey.js`, `premium-journey.css` y `premium-skyline.svg` separan la presentación nueva de los contratos, autenticación, ETA, validaciones, RPC y agenda existentes.
+5. En Mis traslados, para `meta.tone === moving`, timeline de 3 fases basada solo en `status`/`pickup_phase` del servidor, matrícula autorizada si existe, enlace de llamada al número ya oficial y botón para abrir detalles/chat. No hay ETA, GPS, foto, puntuación ni finalización inventados.
+6. Detalles de ruta abiertos automáticamente en Tu viaje para mostrar esquema vial real cuando el motor devuelve geometría verificada; el mapa cartográfico real equivalente a la lámina sigue pendiente.
+
+### Validaciones efectuadas
+- Workflow `Verify passenger PWA review screen`, `Validate Cliente Premium v15 Android WebView parity`, `Verify and package passenger PWA` y `QA premium visual (draft only)` pasaron en commit `8d7d1660`.
+- QA Chromium probó anchos 360/393/412 px; 5 capturas por ancho; navegación simulada (NO solicitud real, NO Supabase), estado de error sin origen/destino, selector 10 min, pasos y scroll horizontal.
+- Capturas del workflow `QA premium visual (draft only)`: https://github.com/marcelofgx-ctrl/traslados-android/actions/workflows/qa-premium-visual.yml (abrir ejecución asociada al HEAD más reciente, descargar artifact `premium-mobile-qa-capturas`).
+- **IMPORTANTE:** que existan capturas en CI no significa que hayan sido revisadas a ojo contra el mockup; esta comparación final sigue pendiente. Tampoco hubo recorrido real en Samsung ni pruebas de backend de extremo a extremo.
+
+### Pendientes bloqueantes antes de publicar
+1. Comparación visual humana pantalla por pantalla contra el ZIP original del usuario, incluyendo el hero fotográfico, proporciones de tarjetas/emblemas, campos, mapa y botones; no dar por aprobada la ilustración costera provisional.
+2. Finalizar diseño premium fiel de seguimiento 6, 7 y 8 con MAPA real, radar honesto, ETA de datos reales y estado final solo desde conductor (la timeline actual es paso intermedio, no entrega visual).
+3. Integrar email opcional y consentimiento de guardado sin inventar parámetros de RPC: los contratos actuales de recogida no aceptan email. Requiere planificación de esquema/backend/privacidad.
+4. Probar flujo real de cliente autorizado y visitante con backend de test, cálculo de ruta, recogidas, agenda, PIN, presupuestos, chat, idempotencia, matrícula y permisos; sin pedidos accidentales a producción.
+5. Resolver fallos gráficos detectados por captura, actualizar versión de forma coordinada (HTML/JS/SW/tests) y recién entonces fusionar y desplegar. Dejar hora exacta de compilaciones y enlaces activos.
+
+### Comando de reanudación actualizado
+«Retomar Traslados desde GitHub; leer `docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md` en `feature/tu-viaje-premium-visual-20261015`, abrir PR #99 y los resultados de QA visual. Continuar el rediseño fiel de las 8 pantallas desde código existente, sin publicar hasta comparar capturas con las dos imágenes adjuntas. No perder contratos, backend, APP-0061 ni flujo separado Tu viaje / Tu reserva.»
