@@ -291,9 +291,11 @@
 #view-viaje[data-premium-step="route"] .route-overview{
   border:none;box-shadow:none;padding:0;background:transparent;
 }
-#view-viaje[data-premium-step="route"] .route-summary-heading,
-#view-viaje[data-premium-step="route"] .route-metrics,
-#view-viaje[data-premium-step="route"] .route-footer{display:none}
+/* Mantener siempre los km, minutos, tarifa y la acción de reintentar.
+   Ningún fallo del mapa puede esconder el estado real del motor vial. */
+#view-viaje[data-premium-step="route"] .route-summary-heading{margin-bottom:7px}
+#view-viaje[data-premium-step="route"] .route-metrics{margin:8px 0}
+#view-viaje[data-premium-step="route"] .route-footer{display:flex;flex-wrap:wrap;gap:8px}
 #view-viaje[data-premium-step="route"] .route-extra:has(.premium-real-map){
   margin-top:7px
 }
