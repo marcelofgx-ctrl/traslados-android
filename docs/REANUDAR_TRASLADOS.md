@@ -3,6 +3,15 @@
 > **DECISIÓN DE ARQUITECTURA 14/10/2026:** [Configuración remota compartida Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Auditoría constató links nativos compilados y ausencia de catálogo general en Supabase; documento de propuesta con rollout offline-first. **No implementado; no sustituye la APK vigente.**
 
 
+## Web/PWA Pasajeros v72 — catálogo central de descargas (14/10/2026, 23:29 UYT)
+
+- La Web oficial **permanece** en `https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/`. **PWA v72** añade `public-config.js`, lector anónimo de `public_app_config_v1` en Supabase. Respaldo firmado Cliente Premium **v16**, lectura sin tokens, caché local/TTL 30 min, enlaces HTTPS limitados al Pages oficial, revisión monotónica y validación versión ↔ APK. La pantalla «Instalar» se suscribe a cambios y solo habilita APK tras HEAD real, descartando comprobaciones tardías de la URL anterior; corrige leyenda v15 a v16.
+- Compatible con Cliente Premium v16 mediante WebView: no se necesita generar otra APK Cliente para actualizar HTML/JS/CSS; no cambia el formulario, contratos de reserva, notificaciones ni ETA. GPS/Conductor/Mapa R25.24 sin cambios.
+- Smoke añadido `web-pasajero/tests/public-config-v72-smoke.cjs` (TTL, remoto→cache, offline, host malicioso, versión incongruente, rollback, sin envío de sesión). Se actualizaron checks de versión de otros smoke antiguos. [GitHub Actions verificación y empaquetado #38671130412](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671130412) SUCCESS a las 23:29 UYT.
+- Publicación GitHub Pages y QA físico Samsung deben comprobarse **por separado**; no se prueba instalación en dispositivo por CI, ni un hipotético Cliente v17 inexistente. Catalogo Supabase aún anuncia Cliente v16 y Mapa R25.24.
+- **Continuidad:** contratos `public_config` documentados en [CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Los enlaces se editan en Supabase **después** de verificar firma y URL de cada release.
+
+
 ## Mapa R25.24 — Configuración central de enlaces (PUBLICADA 14/10/2026, 23:12 UYT)
 
 - Supabase `zetaudvvutlouiqxopvg`: catálogo `app_internal.public_config` privado, RPC solo lectura `public_app_config_v1` probada con rol `anon`, revisión **2** con enlaces oficiales y hash firmados. SQL reproducible en repo `traslados-web` migración `20261015_public_app_config_read_only_v1.sql`.
