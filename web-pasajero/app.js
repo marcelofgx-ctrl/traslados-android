@@ -938,7 +938,10 @@ function renderRouteSummary(){
   footer.appendChild(retry);
 
   const details=document.createElement("details");
-  details.className="route-extra";host.appendChild(details);
+  details.className="route-extra";
+  // Mostrar el trazado vial al completar Tu viaje; la reserva conserva su acordeón.
+  details.open=document.body.classList.contains("journey-mode-quick");
+  host.appendChild(details);
   text(details,"summary","Detalles de la estimación");
   const detailCaption=text(details,"p","","route-map-caption");
   const map=text(details,"div","","route-road-map");
