@@ -334,20 +334,3 @@
 #view-viajes .trip-card[data-tone="moving"] .trip-live-spotlight[data-stage="trip"]{
   border-color:#76d5ec;background:linear-gradient(100deg,#173e4f,#082e3b)}
 #view-viajes .trip-card[data-tone="moving"] .premium-trip-timeline{margin-top:16px}
-
-/* Automóvil protagonista de la portada (asset local), inspirado en la lámina. */
-@media(max-width:650px){
-  #view-inicio .home-hero{overflow:visible;isolation:isolate}
-  #view-inicio .home-hero::after{display:none}
-  #view-inicio .home-hero::before{
-    content:"";position:absolute;z-index:0;left:0;right:0;bottom:-4px;
-    height:142px;pointer-events:none;opacity:.98;
-    background:url("./premium-vehicle.svg") center bottom / min(114%,520px) auto no-repeat;
-    filter:drop-shadow(0 7px 7px #031217aa);
-  }
-  #view-inicio .home-hero>*{position:relative;z-index:1}
-  #view-inicio .service-list{z-index:3}
-  #view-inicio .service-card-featured .service-card-icon{
-    box-shadow:0 0 0 4px #041c28,0 0 0 6px #f1d28c88,0 0 23px #f5bf6680,0 11px 30px #000a!important
-  }
-}
