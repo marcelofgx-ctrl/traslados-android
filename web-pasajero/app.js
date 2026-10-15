@@ -41,9 +41,9 @@ function refreshJourneyComposition(routeComplete,roadVerified){
     recap.hidden=!routeComplete;
     if(!routeComplete)continue;
     recap.querySelector("[data-final-route-distance]").textContent=roadVerified
-      ?latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"—";
+      ?latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"Sin estimación";
     recap.querySelector("[data-final-route-duration]").textContent=roadVerified
-      ?latestRoad.data.durationMin+" min":"—";
+      ?latestRoad.data.durationMin+" min":"Sin estimación";
     recap.querySelector("[data-final-route-fare]").textContent=roadVerified&&
       Number.isFinite(latestRoad.data.referenceFareUyu)&&latestRoad.data.referenceFareUyu>0
       ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
@@ -355,11 +355,6 @@ async function refreshPickupPresence(force=false){
       checked:checkedLabel,phase:"origin"});
     return;
   }
-  if(PREVIEW_READ_ONLY){
-    paintPickupCard({presence:"online",title:"Conductor disponible",
-      subtitle:"La llegada se confirmará al solicitar el viaje en la versión operativa.",checked:checkedLabel,phase:"preview"});
-    return;
-  }
   const signedIn=authReady();
   const lat=record.origin.lat,lng=record.origin.lng;
   const identity=signedIn?session.token:"visitante";
@@ -497,7 +492,7 @@ function setWhen(kind){
     ?"Recogida ahora · Horario fijado por el servidor"
     :"Recogida en "+kind+" minutos · Horario fijado por el servidor";
   $("urgent-actions-title").textContent=kind==="now"
-    ?"¿Necesitás viajar ahora?":"¿Te recogemos en "+kind+" minutos?";
+    ?"Recogida ahora":"Recogida en "+kind+" minutos";
   $("urgent-actions-description").textContent="Enviá tu recorrido al conductor. Recibirás un código para seguir la solicitud, que quedará pendiente de su confirmación.";
   $("booking-success").hidden=true;
   $("urgent-actions").hidden=!urgent;
@@ -632,6 +627,7 @@ function picker(name,mount,position){
   if(gpsHelp){gpsHelp.hidden=true;gpsHelp.setAttribute("role","alert");}
   const results=text(controls,"div","","results");
   results.id="location-results-"+key;
+  window.TrasladosAddressViewport?.attach(input,results);
   input.setAttribute("aria-controls",results.id);
   const feedback=text(controls,"p","","geo-feedback");feedback.hidden=true;
   const source=text(controls,"p","","geo-attribution");source.hidden=true;

@@ -25,8 +25,8 @@ html = index.read_text()
 html = html.replace("default-src 'self';", "default-src 'self';")
 start = html.index("connect-src ")
 end = html.index(";", start)
-html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co" + html[end:]
-html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v19 · No envía reservas</div>')
+html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev" + html[end:]
+html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v20 · No envía reservas</div>')
 html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
 index.write_text(html)
@@ -45,12 +45,12 @@ eta.write_text(e)
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
 gradle = app / "build.gradle"
-g = gradle.read_text().replace("versionCode 204", "versionCode 207").replace("versionName '16.0-Premium'", "versionName '19.0-PR99-Prueba'")
+g = gradle.read_text().replace("versionCode 204", "versionCode 208").replace("versionName '16.0-Premium'", "versionName '20.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
-assert "versionCode 207" in g
+assert "versionCode 208" in g
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
-j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/19 PR99Preview")
+j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/20 PR99Preview")
 needle = 'web.setWebViewClient(new WebViewClient() {'
 assert needle in j
 j = j.replace(needle, needle + """
@@ -80,7 +80,16 @@ j = j.replace(needle, needle + """
                     && "/rest/v1/rpc/public_driver_availability_v1".equals(uri.getPath())
                     && uri.getQuery() == null && ("GET".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod())))
                     return null;
-                // Only public map images can leave this isolated APK. No backend, auth, or routing calls.
+                // Public calculations/search only; no reservation/auth/contact APIs.
+                if("https".equals(uri.getScheme()) && "traslados-web.marcelof-gx.workers.dev".equals(uri.getHost())
+                    && "/api/public/route-estimate".equals(uri.getPath()) && "GET".equals(request.getMethod())) return null;
+                if("https".equals(uri.getScheme()) && "direcciones.ide.uy".equals(uri.getHost())
+                    && java.util.Arrays.asList("/api/v1/geocode/candidates","/api/v1/geocode/direcUnica","/api/v1/geocode/reverse").contains(uri.getPath())
+                    && "GET".equals(request.getMethod())) return null;
+                if("https".equals(uri.getScheme()) && "zetaudvvutlouiqxopvg.supabase.co".equals(uri.getHost())
+                    && "/functions/v1/pickup-eta".equals(uri.getPath()) && uri.getQuery() == null
+                    && ("POST".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod()))) return null;
+                // Public raster map images.
                 if("https".equals(uri.getScheme()) && "tile.openstreetmap.org".equals(uri.getHost())
                     && "GET".equals(request.getMethod()) && uri.getPath().matches("/[0-9]+/[0-9]+/[0-9]+\\\\.png"))
                     return null;
@@ -100,11 +109,11 @@ j = j.replace("    private boolean openExternal(Uri uri) {", """
     private boolean unusedProductionExternal(Uri uri) {""")
 java.write_text(j)
 assert "shouldInterceptRequest" in j and "tile.openstreetmap.org" in j
-assert "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co;" in html
-assert "https://traslados-web.marcelof-gx.workers.dev" not in html
+assert "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev;" in html
+assert "/api/public/route-estimate" in j
 assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" in g
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code207, original applicationId.")
+print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code208, original applicationId.")
 

@@ -89,7 +89,7 @@ assert.equal(els["route-folded-stops"].textContent,"1 parada intermedia");
 assert.equal(els["route-folded-stops"].hidden,false);
 assert.equal(els["route-folded-km"].textContent,"—","Quote must be invalidated when an intermediate stop changes");
 assert.equal(els["urgent-route-recap"].children.fare.textContent,"A confirmar");
-assert.equal(els["scheduled-route-recap"].children.distance.textContent,"—");
+assert.equal(els["scheduled-route-recap"].children.distance.textContent,"Sin estimación");
 record.stops.length=0;record.destination=null;
 ctx.refreshBookingSteps();
 assert.equal(els["route-folded-preview"].hidden,true);

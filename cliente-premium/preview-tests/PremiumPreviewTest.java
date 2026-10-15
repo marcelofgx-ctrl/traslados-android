@@ -53,6 +53,26 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("!document.querySelector('.premium-error').hidden"));
         assertEquals("true",js("!navigator.serviceWorker.controller"));
     }
+    public void testAddressKeyboardKeepsSuggestionsVisible() throws Exception {
+        loaded();WebView w=web();
+        js("document.querySelector('[data-service=now]').click();document.querySelector('#destination-picker input[type=search]').focus()");
+        getInstrumentation().runOnMainSync(()->{
+            w.requestFocus();
+            android.view.inputmethod.InputMethodManager ime=(android.view.inputmethod.InputMethodManager)getActivity().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            ime.showSoftInput(w,android.view.inputmethod.InputMethodManager.SHOW_FORCED);
+        });
+        js("(()=>{const el=document.querySelector('#destination-picker input[type=search]');el.value='Punta Carretas';el.dispatchEvent(new Event('input',{bubbles:true}));})()");
+        boolean visible=false;
+        for(int i=0;i<150;i++){
+            if("true".equals(js("(()=>{const el=document.querySelector('#destination-picker input[type=search]'),r=document.querySelector('#destination-picker .result');if(!r)return false;const a=el.getBoundingClientRect(),b=r.getBoundingClientRect();return a.top>=0&&a.bottom<=visualViewport.height&&b.bottom<=visualViewport.height&&document.body.classList.contains('address-search-active');})()"))){visible=true;break;}
+            Thread.sleep(100);
+        }
+        assertTrue("Focused destination and real catalog suggestions remain in the visible viewport",visible);
+        getInstrumentation().runOnMainSync(()->{
+            android.view.inputmethod.InputMethodManager ime=(android.view.inputmethod.InputMethodManager)getActivity().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            ime.hideSoftInputFromWindow(w.getWindowToken(),0);
+        });
+    }
     public void testProductionBlockedByNativePolicy() throws Exception {
         loaded(); WebView w=web();
         final WebViewClient[] clients={null};
@@ -74,9 +94,11 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1")));
         assertEquals("true",js("document.querySelector('#urgent-send').disabled && document.querySelector('#confirm-booking').disabled"));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1","POST")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1","POST")));
+        assertNull(client.shouldInterceptRequest(w,request("https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.1,-34.9;-56.2,-34.8")));
         WebResourceResponse root=client.shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
         assertEquals(200,root.getStatusCode());
-        assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co;\")"));
+        assertEquals("true",js("document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]').content.includes(\"connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev;\")"));
     }
     private WebResourceRequest request(String url) { return request(url,"GET"); }
     private WebResourceRequest request(String url,String method) {

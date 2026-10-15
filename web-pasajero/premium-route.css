@@ -70,3 +70,18 @@ body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-brand{min
 body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-journey-header{padding-bottom:7px}
 body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-previous{min-height:36px;font-size:12px}
 body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-actions{gap:6px;margin-top:8px}
+
+/* El teclado necesita espacio propio; el menú vuelve al dejar el buscador. */
+@media(max-width:650px){
+ body.address-search-active .tabs{display:none!important}
+ body.address-search-active .shell{padding-bottom:70vh}
+ body.address-search-active .results{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-padding:8px}
+ body.address-search-active .results .result{scroll-margin:8px}
+ .location-widget input[type="search"]{scroll-margin-top:16px}
+}
+
+/* Una sola etiqueta accesible: no duplicar el texto del botón con ::after. */
+@media(max-width:650px){
+ body.journey-mode-quick .tabs .tab[data-view="cuenta"]::after{content:none}
+ body.journey-mode-quick .tabs .tab[data-view="cuenta"]{font-size:10px}
+}

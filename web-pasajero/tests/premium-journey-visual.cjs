@@ -88,8 +88,24 @@ const {chromium}=require("playwright-core");
     assert.equal(await page.locator(".premium-error").isVisible(),true);
     await page.locator("#origin-picker input[type=search]").fill("Aeropuerto Carrasco");
     await page.locator("#origin-picker .result").filter({hasText:"Terminal de pasajeros"}).first().click();
+    // Reduced viewport models the space left by a software keyboard.
+    await page.setViewportSize({width,height:452});
     await page.locator("#destination-picker input[type=search]").fill("Punta Carretas");
+    await page.locator("#destination-picker .result").first().waitFor({state:"visible"});
+    await page.waitForTimeout(100);
+    const keyboardFit=await page.locator("#destination-picker").evaluate(el=>{
+      const input=el.querySelector('input[type="search"]').getBoundingClientRect();
+      const first=el.querySelector('.result').getBoundingClientRect();
+      return {inputTop:input.top,inputBottom:input.bottom,resultBottom:first.bottom,height:visualViewport.height,scrollable:el.querySelector('.results').clientHeight};
+    });
+    assert(keyboardFit.inputTop>=0&&keyboardFit.inputBottom<=keyboardFit.height,"Campo tapado por teclado: "+JSON.stringify(keyboardFit));
+    assert(keyboardFit.resultBottom<=keyboardFit.height,"Sugerencias tapadas por teclado: "+JSON.stringify(keyboardFit));
+    assert.equal(await page.locator('.tabs').isVisible(),false,"No desperdiciar área de teclado con navegación inferior");
+    await page.screenshot({path:path.join(dest,"destino-teclado-"+width+".png"),fullPage:false,animations:"disabled"});
     await page.locator("#destination-picker .result").filter({hasText:/Punta Carretas Shopping/i}).first().click();
+    await page.setViewportSize({width,height:852});
+    assert.equal(await page.locator('.tabs').isVisible(),true,"Menú vuelve al seleccionar destino");
+    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
     assert(await page.locator("#origin-picker .location-selected-label").textContent());
     assert(await page.locator("#destination-picker .location-selected-label").textContent());
     await page.screenshot({path:path.join(dest,"recorrido-elegido-"+width+".png"),fullPage:true,animations:"disabled"});
