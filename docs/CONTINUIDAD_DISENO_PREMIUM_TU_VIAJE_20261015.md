@@ -181,3 +181,18 @@ No se enviaron viajes ni se escribieron datos en la DB durante QA. PWA pública 
 - Prueba física Samsung y paridad APK Cliente con WebView. Solo después: versionado coordinado, service worker, merge y publicación.
 
 Criterio: la aplicación final no es un informe ni un mockup; terminar funcionalidades, QA visual humana y pruebas reales antes de decir «lista».
+
+---
+## PRIMERA APK PR99 AISLADA — 15/10/2026, 13:23:04 UYT
+
+- Entrega real: `preview-artifacts/traslados-cliente-premium-pr99-v17-prueba.apk`, 898.216 bytes. Build firmado SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38768273373 .
+- Paquete conservado `uy.com.traslados.cliente`, versionName `17.0-PR99-Prueba`, versionCode **205**. Certificado SHA256 idéntico a v16: `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d`. Verificados firma v2, manifiesto y checksum del APK efectivamente descargado.
+- El APK incluye los **29 recursos web** del PR (fotografías, CSS, JS y catálogo local Uruguay de 2.209.865 bytes / 22.503 lugares). Los hashes de cada recurso se contrastaron contra su contenido dentro del APK.
+- Es una compilación **para revisión aislada**. Sirve los recursos empaquetados mediante WebView en `https://appassets.androidplatform.net/traslados-android/web-pasajero/`, origen separado del almacenamiento de producción. CSP restringe conexiones a self; el cliente nativo bloquea Supabase, Worker, web pública y contactos externos; solo admite imágenes públicas OSM. Registro de service worker eliminado del paquete. No envía reservas ni usa sesiones de la web real.
+- Limitaciones deliberadas de esta prueba: no autenticación real, geocodificación remota, cálculo remoto de ruta/ETA, chat ni llamadas/WhatsApp. No confundir revisión instalable del PR con producto operativo completo. No se añadieron fixtures de viajes a esta APK.
+- No se fusionó ni publicó main ni se modificó el catálogo de descargas productivo. La web pública sigue v74 / Cliente público v16.
+- La próxima APK operativa deberá tener **versionCode >205** para poder actualizar encima de esta prueba sin perder datos. No intentar volver a v16/code204 mediante downgrade.
+- Revisión posterior a la primera APK: se corrigió omisión del catálogo JSON y el manejo nativo de la URL raíz sin slash; pipeline de publicación en rama tolera cambios concurrentes sin force push.
+- Frontend: pasaron **46 scripts smoke** locales, incluyendo búsqueda por departamento/POI, rutas, ETA, navegación, cuenta, chat y privacidad de presentación. No equivalen a E2E con backend.
+- QA nativa nueva: `cliente-premium/preview-tests/PremiumPreviewTest.java` + workflow `qa-cliente-pr99-android.yml` en emulador Android 35. Primera ejecución pasó aislamiento nativo y falló navegación por pulsar antes del montaje; la espera se corrigió para exigir readyState complete y control dinámico montado. **Consultar resultado de ejecución 38768895653 antes de afirmar PASS**.
+- Referencias originales recuperadas del ZIP y comparadas con capturas reales de HEAD b62da246 (8 escenas × 360/393/412). La portada y el seguimiento aún difieren considerablemente de la referencia. Seguimiento GPS/ETA autorizado por reserva y E2E seguro siguen pendientes. Supabase no tiene ramas de desarrollo al consultar; no se escribieron reservas de prueba en producción.
