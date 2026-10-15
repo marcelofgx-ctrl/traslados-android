@@ -358,3 +358,48 @@
  #view-viaje[data-premium-step="when"] .premium-next{min-height:45px}
  #view-viaje[data-premium-step="when"] .journey-time-note:not(#journey-custom-time-label){display:none}
 }
+
+
+/* QA móvil: el campo de búsqueda necesita ancho legible.
+   CSS acotado a Tu viaje; Tu reserva mantiene su composición original. */
+@media(max-width:650px){
+  #view-viaje .loc-search,
+  #view-viaje .loc-search.loc-search-origin{
+    display:grid;grid-template-columns:minmax(0,1fr) 46px;
+    align-items:center;gap:8px;
+  }
+  #view-viaje .loc-search input[type="search"]{
+    grid-column:1;min-width:0;width:100%;min-height:48px;margin:0;
+    padding:11px 12px;border-radius:12px;font-size:14px;
+    background:#071f29;color:#fff4e4;border:1px solid #567576a8;
+  }
+  #view-viaje .loc-search .location-search-action{
+    grid-column:2;align-self:stretch;min-width:0;width:46px;
+    min-height:48px;margin:0;padding:0;border-radius:12px;
+    font-size:0!important;line-height:0;display:grid;place-items:center;
+    border:1px solid #cfac6b;background:#15424a;color:#efd095;
+  }
+  #view-viaje .loc-search .location-search-action::before{
+    content:"";display:block;width:17px;height:17px;
+    border:2px solid currentColor;border-radius:50%;
+    transform:translate(-2px,-2px);
+  }
+  #view-viaje .loc-search .location-search-action::after{
+    content:"";display:block;position:absolute;
+    width:9px;height:2px;background:currentColor;
+    transform:translate(12px,10px) rotate(46deg);border-radius:2px;
+  }
+  #view-viaje .loc-search .location-search-action{position:relative}
+  #view-viaje .loc-search .location-use-current{
+    grid-column:1/-1;width:100%;min-height:38px;
+    align-self:stretch;white-space:normal;text-align:center;
+    font-size:12px;line-height:1.4;padding:7px 11px;
+    border:1px solid #8db7aa65;border-radius:10px;
+    background:#0f303a;color:#e8d29a;
+  }
+  #view-viaje .location-widget+.wayline{height:20px}
+  #view-viaje .departments{margin:8px 0 11px}
+  #view-viaje .location-title{letter-spacing:.11em}
+  #view-viaje .location-selected{margin:7px 0}
+  #view-viaje .location-selected-label{overflow-wrap:anywhere}
+}
