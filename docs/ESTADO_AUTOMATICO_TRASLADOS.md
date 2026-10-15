@@ -11,13 +11,13 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | Sin resultado verificable en esta consulta |
 
-**PWA CI:** [ERROR · 15/10/2026 00:28 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676392988) · commit 64ecd23ac.
+**PWA CI:** [ERROR · 15/10/2026 00:28 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676420617) · commit f95af38c3.
 **Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:29 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671130412) · commit f18c4e9b8 · Verify and package passenger PWA (GitHub Pages via branch).
-**Último cambio de código verificado:** 15/10/2026 00:28 UYT · [Web pasajero / f95af38c30](https://github.com/marcelofgx-ctrl/traslados-android/commit/f95af38c3094934f38bd5c678c41ace5aff179c5) — test(passenger v73): maintain route, ETA and itinerary regression coverage.
+**Último cambio de código verificado:** 15/10/2026 00:28 UYT · [Web pasajero / 64b8d35e38](https://github.com/marcelofgx-ctrl/traslados-android/commit/64b8d35e38fc4509cd8e8fe004b29b0b8a24c0ee) — test(passenger v73): check foreground chat, new visible journey spotlight and live phase s.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
