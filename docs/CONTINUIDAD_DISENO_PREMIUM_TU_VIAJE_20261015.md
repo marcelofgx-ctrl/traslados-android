@@ -114,3 +114,22 @@ Se trabajó exclusivamente sobre la rama feature/tu-viaje-premium-visual-2026101
 
 ### Versiones públicas vigentes (sin cambios)
 PWA v74; Cliente Premium v16; Conductor 11.5-R8 / code130; Mapa R25.25 / code77.
+
+---
+
+## ETAPA DE FIDELIDAD FOTOGRÁFICA + MAPA REAL (15/10/2026, PR #99)
+
+Desarrollo **solo en rama draft, sin fusionar a main**.
+
+- Portada: se creó un archivo WEBP local de la rambla al atardecer (foto de Pedro Fleitas, Unsplash, publicada el 28/08/2023, licencia Unsplash, disponible desde images.unsplash.com/photo-1693192357825-b50aa54738ab). Archivo `web-pasajero/premium-montevideo.webp` (29.474 bytes). El diseño ya no requiere imagen de fondo desde CDN y el SW prevé precargarla al futuro release.
+- QA humano rechazó un intento experimental de vehículo vectorial: se **retiró** del código y del SW. El mockup aprobado muestra un coche fotográfico, no un dibujo; no declarar resuelta esta diferencia. Mantener el hero con foto de Montevideo mientras se encuentra un activo fotográfico adecuado de vehículo, no mostrar otro boceto.
+- En Recorrido: se añadió `premium-map.js` para cartografía OpenStreetMap con mosaicos limitados (máximo 12 por escena), atribución y geometría Mercator. La **polilínea únicamente proviene de `roadEngine.verified(data)`**; no hay líneas ficticias, ni ETA falsa. Si falta geometría o mosaicos, se conserva esquema vial/indicadores/reintento.
+- Durante un viaje: si **la respuesta de reserva autorizada** contiene lat/lng de origen y destino válidos y el motor verifica ruta, puede mostrarse mapa del *recorrido contratado*, claramente etiquetado como **NO ubicación del conductor**. Ninguna foto, rating, coche sobre mapa, ETA ni GPS inventados. Timeline y botones de llamar/WhatsApp/chat usan contratos existentes.
+- Se reforzó `qa-premium-visual.yml` con `premium-map-smoke.cjs` (proyección, entradas inválidas, encuadre y límites) y visual móvil Chromium (360/393/412 px), incluido archivo fotográfico local y montaje de cartografía con fixture sintético, **sin enviar solicitudes de transporte**.
+- Se eliminó de la rama el workflow temporal con permiso de escritura usado únicamente para incorporar la fotografía local.
+
+**QA:** los tests de QA premium, revisión PWA y paridad de WebView pasaron en el último commit de código `e8e7f8c`. El empaquetado de esta ejecución estaba en progreso al último control; consultar HEAD de Actions antes de afirmar verde total. No hubo prueba Samsung físico ni verificación de un viaje real. Los mapas externos pueden no estar disponibles sin conexión y no son seguimiento del coche en vivo.
+
+**La portada sigue SIN FIDELIDAD EXACTA:** el fondo fotográfico se acercó al lenguaje visual pero no existe aún el automóvil fotográfico aprobado ni composición idéntica. Seguimiento 6–8 no tiene streaming autorizado de posición del conductor; solo estado real y mapa de ruta si las coordenadas están disponibles. Email opcional y consentimiento de guardado requieren contrato claro antes de persistencia.
+
+**Bloqueantes absolutos para merge:** fotografía+composición aprobadas, cartografía confirmada con origen/destino reales, flujos 6–8 finales con backend autorizado, privacidad/email, E2E seguros de inmediata vs programada, chat, matrícula APP-0061, presupuesto, pruebas Samsung y QA de 8 escenas. Publicar solo tras verificación integral. La web pública continúa PWA v74.
