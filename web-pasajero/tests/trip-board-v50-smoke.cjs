@@ -49,7 +49,8 @@ assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reserva
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
 assert(app.includes('tripBoard.notifications(tripSnap,rows)'),"Change-based alerts only");
 assert(app.includes('document.visibilityState==="visible"'),"No polling while hidden");
-assert(app.includes('},20000);'),"Bounded 20-second foreground refresh");
+assert(app.includes('const cadence=activeTrip?8000:20000;'),"Fast foreground status polling only with active reservations");
+assert(app.includes('document.visibilityState!=="visible"'),"Suspended background updates");
 assert(app.includes('if($("trips-alert-vibrate").checked&&navigator.vibrate)'),"Opt-in vibration only");
 assert(app.includes('tripRows=[];tripLoaded=false;tripSnap=null'),"Account switch resets sensitive display data");
 assert(!app.includes('navigator.serviceWorker.ready.then(reg=>reg.pushManager.subscribe'),"No fake background push");
