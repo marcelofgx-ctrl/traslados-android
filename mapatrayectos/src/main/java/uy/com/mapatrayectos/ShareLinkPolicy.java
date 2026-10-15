@@ -28,4 +28,20 @@ public final class ShareLinkPolicy {
     public static boolean needsMigration(String key,String current) {
         return current!=null && !updatedDestination(key,current).equals(current);
     }
+    /**
+     * Promote only recognized official URLs, including those previously
+     * obtained from the server. Explicitly customized links stay untouched.
+     */
+    public static String resolve(String key,String current,String latest,String priorOfficial) {
+        if(current==null || latest==null || latest.isEmpty())return current;
+        if(current.equals(latest))return current;
+        if(priorOfficial!=null && !priorOfficial.isEmpty() && current.equals(priorOfficial))
+            return latest;
+        String defaultUrl="booking_url".equals(key)?BOOKING_URL:
+            "download_url".equals(key)?CLIENT_APK_URL:"";
+        if(!defaultUrl.isEmpty() && current.equals(defaultUrl))return latest;
+        if(needsMigration(key,current))return latest;
+        return current;
+    }
+
 }
