@@ -16,7 +16,31 @@ const {chromium}=require("playwright-core");
     await page.waitForSelector('#view-inicio.active [data-service="now"]',{timeout:12000});
     const services=await page.locator('#view-inicio [data-service]').count();
     assert.equal(services,3,"Portada: tres servicios independientes");
-    await page.screenshot({path:path.join(dest,"portada-"+width+".png"),fullPage:true,animations:"disabled"});
+    // Esperar explícitamente el recurso visual local, sin depender de CDN.
+    const localPhoto=await page.evaluate(async()=>{
+      const background=getComputedStyle(document.querySelector("#view-inicio .home-hero")).backgroundImage;
+      if(!background.includes("premium-montevideo.webp"))return false;
+      const img=new Image();
+      return await new Promise(resolve=>{
+        img.onload=()=>resolve(img.naturalWidth>300);
+        img.onerror=()=>resolve(false);
+        img.src="./premium-montevideo.webp";
+      });
+    });
+    assert.equal(localPhoto,true,"Portada sin imagen local verificada");
+    const mapFixture=await page.evaluate(()=>{
+      const host=document.createElement("div");host.style.width="355px";document.body.append(host);
+      const road=[[-34.924,-56.157],[-34.91,-56.14],[-34.86,-56.09],[-34.83,-56.03]];
+      const result=window.TrasladosPremiumMap?.render(host,road);
+      const tiles=host.querySelectorAll(".premium-map-tiles img").length;
+      const points=host.querySelector(".premium-map-route")?.getAttribute("points")||"";
+      host.remove();
+      return {result,tiles,points:points.length};
+    });
+    assert.equal(mapFixture.result,true,"Módulo cartográfico no cargó");
+    assert(mapFixture.tiles>=1&&mapFixture.tiles<=12,"Demasiados mosaicos cartográficos");
+    assert(mapFixture.points>30,"La ruta vial del fixture quedó vacía");
+        await page.screenshot({path:path.join(dest,"portada-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator('#view-inicio [data-service="now"]').click();
     await page.waitForSelector('#view-viaje[data-premium-step="route"]',{timeout:10000});
     assert.equal(await page.locator(".premium-step").count(),4);
