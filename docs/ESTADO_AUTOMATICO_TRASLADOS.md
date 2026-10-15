@@ -8,7 +8,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 |---|---|---|---|
 | Pasajero PWA | v73 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 14/10/2026 23:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671379883) · commit 3c0ce4ee8 |
 | Cliente Premium | 16.0-Premium · code 204 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
-| Conductor | 11.5-R7 · code 129 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r7.apk) | [EN CURSO · 15/10/2026 00:31 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) · commit 6b929924b |
+| Conductor | 11.5-R7 · code 129 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r7.apk) | [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) · commit 6b929924b |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726020) · commit 6b929924b |
 
 **PWA CI:** [SUCCESS · 15/10/2026 00:31 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676566799) · commit 52c02db3b.
@@ -16,7 +16,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 ### Fecha y hora de la última compilación y del último cambio
 
-**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726020) · commit 6b929924b · Build Mapa Trayectos RELEASE.
+**Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) · commit 6b929924b · Build Traslados Conductor RELEASE.
 **Último cambio de código verificado:** 15/10/2026 00:33 UYT · [Web pasajero / d578d5f7c1](https://github.com/marcelofgx-ctrl/traslados-android/commit/d578d5f7c1061a1b42d4a7096324e6cb5a21f805) — Publicar Conductor R7 APK firmada.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
