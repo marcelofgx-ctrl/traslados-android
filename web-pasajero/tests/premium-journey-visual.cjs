@@ -59,6 +59,12 @@ const {chromium}=require("playwright-core");
     await page.locator(".premium-when-extras>summary").click();
     assert.equal(await page.locator("#passengers").isVisible(),true,"Cantidad de pasajeros preservada");
     await page.locator(".premium-when-extras>summary").click();
+        const footerClear=await page.evaluate(()=>{
+      const extras=document.querySelector("#view-viaje .premium-when-extras")?.getBoundingClientRect();
+      const actions=document.querySelector("#view-viaje .premium-actions")?.getBoundingClientRect();
+      return Boolean(extras&&actions&&actions.top>=extras.bottom-2);
+    });
+    assert(footerClear,"Los botones no pueden tapar las opciones de hora/pasajeros");
         await page.screenshot({path:path.join(dest,"cuando-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"passenger");
