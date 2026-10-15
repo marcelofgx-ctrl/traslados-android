@@ -11,7 +11,7 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | Sin resultado verificable en esta consulta |
 
-**PWA CI:** [ERROR · 14/10/2026 23:27 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671042621) · commit 955616f2a.
+**PWA CI:** [ERROR · 14/10/2026 23:27 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671047783) · commit 419f0f321.
 **Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
 
 ### Fecha y hora de la última compilación y del último cambio
