@@ -97,4 +97,9 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add preview-artifacts
           git commit -m "APK PR99 v17 prueba firmada: sin producción"
-          git push origin HEAD:feature/tu-viaje-premium-visual-20261015
+          for attempt in 1 2 3; do
+            if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
+            git fetch origin feature/tu-viaje-premium-visual-20261015
+            git rebase origin/feature/tu-viaje-premium-visual-20261015
+          done
+          exit 1
