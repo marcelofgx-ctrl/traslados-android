@@ -6,18 +6,18 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 
 | Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |
 |---|---|---|---|
-| Pasajero PWA | v73 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 14/10/2026 23:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38671379883) · commit 3c0ce4ee8 |
+| Pasajero PWA | v74 | [Abrir web](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/) | [SUCCESS · 15/10/2026 00:37 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38677003679) · commit 8edad9814 |
 | Cliente Premium | 16.0-Premium · code 204 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk) | [SUCCESS · 11/10/2026 00:45 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38109359918) · commit 16d4ca88c |
-| Conductor | 11.5-R7 · code 129 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r7.apk) | [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) · commit 6b929924b |
-| Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726020) · commit 6b929924b |
+| Conductor | 11.5-R8 · code 130 | **NO PUBLICADA EN REPOSITORIO** | [EN CURSO · 15/10/2026 09:15 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38733331388) · commit a3e0b7132 |
+| Mapa Trayectos | 0.1-R25.25 · code 77 | **NO PUBLICADA EN REPOSITORIO** | [EN CURSO · 15/10/2026 09:15 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38733331329) · commit a3e0b7132 |
 
 **PWA CI:** [SUCCESS · 15/10/2026 00:31 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676566799) · commit 52c02db3b.
-**Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
+**Backend fuente:** [9d9b9d56b3a8](https://github.com/marcelofgx-ctrl/traslados-web/commit/9d9b9d56b3a8) · **último CI encontrado:** [EN CURSO · 15/10/2026 09:15 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38733300172) · commit 9d9b9d56b.
 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 15/10/2026 00:33 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38676726000) · commit 6b929924b · Build Traslados Conductor RELEASE.
-**Último cambio de código verificado:** 15/10/2026 00:33 UYT · [Web pasajero / d578d5f7c1](https://github.com/marcelofgx-ctrl/traslados-android/commit/d578d5f7c1061a1b42d4a7096324e6cb5a21f805) — Publicar Conductor R7 APK firmada.
+**Último cambio de código verificado:** 15/10/2026 08:51 UYT · [Web pasajero / 1fb65c4f0c](https://github.com/marcelofgx-ctrl/traslados-android/commit/1fb65c4f0ccda1014b8ba60eb43663fc4641d5ba) — security(pwa): fetch plate only for authorized active passenger ride.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
