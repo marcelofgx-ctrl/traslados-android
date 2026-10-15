@@ -183,4 +183,4 @@ const {chromium}=require("playwright-core");
   await browser.close();
   assert.equal(errors.length,0,"Errores de JavaScript: "+errors.join("; "));
   console.log("PASS visual mobile 360/393/412: portada, recorrido, cuándo, datos, confirmar, cero envíos y sin desbordamientos");
-})().catch(e=>{console.error(e);process.exitCode=1;});
+})().catch(e=>{console.error(e);process.exit(1);});
