@@ -1,5 +1,12 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## PR99: primera APK de revisión aislada (15/10/2026)
+
+Hay una APK real del rediseño en la rama `feature/tu-viaje-premium-visual-20261015`: [Cliente PR99 v17 de prueba](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v17-prueba.apk). Compilación firmada [38770070213](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38770070213), 15/10/2026 13:34:58 UYT, versionCode205, mismo paquete y certificado que Cliente v16. Incluye recursos web del PR y catálogo local. **No es la versión operativa final:** sirve recursos empaquetados desde un origen separado y bloquea backend/externos para no enviar reservas reales. La web pública y el catálogo productivo no cambiaron.
+
+Continuar desde [documento del PR](https://github.com/marcelofgx-ctrl/traslados-android/blob/feature/tu-viaje-premium-visual-20261015/docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md), no rehacer. En esa rama se corrigieron hora manual 24h, variable fuera de alcance y medianoche; 47 smoke frontend + QA móvil 8 escenas a 360/393/412 pasaron. QA nativa detallada en Actions `qa-cliente-pr99-android.yml`; consultar último resultado y distinguir tests de captura auxiliar. Fidelidad exacta, seguimiento GPS/ETA autorizado por reserva, E2E en backend aislado y Samsung físico siguen pendientes. Próxima APK operativa: **versionCode mayor que205** para actualizar encima de esta prueba.
+
+
 > **CONFIGURACIÓN REMOTA — FASE 1 IMPLEMENTADA:** [Arquitectura central Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Catálogo público de enlaces de Supabase ya integrado con Mapa R25.24 y Web PWA v72+; Conductor conserva por ahora enlaces nativos. El sistema permanece offline-first, con respaldo válido.
 
 
