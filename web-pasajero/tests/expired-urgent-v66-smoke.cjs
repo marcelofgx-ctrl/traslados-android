@@ -33,7 +33,7 @@ assert(html.includes("trip-board.js?v=6")&&sw.includes("traslados-cliente-pwa-v7
 assert(app.includes("const immediateExpired=tripBoard.expiredImmediate(r);"));
 assert(app.includes("const expired=quoteExpired||immediateExpired;"));
 assert(app.includes("if(!expired&&price>0"),"Never accept an expired urgent quote");
-assert(app.includes('setWhen(tripBoard.isImmediateRequest(r)?"now":"schedule")'),
-  "New trip CTA prepares form without creating it");
-assert(app.includes('shiftView("reservar");bookingSteps.open("when",{scroll:true})'));
+assert(app.includes('enterService(tripBoard.isImmediateRequest(r)?"now":"schedule")'),
+  "New trip CTA returns to the correct independent service without creating a booking");
+assert(app.includes('bookingSteps.open("when",{scroll:true})'));
 console.log("PASS v66: immediate 90-min deadline, late quote safety, fresh-booking CTA");
