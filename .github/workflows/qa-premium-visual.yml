@@ -26,6 +26,8 @@ jobs:
       - name: Generate screenshots and validate critical mobile flow
         run: |
           node --check web-pasajero/premium-journey.js
+          node --check web-pasajero/premium-map.js
+          node web-pasajero/tests/premium-map-smoke.cjs
           node web-pasajero/tests/premium-journey-visual.cjs
       - name: Archive screenshots for visual review
         if: always()
