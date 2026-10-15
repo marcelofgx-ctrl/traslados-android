@@ -68,7 +68,7 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/app.js && test -f web-pasajero/owned-pickup.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/service-home.js && test -f web-pasajero/pickup-cadence.js
+          test -f web-pasajero/public-config.js && test -f web-pasajero/app.js && test -f web-pasajero/owned-pickup.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/service-home.js && test -f web-pasajero/pickup-cadence.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
@@ -86,6 +86,7 @@ jobs:
           node --check web-pasajero/pickup-observability.js
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
+          node --check web-pasajero/public-config.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/search-quality-v69-smoke.cjs
@@ -129,6 +130,7 @@ jobs:
           node web-pasajero/tests/location-permission-smoke.cjs
           node web-pasajero/tests/public-branding-smoke.cjs
           node web-pasajero/tests/install-flow-smoke.cjs
+          node web-pasajero/tests/public-config-v72-smoke.cjs
           node --check web-pasajero/sw.js
           python3 - <<'PYCHECK'
           import json,pathlib
@@ -166,7 +168,7 @@ jobs:
           PYCHECK
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
-          (cd web-pasajero && sha256sum index.html app.js pickup-observability.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+          (cd web-pasajero && sha256sum index.html app.js public-config.js pickup-observability.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
       - name: Export entire PWA even without GitHub Pages activated
         uses: actions/upload-artifact@v4
         with:
