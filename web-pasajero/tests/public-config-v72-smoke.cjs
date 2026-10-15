@@ -73,7 +73,7 @@ function scenario({data=snapshot(16,2),initial={},broken=false}={}){
  await old.api.refresh({force:true});
  assert.equal(old.api.get().revision,3,"old revision cannot roll back cache");
  assert(html.includes('<script src="./public-config.js?v=1" defer></script>'));
- assert(html.indexOf("public-config.js?v=1")<html.indexOf("app.js?v=73"));
+ assert(html.indexOf("public-config.js?v=1")<html.indexOf("app.js?v=74"));
  assert(html.includes("install-apk-hint")&&!html.includes("Cliente Premium v15, firmada"));
  assert(sw.includes('traslados-cliente-pwa-v74')&&sw.includes("./public-config.js"));
  assert(app.includes("const catalog=window.TrasladosPublicConfig;"));
