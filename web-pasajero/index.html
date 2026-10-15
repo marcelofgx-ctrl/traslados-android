@@ -132,10 +132,18 @@
           <select id="journey-when-select" aria-label="Elegir cuándo viajar">
             <option value="now">Ahora · lo antes posible</option>
             <option value="10">En 10 minutos</option>
+            <option value="15">En 15 minutos</option>
+            <option value="20">En 20 minutos</option>
+            <option value="30">En 30 minutos</option>
+            <option value="45">En 45 minutos</option>
+            <option value="60">En 1 hora</option>
+            <option value="custom">Hora personalizada</option>
           </select>
           <button type="button" id="journey-clock-action" class="journey-clock-action" aria-label="Ver las opciones de horario" title="Opciones de horario">◷</button>
         </div>
-        <p class="journey-time-note">Para elegir una hora específica más adelante, usá Tu reserva desde Inicio. No se cambiará automáticamente tu solicitud.</p>
+        <input id="journey-clock-input" type="time" lang="es-UY" aria-label="Elegí la hora exacta para tu recogida" hidden>
+        <p id="journey-custom-time-label" class="journey-time-note" hidden></p>
+        <p class="journey-time-note">Elegí una recogida para las próximas 2 horas. Para otro día, usá Tu reserva desde Inicio: nunca cambiaremos de servicio sin que lo elijas.</p>
       </div>
       <div id="journey-field-host" class="journey-form-host"></div>
     </section>
