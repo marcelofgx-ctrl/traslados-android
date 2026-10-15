@@ -612,3 +612,14 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
 #view-viaje .request-recap-metrics strong{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
 #view-viaje .booking-send-error{padding:12px;border-radius:10px;background:#6b332b44;color:#ffe1c3;font-size:13px;line-height:1.5}
 #view-viaje #urgent-send:disabled{opacity:.65;cursor:default}
+/* En Cuándo, el estado breve deja espacio a las opciones y al botón sin superponerse. */
+#view-viaje[data-premium-step="when"] .premium-live-presence{margin:0 0 8px}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-presence{padding:8px 12px}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-card-heading strong{font-size:12px;line-height:1.35}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-card-heading p,
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-presence-meta,
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-estimate-note{display:none}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-presence-metric{min-height:0;padding:4px}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-presence-metric strong{font-size:14px}
+#view-viaje[data-premium-step="when"] .premium-live-presence .pickup-metric-label{font-size:8px}
+#view-viaje[data-premium-step="when"] .premium-time-options{gap:6px}

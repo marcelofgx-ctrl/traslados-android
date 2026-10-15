@@ -106,5 +106,5 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, no production API, no external contact, code207, original applicationId.")
+print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code207, original applicationId.")
 
