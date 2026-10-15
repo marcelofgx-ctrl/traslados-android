@@ -11,13 +11,13 @@ Este archivo es generado automáticamente. La versión procede del código y la 
 | Conductor | 11.5-R6 · code 128 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk) | Sin resultado verificable en esta consulta |
 | Mapa Trayectos | 0.1-R25.24 · code 76 | [Descargar APK](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.24.apk) | [SUCCESS · 14/10/2026 23:12 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38669473570) · commit 783c32493 |
 
-**PWA CI:** [ERROR · 14/10/2026 23:21 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670493233) · commit 28af3cc73.
+**PWA CI:** [ERROR · 14/10/2026 23:22 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670587810) · commit 31432f096.
 **Backend fuente:** [d688fbe94963](https://github.com/marcelofgx-ctrl/traslados-web/commit/d688fbe94963) · **último CI encontrado:** [SUCCESS · 14/10/2026 23:10 UYT](https://github.com/marcelofgx-ctrl/traslados-web/actions/runs/38669544221) · commit d688fbe94.
 
 ### Fecha y hora de la última compilación y del último cambio
 
 **Última compilación de aplicación con resultado SUCCESS:** [SUCCESS · 14/10/2026 23:21 UYT](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38670413584) · commit 482d0bd64 · Verify and package passenger PWA (GitHub Pages via branch).
-**Último cambio de código verificado:** 14/10/2026 23:21 UYT · [Web pasajero / 31432f096c](https://github.com/marcelofgx-ctrl/traslados-android/commit/31432f096ce89cd5a43d7e0eb2606eb0119e8f25) — test(web): public config TTL/offline/foreign URLs and dynamic installation v72.
+**Último cambio de código verificado:** 14/10/2026 23:22 UYT · [Web pasajero / eef0d65e1f](https://github.com/marcelofgx-ctrl/traslados-android/commit/eef0d65e1f31f0f958902998b9e04662c14bfb86) — test(web): retain v71 session recovery regression on PWA v72.
 
 La hora de compilación corresponde a la **última actualización del workflow en GitHub**; no es el instante exacto de firma del APK. Los cambios automáticos de documentación se excluyen de «último cambio de código». Todas las horas son de Montevideo (UYT).
 
