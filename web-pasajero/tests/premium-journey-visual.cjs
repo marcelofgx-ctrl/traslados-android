@@ -85,7 +85,24 @@ const {chromium}=require("playwright-core");
         await page.screenshot({path:path.join(dest,"cuando-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"passenger");
-    await page.screenshot({path:path.join(dest,"datos-"+width+".png"),fullPage:true,animations:"disabled"});
+    assert.equal(await page.locator("#premium-person-email").isVisible(),true,
+      "Email opcional debe verse en Tus datos");
+    assert.equal(await page.locator("#premium-save-contact").isVisible(),true,
+      "Consentimiento para guardar localmente debe estar visible");
+    await page.locator("#premium-person-email").fill("correo-no-valido");
+    await page.locator(".premium-next").click();
+    assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"passenger",
+      "Email incorrecto debe impedir continuar");
+    await page.locator("#premium-person-email").fill("prueba@example.org");
+    await page.locator("#premium-save-contact").check();
+    const savedEmail=await page.evaluate(
+      ()=>JSON.parse(localStorage.getItem("traslados.premium.contact.local.v1")||"{}").email);
+    assert.equal(savedEmail,"prueba@example.org","Consentimiento no guardó email localmente");
+    await page.locator("#premium-save-contact").uncheck();
+    assert.equal(await page.evaluate(
+      ()=>localStorage.getItem("traslados.premium.contact.local.v1")),null,
+      "Desactivar consentimiento debe eliminar datos locales");
+        await page.screenshot({path:path.join(dest,"datos-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator('[data-booking-step="passenger"]').evaluate(el=>el.classList.add("is-complete"));
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"confirm");
