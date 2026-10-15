@@ -71,7 +71,7 @@ const query=(token,transport=request)=>api.pickup({
   assert(app.includes('data?.sessionInvalid&&signedIn'));
   assert(app.includes('lastVerifiedEtaKey=pickupIdentityKey()'));
   assert(html.includes('id="account-session-expired"'));
-  assert(html.includes('app.js?v=71')&&html.includes('eta-engine.js?v=3'));
-  assert(sw.includes("traslados-cliente-pwa-v71"));
+  assert(html.includes('app.js?v=72')&&html.includes('eta-engine.js?v=3'));
+  assert(sw.includes("traslados-cliente-pwa-v72"));
   console.log("PASS v71: revoked sessions recovered to public ETA, one fallback, no quota bypass and real local logout");
 })().catch(e=>{console.error(e);process.exitCode=1});
