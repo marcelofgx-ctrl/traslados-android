@@ -41,6 +41,13 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("document.body.innerText.includes('No envía reservas')"));
         js("document.querySelector('[data-service=now]').click()");
         assertEquals("true",js("document.querySelector('#view-viaje').classList.contains('active')"));
+        boolean publicState=false;
+        for(int i=0;i<120;i++){
+            if("true".equals(js("['busy','online'].includes(document.querySelector('#pickup-presence').dataset.presence)"))){publicState=true;break;}
+            Thread.sleep(100);
+        }
+        assertTrue("Real public availability must reach Android WebView through GET/CORS",publicState);
+        assertEquals("true",js("document.querySelector('#pickup-presence').closest('.premium-live-presence')!==null"));
         js("document.querySelector('.premium-next').click()");
         assertEquals("true",js("document.querySelector('#view-viaje').dataset.premiumStep==='route'"));
         assertEquals("true",js("!document.querySelector('.premium-error').hidden"));
