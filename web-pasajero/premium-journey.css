@@ -236,3 +236,34 @@
 @keyframes premiumRadarSweep{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#view-viajes .premium-search-radar::before{animation:none}}
 @media(max-width:359px){#view-viajes .premium-trip-contact{grid-template-columns:1fr 1fr 1fr}#view-viaje .premium-clock-layout{grid-template-columns:minmax(0,1fr) 47px}#view-viaje #journey-clock-action{width:47px;height:47px}}
+
+
+/* QA visual: la confirmación no debe ocupar toda la pantalla con el SVG
+   heredado de Tu reserva; mostrar en cambio las direcciones reales. */
+#view-viaje .urgent-actions .request-hero{display:flex;gap:12px;align-items:center;margin:0 0 10px}
+#view-viaje .urgent-actions .request-hero-icon{display:grid;place-items:center;width:49px;height:49px;flex:0 0 49px;border-radius:50%;border:1px solid #b89b63;background:radial-gradient(circle,#124751,#08212c);color:#f6d99b}
+#view-viaje .urgent-actions .request-hero-icon svg{display:block;width:25px;height:25px}
+#view-viaje .urgent-actions .request-hero-copy{min-width:0;flex:1}
+#view-viaje .urgent-actions .request-hero-copy h3{font-size:16px;line-height:1.25}
+#view-viaje .urgent-actions .request-hero-copy .urgent-actions-eyebrow{font-size:9px}
+#view-viaje .premium-confirm-route{margin:10px 0 13px;padding:4px 11px;border:1px solid #57717a80;border-radius:13px;background:#0a2730}
+#view-viaje .premium-confirm-route[hidden]{display:none!important}
+#view-viaje .premium-confirm-place{display:flex;align-items:flex-start;gap:11px;padding:9px 0}
+#view-viaje .premium-confirm-place+.premium-confirm-place{border-top:1px solid #ffffff17}
+#view-viaje .premium-confirm-dot{font-size:17px;flex:0 0 17px;color:#39d49a}
+#view-viaje .premium-confirm-place[data-kind="destination"] .premium-confirm-dot{color:#ff7d68}
+#view-viaje .premium-confirm-copy{min-width:0}
+#view-viaje .premium-confirm-copy small{display:block;color:#a6bfb8;font-size:10px}
+#view-viaje .premium-confirm-copy strong{display:block;color:#f7f2e6;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+#view-viaje .premium-when-extras{margin:12px 0 4px;border:1px solid #62756b73;border-radius:13px;background:#0e2a32;overflow:hidden}
+#view-viaje .premium-when-extras>summary{padding:13px 15px;list-style:none;cursor:pointer;color:#efd49d;font-size:12px;font-weight:750}
+#view-viaje .premium-when-extras>summary::-webkit-details-marker{display:none}
+#view-viaje .premium-when-extras>summary::after{content:"⌄";float:right;font-size:17px;line-height:1;color:#d7c38b}
+#view-viaje .premium-when-extras[open]>summary::after{content:"⌃"}
+#view-viaje .premium-when-extras-note{margin:0 14px 10px;color:#becfca;font-size:10.5px;line-height:1.5}
+#view-viaje .premium-when-extras .booking-step-card{margin:5px 8px 9px}
+#view-viaje .premium-when-extras .booking-step-card .booking-step-content{padding:10px!important}
+#view-viaje .premium-when-extras:focus-within{border-color:#e7c887}
+@media(max-width:650px){
+  .shell:has(#view-inicio.active)>.footer,.shell:has(#view-viaje.active)>.footer{display:none}
+}
