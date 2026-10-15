@@ -9,7 +9,7 @@ const DEPTS=["Montevideo","Canelones","Artigas","Cerro Largo","Colonia","Durazno
 const states={PENDIENTE:"Pendiente",PRESUPUESTO_ENVIADO:"Presupuesto enviado",ACEPTADA:"Aceptada",ACEPTADA_CLIENTE:"Aceptada por pasajero",CONFIRMADA:"Confirmada",EN_VIAJE:"En viaje",FINALIZADA:"Finalizada",CANCELADA:"Cancelada",RECHAZADA:"Rechazada",RECHAZADA_CLIENTE:"Rechazada por pasajero"};
 const $=(id)=>document.getElementById(id);
 const record={origin:null,destination:null,stops:[]};
-let bookingSteps=null,premiumJourney=null,routeStepAutoAdvanced=false;
+let bookingSteps=null,premiumJourney=null,premiumRouteComposer=null,routeStepAutoAdvanced=false;
 // Las cabeceras del formulario son presentación, nunca estado de reserva.
 function stepSummaryName(place){
   const label=String(place?.text||"").trim().split(",")[0];
@@ -883,6 +883,7 @@ function addRoadDiagram(parent,geometry){
   text(parent,"p","Esquema de ruta por calles (no a escala). Abrí Maps para ver el mapa completo.","route-map-caption");
 }
 function renderRouteSummary(){
+  if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   const host=$("route-overview");
   if(!host)return;
   // Una parada todavía sin dirección invalidaría cualquier presupuesto vial:
@@ -993,6 +994,7 @@ function renderRouteSummary(){
       clear(map);
     }
     refreshBookingSteps();
+    if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   };
 
   const hit=roadEngine.peek(key);
@@ -2204,6 +2206,11 @@ function init(){
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
   destPicker=picker("destination",$("destination-picker"),0);
+  premiumRouteComposer=window.TrasladosPremiumRoute.mount(document,()=>({
+    origin:record.origin,destination:record.destination,stops:record.stops,
+    geometry:latestRoad&&record.origin&&record.destination&&!record.stops.some(stop=>!stop)&&latestRoad.key===routeKeyOf(selectedRoadPoints())&&roadEngine.verified(latestRoad.data)?latestRoad.data.geometry:null,
+    metrics:latestRoad&&record.origin&&record.destination&&!record.stops.some(stop=>!stop)&&latestRoad.key===routeKeyOf(selectedRoadPoints())&&roadEngine.verified(latestRoad.data)?latestRoad.data:null
+  }));
   $("add-stop").addEventListener("click",()=>{if(record.stops.length>=8){tell("Hasta 8 paradas");return;}record.stops.push(null);renderStops();renderRouteSummary();refreshBookingSteps();});
   for(const key of ["pickup-date","pickup-time","passengers","person-name","person-phone","comments"]){
     $(key).addEventListener("input",refreshBookingSteps);

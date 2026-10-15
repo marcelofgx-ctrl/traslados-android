@@ -1,0 +1,64 @@
+/* Reference composition: compact route entry, real cartography, quiet surfaces.
+   All changes are scoped to Tu viaje; scheduled reservations keep their form. */
+.premium-department-toggle,.premium-route-canvas,.premium-route-stops{display:none}
+body.journey-mode-quick{background:#06171c;background-image:none}
+body.journey-mode-quick #view-viaje{background:none;padding:8px 16px 94px;color:#f2f1e9}
+body.journey-mode-quick #view-viaje .premium-journey-header{padding:7px 0 14px}
+body.journey-mode-quick #view-viaje .premium-brand{min-height:55px;margin-bottom:14px}
+body.journey-mode-quick #view-viaje .premium-car{width:49px;height:49px;flex-basis:49px;box-shadow:none}
+body.journey-mode-quick #view-viaje .premium-brand strong{font-size:18px;font-weight:650}
+body.journey-mode-quick #view-viaje .journey-back{top:16px;left:16px;width:34px;height:34px;min-height:34px;box-shadow:none;border-color:#294248}
+body.journey-mode-quick #view-viaje .premium-number{width:25px;height:25px;font-size:11px;box-shadow:none}
+body.journey-mode-quick #view-viaje .premium-step small{font-size:10px;font-weight:500}
+body.journey-mode-quick #view-viaje .premium-step.active small{font-weight:700}
+body.journey-mode-quick #view-viaje [data-booking-step="route"]{padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:none!important;overflow:visible}
+body.journey-mode-quick #view-viaje #booking-step-route{position:relative;padding:0!important;display:block;background:#172629;border:1px solid #5b666553;border-radius:16px;overflow:visible}
+body.journey-mode-quick #view-viaje #origin-picker,body.journey-mode-quick #view-viaje #destination-picker{padding:9px 12px 9px 25px;position:relative;background:none}
+body.journey-mode-quick #view-viaje #origin-picker{border-bottom:1px solid #6a777133}
+body.journey-mode-quick #view-viaje .location-widget{margin:0;padding:0;border:0;box-shadow:none;background:none;min-height:0}
+body.journey-mode-quick #view-viaje .location-title{font-size:9px;font-weight:650;line-height:1.4;letter-spacing:.09em;color:#adbcb7;margin:0 0 1px;padding:0}
+body.journey-mode-quick #view-viaje #origin-picker::before,body.journey-mode-quick #view-viaje #destination-picker::before{content:"";position:absolute;left:10px;top:32px;width:7px;height:7px;border:3px solid #4bd18b;border-radius:50%;background:#12272b}
+body.journey-mode-quick #view-viaje #destination-picker::before{border-color:#ed766c}
+body.journey-mode-quick #view-viaje .location-widget .departments{display:none;margin:7px 0;gap:5px;grid-template-columns:1fr 1fr 1fr}
+body.journey-mode-quick #view-viaje .location-widget.is-department-open .departments{display:grid}
+body.journey-mode-quick #view-viaje .departments button,body.journey-mode-quick #view-viaje .departments select{min-height:36px;font-size:11px;padding:6px 7px;border-radius:9px}
+body.journey-mode-quick #view-viaje .premium-department-toggle{padding:4px 0;margin:4px 0 0;border:0;min-height:28px;background:none;color:#dac293;font:500 11px/1.4 Arial,sans-serif;text-align:left;box-shadow:none}
+body.journey-mode-quick #view-viaje .is-editing .premium-department-toggle{display:block}
+body.journey-mode-quick #view-viaje .location-controls{margin:0}
+body.journey-mode-quick #view-viaje .loc-search,body.journey-mode-quick #view-viaje .loc-search.loc-search-origin{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:center}
+body.journey-mode-quick #view-viaje .loc-search input[type="search"]{min-height:40px;height:40px;padding:7px 0;min-width:0;font-size:14px;font-weight:500;border:0;border-radius:0;background:transparent;box-shadow:none;color:#f5f4ec}
+body.journey-mode-quick #view-viaje .loc-search input::placeholder{color:#e2e6df;opacity:1}
+body.journey-mode-quick #view-viaje .loc-search input:focus{outline:0;border-bottom:1px solid #dfc18a}
+body.journey-mode-quick #view-viaje .loc-search-origin .location-search-action{display:none!important}
+body.journey-mode-quick #view-viaje .loc-search .location-search-action{width:38px;min-height:38px;height:38px;background:#10252b;border:1px solid #65777366;border-radius:50%;box-shadow:none;justify-self:end}
+body.journey-mode-quick #view-viaje .loc-search .location-search-action::before{width:11px;height:11px;border-width:1.5px}
+body.journey-mode-quick #view-viaje .loc-search .location-search-action::after{width:7px;transform:translate(8px,7px) rotate(46deg)}
+body.journey-mode-quick #view-viaje .loc-search .location-use-current{grid-column:2;grid-row:1;width:44px;min-height:40px;height:40px;font-size:8px;line-height:1.1;white-space:normal;padding:4px;border-radius:12px;background:#10252b;border:1px solid #65777366;color:#e5d19f;box-shadow:none}
+body.journey-mode-quick #view-viaje .wayline{display:none}
+body.journey-mode-quick #view-viaje .location-selected{padding:1px 0;gap:6px;margin:0;background:none;border:0;min-height:40px}
+body.journey-mode-quick #view-viaje .location-selected-label{font-size:13px;font-weight:600;line-height:1.35}
+body.journey-mode-quick #view-viaje .location-selected-hint{font-size:10px;color:#abbab4}
+body.journey-mode-quick #view-viaje .location-edit{font-size:10px;padding:5px 7px;min-height:30px;min-width:40px;background:none;box-shadow:none}
+body.journey-mode-quick #view-viaje .results{position:relative;max-height:260px;overflow:auto;margin-top:6px}
+body.journey-mode-quick #view-viaje .result{min-height:46px;padding:9px}
+body.journey-mode-quick #view-viaje .result-title{font-size:12px}
+body.journey-mode-quick #view-viaje .result-subtitle{font-size:10px}
+body.journey-mode-quick #view-viaje .geo-feedback,body.journey-mode-quick #view-viaje .geo-attribution{font-size:10px;line-height:1.4;margin:7px 0}
+body.journey-mode-quick #view-viaje #route-overview{display:none!important}
+body.journey-mode-quick #view-viaje .premium-route-stops{display:flex;align-items:center;justify-content:space-between;width:100%;margin:10px 0;padding:12px 14px;min-height:44px;border:1px solid #5b66653b;border-radius:12px;box-shadow:none;background:#172629;color:#e2e6dd;font:500 12px/1.4 Arial,sans-serif;text-align:left}
+body.journey-mode-quick #view-viaje #stop-wrap,body.journey-mode-quick #view-viaje #login-for-stops{display:none!important}
+body.journey-mode-quick #view-viaje .premium-stops-open #stop-wrap:not([hidden]),body.journey-mode-quick #view-viaje .premium-stops-open #login-for-stops:not([hidden]){display:block!important}
+body.journey-mode-quick #view-viaje .premium-stops-open #login-for-stops{padding:10px 12px;font-size:11px}
+body.journey-mode-quick #view-viaje .premium-route-canvas{display:block;margin:12px 0 0;border:1px solid #63797544;border-radius:16px;overflow:hidden;background:#102931}
+body.journey-mode-quick #view-viaje .premium-route-cartography{width:100%;min-height:240px;overflow:hidden}
+body.journey-mode-quick #view-viaje .premium-real-map{border:0!important;border-radius:0!important;box-shadow:none!important}
+body.journey-mode-quick #view-viaje .premium-map-tiles{filter:invert(1) hue-rotate(180deg) saturate(.45) brightness(.7) contrast(1.1)}
+body.journey-mode-quick #view-viaje .premium-route-retry{display:block;margin:0 12px 10px;padding:6px 0;border:0;background:none;color:#efd094;font-size:11px;box-shadow:none}
+body.journey-mode-quick #view-viaje .premium-route-map-note{font:500 10px/1.4 Arial,sans-serif;color:#b9c9c2;padding:9px 12px;margin:0;background:#0e242b}
+body.journey-mode-quick #view-viaje .premium-actions{position:relative;bottom:auto;margin:14px 0 0;padding:0;border:0;background:none;box-shadow:none;border-radius:0}
+body.journey-mode-quick #view-viaje .premium-next,body.journey-mode-quick #view-viaje .premium-previous{min-height:48px;font-size:14px;border-radius:12px}
+@media(max-width:650px){
+ body.journey-mode-quick .tabs{padding-top:7px;padding-bottom:max(7px,env(safe-area-inset-bottom));border-radius:0;border-left:0;border-right:0;background:#06171cf5;box-shadow:none}
+ body.journey-mode-quick .tabs .tab{min-height:42px;border:0;box-shadow:none!important;background:transparent!important;font-size:10px;color:#a6b8b2}
+ body.journey-mode-quick .tabs .tab.active{color:#efd094}
+}

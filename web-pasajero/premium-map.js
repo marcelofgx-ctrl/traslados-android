@@ -38,7 +38,7 @@
     const frame=document.createElement("div");
     frame.className="premium-real-map";
     frame.setAttribute("role","img");
-    frame.setAttribute("aria-label","Mapa cartográfico del trayecto por calles, con origen y destino");
+    frame.setAttribute("aria-label",options.overview?"Mapa geográfico de referencia, sin posición GPS ni ruta calculada":"Mapa cartográfico del trayecto por calles, con origen y destino");
     frame.style.height=height+"px";
     const tiles=document.createElement("div");tiles.className="premium-map-tiles";
     const scale=view.scale;
@@ -72,6 +72,7 @@
       line.setAttribute("stroke-linejoin","round");line.setAttribute("stroke-linecap","round");
       line.setAttribute("class",klass);svg.append(line);
     }
+    if(!options.overview){
     path("#042e46",9,"premium-map-route-shadow");
     path("#6ce4ff",5,"premium-map-route");
     const start=view.points[0],end=view.points[view.points.length-1];
@@ -88,10 +89,18 @@
       label.setAttribute("font-size","10");label.setAttribute("font-weight","800");
       label.textContent=name;svg.append(label);
     }
+    }
     const credit=document.createElement("span");credit.className="premium-map-credit";
     credit.textContent="© OpenStreetMap contributors";
     frame.append(tiles,svg,credit);host.append(frame);
     return true;
   }
-  root.TrasladosPremiumMap=Object.freeze({project,layout,render});
+  function overview(host,points=[],options={}){
+    const valid=Array.isArray(points)?points.filter(p=>project(p)):[];
+    let bounds=[[-34.95,-56.4],[-34.72,-55.93]];
+    if(valid.length===1){const [lat,lng]=valid[0];bounds=[[lat-.025,lng-.035],[lat+.025,lng+.035]];}
+    else if(valid.length>1)bounds=valid;
+    return render(host,bounds,{...options,overview:true});
+  }
+  root.TrasladosPremiumMap=Object.freeze({project,layout,render,overview});
 })(window);

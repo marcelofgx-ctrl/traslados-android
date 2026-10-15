@@ -26,10 +26,10 @@ html = html.replace("default-src 'self';", "default-src 'self';")
 start = html.index("connect-src ")
 end = html.index(";", start)
 html = html[:start] + "connect-src 'self'" + html[end:]
-html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">VERSIÓN DE PRUEBA · PR #99 · No envía reservas</div>')
+html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v18 · No envía reservas</div>')
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
 index.write_text(html)
-(assets / "preview-isolation.css").write_text(".preview-notice{position:relative;z-index:10000;padding:8px 12px;background:#ebd1a2;color:#12343b;text-align:center;font:600 12px/1.4 sans-serif}")
+(assets / "preview-isolation.css").write_text(".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}")
 js = assets / "app.js"
 src = js.read_text()
 assert 'if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)' in src
@@ -38,12 +38,12 @@ js.write_text(src)
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
 gradle = app / "build.gradle"
-g = gradle.read_text().replace("versionCode 204", "versionCode 205").replace("versionName '16.0-Premium'", "versionName '17.0-PR99-Prueba'")
+g = gradle.read_text().replace("versionCode 204", "versionCode 206").replace("versionName '16.0-Premium'", "versionName '18.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
-assert "versionCode 205" in g
+assert "versionCode 206" in g
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
-j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/17 PR99Preview")
+j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/18 PR99Preview")
 needle = 'web.setWebViewClient(new WebViewClient() {'
 assert needle in j
 j = j.replace(needle, needle + """
@@ -94,4 +94,4 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, no production API, no external contact, code205, original applicationId.")
+print("PASS: PR99 assets packaged, isolated HTTPS origin, no production API, no external contact, code206, original applicationId.")
