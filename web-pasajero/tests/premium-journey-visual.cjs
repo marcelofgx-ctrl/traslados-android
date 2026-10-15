@@ -165,6 +165,14 @@ const {chromium}=require("playwright-core");
           "Falta advertencia de no mostrar GPS en vivo");
         assert.equal(await page.locator("#view-seguimiento button").filter({hasText:/Finalizar viaje/i}).count(),0,
           "El pasajero no puede finalizar el viaje");
+        await page.evaluate(()=>window.scrollTo(0,0));
+        const trackingFit=await page.evaluate(()=>{
+          const controls=document.querySelector("#view-seguimiento .premium-tracking-actions")?.getBoundingClientRect();
+          const nav=document.querySelector(".tabs")?.getBoundingClientRect();
+          return {top:Math.round(controls?.top||0),bottom:Math.round(controls?.bottom||0),navTop:Math.round(nav?.top||0)};
+        });
+        assert(trackingFit.bottom<=trackingFit.navTop-4&&trackingFit.top>=0,
+          "Acciones de seguimiento tapadas por menú o fuera de pantalla "+width+": "+JSON.stringify(trackingFit));
         await page.screenshot({path:path.join(dest,kind+"-pantalla-"+width+".png"),
           fullPage:true,animations:"disabled"});
         await page.locator("#premium-tracking-back").click();
