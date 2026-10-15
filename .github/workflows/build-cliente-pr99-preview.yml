@@ -1,0 +1,100 @@
+name: Build Cliente PR99 isolated signed preview
+on:
+  push:
+    branches: [feature/tu-viaje-premium-visual-20261015]
+    paths:
+      - 'scripts/prepare_premium_preview.py'
+      - '.github/workflows/build-cliente-pr99-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cliente-pr99-preview
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify existing production shell before packaging
+        run: python3 cliente-premium/tests/check_premium_shell.py
+      - name: Prepare isolated existing PR99 web and native shell
+        run: |
+          python3 scripts/prepare_premium_preview.py
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Android SDK
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Recover existing signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compile signed preview
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle -p cliente-premium :app:assembleRelease --no-daemon --stacktrace
+      - name: Verify signature, original certificate, code, and embedded web
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          APK=cliente-premium/app/build/outputs/apk/release/app-release.apk
+          mkdir -p artifacts
+          "$SIGNER" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SIGNER" verify --print-certs web-pasajero/downloads/traslados-cliente-premium-v16.apk > /tmp/previous-signing.txt
+          "$AAPT" dump badging "$APK" > artifacts/APK_INFO.txt
+          python3 - <<'PY'
+          import re,zipfile,json,hashlib
+          from pathlib import Path
+          def cert(p):
+              return re.search(r'certificate SHA-256 digest:\s*([a-fA-F0-9]{64})',Path(p).read_text()).group(1).lower()
+          assert cert('artifacts/SIGNING.txt') == cert('/tmp/previous-signing.txt'), 'Certificate changed'
+          badging=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.traslados.cliente'" in badging
+          assert "versionCode='205'" in badging
+          expected=json.loads(Path('preview-web-sha256.json').read_text())
+          with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
+              for name,digest in expected.items():
+                  assert hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()==digest,name
+          print('PASS: SAME certificate as published v16; code205; all PR99 web assets verified inside APK')
+          PY
+          cp "$APK" artifacts/traslados-cliente-premium-pr99-v17-prueba.apk
+          cp preview-web-sha256.json artifacts/
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v17-prueba.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-PR99-v17-Prueba-Firmada
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish downloadable APK only on feature branch
+        run: |
+          set -euo pipefail
+          # Restore temporary build-only modifications. Main is never targeted.
+          git restore cliente-premium
+          mkdir -p preview-artifacts
+          cp artifacts/* preview-artifacts/
+          git config user.name "Traslados Preview CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add preview-artifacts
+          git commit -m "APK PR99 v17 prueba firmada: sin producción"
+          git push origin HEAD:feature/tu-viaje-premium-visual-20261015
