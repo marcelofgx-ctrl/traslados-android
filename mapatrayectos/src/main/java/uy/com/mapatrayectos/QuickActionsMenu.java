@@ -52,6 +52,7 @@ public final class QuickActionsMenu {
     }
     /** R24.2: compact by default; real-time reservations and actions expand on demand. */
     public static void show(Activity activity,View anchor,float speedKmh){
+        RemoteAppConfig.refreshIfStale(activity);
         if(currentPopup!=null&&currentPopup.isShowing()){
             dismiss(currentPopup,null);return;
         }
@@ -297,10 +298,10 @@ public final class QuickActionsMenu {
             if(shareVcard(a))dialog.dismiss();
         });
         addDialogAction(a,content,"⌁  WEB DE RESERVAS",false,()->{
-            dialog.dismiss();shareEditableLink(a,"booking_url","Reservas de traslados",BOOKING_URL);
+            dialog.dismiss();shareEditableLink(a,"booking_url","Reservas de traslados",RemoteAppConfig.officialLink(a,"booking_url"));
         });
         addDialogAction(a,content,"⇩  APP PARA PASAJEROS",false,()->{
-            dialog.dismiss();shareEditableLink(a,"download_url","APK oficial para pasajeros",DOWNLOAD_URL);
+            dialog.dismiss();shareEditableLink(a,"download_url","APK oficial para pasajeros",RemoteAppConfig.officialLink(a,"client_apk_url"));
         });
         addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
         dialog.show();
@@ -310,15 +311,18 @@ public final class QuickActionsMenu {
     private static void shareEditableLink(Activity a,String key,String title,String proposed){
         android.content.SharedPreferences prefs=a.getSharedPreferences("share_links",Activity.MODE_PRIVATE);
         String current=prefs.getString(key,proposed);
-        // Previous installs may retain an obsolete Worker/Lovable link.
-        // Migrate only known former defaults, and ask before sharing.
-        // Custom URLs chosen by the owner must remain untouched.
-        boolean staleOfficialLink=ShareLinkPolicy.needsMigration(key,current);
-        if(staleOfficialLink){
-            current=ShareLinkPolicy.updatedDestination(key,current);
-            // Even previously confirmed v15 links must be reviewed again.
+        String previouslyPublished=prefs.getString(key+"_official_default","");
+        // A newly published release supersedes only known official URLs,
+        // even when an older official link was previously confirmed.
+        String updated=ShareLinkPolicy.resolve(key,current,proposed,previouslyPublished);
+        if(!updated.equals(current)){
+            current=updated;
             prefs.edit().putString(key,current).putBoolean(key+"_confirmed",false).apply();
         }
+        // Remember which remote default this phone last saw. Never adopt a
+        // user's custom destination as the official catalog entry.
+        if(current.equals(proposed))
+            prefs.edit().putString(key+"_official_default",proposed).apply();
         if(prefs.getBoolean(key+"_confirmed",false)&&validUrl(current)){
             shareLink(a,title,current);return;
         }
@@ -337,7 +341,11 @@ public final class QuickActionsMenu {
         addDialogAction(a,content,"COMPARTIR Y RECORDAR ENLACE",true,()->{
             String value=url.getText().toString().trim();
             if(!validUrl(value)){url.setError("Ingresá una dirección HTTPS válida");return;}
-            prefs.edit().putString(key,value).putBoolean(key+"_confirmed",true).apply();
+            android.content.SharedPreferences.Editor edit=prefs.edit()
+                .putString(key,value).putBoolean(key+"_confirmed",true);
+            if(value.equals(proposed))edit.putString(key+"_official_default",proposed);
+            else edit.remove(key+"_official_default");
+            edit.apply();
             dialog.dismiss();shareLink(a,title,value);
         });
         addDialogAction(a,content,"CANCELAR",false,dialog::dismiss);
