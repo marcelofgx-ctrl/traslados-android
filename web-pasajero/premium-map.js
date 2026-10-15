@@ -26,9 +26,12 @@
     return {width,height,zoom,scale,centerX,centerY,
       points:points.map(p=>[(p[0]*scale-centerX)+width/2,(p[1]*scale-centerY)+height/2])};
   }
-  function render(host,geometry){
+  function render(host,geometry,options={}){
     const width=Math.max(290,Math.min(750,Math.round(host.clientWidth||355)));
-    const height=width<400?232:258;
+    const proposed=Number(options.height);
+    const height=options.height!=null&&Number.isFinite(proposed)
+      ?Math.max(160,Math.min(420,Math.round(proposed)))
+      :width<400?232:258;
     const view=layout(geometry,width,height);
     if(!view)return false;
     host.replaceChildren();
