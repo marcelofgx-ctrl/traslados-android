@@ -532,3 +532,18 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
   #view-seguimiento .premium-tracking-actions{margin:9px 0 0;gap:7px}
   #view-seguimiento .premium-tracking-action{min-height:45px}
 }
+
+
+/* Controles siempre al alcance del pulgar sin esconder datos de seguimiento. */
+@media(max-width:650px){
+  #view-seguimiento.premium-tracking-view{
+    padding-bottom:calc(205px + env(safe-area-inset-bottom));
+  }
+  body:has(#view-seguimiento.active) #view-seguimiento .premium-tracking-actions{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(79px + env(safe-area-inset-bottom));
+    z-index:71;margin:0;width:min(calc(100vw - 28px),500px);
+    padding:6px;border:1px solid #8d865f9c;border-radius:16px;
+    background:#041e29f3;box-shadow:0 -6px 21px #0008;
+  }
+}
