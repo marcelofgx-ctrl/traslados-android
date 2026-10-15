@@ -7,7 +7,7 @@ const root=path.join(__dirname,"..");
 const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const app=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
 assert(html.includes('app.js?v=73')&&html.includes('styles.css?v=73'));
-assert(sw.includes('traslados-cliente-pwa-v73'));
+assert(sw.includes('traslados-cliente-pwa-v74'));
 assert(css.includes('/* PWA v47 — corrección de la tarjeta consolidada A/B en Samsung.'),"Versioned visual correction");
 assert(css.includes('@media(hover:none)'),"Touch must clear sticky hover");
 assert(css.includes('.booking-step-card[data-booking-step="route"].is-open .booking-step-content'),"Open route spacing");

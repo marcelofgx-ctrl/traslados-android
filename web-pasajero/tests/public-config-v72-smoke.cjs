@@ -75,7 +75,7 @@ function scenario({data=snapshot(16,2),initial={},broken=false}={}){
  assert(html.includes('<script src="./public-config.js?v=1" defer></script>'));
  assert(html.indexOf("public-config.js?v=1")<html.indexOf("app.js?v=73"));
  assert(html.includes("install-apk-hint")&&!html.includes("Cliente Premium v15, firmada"));
- assert(sw.includes('traslados-cliente-pwa-v73')&&sw.includes("./public-config.js"));
+ assert(sw.includes('traslados-cliente-pwa-v74')&&sw.includes("./public-config.js"));
  assert(app.includes("const catalog=window.TrasladosPublicConfig;"));
  assert(app.includes("catalog?.subscribe?.(applyPublishedApk)")&&app.includes("void catalog?.refresh?.()"));
  assert(app.includes("if(apkLink.href!==candidate)return;"),"stale HEAD cannot reinstate old APK");

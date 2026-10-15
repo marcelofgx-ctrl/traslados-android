@@ -51,7 +51,7 @@ const sw=fs.readFileSync(path.join(dir,"sw.js"),"utf8");
 assert(html.includes('id="pickup-diagnostics"'));
 assert(html.includes('id="pickup-diagnostics-copy"'));
 assert(html.includes('app.js?v=73')&&html.includes('pickup-observability.js?v=2'));
-assert(sw.includes("traslados-cliente-pwa-v73"));
+assert(sw.includes("traslados-cliente-pwa-v74"));
 assert(app.includes('window.TrasladosPickupHealth?.recordContext?.("eta"'));
 assert(app.includes('window.TrasladosPickupHealth?.recordContext?.("availability"'));
 assert(app.includes("copyPickupDiagnostics"));

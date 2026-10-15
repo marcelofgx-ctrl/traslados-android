@@ -26,6 +26,6 @@ assert(css.includes("@media(max-width:365px)")&&css.includes("grid-template-colu
 assert(css.includes("@media(prefers-reduced-motion:reduce)")&&css.includes(".service-card-icon"));
 assert(!/fetch\(|createReservation|rpc\(|navigator\.geolocation/.test(home),"Homepage must never reach back-end/GPS");
 assert(html.includes('styles.css?v=73')&&html.includes('app.js?v=73')&&html.includes('service-home.js?v=3'));
-assert(sw.includes('traslados-cliente-pwa-v73')&&sw.includes("./service-home.js"));
+assert(sw.includes('traslados-cliente-pwa-v74')&&sw.includes("./service-home.js"));
 assert(html.includes('id="view-reservar"')&&html.includes('id="trip-chat-sheet"'),"Operational screens remain intact");
 console.log("PASS PWA v63: 3 bespoke orbital emblems, short card copy, disclosure, responsive accessible design and stable contracts");
