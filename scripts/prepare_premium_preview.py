@@ -11,7 +11,7 @@ assets = app / "src/main/assets/premium-preview"
 if assets.exists():
     shutil.rmtree(assets)
 assets.mkdir(parents=True)
-allowed = {".html", ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".webmanifest", ".woff", ".woff2"}
+allowed = {".html", ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".webmanifest", ".woff", ".woff2", ".json"}
 for p in web.rglob("*"):
     rel = p.relative_to(web)
     if not p.is_file() or rel.parts[0] in {"downloads", "tests", "node_modules"} or p.suffix not in allowed:
