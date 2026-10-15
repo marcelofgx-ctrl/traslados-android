@@ -513,6 +513,10 @@ function enterService(kind){
   const urgent=$("urgent-actions");
   if(quick&&urgent.parentElement!==host)host.appendChild(urgent);
   if(!quick&&urgent.parentElement===host)$("booking-preview").insertAdjacentElement("afterend",urgent);
+  // La confirmación debe verse en la MISMA pantalla desde donde se solicitó.
+  const success=$("booking-success");
+  if(quick&&success.parentElement!==host)host.appendChild(success);
+  if(!quick&&success.parentElement===host)$("submit-actions").insertAdjacentElement("afterend",success);
   document.body.classList.toggle("journey-mode-quick",quick);
   setWhen(kind);
   if(quick&&$("journey-when-select"))$("journey-when-select").value=kind;
@@ -1108,7 +1112,7 @@ async function accountSubmit(){
       });}catch{unclaimed.push(prior);}
     }
     saveStorage(GUEST_KEY,unclaimed);
-    syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView("reservar");void loadTrips({background:true});
+    syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView(selectedPickupMode==="schedule"?"reservar":"viaje");void loadTrips({background:true});
   }catch(e){showError(e);}finally{busy=false;loading(btn,false);}
 }
 function bookingData(){
