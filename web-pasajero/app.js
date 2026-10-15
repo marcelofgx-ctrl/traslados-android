@@ -1587,6 +1587,30 @@ function reservationView(r,guestToken){
     const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
     if(plate)text(copy,"span","Matrícula · "+plate,"trip-live-vehicle-plate");
     if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
+    // El conductor es la única fuente de verdad de fases: no crear ETA ni GPS ficticios.
+    const actualStage=onBoard?2:arrived?1:0;
+    const liveSteps=text(top,"div","","premium-trip-timeline");
+    liveSteps.setAttribute("aria-label","Estado de recogida y traslado informado por el conductor");
+    for(const [index,label] of ["En camino","En el punto de recogida","Durante el viaje"].entries()){
+      const item=text(liveSteps,"div","","premium-trip-phase");
+      item.dataset.phaseStatus=index<actualStage?"completed":index===actualStage?"current":"upcoming";
+      const symbol=text(item,"span",index<actualStage?"✓":String(index+1),"premium-trip-phase-dot");
+      symbol.setAttribute("aria-hidden","true");
+      text(item,"small",label,"premium-trip-phase-label");
+      if(index===actualStage)item.setAttribute("aria-current","step");
+    }
+    const quick=text(top,"div","","premium-trip-contact");
+    const call=text(quick,"a","☎ Llamar al conductor","premium-trip-call");
+    call.href="tel:+59897228175";
+    call.setAttribute("aria-label","Llamar al conductor de Traslados");
+    button(quick,"◉ Ver detalles y chat","premium-trip-chat-link",()=>{
+      d.open=true;d.scrollIntoView({block:"start",behavior:"smooth"});
+    });
+    text(top,"p",onBoard
+      ?"El inicio fue informado por el conductor. La finalización se actualizará al cerrar el traslado."
+      :arrived?"El conductor registró su llegada al punto de recogida."
+      :"El conductor confirmó que se dirige a la recogida. Consultá el seguimiento para ver actualizaciones.",
+      "premium-trip-truth");
   }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
