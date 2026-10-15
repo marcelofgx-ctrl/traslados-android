@@ -1,6 +1,6 @@
 /* Reference composition: compact route entry, real cartography, quiet surfaces.
    All changes are scoped to Tu viaje; scheduled reservations keep their form. */
-.premium-department-toggle,.premium-route-canvas,.premium-route-stops{display:none}
+.premium-department-toggle,.premium-route-canvas,.premium-route-stops,.premium-gps-short-label{display:none}
 body.journey-mode-quick{background:#06171c;background-image:none}
 body.journey-mode-quick #view-viaje{background:none;padding:8px 16px 94px;color:#f2f1e9}
 body.journey-mode-quick #view-viaje .premium-journey-header{padding:7px 0 14px}
@@ -15,7 +15,7 @@ body.journey-mode-quick #view-viaje [data-booking-step="route"]{padding:0!import
 body.journey-mode-quick #view-viaje #booking-step-route{position:relative;padding:0!important;display:block;background:#172629;border:1px solid #5b666553;border-radius:16px;overflow:visible}
 body.journey-mode-quick #view-viaje #origin-picker,body.journey-mode-quick #view-viaje #destination-picker{padding:9px 12px 9px 25px;position:relative;background:none}
 body.journey-mode-quick #view-viaje #origin-picker{border-bottom:1px solid #6a777133}
-body.journey-mode-quick #view-viaje .location-widget{margin:0;padding:0;border:0;box-shadow:none;background:none;min-height:0}
+body.journey-mode-quick #view-viaje .location-widget{display:block;gap:0;margin:0;padding:0;border:0;box-shadow:none;background:none;min-height:0}
 body.journey-mode-quick #view-viaje .location-title{font-size:9px;font-weight:650;line-height:1.4;letter-spacing:.09em;color:#adbcb7;margin:0 0 1px;padding:0}
 body.journey-mode-quick #view-viaje #origin-picker::before,body.journey-mode-quick #view-viaje #destination-picker::before{content:"";position:absolute;left:10px;top:32px;width:7px;height:7px;border:3px solid #4bd18b;border-radius:50%;background:#12272b}
 body.journey-mode-quick #view-viaje #destination-picker::before{border-color:#ed766c}
@@ -40,6 +40,9 @@ body.journey-mode-quick #view-viaje .location-selected-label{font-size:13px;font
 body.journey-mode-quick #view-viaje .location-selected-hint{font-size:10px;color:#abbab4}
 body.journey-mode-quick #view-viaje .location-edit{font-size:10px;padding:5px 7px;min-height:30px;min-width:40px;background:none;box-shadow:none}
 body.journey-mode-quick #view-viaje .results{position:relative;max-height:260px;overflow:auto;margin-top:6px}
+body.journey-mode-quick #view-viaje .results:empty{display:none}
+body.journey-mode-quick #view-viaje .loc-search .location-use-current{font-size:0}
+body.journey-mode-quick #view-viaje .premium-gps-short-label{display:inline;font-size:11px;line-height:1.2;font-weight:650}
 body.journey-mode-quick #view-viaje .result{min-height:46px;padding:9px}
 body.journey-mode-quick #view-viaje .result-title{font-size:12px}
 body.journey-mode-quick #view-viaje .result-subtitle{font-size:10px}

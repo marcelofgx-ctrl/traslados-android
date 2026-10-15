@@ -21,6 +21,8 @@
     for(const id of ["origin-picker","destination-picker"]){
       const host=doc.getElementById(id),widget=host.querySelector(".location-widget");
       const deps=host.querySelector(".departments"),input=host.querySelector('input[type="search"]');
+      const gps=host.querySelector(".location-use-current");
+      if(gps){const short=doc.createElement("span");short.className="premium-gps-short-label";short.textContent="GPS";gps.append(short);}
       const toggle=doc.createElement("button");toggle.type="button";toggle.className="premium-department-toggle";
       deps.id="premium-departments-"+id;toggle.setAttribute("aria-controls",deps.id);toggle.setAttribute("aria-expanded","false");
       deps.insertAdjacentElement("beforebegin",toggle);
