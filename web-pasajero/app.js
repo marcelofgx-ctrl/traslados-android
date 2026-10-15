@@ -106,6 +106,19 @@ function suggestBookingStep(error){
 const depts={origin:"Canelones",destination:"Montevideo"}; // Preferencia de orden; nunca filtra Uruguay
 let session=null,registerMode=false,installEvent=null,pendingReview=null,busy=false,toastHandle=null;
 let expiredPassengerSessionNotice=false;
+let publicVehiclePlate="";
+async function refreshPublicVehiclePlate(){
+  try{
+    const data=await rpc("driver_public_vehicle_v1",{});
+    const plate=String(data?.plate||"").trim().toUpperCase();
+    if(!/^[A-Z0-9]{2,4}-[A-Z0-9]{3,5}$/.test(plate))return;
+    if(publicVehiclePlate!==plate){
+      publicVehiclePlate=plate;
+      if(tripLoaded)renderTripsBoard();
+    }
+  }catch{ /* Identity card is hidden if the public endpoint is unavailable. */ }
+}
+
 let urgentAttempt=null;
 
 function jsonStorage(key,defaultValue){try{return JSON.parse(localStorage.getItem(key)||"null")??defaultValue;}catch{return defaultValue;}}
@@ -1554,6 +1567,7 @@ function reservationView(r,guestToken){
     const copy=text(live,"div","","trip-live-copy");
     text(copy,"strong",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Tu conductor está en camino");
     text(copy,"span",onBoard?"El traslado ya comenzó.":arrived?"Está en el punto de recogida.":"Va hacia el lugar donde te recogerá.");
+    if(publicVehiclePlate)text(copy,"span","Matrícula · "+publicVehiclePlate,"trip-live-vehicle-plate");
   }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
@@ -1579,8 +1593,8 @@ function reservationView(r,guestToken){
   const actions=text(inner,"div","","action-row trip-primary-actions");
   if(expired)button(actions,"Solicitar nuevo traslado","primary",()=>{
     // Always prepare the form; never create the replacement automatically.
-    setWhen(tripBoard.isImmediateRequest(r)?"now":"schedule");
-    shiftView("reservar");bookingSteps.open("when",{scroll:true});
+    enterService(tripBoard.isImmediateRequest(r)?"now":"schedule");
+    bookingSteps.open("when",{scroll:true});
   });
   if(!expired&&price>0&&r.quote_status==="ENVIADO"&&r.status==="PENDIENTE"&&((authReady()&&r.id)||guestToken)){
     button(actions,"Aceptar "+tripMoney(price),"primary",()=>void decideQuote(r.id,true,guestToken));
@@ -1935,6 +1949,7 @@ function installUI(){
 }
 function init(){
   session=jsonStorage(SESSION_KEY,null);
+  void refreshPublicVehiclePlate();
   bookingSteps=window.TrasladosBookingSteps.mount(document);
   // Service cards are navigation-only; the existing native/backend contracts
   // keep full responsibility for preparing and sending transport requests.
@@ -1945,6 +1960,7 @@ function init(){
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>tab.dataset.view==="reservar"?enterService("schedule"):shiftView(tab.dataset.view));
   $("journey-when-select").addEventListener("change",()=>{
     const mode=$("journey-when-select").value;
+    if(mode==="custom"){$("journey-clock-action").click();return;}
     if(mode!=="now"&&!/^(10|15|20|30|45|60)$/.test(mode))return;
     setWhen(mode);
   });
@@ -1960,7 +1976,11 @@ function init(){
     const today=currentUY();
     let target=Date.parse(today.day+"T"+time+":00-03:00");
     let delay=Math.ceil((target-Date.now())/60000);
-    if(delay<1||delay>120){tell("Tu viaje permite elegir una recogida dentro de las próximas 2 horas. Para más adelante, usá Tu reserva.");return;}
+    if(delay<1||delay>120){
+      tell("Tu viaje permite elegir una recogida dentro de las próximas 2 horas. Para más adelante, usá Tu reserva.");
+      $("journey-when-select").value=["now","10","15","20","30","45","60"].includes(selectedPickupMode)?selectedPickupMode:"custom";
+      return;
+    }
     setWhen(String(delay));
     $("journey-when-select").value="custom";
     $("journey-custom-time-label").textContent="Recogida solicitada hacia las "+time+" h (sujeta a confirmación)";
