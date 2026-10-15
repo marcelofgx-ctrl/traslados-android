@@ -9,7 +9,7 @@ const DEPTS=["Montevideo","Canelones","Artigas","Cerro Largo","Colonia","Durazno
 const states={PENDIENTE:"Pendiente",PRESUPUESTO_ENVIADO:"Presupuesto enviado",ACEPTADA:"Aceptada",ACEPTADA_CLIENTE:"Aceptada por pasajero",CONFIRMADA:"Confirmada",EN_VIAJE:"En viaje",FINALIZADA:"Finalizada",CANCELADA:"Cancelada",RECHAZADA:"Rechazada",RECHAZADA_CLIENTE:"Rechazada por pasajero"};
 const $=(id)=>document.getElementById(id);
 const record={origin:null,destination:null,stops:[]};
-let bookingSteps=null,routeStepAutoAdvanced=false;
+let bookingSteps=null,premiumJourney=null,routeStepAutoAdvanced=false;
 // Las cabeceras del formulario son presentación, nunca estado de reserva.
 function stepSummaryName(place){
   const label=String(place?.text||"").trim().split(",")[0];
@@ -534,6 +534,7 @@ function enterService(kind){
   routeStepAutoAdvanced=false;
   bookingSteps.open("route");
   shiftView(quick?"viaje":"reservar");
+  if(quick)premiumJourney?.activate();
 }
 function shiftView(name){
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
@@ -645,7 +646,7 @@ function picker(name,mount,position){
     else record.stops[position]=selected;
     clear(results);repaint();renderRouteSummary();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
-       !routeStepAutoAdvanced&&bookingSteps?.active()==="route"){
+       !routeStepAutoAdvanced&&!document.body.classList.contains("journey-mode-quick")&&bookingSteps?.active()==="route"){
       routeStepAutoAdvanced=true;
       bookingSteps.open("when",{scroll:true});
       refreshBookingSteps();
@@ -1968,6 +1969,7 @@ function installUI(){
 function init(){
   session=jsonStorage(SESSION_KEY,null);
   bookingSteps=window.TrasladosBookingSteps.mount(document);
+  premiumJourney=window.TrasladosPremiumJourney.mount(document);
   // Service cards are navigation-only; the existing native/backend contracts
   // keep full responsibility for preparing and sending transport requests.
   window.TrasladosServiceHome.mount(document,{
