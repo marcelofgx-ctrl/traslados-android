@@ -1,5 +1,8 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+> **DECISIÓN DE ARQUITECTURA 14/10/2026:** [Configuración remota compartida Web/Mapa/Conductor](CONFIGURACION_REMOTA_TRASLADOS_ARQUITECTURA.md). Auditoría constató links nativos compilados y ausencia de catálogo general en Supabase; documento de propuesta con rollout offline-first. **No implementado; no sustituye la APK vigente.**
+
+
 ## Mapa R25.23 — Enlaces y contacto / cliente actualizado (PUBLICADA 14/10/2026, 21:42 UYT)
 
 - Captura Samsung 21:27 del menú «Enlaces y contacto» en Mapa R25.22. Auditando `QuickActionsMenu`: «WEB DE RESERVAS» usa URL Pages correcta y contiene PWA v71, «CONTACTO .VCF» comparte tarjeta de contacto, pero «APP PARA PASAJEROS» apuntaba por defecto a **Cliente Premium v15** (obsoleto; actual **v16/code204**). Más grave: las URL oficiales previamente confirmadas se guardan en SharedPreferences `share_links` y se compartían sin volver a mostrar confirmación, por lo que cambiar solo la constante no era suficiente.
