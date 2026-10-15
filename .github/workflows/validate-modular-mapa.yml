@@ -98,6 +98,16 @@ jobs:
           java -cp /tmp/mapa-metric-type MetricTypographyPolicyTest
           grep -q 'MetricValueView' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'MetricTypographyPolicy.fitSp' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+      - name: Share links canonical v16 with safe old-link migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-share-links
+          javac -d /tmp/mapa-share-links \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/ShareLinkPolicy.java \
+            mapatrayectos/tests/ShareLinkPolicyTest.java
+          java -cp /tmp/mapa-share-links ShareLinkPolicyTest
+          grep -q 'ShareLinkPolicy.needsMigration(key,current)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
       - name: Passenger chat integration regression
         shell: bash
         run: |
