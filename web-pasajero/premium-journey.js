@@ -73,6 +73,55 @@
         row.append(copy);routeCard.append(row);
       });
     }
+    // Datos complementarios privados: nunca se agregan a la RPC de reserva.
+    // Se guardan localmente ÚNICAMENTE con consentimiento, sin PIN ni itinerarios.
+    const CONTACT_KEY="traslados.premium.contact.local.v1";
+    const passengerBody=doc.querySelector('[data-booking-step="passenger"] [data-step-body]');
+    const contactExtras=make(doc,"section","premium-contact-extras");
+    contactExtras.setAttribute("aria-label","Datos complementarios y privacidad");
+    const emailLabel=make(doc,"label","premium-email-label","Email (opcional)");
+    const emailInput=make(doc,"input","premium-email-input");
+    emailInput.id="premium-person-email";emailInput.type="email";emailInput.autocomplete="email";
+    emailInput.inputMode="email";emailInput.maxLength=160;
+    emailInput.placeholder="nombre@ejemplo.com";
+    emailLabel.htmlFor=emailInput.id;
+    emailLabel.append(emailInput);
+    const consentLabel=make(doc,"label","premium-save-contact");
+    const consent=make(doc,"input","premium-save-contact-check");
+    consent.id="premium-save-contact";consent.type="checkbox";
+    consentLabel.append(consent,make(doc,"span","","Recordar mis datos en este dispositivo"));
+    const privacy=make(doc,"p","premium-contact-privacy",
+      "Tus datos son para coordinar este traslado. El email no se envía al conductor ni al servidor. Solo lo recordaremos aquí si lo autorizás.");
+    const consentNote=make(doc,"small","premium-contact-note",
+      "Podés desactivar esta opción cuando quieras; borrará los datos guardados en este dispositivo.");
+    contactExtras.append(emailLabel,consentLabel,privacy,consentNote);
+    passengerBody.append(contactExtras);
+    const personName=doc.getElementById("person-name"),personPhone=doc.getElementById("person-phone");
+    const contactFields=[personName,personPhone,emailInput];
+    function saveContact(){
+      try{
+        if(!consent.checked){localStorage.removeItem(CONTACT_KEY);return;}
+        const email=emailInput.value.trim();
+        if(email&&!emailInput.checkValidity())return;
+        localStorage.setItem(CONTACT_KEY,JSON.stringify({
+          name:personName.value.trim(),phone:personPhone.value.trim(),email
+        }));
+      }catch{} // Privacidad del navegador / sin cuota: nunca impedir reservar.
+    }
+    function hydrateContact(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(CONTACT_KEY)||"null");
+        if(!saved||typeof saved!=="object")return;
+        consent.checked=true;
+        if(!personName.value)personName.value=String(saved.name||"").slice(0,120);
+        if(!personPhone.value)personPhone.value=String(saved.phone||"").slice(0,32);
+        if(!emailInput.value)emailInput.value=String(saved.email||"").slice(0,160);
+        for(const input of [personName,personPhone])input.dispatchEvent(new Event("input",{bubbles:true}));
+      }catch{}
+    }
+    contactFields.forEach(input=>input.addEventListener("input",saveContact));
+    consent.addEventListener("change",saveContact);
+    hydrateContact();
     const requestHost=doc.getElementById("urgent-actions");
     requestHost.querySelector(".request-hero").insertAdjacentElement("afterend",routeCard);
     const actions=make(doc,"footer","premium-actions"),warning=make(doc,"p","premium-error"),back=make(doc,"button","premium-previous","← Atrás"),next=make(doc,"button","premium-next","Continuar →");
@@ -114,6 +163,10 @@
       }
       if(stage==="when"&&select.value==="custom"&&doc.getElementById("journey-custom-time-label").hidden){
         warning.textContent="Elegí una hora válida dentro de las próximas dos horas.";warning.hidden=false;return;
+      }
+      if(stage==="passenger"&&emailInput.value.trim()&&!emailInput.checkValidity()){
+        warning.textContent="Revisá el formato del email o dejalo vacío.";warning.hidden=false;
+        emailInput.focus();return;
       }
       if(stage==="passenger"&&!complete("passenger")){
         warning.textContent="Completá nombre y teléfono, o revisá los datos de tu cuenta.";warning.hidden=false;return;
