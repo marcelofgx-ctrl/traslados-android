@@ -1586,7 +1586,7 @@ function reservationView(r,guestToken){
     text(radar,"span","◎","premium-search-target");
     const message=text(searching,"div","","premium-search-copy");
     text(message,"strong","Esperando respuesta del conductor");
-    text(message,"small","Tu solicitud fue recibida. Todavía no está confirmada; te avisaremos cuando el conductor responda.");
+    text(message,"small","Tu solicitud fue recibida. Todavía no está confirmada. Consultá Mis traslados para ver la respuesta del conductor.");
     const milestones=text(searching,"div","","premium-search-phases");
     for(const [idx,label] of ["Recibida","En espera","Confirmada"].entries()){
       const item=text(milestones,"div","","premium-search-phase");
