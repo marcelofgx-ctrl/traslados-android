@@ -28,6 +28,10 @@ const {chromium}=require("playwright-core");
       });
     });
     assert.equal(localPhoto,true,"Portada sin imagen local verificada");
+    // El mapa cartográfico no debe quedar bloqueado por nuestra propia CSP.
+    const csp=await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
+    assert(csp?.includes("img-src 'self' data: https://tile.openstreetmap.org"),
+      "CSP impide descargar mosaicos de OSM");
     const mapFixture=await page.evaluate(()=>{
       const host=document.createElement("div");host.style.width="355px";document.body.append(host);
       const road=[[-34.924,-56.157],[-34.91,-56.14],[-34.86,-56.09],[-34.83,-56.03]];
@@ -44,6 +48,11 @@ const {chromium}=require("playwright-core");
     await page.locator('#view-inicio [data-service="now"]').click();
     await page.waitForSelector('#view-viaje[data-premium-step="route"]',{timeout:10000});
     assert.equal(await page.locator(".premium-step").count(),4);
+    const searchWidth=await page.locator('#view-viaje #origin-picker input[type="search"]').evaluate(
+      el=>el.getBoundingClientRect().width);
+    assert(searchWidth>=165,"El buscador de origen queda demasiado estrecho: "+searchWidth+"px en "+width);
+    assert.equal(await page.locator("#view-viaje #origin-picker .location-use-current").isVisible(),true,
+      "El botón de GPS debe permanecer visible en Tu viaje");
     await page.screenshot({path:path.join(dest,"recorrido-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"route","El formulario no debe avanzar sin origen/destino");
@@ -88,6 +97,45 @@ const {chromium}=require("playwright-core");
     assert(overflow.scroll<=overflow.viewport+2,"Desbordamiento horizontal en "+width+": "+JSON.stringify(overflow));
     // Se comprueba el botón final, SIN pulsarlo; la QA nunca reserva.
     assert(await page.locator("#urgent-send").count()===1);
+    // Las últimas tres capturas son SOLO fixtures sintéticos en Chromium.
+    // Nunca se guardan en Supabase ni aparecen en la PWA real.
+    for(const [kind,status,phase] of [
+      ["buscando","PENDIENTE",""],
+      ["en-camino","CONFIRMADA","EN_CAMINO"],
+      ["en-viaje","EN_VIAJE",""]
+    ]){
+      const rendered=await page.evaluate(({status,phase})=>{
+        const row={
+          code:"QA VISUAL",status,pickup_phase:phase,
+          pickup_mode:"now",created_at:new Date().toISOString(),
+          pickup_date:"2026-10-15",pickup_time:"12:30",
+          origin_text:"Origen de prueba – no es una reserva",
+          destination_text:"Destino de prueba – no es una reserva",
+          quote_status:"SIN_PRESUPUESTO",quote_final_total:null
+        };
+        if(typeof reservationView!=="function")return false;
+        const card=reservationView(row);
+        const board=document.querySelector("#trips-list");
+        board.replaceChildren(card);
+        document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-viajes"));
+        const notice=document.createElement("p");
+        notice.className="premium-qa-fixture-label";
+        notice.textContent="QA VISUAL · DATOS SINTÉTICOS · NO ES UN VIAJE REAL";
+        notice.style.cssText="padding:9px;color:#ffdb9a;text-align:center;font-weight:800;font-size:11px;border:1px solid #cbae6d";
+        board.prepend(notice);
+        return card.dataset.tone;
+      },{status,phase});
+      assert.equal(rendered,status==="PENDIENTE"?"pending":"moving",
+        "No se generó tarjeta de seguimiento "+kind);
+      if(kind==="buscando")assert.equal(await page.locator(".premium-search").count(),1,
+        "No aparece radar en espera");
+      if(kind==="en-viaje")assert.equal(await page.locator(".premium-trip-timeline [aria-current='step']").count(),1,
+        "La etapa de viaje no está marcada");
+      assert.equal(await page.locator("#view-viajes .trip-cancel-action").count(),0,
+        "No permitir cancelar/finalizar unilateralmente un viaje activo");
+      await page.screenshot({path:path.join(dest,kind+"-"+width+".png"),
+        fullPage:true,animations:"disabled"});
+    }
     await page.close();
   }
   await browser.close();
