@@ -1,0 +1,135 @@
+name: Build Mapa R25.29 premium request card (signed preview)
+on:
+  push:
+    branches: [fix/mapa-r25-29-live-request-qa-20261016]
+    paths:
+      - '.github/workflows/build-mapa-r25-29-tarjeta.yml'
+      - 'mapatrayectos/build.gradle'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/TripRequestCard.java'
+      - 'feature/driver/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: mapa-r25-29-premium-preview
+  cancel-in-progress: false
+jobs:
+  signed-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard release boundary, real fixed fare contract and UX sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "versionCode 81" mapatrayectos/build.gradle
+          grep -q "versionName '0.1-R25.29'" mapatrayectos/build.gradle
+          grep -Fq "implementation project(':feature:driver')" mapatrayectos/build.gradle
+          ! grep -q 'prepareEmbeddedConductor' mapatrayectos/build.gradle
+          grep -q 'class TripRequestCard' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripRequestCard.java
+          grep -q 'TransferAlerts.snapshot' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'driver_decide_fixed_pickup_v1' feature/driver/src/main/java/uy/com/traslados/conductor/Api.java
+          grep -q 'PRECIO_FIJO' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'confirming' mapatrayectos/src/main/java/uy/com/mapatrayectos/TripRequestCard.java
+          test -s web-pasajero/downloads/mapa-trayectos-r25.25.apk
+          python3 - <<'PY'
+          from pathlib import Path
+          c=Path("mapatrayectos/src/main/java/uy/com/mapatrayectos/TripRequestCard.java").read_text()
+          s=Path("mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java").read_text()
+          assert 'route_distance_km' in c and 'route_duration_min' in c
+          assert 'origin_text' in c and 'destination_text' in c
+          assert 'Precio por confirmar' in c
+          assert 'pickup_route_distance_km' in c and 'pickup_route_duration_min' in c
+          assert 'confirming=true' in c and 'confirming=false' in c
+          assert 'submitted.done' in s and 'TransferAlerts.lastSync' in s
+          assert 'TransferAlerts.applyConfirmedDecision' in s
+          assert 'HORARIO_YA_NO_DISPONIBLE' in s
+          assert 'openTransferHistory' in s
+          assert 'content.measure' in c and 'acceptUnavailable' in c
+          driver=Path("feature/driver/src/main/java/uy/com/traslados/conductor/MainActivity.java").read_text()
+          assert 'open_history' in driver and 'loadHistory()' in driver
+          assert 'Api.decideFixedFare(pin,id,accept)' in s
+          assert 'TYPE_APPLICATION_OVERLAY' in s and 'hideTransferCallout' in s
+          print('PASS: pricing, route, server conflict feedback, status reconciliation, driver history, overlay')
+          PY
+      - name: Restore approved icon, alert audio and premium typography
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 --decode mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          echo 'a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg' | sha256sum --check
+          base64 --decode mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          echo '5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3' | sha256sum --check
+          base64 --decode mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify Android build tools
+        run: |
+          ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restore historical signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/mapa-r25-29.jks"
+          chmod 600 "$RUNNER_TEMP/mapa-r25-29.jks"
+      - name: Compile native signed preview R25.29
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/mapa-r25-29.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :mapatrayectos:assembleRelease --no-daemon --stacktrace
+      - name: Verify application ID, update code and original certificate
+        run: |
+          set -euo pipefail
+          ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APK="$(find mapatrayectos/build/outputs/apk/release -type f -name '*.apk' | head -1)"
+          test -s "$APK"
+          "$ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > signing.txt
+          grep -qi 'd91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d' signing.txt
+          "$ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > apk-info.txt
+          grep -q "package: name='uy.com.mapatrayectos'" apk-info.txt
+          grep -q "versionCode='81'" apk-info.txt
+          grep -q "versionName='0.1-R25.29'" apk-info.txt
+          mkdir -p artifacts
+          cp "$APK" artifacts/mapa-trayectos-r25.29-tarjeta-viaje-prueba.apk
+          cp signing.txt apk-info.txt artifacts/
+          (cd artifacts && sha256sum *.apk > MAPA-R25.29-SHA256SUMS.txt)
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-R25-29-Tarjeta-Viaje-Firmada
+          path: artifacts/
+          retention-days: 30
+      - name: Publish exclusively to test branch (leave main untouched)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados Mapa Preview CI'
+          git config user.email 'actions@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin fix/mapa-r25-29-live-request-qa-20261016
+            git reset --hard origin/fix/mapa-r25-29-live-request-qa-20261016
+            mkdir -p preview-artifacts
+            cp artifacts/mapa-trayectos-r25.29-tarjeta-viaje-prueba.apk preview-artifacts/
+            cp artifacts/MAPA-R25.29-SHA256SUMS.txt preview-artifacts/
+            git add preview-artifacts/mapa-trayectos-r25.29-tarjeta-viaje-prueba.apk preview-artifacts/MAPA-R25.29-SHA256SUMS.txt
+            git diff --cached --quiet && exit 0
+            git commit -m 'APK Mapa R25.29 tarjeta premium firmada solo en rama de prueba'
+            if git push origin HEAD:fix/mapa-r25-29-live-request-qa-20261016; then exit 0; fi
+          done
+          exit 1

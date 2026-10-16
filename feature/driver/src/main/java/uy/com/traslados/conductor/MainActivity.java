@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
     private String expandedId="";
     private boolean firstLoad=true;
     private boolean historyMode=false;
+    private boolean openHistoryFromMapa=false;
     private boolean dashboardVisible=false;
 
     private LinearLayout listBox,statsBox,agendaBox;
@@ -223,8 +224,12 @@ public class MainActivity extends Activity {
         maybeAskDriverBubblePermission();
         String requestedId=driverBubbleOpenRequested?driverBubbleReservationId:"";
         driverBubbleOpenRequested=false;
-        dashboardVisible=true; historyMode=false; expandedId=requestedId; firstLoad=true; seenPending.clear(); currentRows.clear();
-        startMonitor(); buildDashboard(false); loadActive(true);
+        boolean initialHistory=openHistoryFromMapa;
+        openHistoryFromMapa=false;
+        dashboardVisible=true; historyMode=initialHistory; expandedId=initialHistory?"":requestedId;
+        firstLoad=true; seenPending.clear(); currentRows.clear();
+        startMonitor();buildDashboard(initialHistory);
+        if(initialHistory)loadHistory();else loadActive(true);
     }
 
     private void startMonitor(){
@@ -1333,17 +1338,31 @@ public class MainActivity extends Activity {
     @Override protected void onNewIntent(android.content.Intent intent){
         super.onNewIntent(intent);setIntent(intent);captureDriverBubbleIntent(intent);
         if(driverBubbleOpenRequested&&!pin.isEmpty()){
-            historyMode=false;
-            if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
+            boolean wantHistory=openHistoryFromMapa;
+            openHistoryFromMapa=false;
             driverBubbleOpenRequested=false;
-            if(!pendingChatReservationId.isEmpty())openRequestedPassengerChatIfReady();
-            loadActive(true); // Preserve existing refresh when opening from the bubble.
+            if(wantHistory){
+                expandedId="";currentRows.clear();buildDashboard(true);loadHistory();
+            }else{
+                if(historyMode){currentRows.clear();buildDashboard(false);}
+                if(!driverBubbleReservationId.isEmpty())expandedId=driverBubbleReservationId;
+                if(!pendingChatReservationId.isEmpty())openRequestedPassengerChatIfReady();
+                loadActive(true);
+            }
         }
     }
 
     private void captureDriverBubbleIntent(android.content.Intent intent){
         if(intent==null)return;
+        if(intent.getBooleanExtra("open_history",false)){
+            driverBubbleOpenRequested=true;
+            openHistoryFromMapa=true;
+            driverBubbleReservationId="";
+            pendingChatReservationId="";
+            return;
+        }
         if(intent.getBooleanExtra("open_requests",false)){
+  openHistoryFromMapa=false;
   driverBubbleOpenRequested=true;
   driverBubbleReservationId=intent.getStringExtra("reservation_id")==null?"":intent.getStringExtra("reservation_id");
             pendingChatReservationId=intent.getBooleanExtra("open_chat",false)

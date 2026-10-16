@@ -88,8 +88,20 @@ public class TrackingService extends Service implements LocationListener {
             if(bubbleView!=null)bubbleView.invalidate();
             if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
                 if(bubbleView!=null)showTransferCallout();
-            }else if(TransferAlerts.pendingCount(TrackingService.this)==0)
-                hideTransferCallout();
+            }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction())){
+                if(activeTransferCallout!=null){
+                    boolean stillPending=false;
+                    org.json.JSONArray rows=TransferAlerts.snapshot(TrackingService.this);
+                    for(int index=0;index<rows.length();index++){
+                        org.json.JSONObject item=rows.optJSONObject(index);
+                        if(item!=null&&activeTransferCallout.reservationId().equals(item.optString("id"))&&
+                                "PENDIENTE".equals(item.optString("status"))){
+                            stillPending=true;break;
+                        }
+                    }
+                    if(!stillPending)hideTransferCallout();
+                }
+            }
         }
     };
 
@@ -603,6 +615,7 @@ public class TrackingService extends Service implements LocationListener {
         TripRequestCard card=new TripRequestCard(this,request,
             this::hideTransferCallout,
             ()->openTransferInConductor(request.optString("id","")),
+            this::openTransferHistory,
             this::resizeTransferCallout,
             accept->decideTransferRequest(request,accept));
         activeTransferCallout=card;
@@ -637,6 +650,17 @@ public class TrackingService extends Service implements LocationListener {
         }
     }
 
+    private void openTransferHistory(){
+        hideTransferCallout();
+        Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        open.putExtra("open_history",true);
+        try{startActivity(open);}catch(Exception e){
+            android.widget.Toast.makeText(this,"Abrí Conductor y elegí Historial",
+                android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void decideTransferRequest(org.json.JSONObject r,boolean accept){
         final String id=r.optString("id","");
         final String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
@@ -660,22 +684,45 @@ public class TrackingService extends Service implements LocationListener {
         final TripRequestCard submitted=activeTransferCallout;
         new Thread(()->{
             boolean ok=false;
-            String error="No se pudo confirmar el cambio. Abrí Conductor y revisá el estado.";
+            String error="No se confirmó la respuesta. Revisá el estado actual en Conductor.";
             try{
                 org.json.JSONObject reply=uy.com.traslados.conductor.Api.decideFixedFare(pin,id,accept);
                 ok=(accept?"ACEPTADA":"RECHAZADA").equals(reply.optString("status"));
+                if(!ok)error="El servidor devolvió otro estado. Actualizá la agenda antes de decidir.";
+            }catch(uy.com.traslados.conductor.Api.ApiException e){
+                String reason=(e.backendMessage+" "+e.backendCode).toUpperCase(Locale.ROOT);
+                if(reason.contains("HORARIO_YA_NO_DISPONIBLE")||
+                   reason.contains("HORARIO")||reason.contains("DISPONIBLE")){
+                    error="Ese horario ya no está disponible. La agenda puede incluir "
+                          +"otro viaje y el tiempo para llegar al próximo origen. "
+                          +"No se aceptó: revisá la agenda o rechazá la solicitud.";
+                }else if(reason.contains("RESUELTA")||reason.contains("PRECIO")){
+                    error="La solicitud o su precio cambiaron. Actualizá para ver el estado real.";
+                }else if(e.httpStatus==401||e.httpStatus==403){
+                    error="La sesión del conductor venció. Volvé a ingresar desde Conductor.";
+                }else{
+                    error="El servidor no confirmó la operación. Revisá la agenda en Conductor.";
+                }
             }catch(Exception ignored){
-                // No personal data, PIN or coordinates in logs.
+                error="No se pudo comprobar la respuesta. Actualizá antes de intentar otra vez.";
             }
             final boolean success=ok;
             final String failure=error;
             if(clockHandler!=null)clockHandler.post(()->{
-                if(success)TransferAlerts.refreshAsync(this);
-                if(submitted!=null&&submitted==activeTransferCallout)
-                    submitted.done(success,failure);
-                android.widget.Toast.makeText(this,success?
-                    (accept?"Viaje aceptado":"Solicitud rechazada"):failure,
-                    android.widget.Toast.LENGTH_LONG).show();
+                if(success){
+                    // Synchronize local bubble immediately, before the next 15s monitor poll.
+                    TransferAlerts.applyConfirmedDecision(this,id,accept);
+                    TransferAlerts.refreshAsync(this);
+                    if(submitted!=null&&submitted==activeTransferCallout)
+                        submitted.done(true,"");
+                    android.widget.Toast.makeText(this,
+                        accept?"✓ Viaje aceptado. Ver agenda en Conductor.":"Solicitud rechazada.",
+                        android.widget.Toast.LENGTH_SHORT).show();
+                }else{
+                    TransferAlerts.refreshAsync(this); // Reconcile ambiguous failures with server.
+                    if(submitted!=null&&submitted==activeTransferCallout)
+                        submitted.done(false,failure);
+                }
             });
         },"mapa-fixed-fare-decision").start();
     }

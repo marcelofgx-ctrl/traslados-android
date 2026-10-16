@@ -29,9 +29,10 @@ public final class TripRequestCard extends ScrollView {
     private static final int GREEN=Color.rgb(116,213,174);
     private final Context context;
     private final JSONObject request;
-    private final Runnable dismiss, openDriver, onResize;
+    private final Runnable dismiss, openDriver, openHistory, onResize;
     private final Decision decision;
-    private boolean expanded=false, busy=false;
+    private boolean expanded=false, busy=false, acceptUnavailable=false;
+    private String issueMessage="";
     private Boolean confirming=null;
     private final LinearLayout content;
     private final boolean fixed;
@@ -39,12 +40,13 @@ public final class TripRequestCard extends ScrollView {
     private final double price;
 
     public TripRequestCard(Context context,JSONObject request,Runnable dismiss,
-                           Runnable openDriver,Runnable onResize,Decision decision){
+                           Runnable openDriver,Runnable openHistory,Runnable onResize,Decision decision){
         super(context);
         this.context=context;
         this.request=request;
         this.dismiss=dismiss;
         this.openDriver=openDriver;
+        this.openHistory=openHistory;
         this.onResize=onResize;
         this.decision=decision;
         price=request.optDouble("quote_final_total",0);
@@ -59,15 +61,18 @@ public final class TripRequestCard extends ScrollView {
         setBackground(rounded(BG,GOLD,24));
         content=new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(16),dp(12),dp(16),dp(16));
+        content.setPadding(dp(15),dp(9),dp(15),dp(13));
         addView(content,new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT));
         render();
     }
 
     public int heightPx(){
         int display=context.getResources().getDisplayMetrics().heightPixels;
-        int desired=dp(expanded?560:356);
-        return Math.max(dp(160),Math.min(desired,display-dp(125)));
+        int width=context.getResources().getDisplayMetrics().widthPixels-dp(24);
+        content.measure(View.MeasureSpec.makeMeasureSpec(width-dp(2),View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+        int desired=content.getMeasuredHeight()+dp(4);
+        return Math.max(dp(155),Math.min(desired,display-dp(132)));
     }
 
     public String reservationId(){return request.optString("id","");}
@@ -75,8 +80,10 @@ public final class TripRequestCard extends ScrollView {
     public void done(boolean success,String message){
         busy=false;confirming=null;
         if(success){dismiss.run();return;}
+        issueMessage=message==null?"No se pudo confirmar. Consultá Conductor.":message;
+        acceptUnavailable=issueMessage.contains("horario")||issueMessage.contains("agenda");
         render();
-        android.widget.Toast.makeText(context,message,android.widget.Toast.LENGTH_LONG).show();
+        if(onResize!=null)onResize.run();
     }
 
     private void render(){
@@ -85,7 +92,7 @@ public final class TripRequestCard extends ScrollView {
         heading.setGravity(Gravity.CENTER_VERTICAL);
         TextView type=chip("TRASLADOS",GOLD,BG);
         heading.addView(type);
-        TextView state=chip(pending?"● SOLICITUD":"● "+request.optString("status","VIAJE"),GREEN,BG);
+        TextView state=chip(acceptUnavailable?"● REVISAR AGENDA":pending?"● SOLICITUD":"● "+request.optString("status","VIAJE"),acceptUnavailable?GOLD:GREEN,BG);
         LinearLayout.LayoutParams st=new LinearLayout.LayoutParams(0,dp(32),1);
         st.leftMargin=dp(8);heading.addView(state,st);
         TextView close=text("×",29,WHITE,true);
@@ -97,7 +104,7 @@ public final class TripRequestCard extends ScrollView {
 
         String money=fixed?String.format(new Locale("es","UY"),"UYU %,.0f",price):
             "Precio por confirmar";
-        TextView fare=text(money,fixed?34:21,fixed?GOLD:WHITE,true);
+        TextView fare=text(money,fixed?29:20,fixed?GOLD:WHITE,true);
         fare.setSingleLine(true);fare.setEllipsize(TextUtils.TruncateAt.END);
         content.addView(fare,space(0,1));
         String when=request.optString("pickup_time","");
@@ -124,6 +131,12 @@ public final class TripRequestCard extends ScrollView {
         if(km>0)trip+=String.format(Locale.US,"  ·  %.1f km",km);
         if(mins<=0&&km<=0)trip+="  ·  recorrido sin estimación";
         content.addView(text(trip,12,GOLD,true),space(7,9));
+        if(!issueMessage.isEmpty()){
+            TextView issue=text("⚠ "+issueMessage,12,GOLD,true);
+            issue.setPadding(dp(7),dp(7),dp(7),dp(7));
+            issue.setBackground(rounded(Color.rgb(38,40,30),GOLD,12));
+            content.addView(issue,space(3,6));
+        }
         if(expanded){
             divider();
             String customer=request.optString("customer_name","");
@@ -134,7 +147,12 @@ public final class TripRequestCard extends ScrollView {
             if(!comments.isEmpty()&&!"null".equalsIgnoreCase(comments))
                 field("OBSERVACIONES",comments);
             TextView more=text("◈  Ruta, chat, llamada y estados en Conductor",11,MUTED,false);
-            content.addView(more,space(4,8));
+            content.addView(more,space(4,5));
+            TextView history=text("▦  VER HISTORIAL DEL CONDUCTOR  ↗",12,GOLD,true);
+            history.setMinHeight(dp(42));history.setGravity(Gravity.CENTER);
+            history.setContentDescription("Abrir historial del Conductor");
+            content.addView(history,space(2,5));
+            history.setOnClickListener(v->openHistory.run());
         }
         TextView expand=text(expanded?"⌃  MENOS DETALLES":"⌄  VER DETALLES",11,GOLD,true);
         expand.setGravity(Gravity.CENTER);
@@ -155,7 +173,7 @@ public final class TripRequestCard extends ScrollView {
         boolean canAct=hasFixedFare()&&!busy;
         String mainLabel=busy?"PROCESANDO…":confirming!=null?
             (confirming?"CONFIRMAR ACEPTACIÓN":"CONFIRMAR RECHAZO"):
-            canAct?"ACEPTAR":"ABRIR CONDUCTOR";
+            acceptUnavailable?"REVISAR AGENDA":canAct?"ACEPTAR":"ABRIR CONDUCTOR";
         Button main=button(mainLabel,true);
         buttons.addView(main,new LinearLayout.LayoutParams(0,dp(53),2));
         Button secondary=button(confirming!=null?"VOLVER":"RECHAZAR",false);
@@ -164,13 +182,18 @@ public final class TripRequestCard extends ScrollView {
         content.addView(buttons,space(1,0));
         main.setEnabled(!busy);secondary.setEnabled(!busy);
         main.setOnClickListener(v->{
-            if(!canAct){openDriver.run();return;}
-            if(confirming!=null){busy=true;boolean accept=confirming;render();decision.onConfirm(accept);}
-            else{confirming=true;render();}
+            if(!canAct||acceptUnavailable&&confirming==null){openDriver.run();return;}
+            if(confirming!=null){
+                busy=true;boolean accept=confirming;render();
+                if(onResize!=null)onResize.run();
+                decision.onConfirm(accept);
+            }else{
+                confirming=true;render();if(onResize!=null)onResize.run();
+            }
         });
         secondary.setOnClickListener(v->{
-            if(confirming!=null){confirming=null;render();return;}
-            if(canAct){confirming=false;render();}
+            if(confirming!=null){confirming=null;render();if(onResize!=null)onResize.run();return;}
+            if(canAct){confirming=false;render();if(onResize!=null)onResize.run();}
             else dismiss.run();
         });
         setContentDescription("Solicitud de traslado. "+money+". "+pickup+". "
@@ -180,7 +203,7 @@ public final class TripRequestCard extends ScrollView {
     private void field(String key,String value){
         TextView label=text(key,10,GOLD,true);
         content.addView(label,space(2,0));
-        TextView val=text(value,15,WHITE,true);
+        TextView val=text(value,14,WHITE,true);
         val.setMaxLines(expanded?4:2);
         val.setEllipsize(TextUtils.TruncateAt.END);
         content.addView(val,space(0,7));
