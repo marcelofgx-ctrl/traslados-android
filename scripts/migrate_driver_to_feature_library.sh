@@ -9,7 +9,7 @@ test -f conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java || 
 test -f feature/driver/src/main/java/uy/com/traslados/conductor/DriverHostBridge.java
 test -f conductor/src/main/res/drawable-nodpi/app_icon.png
 
-mkdir -p feature/driver/src/main/java/uy/com/traslados/conductor
+mkdir -p feature/driver/src/main/java/uy/com/traslados/conductor feature/driver/src/main/res
 for java in conductor/src/main/java/uy/com/traslados/conductor/*.java; do
   git mv "$java" "feature/driver/src/main/java/uy/com/traslados/conductor/$(basename "$java")"
 done
