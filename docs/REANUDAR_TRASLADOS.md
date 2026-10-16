@@ -1,5 +1,16 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## 16/10/2026 — Cliente mosaico / PWA — PR #101 (borrador)
+
+- [PR #101](https://github.com/marcelofgx-ctrl/traslados-android/pull/101) `feature/traslados-cliente-mosaico-20261016` sobre PR #99, **no fusionado/no publicado**. La nueva arquitectura de Mapa continúa independiente en PR #100.
+- **Cambio verificado:** `MosaicPreviewGateway.java` reemplaza inyección de Java mediante reemplazos Python; `passenger_assets.py` empaqueta solo runtime canonizado en modo incremental; verificador HTML ↔ service worker; 44 tests rápidos en verde. La UI premium y rutas/ETA/reservas no fueron reescritas.
+- [RELEASE Cliente v27/code215 firmada](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38894470100): Gradle 14s en esa ejecución, firma y paquete originales, SHA256 de todos los assets dentro del APK; segunda preparación reusó 32/32 archivos sin tocar timestamps. Comparación puntual PR99 v26 Gradle 21s, no benchmark de múltiples ejecuciones.
+- APK de ensayo: [Cliente v27 Mosaico](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/traslados-cliente-mosaico-20261016/preview-artifacts/traslados-cliente-mosaico-v27-prueba.apk). La PWA principal queda en v74 y el sistema público anterior sin modificación.
+- [Detalles completos](ARQUITECTURA_MOSAICO_CLIENTE_20261016.md), plan de módulos, mejoras CI, pruebas necesarias. QA Android en curso/consultar resultados de la rama; **no declarar prueba Samsung o mayor rendimiento estable**.
+- Próxima fase con menor riesgo: refactor gradual de coordinador `app.js`, manejo único usuario/estado, contrato atómico km-min-precio-ETA y mejora de tests visuales/Android. Mantener versionado/URLs y PR #99 sin cambios de fondo.
+
+---
+
 
 ## PR99 v25: recuperar solicitudes de invitado en Mi cuenta (16/10/2026, 01:29 UYT)
 
