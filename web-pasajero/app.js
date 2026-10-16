@@ -651,6 +651,7 @@ function picker(name,mount,position){
     else record.stops[position]=selected;
     clear(results);repaint();renderRouteSummary();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
+       !record.origin.approximate&&!record.destination.approximate&&
        !routeStepAutoAdvanced&&bookingSteps?.active()==="route"){
       routeStepAutoAdvanced=true;
       bookingSteps.open("when",{scroll:true});
