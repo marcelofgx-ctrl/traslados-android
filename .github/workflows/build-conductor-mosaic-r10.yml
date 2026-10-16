@@ -5,7 +5,7 @@ on:
     paths:
       - 'conductor/**'
       - 'feature/driver/**'
-      - '.github/workflows/build-conductor-pr109-r10.yml'
+      - '.github/workflows/build-conductor-mosaic-r10.yml'
   workflow_dispatch:
 permissions:
   contents: write
@@ -55,7 +55,7 @@ jobs:
           grep -q "versionCode='132'" apk-info.txt
           grep -q "versionName='11.5-R10'" apk-info.txt
           mkdir -p artifacts
-          cp "$APK" artifacts/traslados-conductor-pr109-r10-prueba.apk
+          cp "$APK" artifacts/traslados-conductor-mosaico-r10-prueba.apk
           cp signing.txt apk-info.txt artifacts/
           (cd artifacts && sha256sum *.apk > CONDUCTOR-R10-SHA256SUMS.txt)
           echo "$GITHUB_SHA" > artifacts/SOURCE_COMMIT.txt
@@ -73,9 +73,9 @@ jobs:
             git fetch origin feature/mapa-driver-mosaico-modular-20261016
             git reset --hard origin/feature/mapa-driver-mosaico-modular-20261016
             mkdir -p preview-artifacts
-            cp artifacts/traslados-conductor-pr109-r10-prueba.apk preview-artifacts/
+            cp artifacts/traslados-conductor-mosaico-r10-prueba.apk preview-artifacts/
             cp artifacts/CONDUCTOR-R10-SHA256SUMS.txt preview-artifacts/CONDUCTOR-R10-SHA256SUMS.txt
-            git add preview-artifacts/traslados-conductor-pr109-r10-prueba.apk preview-artifacts/CONDUCTOR-R10-SHA256SUMS.txt
+            git add preview-artifacts/traslados-conductor-mosaico-r10-prueba.apk preview-artifacts/CONDUCTOR-R10-SHA256SUMS.txt
             git diff --cached --quiet && exit 0
             git commit -m "APK Conductor mosaic R10 firmada en rama borrador"
             if git push origin HEAD:feature/mapa-driver-mosaico-modular-20261016; then exit 0; fi
