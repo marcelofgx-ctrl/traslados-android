@@ -56,5 +56,5 @@ assert(app.includes('window.TrasladosPickupHealth?.recordContext?.("eta"'));
 assert(app.includes('window.TrasladosPickupHealth?.recordContext?.("availability"'));
 assert(app.includes("copyPickupDiagnostics"));
 assert(app.includes("Disponibilidad comprobada ahora"));
-assert(app.includes('La llegada se calcula por separado'));
+assert(app.includes('La recogida requiere confirmación del conductor'));
 console.log("PASS PWA v70: bounded 24h local diagnostics, no personal data, copy/clear and honest ETA status");
