@@ -16,6 +16,8 @@ html = (web/"index.html").read_text(encoding="utf-8")
 sw = (web/"sw.js").read_text(encoding="utf-8")
 app = (web/"app.js").read_text(encoding="utf-8")
 booking = (web/"booking-contracts.js").read_text(encoding="utf-8")
+route = (web/"route-engine.js").read_text(encoding="utf-8")
+eta = (web/"eta-engine.js").read_text(encoding="utf-8")
 
 scripts = re.findall(r'<script\s+src="\./([^"?]+\.js)(?:\?[^"]*)?"\s+defer\s*>', html)
 if len(scripts) < 12 or len(scripts) != len(set(scripts)):
@@ -41,7 +43,7 @@ for path in cached:
         raise ValueError("Stale/missing SW cache asset: "+path)
 for required in ("customer_request_pickup_fixed_v1","customer_quote_decision_v13",
                  "public_reference_quote_v1","customer_check_availability_v11_4"):
-    if required not in app and required not in booking:
+    if not any(required in part for part in (app,booking,route,eta)):
         raise ValueError("Required passenger backend contract lost: "+required)
 if "No se envían reservas offline" not in (web/"offline.html").read_text():
     raise ValueError("Offline bookings must remain disabled")
