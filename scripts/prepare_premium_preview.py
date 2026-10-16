@@ -3,23 +3,15 @@
 Only build output is changed. Production source and signing identity are retained.
 """
 from pathlib import Path
-import shutil, json, hashlib, sys
+import sys
+from passenger_assets import sync_runtime, write_if_changed, manifest_json
 operational = "--operational" in sys.argv[1:]
 root = Path(__file__).resolve().parents[1]
 app = root / "cliente-premium/app"
 web = root / "web-pasajero"
 assets = app / "src/main/assets/premium-preview"
-if assets.exists():
-    shutil.rmtree(assets)
-assets.mkdir(parents=True)
-allowed = {".html", ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".webmanifest", ".woff", ".woff2", ".json"}
-for p in web.rglob("*"):
-    rel = p.relative_to(web)
-    if not p.is_file() or rel.parts[0] in {"downloads", "tests", "node_modules"} or p.suffix not in allowed:
-        continue
-    dest = assets / rel
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(p, dest)
+asset_stats = sync_runtime(web, assets)
+print("Passenger assets sync:", asset_stats)
 # Separate HTTPS origin means the review build cannot see production WebView storage.
 index = assets / "index.html"
 html = index.read_text()
@@ -34,13 +26,13 @@ else:
     html = html.replace('id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span>', 'id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span>')
     assert 'SOLICITAR VIAJE' in html and 'name="traslados-preview"' not in html
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
-index.write_text(html)
-(assets / "preview-isolation.css").write_text(".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}")
+write_if_changed(index, html.encode("utf-8"))
+write_if_changed(assets / "preview-isolation.css", ".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}".encode("utf-8"))
 js = assets / "app.js"
 src = js.read_text()
 assert 'if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)' in src
 src = src.replace('if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)', 'if(false /* Isolated PR99 APK: no service workers */)')
-js.write_text(src)
+write_if_changed(js, src.encode("utf-8"))
 # A stable no-argument public RPC is callable with GET. No token or passenger data.
 eta = assets / "eta-engine.js"
 e = eta.read_text()
@@ -57,7 +49,7 @@ e=e[:start]+'''  async function pickup({originLat,originLng,request=fetch}){
     }finally{clearTimeout(timer);}
   }
 '''+e[end:]
-eta.write_text(e)
+write_if_changed(eta, e.encode("utf-8"))
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
 gradle = app / "build.gradle"
@@ -66,7 +58,7 @@ g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/
 assert "versionCode 211" in g
 if operational:
     g = g.replace("versionCode 211", "versionCode 214").replace("23.0-PR99-Prueba", "26.0-Premium-Directa")
-gradle.write_text(g)
+write_if_changed(gradle, g.encode("utf-8"))
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
 j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/23 PR99Preview")
 needle = 'web.setWebViewClient(new WebViewClient() {'
@@ -189,13 +181,12 @@ if operational:
     j = j.replace('private boolean unusedProductionExternal(Uri uri)', 'private boolean openExternal(Uri uri)')
     j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/26 Directa')
     assert 'Operational passenger contracts' in j and 'private boolean openExternal(Uri uri)' in j
-java.write_text(j)
+write_if_changed(java, j.encode("utf-8"))
 assert "shouldInterceptRequest" in j and "tile.openstreetmap.org" in j
 assert "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev;" in html
 assert "/api/public/route-estimate" in j
 assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" in g
 assert not (assets / "sw.js").exists()
-manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
-(root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
+write_if_changed(root / "preview-web-sha256.json", manifest_json(assets))
 print("PASS: operational passenger v26/code214; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
 
