@@ -4,6 +4,10 @@ on:
     branches: [feature/tu-viaje-premium-visual-20261015]
     paths:
       - '.github/workflows/qa-fixed-fare-pr99.yml'
+      - 'web-pasajero/tests/**'
+      - 'web-pasajero/booking-contracts.js'
+      - 'web-pasajero/trip-board.js'
+      - 'web-pasajero/app.js'
   workflow_dispatch:
 permissions:
   contents: read
