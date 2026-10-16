@@ -57,7 +57,7 @@ g = gradle.read_text().replace("versionCode 204", "versionCode 211").replace("ve
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
 assert "versionCode 211" in g
 if operational:
-    g = g.replace("versionCode 211", "versionCode 214").replace("23.0-PR99-Prueba", "26.0-Premium-Directa")
+    g = g.replace("versionCode 211", "versionCode 215").replace("23.0-PR99-Prueba", "27.0-Premium-Mosaico")
 write_if_changed(gradle, g.encode("utf-8"))
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
 j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/23 PR99Preview")
@@ -179,7 +179,7 @@ if operational:
     j = j.replace('                // Public raster map images.', gate+'                // Public raster map images.')
     j = j.replace('private boolean openExternal(Uri uri) {\n        Toast.makeText', 'private boolean unusedPreviewExternal(Uri uri) {\n        Toast.makeText')
     j = j.replace('private boolean unusedProductionExternal(Uri uri)', 'private boolean openExternal(Uri uri)')
-    j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/26 Directa')
+    j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/27 Mosaico')
     assert 'Operational passenger contracts' in j and 'private boolean openExternal(Uri uri)' in j
 write_if_changed(java, j.encode("utf-8"))
 assert "shouldInterceptRequest" in j and "tile.openstreetmap.org" in j
@@ -188,5 +188,5 @@ assert "/api/public/route-estimate" in j
 assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" in g
 assert not (assets / "sw.js").exists()
 write_if_changed(root / "preview-web-sha256.json", manifest_json(assets))
-print("PASS: operational passenger v26/code214; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
+print("PASS: operational passenger v27/code215; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
 
