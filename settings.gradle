@@ -14,6 +14,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = 'TrasladosAndroid'
 include ':cliente', ':conductor', ':core-reservations'
+include ':feature:driver'
 if (file('mapatrayectos/build.gradle').exists()) {
     include ':mapatrayectos'
 }
