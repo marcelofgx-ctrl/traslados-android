@@ -31,7 +31,7 @@ function refreshJourneyComposition(routeComplete,roadVerified){
         ?latestRoad.data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km":"—";
       $("route-folded-minutes").textContent=roadVerified?latestRoad.data.durationMin+" min":"—";
       $("route-folded-fare").textContent=roadVerified&&Number.isFinite(latestRoad.data.referenceFareUyu)&&latestRoad.data.referenceFareUyu>0
-        ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+        ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2})
         :"A confirmar";
     }
   }
@@ -46,7 +46,7 @@ function refreshJourneyComposition(routeComplete,roadVerified){
       ?latestRoad.data.durationMin+" min":"Sin estimación";
     recap.querySelector("[data-final-route-fare]").textContent=roadVerified&&
       Number.isFinite(latestRoad.data.referenceFareUyu)&&latestRoad.data.referenceFareUyu>0
-      ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+      ?"$ "+latestRoad.data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2})
       :"A confirmar";
   }
 }
@@ -65,7 +65,7 @@ function refreshBookingSteps(){
     const d=latestRoad.data;
     routeMetrics=d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+d.durationMin+" min";
     if(Number.isFinite(d.referenceFareUyu)&&d.referenceFareUyu>0)
-      routeMetrics+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0});
+      routeMetrics+=" · $ "+d.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2});
   }
   bookingSteps.summary("route",routeText,routeComplete,routeMetrics);
   const p=Number($("passengers")?.value||1);
@@ -963,7 +963,7 @@ function renderRouteSummary(){
       distance.textContent=data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
       duration.textContent=data.durationMin+" min";
       reference.textContent=Number.isFinite(data.referenceFareUyu)&&data.referenceFareUyu>0
-        ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})
+        ? "$ "+data.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2})
         : "A confirmar";
       retry.hidden=true;
       indicator.textContent="Ruta verificada";

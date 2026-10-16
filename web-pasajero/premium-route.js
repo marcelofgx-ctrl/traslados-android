@@ -72,7 +72,7 @@
       caption.textContent=geometry?"Tu recorrido por calles · sin tráfico en vivo":points.length===2?"Origen y destino elegidos · ruta pendiente de verificar":points.length?"Ubicación elegida · agregá el destino para ver la ruta":"Montevideo y Ciudad de la Costa · elegí tu recorrido";
       if(state.metrics){
         const m=state.metrics;
-        caption.textContent=m.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+m.durationMin+" min · "+(Number.isFinite(m.referenceFareUyu)&&m.referenceFareUyu>0?"$ "+m.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:0})+" orientativos":"Precio a confirmar");
+        caption.textContent=m.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+m.durationMin+" min · "+(Number.isFinite(m.referenceFareUyu)&&m.referenceFareUyu>0?"$ "+m.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2})+" orientativos":"Precio a confirmar");
       }
       const originalRetry=doc.querySelector("#route-overview .route-retry");
       retry.hidden=points.length!==2||!originalRetry||originalRetry.hidden;

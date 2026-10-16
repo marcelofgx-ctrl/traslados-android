@@ -48,6 +48,7 @@ const routeWindow={};
 runInNewContext(routeSource,{
   window:routeWindow,Number,Map,Date,AbortController,encodeURIComponent,setTimeout,clearTimeout,
   fetch:async url=>{
+    if(String(url).includes("public_reference_quote_v1"))return {ok:true,json:async()=>({available:true,currency:"UYU",referenceFareUyu:720,rateUyuPerKm:40})};
     const data=String(url).includes("/public_cached_route_preview_v1")?cacheFallback:response;
     return {ok:data.available===true,json:async()=>data};
   }

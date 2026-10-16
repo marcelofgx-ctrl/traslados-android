@@ -43,6 +43,25 @@
       return verified(data)&&data.source==="supabase_route_cache"?data:null;
     }catch{return null;}finally{clearTimeout(timer);}
   }
+  async function referenceFare(data,api,publishableKey,request){
+    if(!api||!publishableKey)return data;
+    const next={...data};delete next.referenceFareUyu;
+    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),4500);
+    try{
+      const response=await request(api+"/rest/v1/rpc/public_reference_quote_v1?p_distance_km="+encodeURIComponent(data.distanceKm),{
+        method:"GET",mode:"cors",credentials:"omit",cache:"no-store",signal:ctrl.signal,
+        headers:{apikey:publishableKey,Accept:"application/json"}
+      });
+      if(!response.ok)return next;
+      const quote=await response.json();
+      if(quote?.available===true&&quote.currency==="UYU"&&Number.isFinite(quote.referenceFareUyu)&&quote.referenceFareUyu>0){
+        next.referenceFareUyu=quote.referenceFareUyu;
+        if(Number.isFinite(quote.rateUyuPerKm)&&quote.rateUyuPerKm>0)next.referenceRateUyuPerKm=quote.rateUyuPerKm;
+      }
+    }catch{/* Route stays verified even when price cannot be confirmed. */}
+    finally{clearTimeout(timer);}
+    return next;
+  }
   async function estimate(points,{api,publishableKey,request=fetch}={}){
     const routeKey=key(points);
     const hit=peek(routeKey);
@@ -66,6 +85,7 @@
     }finally{clearTimeout(timer);}
     if(!data)data=await cachedRoadRoute(points,api,publishableKey,request);
     if(data){
+      data=await referenceFare(data,api,publishableKey,request);
       failures.delete(routeKey);
       cache.set(routeKey,{data,expires:Date.now()+TTL});
       if(cache.size>65)cache.clear();

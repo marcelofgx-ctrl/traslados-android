@@ -26,7 +26,7 @@ html = html.replace("default-src 'self';", "default-src 'self';")
 start = html.index("connect-src ")
 end = html.index(";", start)
 html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev" + html[end:]
-html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v20 · No envía reservas</div>')
+html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v21 · No envía reservas</div>')
 html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
 index.write_text(html)
@@ -56,12 +56,12 @@ eta.write_text(e)
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
 gradle = app / "build.gradle"
-g = gradle.read_text().replace("versionCode 204", "versionCode 208").replace("versionName '16.0-Premium'", "versionName '20.0-PR99-Prueba'")
+g = gradle.read_text().replace("versionCode 204", "versionCode 209").replace("versionName '16.0-Premium'", "versionName '21.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
-assert "versionCode 208" in g
+assert "versionCode 209" in g
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
-j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/20 PR99Preview")
+j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/21 PR99Preview")
 needle = 'web.setWebViewClient(new WebViewClient() {'
 assert needle in j
 j = j.replace(needle, needle + """
@@ -99,6 +99,11 @@ j = j.replace(needle, needle + """
                     && "/rest/v1/rpc/public_driver_availability_v1".equals(uri.getPath())
                     && uri.getQuery() == null && ("GET".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod())))
                     return null;
+                // Public STABLE fare lookup only; arbitrary RPCs remain blocked.
+                if("https".equals(uri.getScheme()) && "zetaudvvutlouiqxopvg.supabase.co".equals(uri.getHost())
+                    && "/rest/v1/rpc/public_reference_quote_v1".equals(uri.getPath())
+                    && ("GET".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod()))
+                    && uri.getQueryParameterNames().size()==1 && uri.getQueryParameter("p_distance_km")!=null) return null;
                 // Public calculations/search only; no reservation/auth/contact APIs.
                 if("https".equals(uri.getScheme()) && "traslados-web.marcelof-gx.workers.dev".equals(uri.getHost())
                     && "/api/public/route-estimate".equals(uri.getPath()) && "GET".equals(request.getMethod())) return previewPublicJson(uri.toString(),null);
@@ -113,7 +118,7 @@ j = j.replace(needle, needle + """
             }
 """)
 j = j.replace("    private boolean openExternal(Uri uri) {", """
-    // Native public calculations use no browser Origin or account credentials.
+    // Native public calculations use the approved first-party Origin, without account credentials.
     // No production CORS policy is changed; only these fixed contracts are reachable.
     private android.webkit.WebResourceResponse previewPublicJson(String target,String body) {
         java.net.HttpURLConnection connection=null;
@@ -124,19 +129,23 @@ j = j.replace("    private boolean openExternal(Uri uri) {", """
             if(body!=null){
                 connection.setRequestMethod("POST");connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type","application/json");
+                // This signed native shell is the official passenger client.
+                // Guest ETA requires the same approved first-party Origin as its web.
+                connection.setRequestProperty("Origin","https://marcelofgx-ctrl.github.io");
                 connection.setRequestProperty("apikey","sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9");
                 try(java.io.OutputStream out=connection.getOutputStream()){out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));}
             }
             int code=connection.getResponseCode();
-            if(code<200||code>=300)return blockedPreviewRequest();
+            if(code<200||code>=600||(code>=300&&code<400))return blockedPreviewRequest();
             java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();
-            try(java.io.InputStream in=connection.getInputStream()){
+            try(java.io.InputStream in=code>=400?connection.getErrorStream():connection.getInputStream()){
+                if(in==null)return blockedPreviewRequest();
                 byte[] buf=new byte[4096];int n;
                 while((n=in.read(buf))!=-1){if(bytes.size()+n>524288)return blockedPreviewRequest();bytes.write(buf,0,n);}
             }
             java.util.Map<String,String> headers=new java.util.HashMap<>();
             headers.put("Access-Control-Allow-Origin","https://appassets.androidplatform.net");headers.put("Cache-Control","no-store");
-            return new android.webkit.WebResourceResponse("application/json","UTF-8",200,"OK",headers,new java.io.ByteArrayInputStream(bytes.toByteArray()));
+            return new android.webkit.WebResourceResponse("application/json","UTF-8",code,"Public service",headers,new java.io.ByteArrayInputStream(bytes.toByteArray()));
         }catch(Exception unavailable){return blockedPreviewRequest();}
         finally{if(connection!=null)connection.disconnect();}
     }
@@ -158,5 +167,5 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code208, original applicationId.")
+print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code209, original applicationId.")
 

@@ -53,6 +53,15 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("!document.querySelector('.premium-error').hidden"));
         assertEquals("true",js("!navigator.serviceWorker.controller"));
     }
+    public void testRealGuestPickupContractAndConfiguredFare() throws Exception {
+        loaded();
+        js("document.body.dataset.guestEtaCheck='pending';fetch('https://appassets.androidplatform.net/traslados-android/web-pasajero/_public/pickup-eta?lat=-34.83696&lng=-56.01638').then(r=>r.json()).then(v=>{const safe=['not_available','occupied','route_unavailable','rate_limited','temporarily_unavailable'];document.body.dataset.guestEtaCheck=v.available===true&&Number.isFinite(v.distanceKm)&&Number.isFinite(v.etaMin)&&!('driverLat' in v)&&!('driverLng' in v)?'ok':safe.includes(v.reason)?'ok':String(v.reason||'invalid');}).catch(()=>document.body.dataset.guestEtaCheck='network_error')");
+        for(int i=0;i<250;i++){if(!"\"pending\"".equals(js("document.body.dataset.guestEtaCheck")))break;Thread.sleep(100);}
+        assertEquals("Guest ETA must not be rejected as forbidden/login_required", "\"ok\"",js("document.body.dataset.guestEtaCheck"));
+        js("document.body.dataset.priceCheck='pending';fetch('https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_reference_quote_v1?p_distance_km=3.1',{headers:{apikey:KEY}}).then(r=>r.json()).then(v=>{document.body.dataset.priceCheck=v.available&&v.currency==='UYU'&&v.referenceFareUyu===124&&v.rateUyuPerKm===40?'ok':'invalid';}).catch(()=>document.body.dataset.priceCheck='network_error')");
+        for(int i=0;i<120;i++){if(!"\"pending\"".equals(js("document.body.dataset.priceCheck")))break;Thread.sleep(100);}
+        assertEquals("3.1 km uses the configured public rate of 40 UYU/km", "\"ok\"",js("document.body.dataset.priceCheck"));
+    }
     public void testPublicRoadEstimateWithoutBooking() throws Exception {
         loaded();WebView w=web();final WebViewClient[] c={null};
         getInstrumentation().runOnMainSync(()->c[0]=w.getWebViewClient());
