@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - 'conductor/**'
+      - 'feature/driver/**'
       - '.github/workflows/build-conductor-source.yml'
   push:
     branches:
@@ -63,17 +64,17 @@ jobs:
           test -f build.gradle
           test -f conductor/build.gradle
           test -f conductor/src/main/AndroidManifest.xml
-          D=conductor/src/main/java/uy/com/traslados/conductor
+          D=feature/driver/src/main/java/uy/com/traslados/conductor
           for cls in MainActivity Api ReservationMonitorService TripTelemetryService DemandMapActivity; do
             test -s "$D/$cls.java"
           done
-          test -s conductor/src/main/res/raw/reserva_calida.wav
-          test -s conductor/src/main/res/raw/viaje_proximo.wav
-          test -s conductor/src/main/res/drawable-nodpi/app_icon.png
+          test -s feature/driver/src/main/res/raw/reserva_calida.wav
+          test -s feature/driver/src/main/res/raw/viaje_proximo.wav
+          test -s conductor/src/bootstrap/res/drawable-nodpi/app_icon.png
           grep -q "applicationId 'uy.com.traslados.conductor'" conductor/build.gradle
-          grep -q "versionName '11.5-R9'" conductor/build.gradle
-          grep -q 'versionCode 131' conductor/build.gradle
-          grep -q 'org.maplibre.gl:android-sdk:13.6.1' conductor/build.gradle
+          grep -q "versionName '11.5-R10'" conductor/build.gradle
+          grep -q 'versionCode 132' conductor/build.gradle
+          grep -q 'org.maplibre.gl:android-sdk:13.6.1' feature/driver/build.gradle
           grep -q 'DemandMapActivity' conductor/src/main/AndroidManifest.xml
           grep -q 'showKeyboardSafeQuoteDialog' "$D/MainActivity.java"
           grep -q 'driver_list_reservations_v3' "$D/Api.java"
@@ -84,7 +85,7 @@ jobs:
           grep -q 'driver_trip_chat_feed_v1' "$D/Api.java"
           grep -q 'showReservationChat' "$D/MainActivity.java"
           grep -q 'CHANNEL_CHAT' "$D/ReservationMonitorService.java"
-          echo 'Código fuente Conductor 11.5-R9 comprobado (incluye corrección de teclado R24.3)'
+          echo 'Código fuente Conductor 11.5-R10 comprobado (incluye corrección de teclado R24.3)'
 
       - name: Build Traslados Conductor DEBUG from repository source
         run: gradle :conductor:assembleDebug --stacktrace --no-daemon
@@ -94,14 +95,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.5_R9_DEBUG.apk
+          cp conductor/build/outputs/apk/debug/conductor-debug.apk artifacts/Traslados_Conductor_v11.5_R10_DEBUG.apk
           sha256sum artifacts/*.apk | tee artifacts/SHA256SUMS.txt
-          printf 'Source commit: %s\nBuild type: DEBUG (NO reemplaza una APK RELEASE)\nModule: conductor/\nVersion: 11.5-R9 / code 131\n' "$GITHUB_SHA" > artifacts/BUILD_INFO.txt
+          printf 'Source commit: %s\nBuild type: DEBUG (NO reemplaza una APK RELEASE)\nModule: conductor/\nVersion: 11.5-R10 / code 132\n' "$GITHUB_SHA" > artifacts/BUILD_INFO.txt
           ls -lh artifacts/
 
       - name: Upload DEBUG APK
         uses: actions/upload-artifact@v4
         with:
-          name: Traslados-Conductor-v11.5-R9-DEBUG-SOURCE
+          name: Traslados-Conductor-v11.5-R10-DEBUG-SOURCE
           path: artifacts/
           if-no-files-found: error

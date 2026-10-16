@@ -1,5 +1,17 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## PR #100: arquitectura mosaico modular real — 16/10/2026 (08:00 UYT aprox.)
+
+- **Estado:** cambio implementado en [PR #100](https://github.com/marcelofgx-ctrl/traslados-android/pull/100) como borrador basado en PR #99; **NO fusionado ni publicado**. Una APK Mapa, Conductor integrado por biblioteca Android `:feature:driver`; backup Conductor independiente.
+- Se eliminó `prepareEmbeddedConductor`, la copia y reescritura de clases Java; 5 fuentes, iconos, sonidos y estilos movidos físicamente a `feature/driver/src/main`. La APK Mapa y la independiente compilan el mismo código. `DriverHostBridge` + `MapaHostApplication` conservan una única burbuja y los avisos de solicitudes.
+- **Build firmado conjunto tras migración física: SUCCESS** [38890754047](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38890754047). Mapa `R25.27` code 79 SHA256 `73526dfd9b43a234010c99416fe520ccd69af945b8b5f34e527acde333900b46`, Conductor `R10` code 132 SHA256 `98dd75cd7d2bfd217066c107b9c91e369fdfee83b50c453e21259dfef6ff509c`.
+- **APKs borrador:** [Mapa R25.27](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/mapa-driver-mosaico-modular-20261016/preview-artifacts/mapa-trayectos-mosaico-modular-r25.27.apk) y [Conductor R10](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/mapa-driver-mosaico-modular-20261016/preview-artifacts/traslados-conductor-mosaico-modular-r10.apk). No instalar ambos para el mismo uso; Conductor R10 queda como respaldo.
+- **Especificación y límites:** [ARQUITECTURA_MOSAICO_MODULAR_20261016.md](ARQUITECTURA_MOSAICO_MODULAR_20261016.md). Falta la prueba física Samsung de overlay único, GPS, estado de viaje y alertas, y medir rendimiento. No prometer aceleración de compilación ni menor batería sin mediciones comparativas.
+- Los workflows DEBUG `build-conductor-source.yml` y `validate-modular-mapa.yml` usan ahora el directorio canónico; prueba estática nueva `mosaic-driver-contract-smoke.py`. Antes de publicar adaptar explícitamente el RELEASE histórico de Mapa `build-mapa-trayectos.yml` todavía fijado a R25.25, sin publicar antes del QA físico.
+- Precio fijo Tu viaje sigue en PR #99, Supabase ya preparado, no cambian Cliente ni PWA con la reorganización de Mapa.
+
+---
+
 
 ## PR99 v25: recuperar solicitudes de invitado en Mi cuenta (16/10/2026, 01:29 UYT)
 

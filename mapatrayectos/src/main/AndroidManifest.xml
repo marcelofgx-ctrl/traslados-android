@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
+        android:name=".MapaHostApplication"
         android:allowBackup="true"
         android:label="Mapa Trayectos"
         android:icon="@drawable/app_icon"
@@ -25,8 +26,10 @@
 
         <!-- Integrated native Traslados Conductor, not an external APK/deep link. -->
         <activity android:name="uy.com.traslados.conductor.MainActivity"
+            android:theme="@style/ConductorAppTheme"
             android:exported="false" android:screenOrientation="portrait" />
         <activity android:name="uy.com.traslados.conductor.DemandMapActivity"
+            android:theme="@style/ConductorAppTheme"
             android:exported="false" android:screenOrientation="portrait" />
         <service android:name="uy.com.traslados.conductor.ReservationMonitorService"
             android:exported="false" android:foregroundServiceType="specialUse">

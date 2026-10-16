@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 78
-        versionName '0.1-R25.26'
+        versionCode 79
+        versionName '0.1-R25.27'
     }
 
     signingConfigs {
@@ -49,6 +49,7 @@ android {
 
 dependencies {
     implementation project(':core-reservations')
+    implementation project(':feature:driver')
     implementation 'org.maplibre.gl:android-sdk:13.6.1'
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.core:core:1.15.0'
@@ -56,80 +57,3 @@ dependencies {
 }
 
 
-// R24.0: compile the existing Traslados Conductor functionality INSIDE Mapa Trayectos.
-// Keep the conductor/ module untouched so its standalone APK remains a usable backup.
-// Android application modules have a different generated R package, so transform only
-// R imports and resource aliases in generated sources (never in source control).
-def embeddedConductorJavaDir = file("$buildDir/generated/embeddedConductor/java")
-def embeddedConductorResDir  = file("$buildDir/generated/embeddedConductor/res")
-android.sourceSets.main.java.srcDir embeddedConductorJavaDir
-android.sourceSets.main.res.srcDir embeddedConductorResDir
-
-tasks.register('prepareEmbeddedConductor') {
-    def conductorRoot = file('../conductor/src/main')
-    inputs.dir file('../conductor/src/main/java')
-    inputs.dir file('../conductor/src/main/res')
-    outputs.dir embeddedConductorJavaDir
-    outputs.dir embeddedConductorResDir
-    // The generated Java/resource transformation is deterministic for these inputs.
-    // Cache this custom task so CI can reuse it across unchanged builds.
-    outputs.cacheIf("Reproducible embedded Conductor source generation") { true }
-    doLast {
-        delete embeddedConductorJavaDir, embeddedConductorResDir
-        def srcRoot = file('../conductor/src/main/java')
-        fileTree(srcRoot).matching { include '**/*.java' }.each { original ->
-            def rel = srcRoot.toPath().relativize(original.toPath()).toString()
-            def dest = new File(embeddedConductorJavaDir, rel)
-            dest.parentFile.mkdirs()
-            def java = original.getText('UTF-8')
-            java = java.replace('package uy.com.traslados.conductor;',
-                'package uy.com.traslados.conductor;\nimport uy.com.mapatrayectos.R;')
-            java = java.replace('R.drawable.app_icon','R.drawable.conductor_app_icon')
-                .replace('R.drawable.bg_texture','R.drawable.conductor_bg_texture')
-            if (original.name == 'ReservationMonitorService.java') {
-                // The only floating shortcut belongs to Mapa Trayectos.
-                // Keep the authenticated reservation monitor, persistent alerts
-                // and its existing trip reminders, but disable second free bubble.
-                java = java.replace('driverBubbleStartLoop();',
-                    '/* R24: Shared Mapa Trayectos bubble owns all floating shortcuts. */')
-                java = java.replace('driverBubbleShowIfNeeded();',
-                    '{ /* R24: Conductor duplicate overlay disabled. */ }')
-                java = java.replace('driverBubbleShowTripCard();',
-                    '{ /* R24: Mapa manages floating notifications. */ }')
-                java = java.replace('driverBubbleMarkNew(r);',
-                    'uy.com.mapatrayectos.TransferAlerts.reportNew(this,r);')
-                java = java.replace('JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();',
-                    'JSONArray a=Api.listActive(pin);uy.com.mapatrayectos.TransferAlerts.updatePending(this,a);Set<String> now=new HashSet<>();')
-            }
-            if (original.name == 'MainActivity.java') {
-                java = java.replace('super.onResume();',
-                    'super.onResume();\n        uy.com.mapatrayectos.TransferAlerts.markViewed(this);\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",true).apply();\n        try{boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);boolean allowed=android.provider.Settings.canDrawOverlays(this);Intent svc=new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(active?uy.com.mapatrayectos.TrackingService.ACTION_UI_VISIBLE:uy.com.mapatrayectos.TrackingService.ACTION_PREPARE_IDLE_BUBBLE);if(!active&&!allowed)stopService(new Intent(this,uy.com.mapatrayectos.TrackingService.class));else if(!active&&Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}catch(Exception ex){android.util.Log.w("MapaBubble","Prepare integrated Conductor bubble",ex);}')
-                java = java.replace('super.onPause();',
-                    'super.onPause();\n        getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();\n        try{Intent svc=new Intent(this,uy.com.mapatrayectos.TrackingService.class).setAction(uy.com.mapatrayectos.TrackingService.ACTION_UI_HIDDEN);boolean active=getSharedPreferences("tracking_state",MODE_PRIVATE).getBoolean("shift_active",false);if(active)startService(svc);else if(android.provider.Settings.canDrawOverlays(this)){if(Build.VERSION.SDK_INT>=26)startForegroundService(svc);else startService(svc);}}catch(Exception ignored){}')
-            }
-            dest.setText(java,'UTF-8')
-        }
-
-        def resRoot = file('../conductor/src/main/res')
-        ['drawable','raw'].each { type ->
-            copy {
-                from new File(resRoot,type)
-                include '**/*'
-                into new File(embeddedConductorResDir,type)
-            }
-        }
-        copy {
-            from new File(resRoot,'drawable-nodpi')
-            include 'app_icon.png'
-            rename 'app_icon.png','conductor_app_icon.png'
-            into new File(embeddedConductorResDir,'drawable-nodpi')
-        }
-        copy {
-            from new File(resRoot,'drawable-nodpi')
-            include 'bg_texture.png'
-            rename 'bg_texture.png','conductor_bg_texture.png'
-            into new File(embeddedConductorResDir,'drawable-nodpi')
-        }
-    }
-}
-tasks.named('preBuild') { dependsOn tasks.named('prepareEmbeddedConductor') }

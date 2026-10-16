@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.traslados.conductor'
         minSdk 26
         targetSdk 35
-        versionCode 131
-        versionName '11.5-R9'
+        versionCode 132
+        versionName '11.5-R10'
     }
 
     signingConfigs {
@@ -41,6 +41,14 @@ android {
         }
     }
 
+    sourceSets {
+        main {
+            // All production Conductor classes/resources come from feature:driver.
+            java.setSrcDirs(['src/bootstrap/java'])
+            res.setSrcDirs(['src/bootstrap/res'])
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -48,5 +56,5 @@ android {
 }
 
 dependencies {
-    implementation 'org.maplibre.gl:android-sdk:13.6.1'
+    implementation project(':feature:driver')
 }

@@ -5,6 +5,7 @@ on:
       - 'core-reservations/**'
       - 'mapatrayectos/**'
       - 'conductor/src/**'
+      - 'feature/driver/**'
       - 'settings.gradle'
       - 'build.gradle'
       - 'gradle.properties'
@@ -114,6 +115,10 @@ jobs:
         shell: bash
         run: |
           python3 mapatrayectos/tests/chat-flow-contract-smoke.py
+      - name: Mosaico source isolation and single-bubble contract
+        shell: bash
+        run: |
+          python3 mapatrayectos/tests/mosaic-driver-contract-smoke.py
       - name: Prepare existing Mapa offline assets
         shell: bash
         run: |
