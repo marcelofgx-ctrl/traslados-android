@@ -1,4 +1,4 @@
-package: name='uy.com.traslados.cliente' versionCode='211' versionName='23.0-PR99-Prueba' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
+package: name='uy.com.traslados.cliente' versionCode='213' versionName='25.0-Premium-Operativa' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'
 sdkVersion:'26'
 targetSdkVersion:'35'
 uses-permission: name='android.permission.INTERNET'
