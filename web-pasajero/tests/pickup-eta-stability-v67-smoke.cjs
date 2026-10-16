@@ -54,11 +54,11 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  assert.equal(pickupCalls,2);
  pending[1].resolve({available:false,reason:"route_unavailable"});
  await tick();
- assert.match(nodes["pickup-presence-subtitle"].textContent,/no hay tiempo estimado/i);
+ assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i);
  assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,2,"Respect cooldown after missing real route");
- assert.match(nodes["pickup-presence-subtitle"].textContent,/no hay tiempo estimado/i,
+ assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i,
   "Do not revert to an endless spinner on the next availability poll");
  vm.runInContext("lastPickupEtaAt=Date.now()-46000;",ctx);
  await ctx.refreshPickupPresence(true);
