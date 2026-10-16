@@ -42,12 +42,7 @@ assert start>=0
 c=c[:start]+"// All Java, XML, audio and artwork are owned by this library.\n"
 p.write_text(c)
 
-p=Path('.github/workflows/build-mapa-mosaic-r25-27.yml')
-c=p.read_text().replace('conductor/src/main/java/uy/com/traslados/conductor/', 'feature/driver/src/main/java/uy/com/traslados/conductor/')
-needle="      - 'mapatrayectos/build.gradle'"
-assert needle in c
-c=c.replace(needle,needle+"\n      - 'feature/driver/**'")
-p.write_text(c)
+
 PY
 test ! -e conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
 test -f feature/driver/src/main/java/uy/com/traslados/conductor/MainActivity.java
@@ -55,5 +50,5 @@ test -s conductor/src/bootstrap/res/drawable-nodpi/app_icon.png
 test -s feature/driver/src/main/res/raw/reserva_calida.wav
 test -s feature/driver/src/main/res/drawable-nodpi/conductor_bg_texture.png
 ! grep -q 'conductor/src/main/java' feature/driver/build.gradle
-git add -A conductor/src/main feature/driver/src/main conductor/src/bootstrap feature/driver/build.gradle .github/workflows/build-mapa-mosaic-r25-27.yml
+git add -A conductor/src/main feature/driver/src/main conductor/src/bootstrap feature/driver/build.gradle
 echo "PASS: original driver Java and assets physically moved into feature:driver"
