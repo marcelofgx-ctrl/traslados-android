@@ -38,7 +38,7 @@ const els={
   "pickup-presence-meta":{textContent:""}
 };
 let published=true,moving=false,limitedEta=false,availabilityFailure=false,publicCalls=0,guestEtaCalls=0,customerEtaCalls=0;
-const ctx={
+const ctx={PREVIEW_READ_ONLY:false,
   window:{},
   $:id=>els[id],API:"https://example.invalid",KEY:"publishable-test-key",
   session:null,record:{origin:{lat:-34.83,lng:-56.02,text:"Origen verificado"},
@@ -126,7 +126,7 @@ async function settled(){await Promise.resolve();await new Promise(setImmediate)
   await ctx.refreshPickupPresence(true);await settled();
   assert.equal(host.dataset.presence,"busy");
   assert.equal(host.dataset.phase,"blocked","Agenda bloqueada must show a stable non-animated state");
-  assert.match(els["pickup-presence-status"].textContent,/Recogida inmediata sin confirmar/);
+  assert.match(els["pickup-presence-status"].textContent,/Sin disponibilidad inmediata/);
   assert.match(els["pickup-presence-status"].textContent,/La llegada se calcula por separado/);
   assert.match(els["pickup-presence-status"].textContent,/Disponibilidad comprobada ahora/);
   assert(!/3,5 km/.test(els["pickup-presence-status"].textContent),"Remove stale ETA after trip begins");

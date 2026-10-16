@@ -50,3 +50,230 @@ Portada con tres servicios INDEPENDIENTES, cada icono circular abre su propia pa
 
 ## Comando para nueva sesión
 **«Retomar Traslados desde GitHub. Leé docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md. Quiero implementar en la PWA real, pantalla por pantalla, EXACTAMENTE el diseño de las imágenes que adjunto. No quiero otra imagen ni un diseño genérico. Conservar todo el motor, aplicar QA visual con capturas comparativas y solo después publicar. Informame versión y fecha/hora últimas compilaciones antes de empezar.»**
+
+---
+
+## AVANCE REAL DE LA NUEVA SESIÓN — RAMA DE DESARROLLO, NO PUBLICADO
+
+- **Branch:** `feature/tu-viaje-premium-visual-20261015`
+- **PR:** https://github.com/marcelofgx-ctrl/traslados-android/pull/99 — abierto en modo **draft**, deliberadamente NO fusionado en `main`.
+- **Último cambio visual/construcción:** verificar SHA del HEAD de la rama y los últimos Actions; el último observado después del commit de iconografía `8d7d1660` pasó cuatro workflows, y luego se incorporó una pequeña mejora del diagrama vial (`6b369809`), pendiente de contrastar con sus nuevos workflows.
+- **Web pública:** sigue en PWA v74, sin despliegue premium ni cambio de caché/versionado. No llamar v75 a algo publicado.
+
+### Implementado en código de la rama
+1. Portada con hero costero local (por ahora ilustración vectorial, no fotografía de calidad equivalente a la lámina), emblema de auto circular principal, otros dos accesos circulares (reserva y paquete).
+2. Flujo de `Tu viaje` con 4 estados: recorrido, cuándo, tus datos y confirmar, progresión accesible; validación al avanzar; regreso y edición. La agenda programada conserva su UI/motor.
+3. Opciones de tiempo «Ahora», 10/15/20/30/45/60 minutos y hora manual de hasta 120 minutos reutilizando `setWhen()` y su lógica del servidor; el usuario no es trasladado a una reserva programada.
+4. `premium-journey.js`, `premium-journey.css` y `premium-skyline.svg` separan la presentación nueva de los contratos, autenticación, ETA, validaciones, RPC y agenda existentes.
+5. En Mis traslados, para `meta.tone === moving`, timeline de 3 fases basada solo en `status`/`pickup_phase` del servidor, matrícula autorizada si existe, enlace de llamada al número ya oficial y botón para abrir detalles/chat. No hay ETA, GPS, foto, puntuación ni finalización inventados.
+6. Detalles de ruta abiertos automáticamente en Tu viaje para mostrar esquema vial real cuando el motor devuelve geometría verificada; el mapa cartográfico real equivalente a la lámina sigue pendiente.
+
+### Validaciones efectuadas
+- Workflow `Verify passenger PWA review screen`, `Validate Cliente Premium v15 Android WebView parity`, `Verify and package passenger PWA` y `QA premium visual (draft only)` pasaron en commit `8d7d1660`.
+- QA Chromium probó anchos 360/393/412 px; 5 capturas por ancho; navegación simulada (NO solicitud real, NO Supabase), estado de error sin origen/destino, selector 10 min, pasos y scroll horizontal.
+- Capturas del workflow `QA premium visual (draft only)`: https://github.com/marcelofgx-ctrl/traslados-android/actions/workflows/qa-premium-visual.yml (abrir ejecución asociada al HEAD más reciente, descargar artifact `premium-mobile-qa-capturas`).
+- **IMPORTANTE:** que existan capturas en CI no significa que hayan sido revisadas a ojo contra el mockup; esta comparación final sigue pendiente. Tampoco hubo recorrido real en Samsung ni pruebas de backend de extremo a extremo.
+
+### Pendientes bloqueantes antes de publicar
+1. Comparación visual humana pantalla por pantalla contra el ZIP original del usuario, incluyendo el hero fotográfico, proporciones de tarjetas/emblemas, campos, mapa y botones; no dar por aprobada la ilustración costera provisional.
+2. Finalizar diseño premium fiel de seguimiento 6, 7 y 8 con MAPA real, radar honesto, ETA de datos reales y estado final solo desde conductor (la timeline actual es paso intermedio, no entrega visual).
+3. Integrar email opcional y consentimiento de guardado sin inventar parámetros de RPC: los contratos actuales de recogida no aceptan email. Requiere planificación de esquema/backend/privacidad.
+4. Probar flujo real de cliente autorizado y visitante con backend de test, cálculo de ruta, recogidas, agenda, PIN, presupuestos, chat, idempotencia, matrícula y permisos; sin pedidos accidentales a producción.
+5. Resolver fallos gráficos detectados por captura, actualizar versión de forma coordinada (HTML/JS/SW/tests) y recién entonces fusionar y desplegar. Dejar hora exacta de compilaciones y enlaces activos.
+
+### Comando de reanudación actualizado
+«Retomar Traslados desde GitHub; leer `docs/CONTINUIDAD_DISENO_PREMIUM_TU_VIAJE_20261015.md` en `feature/tu-viaje-premium-visual-20261015`, abrir PR #99 y los resultados de QA visual. Continuar el rediseño fiel de las 8 pantallas desde código existente, sin publicar hasta comparar capturas con las dos imágenes adjuntas. No perder contratos, backend, APP-0061 ni flujo separado Tu viaje / Tu reserva.»
+
+---
+
+## AVANCE 15/10/2026, 11:00 URUGUAY — PR #99 SIN PUBLICAR
+
+Se trabajó exclusivamente sobre la rama feature/tu-viaje-premium-visual-20261015.
+
+### Cambios comprobados en código
+- Reloj original de 24 horas visible junto a las opciones rápidas, conservando sus eventos y validaciones.
+- Mejoras de composición de portada (círculos y paleta petróleo/champagne), navegación compacta y botones dorados. Se agregó fotografía de Montevideo por Unsplash como mejora progresiva con SVG local de respaldo. En CI la foto remota NO llegó a mostrarse: todavía falta incorporar imagen de calidad local verificable.
+- Disponibilidad/pasajeros permanece accesible en panel plegable en «Cuándo», sin eliminar lógica de validación y recogida.
+- Confirmación: eliminado el icono gigantesco heredado; se muestran origen, destino y paradas SOLO cuando el pasajero realmente los eligió; no se inventan precios/km.
+- Solicitudes inmediatas pendientes: radar animado decorativo y mensaje veraz de espera de respuesta; NUNCA GPS, ubicación o conductor ficticios. Viajes en fase activa: timeline vinculada al status/pickup_phase real, matrícula autorizada, llamada, WhatsApp y chat.
+- QA mejorado: capturas estables sin capturar transiciones; 360/393/412 px, cinco vistas por ancho, comprobación de reloj visible, cantidad de pasajeros accesible e icono acotado.
+
+### Evidencia
+- Commit 0123411 (antes de corrección menor de texto): pasaron cuatro workflows, incluido el visual: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38746638755
+- Artifact de QA: premium-mobile-qa-capturas (15 capturas: 5 etapas × 3 anchos). No son las 8 escenas completas ni una prueba real de Supabase.
+- Se revisaron capturas humanas frente a ambas láminas: mejoró la jerarquía, pero todavía NO cumple fidelidad visual exacta. Falta fotografía/coche principal, mapa cartográfico y experiencias 6–8 de seguimiento.
+- Aún no se hizo prueba física Samsung ni un E2E de producción o test completo. El PR debe seguir en draft.
+
+### Bloqueantes antes de publicar
+1. Hero fotográfico local de calidad comparable a la referencia y garantías offline/licencias.
+2. Mapa real en recorrido, conductor en camino y viaje, solo con geometría o ubicación legítima.
+3. Escenas 6–8 con una UI tan cuidada como la lámina, sin datos falsos ni botón de finalización desde pasajero.
+4. Contrato backend para email opcional, privacidad y consentimiento si se guarda información.
+5. Regresión de inmediata vs programada, identidad/PIN, presupuesto, cancelación, chat, matrícula APP-0061 y WebView.
+6. Revisión final a 360/393/412 px y Samsung físico; recién después bump, SW, merge y publicación.
+
+### Versiones públicas vigentes (sin cambios)
+PWA v74; Cliente Premium v16; Conductor 11.5-R8 / code130; Mapa R25.25 / code77.
+
+---
+
+## ETAPA DE FIDELIDAD FOTOGRÁFICA + MAPA REAL (15/10/2026, PR #99)
+
+Desarrollo **solo en rama draft, sin fusionar a main**.
+
+- Portada: se creó un archivo WEBP local de la rambla al atardecer (foto de Pedro Fleitas, Unsplash, publicada el 28/08/2023, licencia Unsplash, disponible desde images.unsplash.com/photo-1693192357825-b50aa54738ab). Archivo `web-pasajero/premium-montevideo.webp` (29.474 bytes). El diseño ya no requiere imagen de fondo desde CDN y el SW prevé precargarla al futuro release.
+- QA humano rechazó un intento experimental de vehículo vectorial: se **retiró** del código y del SW. El mockup aprobado muestra un coche fotográfico, no un dibujo; no declarar resuelta esta diferencia. Mantener el hero con foto de Montevideo mientras se encuentra un activo fotográfico adecuado de vehículo, no mostrar otro boceto.
+- En Recorrido: se añadió `premium-map.js` para cartografía OpenStreetMap con mosaicos limitados (máximo 12 por escena), atribución y geometría Mercator. La **polilínea únicamente proviene de `roadEngine.verified(data)`**; no hay líneas ficticias, ni ETA falsa. Si falta geometría o mosaicos, se conserva esquema vial/indicadores/reintento.
+- Durante un viaje: si **la respuesta de reserva autorizada** contiene lat/lng de origen y destino válidos y el motor verifica ruta, puede mostrarse mapa del *recorrido contratado*, claramente etiquetado como **NO ubicación del conductor**. Ninguna foto, rating, coche sobre mapa, ETA ni GPS inventados. Timeline y botones de llamar/WhatsApp/chat usan contratos existentes.
+- Se reforzó `qa-premium-visual.yml` con `premium-map-smoke.cjs` (proyección, entradas inválidas, encuadre y límites) y visual móvil Chromium (360/393/412 px), incluido archivo fotográfico local y montaje de cartografía con fixture sintético, **sin enviar solicitudes de transporte**.
+- Se eliminó de la rama el workflow temporal con permiso de escritura usado únicamente para incorporar la fotografía local.
+
+**QA:** los tests de QA premium, revisión PWA y paridad de WebView pasaron en el último commit de código `e8e7f8c`. El empaquetado de esta ejecución estaba en progreso al último control; consultar HEAD de Actions antes de afirmar verde total. No hubo prueba Samsung físico ni verificación de un viaje real. Los mapas externos pueden no estar disponibles sin conexión y no son seguimiento del coche en vivo.
+
+**La portada sigue SIN FIDELIDAD EXACTA:** el fondo fotográfico se acercó al lenguaje visual pero no existe aún el automóvil fotográfico aprobado ni composición idéntica. Seguimiento 6–8 no tiene streaming autorizado de posición del conductor; solo estado real y mapa de ruta si las coordenadas están disponibles. Email opcional y consentimiento de guardado requieren contrato claro antes de persistencia.
+
+**Bloqueantes absolutos para merge:** fotografía+composición aprobadas, cartografía confirmada con origen/destino reales, flujos 6–8 finales con backend autorizado, privacidad/email, E2E seguros de inmediata vs programada, chat, matrícula APP-0061, presupuesto, pruebas Samsung y QA de 8 escenas. Publicar solo tras verificación integral. La web pública continúa PWA v74.
+
+
+---
+
+## QA DE OCHO ESCENAS — 15/10/2026, 12:18 UY — PR #99, TODAVÍA DRAFT
+
+**Revisión de estado al retomar:** HEAD código de esta iteración `6a1faed41832c433da8fa0f400b08ecc72113bea`. No fusionar ni publicar aún. Branch: `feature/tu-viaje-premium-visual-20261015`.
+
+**Correcciones reales guardadas en el PR:**
+- Se reparó la política `Content-Security-Policy`: la directiva `img-src` ahora habilita **solo** `https://tile.openstreetmap.org` para los mosaicos cartográficos del módulo premium. Antes el navegador bloqueaba las teselas aunque las rutas se renderizaban.
+- En `Tu viaje / Recorrido`, el buscador ahora ocupa un ancho útil completo con un botón de lupa accesible; el GPS queda en segunda línea. La estructura de `Tu reserva` no se modificó.
+- Se ampliaron los tests móviles Chromium a **8 escenas × 3 anchos**: las cinco pantallas de la solicitud y tres de seguimiento (Buscando, En camino, En viaje). Las últimas tres son **fixtures sintéticos explícitamente rotulados SOLO QA**, no reservas reales ni promesas de posición de vehículo/ETA.
+- Se agregaron aserciones para permiso CSP a OSM, ancho mínimo del buscador (165px a 360/393/412) y visibilidad del GPS. La QA nunca envía reservas reales ni escribe a Supabase.
+
+**Resultado de GitHub Actions:** los cuatro workflows sobre `6a1faed` finalizaron **SUCCESS**: PWA review, WebView parity, Verify and package passenger PWA, y QA premium visual. QA específica: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38758791414 ; artifact `premium-mobile-qa-capturas` (24 PNG, tres resoluciones, cinco escenas iniciales + tres de seguimiento simulado).
+
+**Observación visual comparada con las referencias adjuntas:** mejoras verificables en escritura de direcciones, mapa técnicamente permitido y estados veraces. **Aún no reproduce exactamente el mockup de ocho pantallas**: portada no tiene coche fotográfico en primer plano, mapa de recorrido depende de geometría real y tiles, seguimiento de conductor no recibe GPS en vivo/ETA autorizada, «Tus datos» no tiene email persistido ni consentimiento backend. No falsificar estos elementos para que una captura parezca bonita.
+
+**Siguiente trabajo imprescindible:** seleccionar/generar un asset de vehículo de calidad equivalente a la referencia con autorización; terminar enfoque full-screen de seguimiento; conectar email y consentimiento tras fijar contrato de backend; E2E en entorno seguro + Samsung físico. Revalidar streaming de posición/ETA autorizado o presentar solo estados existentes y mapa de ruta, sin inventar coche en movimiento.
+
+**Versión pública deliberadamente intacta:** PWA v74, Cliente v16, Conductor 11.5-R8 y Mapa R25.25. No se actualizó service worker ni versión publicada.
+
+---
+
+## AVANCE PRODUCTO — 15/10/2026, 12:50 UY
+
+Se continuó el desarrollo en PR #99 **solo en rama draft**, sin publicar ni fusionar. No confundir CI con producto final.
+
+### Cambios de código
+- Pantalla «Tus datos» en Tu viaje incorpora email opcional validado y un consentimiento explícito para recordar nombre, teléfono y correo **solo en este dispositivo**, con borrado al desactivar. El email NO se envía al conductor/Supabase porque la RPC vigente no lo admite. La UI de Tu reserva permanece independiente.
+- Pantalla específica `view-seguimiento` de viaje activo, accesible desde cada traslado autorizado en fase de movimiento; conserva estado real, origen/destino, datos del vehículo con matrícula solo si está autorizada, botones telefónico/WhatsApp/chat, timeline basada en `status` y `pickup_phase`. No hay posición falsa, ETA falsa ni botón para finalizar el viaje desde el cliente.
+- Mapa de seguimiento usa geometría vial verificada cuando la reserva trae coordenadas; sin ellas se muestra mensaje de ausencia honesto. El módulo cartográfico acepta altura compacta para Android sin distorsionar el encuadre.
+- La barra fija de navegación ya no oculta los botones de contacto; se usan acciones en un dock independiente y espaciado de scroll.
+- Portada: incorporado asset local `premium-car-crop.webp` derivado de la referencia aprobada (Git blob SHA `b90ffd42ea1f4fad1d3e230266970b3997f16b5e`), junto con fondo local de Montevideo y precache SW; tras captura QA se ajustó el tamaño para no tapar el cielo. La fidelidad visual sigue siendo evaluada y NO está aprobada.
+- QA visual: ahora revisa email, consentimiento/borrado local, pantalla completa en estados EN_CAMINO/EN_VIAJE, ausencia de finalizar del pasajero, acciones visibles por encima de navegación en 360/393/412 px, y recursos fotográficos offline. Chrome QA se cierra correctamente ante aserciones fallidas (no se queda bloqueado hasta el timeout).
+
+### Estado
+Los cuatro workflows habían pasado en el commit `c26baf9` y capturas de la pantalla de seguimiento corregida fueron revisadas (sin choque con barra inferior). Consultar Actions sobre HEAD más reciente `207c923` antes de declarar un estado final.
+No se enviaron viajes ni se escribieron datos en la DB durante QA. PWA pública continúa en v74. Sin despliegue ni entrega final.
+
+### Bloqueantes reales para lanzamiento
+- QA visual final de portada completa contra referencia (fragmento fotográfico integrado es provisional); otras pantallas deben alcanzar el mismo nivel.
+- Contrato backend para email opcional de reserva si se quiere almacenar/enviar: consentimiento claro, validaciones y migración auditada. Persistencia actual únicamente local bajo consentimiento.
+- Seguimiento **en vivo** de vehículo / ETA con permisos de lectura por reserva: no inventar ni reutilizar GPS abierto para todos.
+- Pruebas de extremo a extremo contra entorno seguro de Supabase, rutas, horarios, presupuesto, cancelación, chat, identidad y matrícula APP-0061, sin generar viajes accidentales en producción.
+- Prueba física Samsung y paridad APK Cliente con WebView. Solo después: versionado coordinado, service worker, merge y publicación.
+
+Criterio: la aplicación final no es un informe ni un mockup; terminar funcionalidades, QA visual humana y pruebas reales antes de decir «lista».
+
+---
+## PRIMERA APK PR99 AISLADA — 15/10/2026, 13:23:04 UYT
+
+- Entrega real: `preview-artifacts/traslados-cliente-premium-pr99-v17-prueba.apk`, 898.216 bytes. Build firmado SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38768273373 .
+- Paquete conservado `uy.com.traslados.cliente`, versionName `17.0-PR99-Prueba`, versionCode **205**. Certificado SHA256 idéntico a v16: `d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d`. Verificados firma v2, manifiesto y checksum del APK efectivamente descargado.
+- El APK incluye los **29 recursos web** del PR (fotografías, CSS, JS y catálogo local Uruguay de 2.209.865 bytes / 22.503 lugares). Los hashes de cada recurso se contrastaron contra su contenido dentro del APK.
+- Es una compilación **para revisión aislada**. Sirve los recursos empaquetados mediante WebView en `https://appassets.androidplatform.net/traslados-android/web-pasajero/`, origen separado del almacenamiento de producción. CSP restringe conexiones a self; el cliente nativo bloquea Supabase, Worker, web pública y contactos externos; solo admite imágenes públicas OSM. Registro de service worker eliminado del paquete. No envía reservas ni usa sesiones de la web real.
+- Limitaciones deliberadas de esta prueba: no autenticación real, geocodificación remota, cálculo remoto de ruta/ETA, chat ni llamadas/WhatsApp. No confundir revisión instalable del PR con producto operativo completo. No se añadieron fixtures de viajes a esta APK.
+- No se fusionó ni publicó main ni se modificó el catálogo de descargas productivo. La web pública sigue v74 / Cliente público v16.
+- La próxima APK operativa deberá tener **versionCode >205** para poder actualizar encima de esta prueba sin perder datos. No intentar volver a v16/code204 mediante downgrade.
+- Revisión posterior a la primera APK: se corrigió omisión del catálogo JSON y el manejo nativo de la URL raíz sin slash; pipeline de publicación en rama tolera cambios concurrentes sin force push.
+- Frontend: pasaron **46 scripts smoke** locales, incluyendo búsqueda por departamento/POI, rutas, ETA, navegación, cuenta, chat y privacidad de presentación. No equivalen a E2E con backend.
+- QA nativa nueva: `cliente-premium/preview-tests/PremiumPreviewTest.java` + workflow `qa-cliente-pr99-android.yml` en emulador Android 35. Primera ejecución pasó aislamiento nativo y falló navegación por pulsar antes del montaje; la espera se corrigió para exigir readyState complete y control dinámico montado. **Consultar resultado de ejecución 38768895653 antes de afirmar PASS**.
+- Referencias originales recuperadas del ZIP y comparadas con capturas reales de HEAD b62da246 (8 escenas × 360/393/412). La portada y el seguimiento aún difieren considerablemente de la referencia. Seguimiento GPS/ETA autorizado por reserva y E2E seguro siguen pendientes. Supabase no tiene ramas de desarrollo al consultar; no se escribieron reservas de prueba en producción.
+
+### Actualización final de la APK de prueba: reloj corregido
+La APK vigente se recompiló desde `8d158913832416fd742422352e0178533e24ade5` el **15/10/2026 13:34:58 UYT**: 898.244 bytes; SHA256 `a4f7d632359bdecc13c9d652d6087630cebe466f87e38a0b2ef459cd3f5328bd`. Mismo paquete, code205 y certificado original. Archivo descargado y contenido interno contrastados otra vez; copia entregable actualizada.
+
+Correcciones reales adicionales en `app.js`: formato de hora manual 24h (la expresión anterior rechazaba dígitos), variable `input` definida en el listener correcto y recogida dentro de dos horas cuando cruza medianoche. Nueva regresión `premium-clock-24h-smoke.cjs`: horas válidas/incorrectas, cierre del selector, límite de dos horas y medianoche, sin solicitudes reales. **47 smoke locales PASS**. QA visual móvil **SUCCESS** sobre ese código: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38770079973 ; prueba de hora manual añadida a los 3 anchos.
+
+**Android 35 real en emulador:** las dos pruebas de carga/navegación y bloqueo de producción finalizaron correctamente (Gradle BUILD SUCCESSFUL) en ejecución https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38770274128 a las 13:38:33 UYT. El workflow completo FALLÓ después por el volcado XML auxiliar de accesibilidad, no por esas aserciones. Se corrigió su script para conservar resultado real, reinstalar después de limpieza AGP, esperar arranque y capturar PNG/logcat aunque XML no esté disponible. Consultar ejecución de HEAD tras esta corrección antes de declarar verde del workflow completo. No hubo prueba física Samsung; no confundir este hito con producto operativo terminado.
+
+
+## Revisión v18 — recorrido compacto (15/10/2026 14:14:15 UYT)
+
+- APK `18.0-PR99-Prueba`, code206, fuente `e8947b148225d4392b4631713a20d3b5d07e7bae`. Archivo real 903.079 bytes, SHA256 `b39a660d22a52c985a9daa0fb357da972e127f79acaa34610b04feb54e1145af`, firma v2 y certificado original verificados. La próxima versión operativa requiere code >206.
+- Recorrido inmediato: tarjeta conjunta compacta, departamentos progresivos al editar, GPS legible, paradas desplegables y mapa geográfico visible. Reutiliza los controles reales; Tu reserva conserva sus controles. El mapa inicial no representa GPS ni ruta calculada; solo dibuja recorrido cuando existe geometría verificada.
+- Compilación firmada SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775384634 ; QA Android35 SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775384621 ; escenas móviles 360/393/412 SUCCESS: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38775390439 . 47 smoke locales PASS. Selección real de POIs locales Carrasco/Punta Carretas sin crear reserva. Escenas de seguimiento del harness siguen siendo fixtures de QA, ausentes en APK.
+- Continúa aislamiento de backend/autenticación/rutas remotas/contactos; no reservas reales. No despliegue main ni web pública. No prueba física Samsung. El producto completo y la fidelidad de las ocho pantallas siguen pendientes; esta entrega mejora Recorrido.
+- Descarga independiente: https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v18-prueba.apk
+
+
+## UX v19: disponibilidad visible y errores seguros (15/10/2026)
+
+- El estado real de recogida se mueve fuera del panel plegable y permanece visible durante los cuatro pasos de Tu viaje. Al volver a Tu reserva se restituye su nodo original. Disponible, sin disponibilidad inmediata y consulta no verificada son estados diferentes; un resultado público negativo no se presenta como una causa concreta.
+- Errores remotos RPC marcados y traducidos a mensajes de producto, conservando validación local y mensajes de horario. El fallo ambiguo de envío indica revisar Mis traslados; elimina explicaciones de UUID/servidor y toast técnico duplicado. La idempotencia y los reintentos manuales conservan su lógica.
+- La prueba v19 permite SOLO GET/OPTIONS sin parámetros hacia public_driver_availability_v1, función STABLE auditada y contrato HTTP GET comprobado. No recibe coordenadas ni identidad del conductor. Envíos desactivados tanto en interfaz como funciones y política nativa; autenticación, reservas, rutas/ETA remotas y contactos siguen bloqueados. La disponibilidad pública sí es real; ETA no se simula.
+- Firma original, paquete original, code207 y hashes de recursos contrastados contra APK descargada: 904.403 bytes; SHA256 7fb219a43fc64e10db53f50282e210b1f67d5811fb27a8ff8d23f1182fdf2308; fuente e99097a8a5c17fa3aab3fe768832157b3cd9f47d. Compilación 15/10/2026 16:02:18 UYT: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38790359376 . Próxima APK operativa requiere code >207.
+- QA: 47 smoke locales PASS; errores internos sintéticos ocultos y validación accionable conservada; escenas 360/393/412 PASS https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38790365901 . Se corrigió una regresión detectada: estilos de recorrido agrandaban Atrás y tapaban Continuar en Cuándo a 360px. No se quitaron aserciones.
+- Android35 PASS incluyendo consulta pública real a través de GET/CORS dentro de WebView y bloqueo de escritura: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38790155607 (misma lógica nativa/HTTP; antes del último ajuste CSS). Ejecución del APK con CSS final: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38790359298 ; consultar resultado final. No prueba física Samsung ni reserva real. Main/web pública sin despliegue; producto visual completo sigue pendiente.
+- APK: https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v19-prueba.apk
+
+
+## UX v20 — teclado, autocompletado y resumen (15/10/2026)
+
+- Nuevo address-viewport.js, compartido por origen/destino/paradas, observa VisualViewport y cambios de sugerencias; desplaza el campo cuando falta espacio y ajusta la lista al área visible. Mientras se escribe en móvil se oculta navegación inferior y se agrega espacio de desplazamiento. Al seleccionar una coincidencia se restituye navegación sin mover el resultado durante el toque. Android usa adjustResize explícito.
+- Menú ya no duplica su etiqueta; confirmación elimina la frase sobre «versión operativa» del estado del conductor, usa título de recogida elegido y muestra «Sin estimación» cuando no existe cálculo verificado. Valores, precios y GPS no se inventan.
+- Se detectó que CORS permitía la web pública pero no el origen aislado. Adaptador nativo limitado a contratos públicos: ruta vial GET Worker, geocodificación IDE GET y ETA de visitante vía puente local con origen validado de Uruguay. Solo transmite origen requerido para calcular llegada; sin sesión ni coordenadas privadas del conductor. Sin cambios en CORS de producción ni contratos de reservas. Conexiones sin redirecciones, tamaño de respuesta limitado, fallos convertidos a estado no disponible. Envíos/autenticación/contactos continúan bloqueados.
+- 47 smoke locales PASS. QA visual y teclado reducido a 452px de alto con POIs reales PASS en 360/393/412; confirma selección, sugerencias visibles y restauración del menú: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38794594179 . No confundir esta simulación de espacio de teclado con prueba física Samsung.
+- QA Android35 previa: ruta real Carrasco–Punta Carretas, disponibilidad y bloqueo de reservas PASS; el ensayo de teclado fallaba porque requestFocus del WebView se ejecutaba DESPUÉS del foco DOM y lo transfería al botón Inicio (diagnóstico activo y rectángulos conservados en logs). Se corrigió el orden y se mantiene la aserción de campo y sugerencias visibles. Resultado completo actual: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38795623719 · **SUCCESS: cuatro pruebas Android35**, incluyendo foco/sugerencias visibles, ruta real, disponibilidad y bloqueo de reservas.
+- APK firmada 20.0-PR99-Prueba code208; mismo paquete/certificado original. Compilación publicada SUCCESS 15/10/2026 16:37:36 UYT: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38795241360 . 907.103 bytes; SHA256 949b5fcfd37805c15449d44f2892f16410285f37d55cd1c45d5aa9a3280efc9a; fuente 2b11d412d0c8f25ab6a5238e43f66d2c48665cd1. Hashes internos y archivo descargado contrastados. Próxima APK operativa exige code >208.
+- Publicación de artefactos corregida: reponer artefactos sobre último árbol remoto en checkout CI desechable, sin rebase de binarios ni force-push. Primera publicación automática falló por conflicto binario; la ejecución enlazada arriba ya terminó SUCCESS.
+- APK descargable en preview-artifacts/traslados-cliente-premium-pr99-v20-prueba.apk; ZIP entregable también conservado. No reservas reales, no merge/main ni despliegue web pública. Fidelidad completa de ocho pantallas y E2E operativo siguen pendientes.
+
+
+## v21 — recuperar recogida y tarifa central (15/10/2026 22:40 UYT)
+
+La v20 tenía un fallo real: el adaptador nativo omitía Origin al consultar pickup-eta, pero el servicio desplegado exige el origen oficial a visitantes. Ahora el cliente nativo firmado identifica el origen pasajero oficial y conserva las respuestas JSON y estados de cuota del servicio; no se cambia el consentimiento, la disponibilidad ni las cuotas y nunca se devuelven coordenadas del conductor. Se verificó HTTP real con **distance/arrival returned** en Actions 38836268925, además de cinco pruebas Android35 PASS (38836182284), incluyendo recogida de visitante y precio.
+
+Tarifa central vigente **40 UYU/km**, editable mediante Conductor → Tarifas → Precio orientativo en la web (RPC protegida por PIN). La tarifa no se fija en la APK. Migración aplicada y versionada en traslados-web `supabase/migrations/20261016013133_reference_fare_exact_configured_kilometre_rate.sql`, commit 71dc2d2a45bf470b17e4ba936ef5b3e73b1e7660: importe exacto distancia×tarifa, dos decimales, sin redondeo a decenas ni mínimo oculto. Confirmados 3.1×40=124, 0.5×40=20 e inválidos; cambio transaccional a 45 devolvió139.5 y se revirtió, dejando40. Las reservas/presupuestos existentes no se modificaron.
+
+El motor vial consulta la RPC pública STABLE de precio por GET tras verificar carretera, aunque Worker no devuelva tarifa; distancia y tiempo siguen válidos si falla precio, sin inventarlo. Respeta caché actual de itinerario de cinco minutos; tarifas nuevas se reflejan en siguientes cálculos tras caducidad/recarga. APK solo permite el contrato de lectura de precio; escritura de tarifas sigue restringida a Conductor con PIN. Formatos conservan centésimos en ruta y resumen. 47 smoke locales, QA visual 360/393/412 (38836187484), PWA CI (38836187492), revisión y paridad PASS.
+
+APK 21.0-PR99-Prueba code209, 907619 bytes, certificado original, SHA256 68a658207e29b8e61d1191f61a1289e441a8f4a3bc9bc2cf38e559d24ebf9c9c. Build publicado SUCCESS 15/10/2026 22:40:44 UYT https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38836268925 ; fuente34f180c2a0d8e54ffad7f2b1330b51dd44a2e05a. Archivo descargado y recursos internos verificados; ZIP y APK entregables persistidos. Descarga preview-artifacts/traslados-cliente-premium-pr99-v21-prueba.apk. Próxima APK operativa requiere code>209. No reservas reales; preview sigue sin envíos/autenticación/contactos. Sin merge PR99 ni despliegue de interfaz pública. Producto visual completo sigue pendiente.
+
+
+## v22 — acceso de Carrasco y prueba conjunta (15/10/2026 23:38 UYT)
+
+El catálogo OSM ofrecía el centro del predio de Carrasco (w246748987) como destino separado de la terminal verificada. Ese ID exacto ahora reutiliza el acceso y nombre de Terminal de pasajeros; el buscador elimina el duplicado y conserva otros aeropuertos/comercios sin moverlos. Regresión con catálogo, alias y aislamiento geográfico PASS. El detalle de ruta fallida ya no expone el código interno del motor.
+
+La comprobación anterior por contratos aislados no probaba el caso informado. Ahora seis pruebas Android35 PASS en https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38841098475 ; la nueva prueba carga el catálogo real y selecciona De Madrid–Carrasco, exige simultáneamente mapa vial, kilómetros/minutos, precio central Y distancia/llegada de recogida visibles. Resultado real 6.4 km / 11 min / 256 UYU; recogida 5.5 km / 5–10 min. Actualizar recogida conserva ruta y precio. Sin reservas ni posiciones privadas del conductor. No prueba física Samsung. 47 smoke locales y QA visual 360/393/412 PASS. No se asegura que todos los fallos intermitentes de red o proveedor estén resueltos.
+
+El sondeo Python del Worker fue rechazado por Cloudflare 1010 (firma de navegador bloqueada); no se cambia el User-Agent ni la política para eludirlo. La comprobación conjunta se realiza en el transporte Android real. Compilaciones diagnósticas previas bloqueadas por ese sondeo no se entregaron como APK terminadas.
+
+APK 22.0-PR99-Prueba code210; certificado/paquete originales; 907783 bytes; SHA256 aa499c7c6ade107ae8576fcb44d853d673f27bf2380183a56abec3d5b5050b17. Build SUCCESS 15/10/2026 23:38:00 UYT https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38841319030 ; fuente 1f3ea6a16112ffc95d2b19c3127a9977eb1df2c1. Descarga preview-artifacts/traslados-cliente-premium-pr99-v22-prueba.apk, archivo publicado contrastado por SHA de blob y recursos internos por SHA256. Preview sigue sin envíos, sin merge/main ni despliegue de interfaz pública. Fidelidad y operación completa de ocho escenas siguen pendientes.
+
+
+## v23 — pulido de revisión del viaje (16/10/2026 00:01 UYT)
+
+Las capturas Samsung v22 del usuario confirman juntos recogida 0.5 km/hasta5min y viaje3.1km/7min/124UYU. Se mantiene ese cálculo. Confirmación ahora se titula Revisá tu viaje: tarjeta compacta, precio orientativo destacado arriba de distancia/duración, menos texto repetido y botón Editar recorrido que vuelve al paso real sin borrar direcciones. Atrás es un control discreto, sin tarjeta ni relleno final excesivo. La descripción del código de seguimiento queda debajo de la acción. Sin cambios en contratos de envío, disponibilidad, GPS, tarifas, Tu reserva ni estado de aceptación. La aceptación del conductor sigue siendo necesaria; preview conserva envíos bloqueados.
+
+47 smoke locales PASS; QA visual con edición/retorno y datos de pasajero sintéticos válidos, 360/393/412 PASS (39 capturas): https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38843268141 . Capturas de layout con backend bloqueado muestran estados sin estimación como fixtures, no fallos reales de producción. Se revisó la captura de confirmar393 y el flujo local en navegador. Pruebas Android35 seis PASS, incluyendo mapa/ruta/precio y distancia/minutos de recogida simultáneos: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38843264176 . No pruebas de reservas reales ni Samsung físico. Las primeras QA visuales detectaron exceso de altura con direcciones largas: se ajustó espacio sin truncar. Validación de pasajero preservada; el test dejó de simular solo la clase is-complete y completa campos reales.
+
+APK 23.0-PR99-Prueba code211; certificado y paquete originales; 908987 bytes; SHA256 8abc0ab927359b90a9b112f90c28adbb5a0d69a36379e0c4bf16bd8b96312728. Build SUCCESS 16/10/2026 00:01:08 UYT https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38843264184 ; fuente5586cfbb1742fefed176e7f548991b198b5919ca. Hashes de recursos internos, firma CI, ZIP entregable y blob público contrastados. Archivo preview-artifacts/traslados-cliente-premium-pr99-v23-prueba.apk. Sin merge/main ni publicación de interfaz web pública; previsualización web independiente sigue pendiente. Producto completo de ocho escenas no se declara terminado.
+
+
+## v24 — Solicitar viaje operativo (16/10/2026 00:34 UYT)
+
+Ante el pedido explícito de poder Solicitar viaje, la entrega cambia de preview sin envíos a APK operativa. El empaquetador conserva el modo read-only por defecto para QA y agrega --operational, sin meta traslados-preview y con CTA SOLICITAR VIAJE habilitado. Se permiten exclusivamente los contratos RPC de pasajero existentes (solicitar, sesión, seguimiento, chat, presupuestos y cancelación autorizada), con método POST/OPTIONS, host HTTPS fijo, sin query ni navegación principal. Siguen bloqueados tablas, funciones de conductor y RPCs arbitrarias. No se cambia auth/RLS/servidor; no se incluyen secretos ni bridge JavaScript. Se conservan rutas/ETA públicos, firma, paquete y contactos externos originales. No es solo cambiar la etiqueta del botón: se retiró también el bloqueo nativo de esos contratos. Esta APK puede crear solicitudes REALES cuando el usuario la utiliza.
+
+Backend real: scripts/qa_immediate_pickup_rollback.sql PASS en Supabase. Solicitud sintética, código, estado PENDIENTE, reintento idempotente y seguimiento con token comprobados dentro de subtransacción revertida obligatoriamente. Verificada ausencia de reserva/eventos tras rollback. No PIN, GPS privado, cliente ni reserva real modificados. No cambios de esquema.
+
+Android35 operativo: tres pruebas PASS https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38846229234 : botón habilitado; CORS/RPC real alcanza primera validación con identificador nulo, antes de cualquier escritura; recibo y navegación a Mis traslados con transporte simulado exclusivamente en instrumentación; comandos conductor/tablas permanecen bloqueados. Primera ejecución falló al descargar ZIP de Android Emulator, antes de tests; ejecución enlazada PASS. No confundir el recibo simulado de instrumentación con una reserva persistida real. No se probó aceptación desde Samsung/Conductor con reserva real. QA read-only seis pruebas y QA visual 360/393/412, PWA y 47 smoke PASS sobre mismo código de producto.
+
+APK 24.0-Premium-Operativa code212, 909371 bytes, certificado original, SHA256 f6bb9dfd6b6219789b8aa5661c0333ee9425aa2cb3a6b0287da9006f0820bac4. Compilación SUCCESS 16/10/2026 00:34:41 UYT https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38846097095 ; fuente bdebae29e039180c76c068453e7ffeb1983f4706. Publicado preview-artifacts/traslados-cliente-premium-pr99-v24-operativa.apk; blob público, contenido, firma CI y ZIP descargable verificados. No merge/main ni actualización de web pública: esa entrega sigue pendiente. Producto completo de ocho escenas no se declara terminado.

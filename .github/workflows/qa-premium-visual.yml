@@ -1,0 +1,38 @@
+name: QA premium visual (draft only)
+on:
+  pull_request:
+    paths:
+      - 'web-pasajero/**'
+      - '.github/workflows/qa-premium-visual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser harness
+        run: |
+          which google-chrome
+          npm install --no-save --no-package-lock playwright-core@1.57.0
+      - name: Start local offline test server
+        run: |
+          python3 -m http.server 8099 --bind 127.0.0.1 > /tmp/premium-http.log 2>&1 &
+          echo $! > /tmp/premium-http.pid
+          sleep 1
+          curl -fsS http://127.0.0.1:8099/web-pasajero/ > /dev/null
+      - name: Generate screenshots and validate critical mobile flow
+        run: |
+          node --check web-pasajero/premium-journey.js
+          node --check web-pasajero/premium-map.js
+          node web-pasajero/tests/premium-map-smoke.cjs
+          node web-pasajero/tests/premium-journey-visual.cjs
+      - name: Archive screenshots for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-mobile-qa-capturas
+          path: premium-qa-screenshots/*.png
+          if-no-files-found: warn

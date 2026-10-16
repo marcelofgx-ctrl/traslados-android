@@ -1,0 +1,17 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=Traslados Conductor, OU=Traslados, O=Marcelo Fernandez, L=Montevideo, ST=Montevideo, C=UY
+Signer #1 certificate SHA-256 digest: d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d
+Signer #1 certificate SHA-1 digest: 40827723bf8480712c02b17b4c3665f6152fd2af
+Signer #1 certificate MD5 digest: 5ea6a8d76fd28cd622d8ed04f12a3b20
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 4096
+Signer #1 public key SHA-256 digest: fd5e03d126e2c0ed04e63d0190bf3e7debac17def2a62e0764263d8486155d87
+Signer #1 public key SHA-1 digest: 32ba647d2b58eb8ccbb99b116c34c40d2775a05b
+Signer #1 public key MD5 digest: 58a5087114466819670c3e6b7740785d

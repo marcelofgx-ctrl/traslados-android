@@ -48,6 +48,7 @@ const routeWindow={};
 runInNewContext(routeSource,{
   window:routeWindow,Number,Map,Date,AbortController,encodeURIComponent,setTimeout,clearTimeout,
   fetch:async url=>{
+    if(String(url).includes("public_reference_quote_v1"))return {ok:true,json:async()=>({available:true,currency:"UYU",referenceFareUyu:Number(String(url).split("p_distance_km=")[1])*40,rateUyuPerKm:40})};
     const data=String(url).includes("/public_cached_route_preview_v1")?cacheFallback:response;
     return {ok:data.available===true,json:async()=>data};
   }
@@ -102,7 +103,7 @@ async function settle(){await Promise.resolve();await new Promise(setImmediate);
   assert.equal(nodes("route-retry")[0].hidden,true,"A verified route hides the retry control");
   assert.equal(nodes("route-metric")[0].nodes[1].textContent,"18,1 km");
   assert.equal(nodes("route-metric")[1].nodes[1].textContent,"25 min");
-  assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 720");
+  assert.equal(nodes("route-fare-heading")[0].nodes[1].textContent,"$ 724");
   assert.equal(ctx.latestRoad.data.source,"supabase_route_cache");
   // ORS remains the primary provider when it is available.
     response={available:true,source:"openrouteservice",distanceKm:8,durationMin:14,referenceFareUyu:320,geometry:[],calculatedAt:new Date().toISOString()};

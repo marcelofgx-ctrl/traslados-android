@@ -1,0 +1,69 @@
+name: Android WebView PR99 isolated runtime QA
+on:
+  push:
+    branches: [feature/tu-viaje-premium-visual-20261015]
+    paths:
+      - 'cliente-premium/preview-tests/**'
+      - 'scripts/prepare_premium_preview.py'
+      - 'web-pasajero/**'
+      - '.github/workflows/qa-cliente-pr99-android.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-webview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare isolated PR99 app and platform instrumentation
+        run: |
+          node web-pasajero/tests/premium-clock-24h-smoke.cjs
+          python3 scripts/prepare_premium_preview.py
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+          mkdir -p cliente-premium/app/src/androidTest/java/uy/com/traslados/cliente
+          cp cliente-premium/preview-tests/PremiumPreviewTest.java cliente-premium/app/src/androidTest/java/uy/com/traslados/cliente/
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('cliente-premium/app/build.gradle')
+          g=p.read_text().replace("compileSdk 35", "compileSdk 35\n    useLibrary 'android.test.runner'\n    useLibrary 'android.test.base'")
+          g=g.replace("defaultConfig {", "defaultConfig {\n        testInstrumentationRunner 'android.test.InstrumentationTestRunner'")
+          p.write_text(g)
+          p=Path('cliente-premium/app/src/androidTest/AndroidManifest.xml')
+          p.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application><uses-library android:name="android.test.runner"/><uses-library android:name="android.test.base"/></application></manifest>')
+          PY
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run real Android WebView navigation and isolation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 2048 -cores 2
+          script: bash scripts/qa_premium_preview_android.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PR99-Android-WebView-QA
+          path: |
+            cliente-premium/app/build/reports/androidTests/
+            cliente-premium/app/build/outputs/androidTest-results/
+            android-pr99-ui.xml
+            android-pr99-webview.png
+            android-pr99-logcat.txt
+            android-pr99-ui-note.txt
+          if-no-files-found: warn

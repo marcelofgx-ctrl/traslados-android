@@ -1,0 +1,148 @@
+name: Build Cliente PR99 operational signed app
+on:
+  push:
+    branches: [feature/tu-viaje-premium-visual-20261015]
+    paths:
+      - 'scripts/prepare_premium_preview.py'
+      - '.github/workflows/build-cliente-pr99-operational.yml'
+      - 'web-pasajero/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cliente-pr99-operational
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify existing production shell before packaging
+        run: python3 cliente-premium/tests/check_premium_shell.py
+      - name: Prepare isolated existing PR99 web and native shell
+        run: |
+          python3 scripts/prepare_premium_preview.py --operational
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Android SDK
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify public availability read-only GET contract
+        run: |
+          python3 - <<'PYGET'
+          import urllib.request,json
+          req=urllib.request.Request('https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1',headers={'apikey':'sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9','Accept':'application/json'})
+          data=json.load(urllib.request.urlopen(req,timeout=20))
+          assert type(data.get('available')) is bool
+          assert data.get('status') in ('available_for_requests','not_available')
+          assert not any(k in data for k in ('lat','lng','device_id'))
+          print('PASS public read-only availability GET; no private fields')
+          PYGET
+      - name: Verify live guest pickup and configured fare contracts
+        run: |
+          python3 - <<'PYLIVE'
+          import json,urllib.request,urllib.error
+          api='https://zetaudvvutlouiqxopvg.supabase.co'
+          key='sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9'
+          quote=json.load(urllib.request.urlopen(urllib.request.Request(api+'/rest/v1/rpc/public_reference_quote_v1?p_distance_km=3.1',headers={'apikey':key}),timeout=15))
+          assert quote.get('referenceFareUyu')==124 and quote.get('rateUyuPerKm')==40,quote
+          req=urllib.request.Request(api+'/functions/v1/pickup-eta',data=json.dumps({'originLat':-34.83696,'originLng':-56.01638}).encode(),headers={'apikey':key,'Origin':'https://marcelofgx-ctrl.github.io','Content-Type':'application/json'})
+          try: response=urllib.request.urlopen(req,timeout=25)
+          except urllib.error.HTTPError as e: response=e
+          data=json.load(response)
+          assert data.get('reason') not in ('forbidden','login_required','invalid_origin'),data
+          assert not any(k in data for k in ('driverLat','driverLng','geometry')),data
+          if data.get('available'):
+              assert isinstance(data.get('distanceKm'),(float,int)) and isinstance(data.get('etaMin'),(float,int))
+              print('PASS actual guest pickup estimate: distance and arrival returned; no private GPS')
+          else:
+              assert data.get('reason') in ('not_available','occupied','route_unavailable','rate_limited','temporarily_unavailable'),data
+              print('PASS guest contract, state:',data.get('reason'))
+          print('PASS configured fare: 3.1 km x 40 UYU = 124 UYU')
+          PYLIVE
+      # Joint passenger route + fare + numeric pickup metrics are verified by
+      # qa-cliente-pr99-android.yml in the real Android WebView transport.
+      # Do not probe the Worker with Python's banned browser signature (1010)
+      # or impersonate another user agent to evade its policy.
+      - name: Recover existing signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compile signed preview
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle -p cliente-premium :app:assembleRelease --no-daemon --stacktrace
+      - name: Verify signature, original certificate, code, and embedded web
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          APK=cliente-premium/app/build/outputs/apk/release/app-release.apk
+          mkdir -p artifacts
+          "$SIGNER" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SIGNER" verify --print-certs web-pasajero/downloads/traslados-cliente-premium-v16.apk > /tmp/previous-signing.txt
+          "$AAPT" dump badging "$APK" > artifacts/APK_INFO.txt
+          python3 - <<'PY'
+          import re,zipfile,json,hashlib
+          from pathlib import Path
+          def cert(p):
+              return re.search(r'certificate SHA-256 digest:\s*([a-fA-F0-9]{64})',Path(p).read_text()).group(1).lower()
+          assert cert('artifacts/SIGNING.txt') == cert('/tmp/previous-signing.txt'), 'Certificate changed'
+          badging=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.traslados.cliente'" in badging
+          assert "versionCode='213'" in badging
+          expected=json.loads(Path('preview-web-sha256.json').read_text())
+          with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
+              for name,digest in expected.items():
+                  assert hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()==digest,name
+          print('PASS: SAME certificate as published v16; code213; all PR99 web assets verified inside APK')
+          PY
+          cp "$APK" artifacts/traslados-cliente-premium-pr99-v25-operativa.apk
+          cp preview-web-sha256.json artifacts/
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v25-operativa.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-PR99-v25-Operativa-Firmada
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish downloadable APK only on feature branch
+        run: |
+          set -euo pipefail
+          # Restore temporary build-only modifications. Main is never targeted.
+          git restore cliente-premium
+          mkdir -p preview-artifacts
+          cp artifacts/* preview-artifacts/
+          git config user.name "Traslados Preview CI"
+          git config user.email "actions@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            # Reapply artifacts to the latest remote tree. Never rebase binary
+            # APKs or rewrite another commit; only this disposable CI checkout resets.
+            git fetch origin feature/tu-viaje-premium-visual-20261015
+            git reset --hard origin/feature/tu-viaje-premium-visual-20261015
+            mkdir -p preview-artifacts
+            cp artifacts/* preview-artifacts/
+            git add preview-artifacts
+            git diff --cached --quiet && exit 0
+            git commit -m "APK PR99 v25 operativa firmada: servicios de pasajero existentes"
+            if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
+          done
+          exit 1

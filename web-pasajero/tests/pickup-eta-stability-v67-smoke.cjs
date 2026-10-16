@@ -24,7 +24,7 @@ const nodes={
  "pickup-presence-meta":{textContent:""},"pickup-presence-status":{textContent:""}
 };
 let pickupCalls=0;const pending=[];
-const ctx={
+const ctx={PREVIEW_READ_ONLY:false,
  window:{TrasladosETA:{
   availability:async()=>({available:true,status:"available_for_requests",checkedAt:new Date().toISOString(),motionHint:"stationary"}),
   pickup:()=>{pickupCalls++;return new Promise((resolve,reject)=>pending.push({resolve,reject}));}

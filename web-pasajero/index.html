@@ -9,11 +9,13 @@
   <meta name="apple-mobile-web-app-title" content="Traslados">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css?v=74">
+  <link rel="stylesheet" href="./premium-journey.css?v=1">
+  <link rel="stylesheet" href="./premium-route.css?v=1">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
@@ -32,13 +34,13 @@
       <button class="tab active" data-view="inicio" type="button" aria-current="page">Inicio</button>
       <button class="tab" data-view="reservar" type="button">Tu reserva</button>
       <button class="tab" data-view="viajes" type="button">Mis traslados</button>
-      <button class="tab" data-view="cuenta" type="button">Mi cuenta</button>
+      <button class="tab" data-view="cuenta" type="button" aria-label="Menú y cuenta">Menú</button>
     </nav>
 
     <section id="view-inicio" class="view active home-screen" aria-labelledby="home-title">
       <div class="home-hero">
         <p class="eyebrow"><span class="star" aria-hidden="true">✦</span> TRASLADOS CON RESERVA · URUGUAY</p>
-        <h1 id="home-title">Tu viaje,<br><em>bien llevado.</em></h1>
+        <h1 id="home-title">Tu próximo viaje<br><em>empieza acá</em></h1>
         <p>Reservá, coordiná y seguí tu servicio con atención personal en Uruguay.</p>
       </div>
       <div class="home-section-heading">
@@ -53,10 +55,11 @@
               <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
               <circle cx="52" cy="54" r="28" class="emblem-inner"/>
               <text class="emblem-lettering"><textPath href="#service-arc-journey" startOffset="50%" text-anchor="middle">TU VIAJE</textPath></text>
-              <path d="M35 68C29 49 45 42 53 54C61 66 71 56 69 43" class="emblem-drawing"/>
-              <circle cx="35" cy="68" r="4.3" class="emblem-dot"/>
-              <path d="M63 44L69 38L75 44M69 38V49" class="emblem-drawing"/>
-              <path d="M78 66l2.5 5 5 2.5-5 2.5-2.5 5-2.5-5-5-2.5 5-2.5z" class="emblem-glint"/>
+              <path d="M23 61l5-9h48l5 9v12H23V61Z" class="emblem-drawing"/>
+              <path d="M31 51l7-13h26l9 13" class="emblem-drawing"/>
+              <path d="M39 40h23M32 62h9m22 0h9M48 61h8M29 73v4m46-4v4" class="emblem-drawing"/>
+              <circle cx="36" cy="72" r="4" class="emblem-clock"/><circle cx="68" cy="72" r="4" class="emblem-clock"/>
+              <path d="M80 40l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" class="emblem-glint"/>
             </svg></span>
           <span class="service-card-body">
             <span class="service-card-kicker">RECOGIDAS A PEDIDO</span>
@@ -332,6 +335,14 @@
       <div id="booking-success" class="card success" hidden></div>
     </section>
 
+    <section id="view-seguimiento" class="view premium-tracking-view" aria-label="Seguimiento de mi traslado">
+      <div class="premium-tracking-toolbar">
+        <button id="premium-tracking-back" class="premium-tracking-back" type="button">← Mis traslados</button>
+        <span class="premium-tracking-brand">TRASLADOS</span>
+      </div>
+      <div id="premium-tracking-content" aria-live="polite"></div>
+    </section>
+
     <section id="view-viajes" class="view" aria-labelledby="mis-title">
       <div class="section-heading trip-intro"><h2 id="mis-title">Mis traslados</h2></div>
       <div class="card trips-board">
@@ -466,6 +477,10 @@
   <script src="./service-home.js?v=3" defer></script>
   <script src="./owned-pickup.js?v=1" defer></script>
   <script src="./public-config.js?v=1" defer></script>
+  <script src="./premium-map.js?v=1" defer></script>
+  <script src="./premium-journey.js?v=1" defer></script>
+  <script src="./address-viewport.js?v=1" defer></script>
+  <script src="./premium-route.js?v=1" defer></script>
   <script src="./app.js?v=74" defer></script>
 </body>
 </html>
