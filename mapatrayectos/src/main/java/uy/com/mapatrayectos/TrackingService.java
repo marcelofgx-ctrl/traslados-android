@@ -615,6 +615,7 @@ public class TrackingService extends Service implements LocationListener {
         TripRequestCard card=new TripRequestCard(this,request,
             this::hideTransferCallout,
             ()->openTransferInConductor(request.optString("id","")),
+            this::openTransferHistory,
             this::resizeTransferCallout,
             accept->decideTransferRequest(request,accept));
         activeTransferCallout=card;
@@ -645,6 +646,17 @@ public class TrackingService extends Service implements LocationListener {
         if(id!=null&&!id.isEmpty())open.putExtra("reservation_id",id);
         try{startActivity(open);}catch(Exception e){
             android.widget.Toast.makeText(this,"Abrí Traslados Conductor para gestionar el viaje",
+                android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void openTransferHistory(){
+        hideTransferCallout();
+        Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        open.putExtra("open_history",true);
+        try{startActivity(open);}catch(Exception e){
+            android.widget.Toast.makeText(this,"Abrí Conductor y elegí Historial",
                 android.widget.Toast.LENGTH_LONG).show();
         }
     }
