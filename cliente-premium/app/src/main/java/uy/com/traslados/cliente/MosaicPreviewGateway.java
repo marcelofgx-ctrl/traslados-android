@@ -35,12 +35,12 @@ public final class MosaicPreviewGateway {
     private static final String PUBLIC_ROUTE_HOST = "traslados-web.marcelof-gx.workers.dev";
     private static final String IDE_HOST = "direcciones.ide.uy";
     private static final String PUB_KEY = "sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9";
-    private static final Set<String> IDE_PATHS = Set.of(
+    private static final Set<String> IDE_PATHS = immutableSet(
         "/api/v1/geocode/candidates", "/api/v1/geocode/direcUnica", "/api/v1/geocode/reverse");
 
     // These RPCs are already used by the passenger app; actual identity and
     // ownership checks remain on Supabase, not inside the WebView.
-    private static final Set<String> OPERATIONAL_RPC = Set.of(
+    private static final Set<String> OPERATIONAL_RPC = immutableSet(
         "customer_request_pickup_v1", "customer_request_pickup_fixed_v1",
         "customer_register", "customer_login", "customer_logout",
         "customer_claim_reservation", "customer_reservation_vehicle_v1",
@@ -53,6 +53,9 @@ public final class MosaicPreviewGateway {
         "public_driver_availability_v1", "public_cached_route_preview_v1",
         "public_reference_quote_v1");
 
+    private static Set<String> immutableSet(String... names) {
+        return Collections.unmodifiableSet(new java.util.HashSet<>(Arrays.asList(names)));
+    }
     private MosaicPreviewGateway() {}
 
     public static WebResourceResponse intercept(Activity activity, WebResourceRequest request) {
