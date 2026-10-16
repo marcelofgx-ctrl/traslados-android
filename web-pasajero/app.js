@@ -658,6 +658,7 @@ function picker(name,mount,position){
     }
   }
   function chooseDept(d){
+    ++sequence;clearTimeout(debounce);loading(search,false);
     dept=d;depts[key]=d;highlight();
     if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;}
     clear(results);feedback.hidden=true;renderRouteSummary();
@@ -783,7 +784,7 @@ function picker(name,mount,position){
     }
   });
   input.addEventListener("input",()=>{
-    ++sequence;clearTimeout(debounce);clear(results);feedback.hidden=true;
+    ++sequence;clearTimeout(debounce);loading(search,false);clear(results);feedback.hidden=true;
     const q=input.value.trim();
     if(q.length<2)return;
     renderEntries(window.TrasladosGeo.immediate(q,dept),[],q);
