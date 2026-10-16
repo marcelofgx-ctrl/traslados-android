@@ -50,7 +50,7 @@ assert(app.includes('tripProgress(historyBody,meta)')&&app.includes('tripTimelin
 assert(app.includes('tripLine(infoBody,"◉",r.origin_text||"Origen")')&&
   app.includes('tripLine(infoBody,"◆",r.destination_text||"Destino")'),"Full trip record is preserved");
 assert(app.includes('customer_quote_decision_v13')&&app.includes('customer_trip_chat_send_v1')&&
-  app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token_v4'),
+  app.includes('customer_list_reservations_v16')&&app.includes('get_reservation_by_token_v5'),
   "Server contracts are unchanged");
 assert(css.includes('.trip-chat-sheet')&&css.includes('.trip-chat-archived')&&
   css.includes('.trip-detail-disclosure'));
