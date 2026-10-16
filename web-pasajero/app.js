@@ -339,7 +339,7 @@ async function refreshPickupPresence(force=false){
     elapsedCheck<25?"Disponibilidad comprobada ahora":
     elapsedCheck<60?"Disponibilidad consultada hace "+elapsedCheck+" s":
     "Disponibilidad consultada hace "+Math.floor(elapsedCheck/60)+" min")+
-    " · La llegada se calcula por separado";
+    " · La recogida requiere confirmación del conductor";
   if(!driver.available){
     forgetPickupEta();
     // Backend confirms only a combined public yes/no. Its cause is private and
@@ -350,7 +350,7 @@ async function refreshPickupPresence(force=false){
     return;
   }
   if(!record.origin){
-    paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
+    paintPickupCard({presence:"online",title:"Conductor conectado",
       subtitle:PREVIEW_READ_ONLY?"La recogida siempre requiere su confirmación.":"Elegí tu origen para ver cuánto tardaría en llegar.",
       checked:checkedLabel,phase:"origin"});
     return;
@@ -374,9 +374,14 @@ async function refreshPickupPresence(force=false){
         estimateNote:(freshEstimate?"Estimación obtenida ":"Última estimación ")+
           elapsedShort(estimateAge)+" · Puede variar.",checked:checkedLabel,phase:freshEstimate?"ready":requestActive?"routing":"waiting"});
     }else{
-      paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
-        subtitle:prefix||"Calculando llegada aproximada a tu origen…",
-        checked:checkedLabel,phase:requestActive?"routing":"waiting"});
+      // A yes/no presence result does NOT confirm a road ETA. We must not
+      // present this state as a pickup-ready promise until a verified route
+      // from the driver to this exact origin returns distance and minutes.
+      const failed=lastEtaFailureKey===key&&Boolean(lastEtaFailureMessage);
+      paintPickupCard({presence:failed?"eta-unavailable":"eta-pending",
+        title:failed?"Llegada todavía sin estimar":"Conductor conectado · calculando llegada",
+        subtitle:prefix||"Calculando el recorrido del conductor hasta tu origen…",
+        checked:checkedLabel,phase:failed?"issue":requestActive?"routing":"waiting"});
     }
   };
   // Consulta de estado cada 15 s y ruta cada 25 s en movimiento / 45 s detenido.
@@ -457,7 +462,7 @@ async function refreshPickupPresence(force=false){
         reason==="login_required"?(signedIn
           ?"La sesión no permitió calcular la llegada. Revisá Mi cuenta."
           :"La llegada para visitantes no está disponible ahora. Reintentaremos."):
-        reason==="route_unavailable"?"Por ahora no hay tiempo estimado de llegada. Reintentaremos.":
+        reason==="route_unavailable"?"No pudimos verificar la ruta del conductor hasta tu origen. Reintentaremos.":
         "No pudimos calcular la llegada. Reintentaremos.";
       lastEtaFailureKey=pickupIdentityKey();lastEtaFailureMessage=text;
       showWaiting(text);
@@ -1438,7 +1443,7 @@ function tripLine(parent,icon,label){
   const el=text(parent,"div","","trip-detail-line");
   text(el,"span",icon).setAttribute("aria-hidden","true");text(el,"span",label);
 }
-function tripProgress(parent,meta){
+function tripProgress(parent,meta,r){
   const stages=r.fare_mode==="fixed"?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
   const rail=text(parent,"div","","trip-steps");
   rail.setAttribute("aria-label","Etapa actual: "+meta.label);
@@ -1774,7 +1779,7 @@ function reservationView(r,guestToken){
   historical.open=openTripDetails.has(String(r.code||"")+":history");
   text(historical,"summary","Historial y etapas del viaje","trip-disclosure-head");
   const historyBody=text(historical,"div","","trip-disclosure-body");
-  tripProgress(historyBody,meta);
+  tripProgress(historyBody,meta,r);
   tripTimeline(historyBody,r);
   mountTripChat(inner,r,guestToken);
 
