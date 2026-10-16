@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/build-cliente-mosaico-v27.yml'
       - 'scripts/passenger_assets.py'
+      - 'scripts/verify_passenger_mosaic.py'
       - 'scripts/prepare_premium_preview.py'
       - 'cliente-premium/app/**'
       - 'cliente-premium/build.gradle'
