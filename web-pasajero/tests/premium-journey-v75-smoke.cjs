@@ -24,7 +24,7 @@ assert(!code.includes("customer_request_pickup_v1")&&!code.includes("rpc("),"Pre
 assert(app.includes('premiumJourney=window.TrasladosPremiumJourney.mount(document)'),"Montaje faltante");
 assert(app.includes("if(quick)premiumJourney?.activate()"),"Activar al entrar en Tu viaje");
 assert(app.includes('!document.body.classList.contains("journey-mode-quick")'),"No autoavanzar al escoger destino");
-assert(app.includes('rpc("customer_request_pickup_v1"'),"Conservar recogida real");
+assert(app.includes('rpc("customer_request_pickup_fixed_v1"'),"Conservar recogida real con precio cerrado");
 assert(app.includes("customer_create_reservation_v12"),"Conservar reservas");
 assert(app.includes("customer_reservation_vehicle_v1"),"Mantener matrícula autorizada");
 assert(app.includes("window.TrasladosOwnedPickup"),"Mantener detección de solicitud propia");
