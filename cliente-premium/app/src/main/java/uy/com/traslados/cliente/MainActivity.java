@@ -48,7 +48,7 @@ public final class MainActivity extends Activity {
     // Solo la PWA de pasajeros es la superficie propia; no todo github.io.
     private boolean officialHost(Uri uri) {
         return uri != null && "https".equalsIgnoreCase(uri.getScheme())
-            && OFFICIAL_HOST.equalsIgnoreCase(uri.getHost());
+            && (BuildConfig.MOSAIC_PREVIEW_MODE ? "appassets.androidplatform.net" : OFFICIAL_HOST).equalsIgnoreCase(uri.getHost());
     }
     private static final int PETROLEO = Color.rgb(16, 43, 49);
     private static final int GOLD = Color.rgb(230, 199, 134);
@@ -92,7 +92,7 @@ public final class MainActivity extends Activity {
         WebSettings cfg=web.getSettings();
         // Identidad local de la APK firmada: la web evita ofrecer otro instalador
         // dentro de la aplicación nativa (sin bridge JavaScript ni privilegios extra).
-        cfg.setUserAgentString(cfg.getUserAgentString() + " TrasladosClienteNative/16");
+        cfg.setUserAgentString(cfg.getUserAgentString() + (BuildConfig.MOSAIC_PREVIEW_MODE ? " TrasladosClienteNative/27 Mosaico" : " TrasladosClienteNative/16"));
         cfg.setJavaScriptEnabled(true);
         cfg.setDomStorageEnabled(true);
         cfg.setDatabaseEnabled(true);
@@ -118,6 +118,9 @@ public final class MainActivity extends Activity {
         setContentView(shell);
 
         web.setWebViewClient(new WebViewClient() {
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return BuildConfig.MOSAIC_PREVIEW_MODE ? MosaicPreviewGateway.intercept(MainActivity.this, request) : null;
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri url=request.getUrl();
                 if(official(url))return false;
@@ -217,6 +220,10 @@ public final class MainActivity extends Activity {
     }
 
     private boolean openExternal(Uri uri) {
+        if(BuildConfig.MOSAIC_PREVIEW_MODE && !BuildConfig.MOSAIC_PREVIEW_OPERATIONAL) {
+            Toast.makeText(this,"Enlace externo desactivado en la versión de prueba",Toast.LENGTH_SHORT).show();
+            return true;
+        }
         if(uri==null)return true;
         String scheme=uri.getScheme();
         if(scheme==null)return true;

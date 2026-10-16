@@ -1,0 +1,153 @@
+name: Build Cliente mosaico v27 signed draft
+on:
+  push:
+    branches: [feature/traslados-cliente-mosaico-20261016]
+    paths:
+      - '.github/workflows/build-cliente-mosaico-v27.yml'
+      - 'scripts/passenger_assets.py'
+      - 'scripts/verify_passenger_mosaic.py'
+      - 'scripts/prepare_premium_preview.py'
+      - 'cliente-premium/app/**'
+      - 'cliente-premium/build.gradle'
+      - 'cliente-premium/gradle.properties'
+      - 'web-pasajero/*.html'
+      - 'web-pasajero/*.js'
+      - 'web-pasajero/*.css'
+      - 'web-pasajero/*.svg'
+      - 'web-pasajero/*.webp'
+      - 'web-pasajero/*.webmanifest'
+      - 'web-pasajero/icons/**'
+      - 'web-pasajero/assets/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cliente-mosaico-v27-signed
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify native shell and frontend mosaic without live rate assumptions
+        run: |
+          set -euo pipefail
+          python3 cliente-premium/tests/check_premium_shell.py
+          python3 scripts/verify_passenger_mosaic.py
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -q
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+      - name: Stage operational v27 passenger assets and record pack duration
+        run: |
+          set -euo pipefail
+          start=$SECONDS
+          python3 scripts/prepare_premium_preview.py --operational
+          # Assert an unchanged second run is a true incremental no-op:
+          # WebView assets, Gradle and Java must keep exactly the same mtimes.
+          python3 - <<'PYIDEMPOTENT'
+          from pathlib import Path
+          import json,subprocess
+          files=[Path("cliente-premium/app/src/main/assets/premium-preview")/n
+                 for n in ("index.html","app.js","eta-engine.js","preview-isolation.css")]
+          files += [Path("cliente-premium/app/build.gradle"),
+                    Path("cliente-premium/app/src/main/java/uy/com/traslados/cliente/MainActivity.java"),
+                    Path("preview-web-sha256.json")]
+          previous={str(p):(p.stat().st_mtime_ns,p.read_bytes()) for p in files}
+          subprocess.run(["python3","scripts/prepare_premium_preview.py","--operational"],check=True)
+          for p in files:
+            original=previous[str(p)]
+            assert (p.stat().st_mtime_ns,p.read_bytes())==original,"Not incremental: "+str(p)
+          print("PASS: second operational package is a byte- and mtime-identical no-op")
+          PYIDEMPOTENT
+          echo "PREPARE_SECONDS=$((SECONDS-start))" >> "$GITHUB_ENV"
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Android SDK 35
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Restore exact existing release signer
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/cliente-mosaico.jks"
+          chmod 600 "$RUNNER_TEMP/cliente-mosaico.jks"
+      - name: Single Gradle signed release build with cache and duration
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/cliente-mosaico.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          started=$SECONDS
+          gradle -p cliente-premium :app:assembleRelease --build-cache --no-daemon --console=plain
+          echo "ANDROID_BUILD_SECONDS=$((SECONDS-started))" >> "$GITHUB_ENV"
+      - name: Verify signed APK, original package, version, and ALL web asset SHA-256
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APP=cliente-premium/app/build/outputs/apk/release/app-release.apk
+          test -s "$APP"
+          mkdir -p artifacts
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs "$APP" > artifacts/SIGNING.txt
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs web-pasajero/downloads/traslados-cliente-premium-v16.apk > /tmp/signer-previous.txt
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APP" > artifacts/APK_INFO.txt
+          python3 - <<'PY'
+          import hashlib,json,re,zipfile
+          from pathlib import Path
+          signer=lambda path: re.search(r'certificate SHA-256 digest:\s*([a-fA-F0-9]{64})',Path(path).read_text()).group(1).lower()
+          assert signer('artifacts/SIGNING.txt')==signer('/tmp/signer-previous.txt'), 'Original signer changed'
+          pkg=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.traslados.cliente'" in pkg
+          assert "versionCode='215'" in pkg
+          assert "versionName='27.0-Premium-Mosaico'" in pkg
+          expected=json.loads(Path('preview-web-sha256.json').read_text())
+          with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
+            for name,digest in expected.items():
+              real=hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()
+              assert real==digest,(name,digest,real)
+          assert 'sw.js' not in expected
+          assert not any(x.startswith(('downloads/','tests/')) for x in expected)
+          print('PASS: signed native v27/code215 and every bundled asset, no private SW/test/downloads')
+          PY
+          cp "$APP" artifacts/traslados-cliente-mosaico-v27-prueba.apk
+          cp preview-web-sha256.json artifacts/
+          (cd artifacts && sha256sum traslados-cliente-mosaico-v27-prueba.apk > CLIENTE-MOSAICO-V27-SHA256SUMS.txt)
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+          echo "## Cliente mosaico v27: Gradle ${ANDROID_BUILD_SECONDS}s · packaging ${PREPARE_SECONDS}s" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-Mosaico-v27-Firmada
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish ONLY draft APK under preview-artifacts (not public web)
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados Cliente Mosaic CI'
+          git config user.email 'actions@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin feature/traslados-cliente-mosaico-20261016
+            git reset --hard origin/feature/traslados-cliente-mosaico-20261016
+            mkdir -p preview-artifacts
+            cp artifacts/traslados-cliente-mosaico-v27-prueba.apk preview-artifacts/
+            cp artifacts/CLIENTE-MOSAICO-V27-SHA256SUMS.txt preview-artifacts/
+            git add preview-artifacts/traslados-cliente-mosaico-v27-prueba.apk preview-artifacts/CLIENTE-MOSAICO-V27-SHA256SUMS.txt
+            git diff --cached --quiet && exit 0
+            git commit -m 'APK Cliente mosaico v27 firmada en rama de pruebas'
+            if git push origin HEAD:feature/traslados-cliente-mosaico-20261016; then exit 0; fi
+          done
+          exit 1
