@@ -1,0 +1,34 @@
+name: QA pickup ETA requires verified road before ready
+on:
+  push:
+    branches: [fix/pickup-eta-ready-vs-available-20261016]
+    paths:
+      - 'web-pasajero/app.js'
+      - 'web-pasajero/eta-engine.js'
+      - 'web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs'
+      - '.github/workflows/qa-pickup-eta-truth.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  eta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No false pickup ETA after route failure; all regression contracts
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/eta-engine.js
+          node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
+          node web-pasajero/tests/pickup-health-v54-smoke.cjs
+          node web-pasajero/tests/pickup-cadence-smoke.cjs
+          node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          echo PASS: Road ETA truth and fixed fare passenger contract
