@@ -1,0 +1,104 @@
+name: Relocate shared driver into mosaic module and compile both APKs
+on:
+  push:
+    branches: [feature/mapa-driver-mosaico-modular-20261016]
+    paths:
+      - '.github/workflows/relocate-driver-mosaic.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: driver-mosaic-relocation
+  cancel-in-progress: false
+jobs:
+  relocate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Move source files into their actual owning module
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/feature/mapa-driver-mosaico-modular-20261016'
+          git fetch origin feature/mapa-driver-mosaico-modular-20261016
+          git reset --hard origin/feature/mapa-driver-mosaico-modular-20261016
+          bash scripts/migrate_driver_to_feature_library.sh
+      - name: Restore exact existing Mapa design assets
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 --decode mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          echo 'a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg' | sha256sum -c -
+          base64 --decode mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          echo '5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3' | sha256sum -c -
+          base64 --decode mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Install Android SDK platform
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Restore original release signing
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/mosaico-release.jks"
+          chmod 600 "$RUNNER_TEMP/mosaico-release.jks"
+      - name: Build both signed apps using physically independent shared driver
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/mosaico-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :mapatrayectos:assembleRelease :conductor:assembleRelease --no-daemon --stacktrace
+      - name: Validate both native packages, original signer and shared Java ownership
+        run: |
+          set -euo pipefail
+          ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          SIGNER="$ROOT/build-tools/35.0.0/apksigner"
+          AAPT="$ROOT/build-tools/35.0.0/aapt"
+          M="$(find mapatrayectos/build/outputs/apk/release -name '*.apk' | head -1)"
+          C="$(find conductor/build/outputs/apk/release -name '*.apk' | head -1)"
+          test -s "$M" && test -s "$C"
+          mkdir -p artifacts
+          cp "$M" artifacts/mapa-trayectos-mosaico-modular-r25.27.apk
+          cp "$C" artifacts/traslados-conductor-mosaico-modular-r10.apk
+          for apk in artifacts/*.apk; do
+            "$SIGNER" verify --verbose --print-certs "$apk" > "$apk.signing"
+            grep -qi 'd91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d' "$apk.signing"
+            "$AAPT" dump badging "$apk" > "$apk.info"
+          done
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='79'" artifacts/mapa-trayectos-mosaico-modular-r25.27.apk.info
+          grep -q "package: name='uy.com.traslados.conductor' versionCode='132'" artifacts/traslados-conductor-mosaico-modular-r10.apk.info
+          ! grep -q 'conductor/src/main/java' feature/driver/build.gradle
+          ! grep -q 'prepareEmbeddedConductor' mapatrayectos/build.gradle
+          (cd artifacts && sha256sum *.apk > MOSAICO-SHA256SUMS.txt)
+          echo PASS: Two signed APKs, original signer, no rewritten driver code
+      - name: Commit atomic source relocation after both builds passed
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados Mosaic CI'
+          git config user.email 'actions@users.noreply.github.com'
+          mkdir -p preview-artifacts
+          cp artifacts/mapa-trayectos-mosaico-modular-r25.27.apk preview-artifacts/
+          cp artifacts/traslados-conductor-mosaico-modular-r10.apk preview-artifacts/
+          cp artifacts/MOSAICO-SHA256SUMS.txt preview-artifacts/
+          git add preview-artifacts
+          git commit -m 'Mosaico: Conductor source and assets physically owned by feature driver'
+          git push origin HEAD:feature/mapa-driver-mosaico-modular-20261016
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mosaico-Mapa-R25-27-y-Conductor-R10-firmados
+          path: artifacts/
+          retention-days: 30
