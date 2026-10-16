@@ -25,9 +25,9 @@ assert(js.includes('results.id="location-results-"+key')&&js.includes('input.set
   "Programmatic relationship for suggestions");
 assert(js.includes('"tiny-btn location-use-current"'),"GPS action remains distinct");
 assert(js.includes('box.classList.toggle("is-selected",Boolean(selected))'),"Chosen location gets visual state");
-assert(js.includes("window.TrasladosAddress.find(q,dept)")&&js.includes("window.TrasladosGeo.find(q,dept)"),
+assert(js.includes("window.TrasladosAddress.findAcross(q,dept)")&&js.includes("window.TrasladosGeo.find(q,null)"),
   "Keep independent address/POI engines");
-assert(js.includes("window.TrasladosAddress.resolve(p,q,dept)"),"Keep geocoding verification");
+assert(js.includes("window.TrasladosAddress.resolve(p,q,p.departamento||dept)"),"Keep geocoding verification");
 assert(js.includes("getCurrentPosition(async p=>"),"Keep opt-in GPS");
 assert(js.includes("renderRouteSummary()")&&js.includes("window.TrasladosRoutes"),"Keep road estimates");
 assert(js.includes("window.TrasladosBookingContracts.registeredReservation")&&js.includes("window.TrasladosBookingContracts.guestReservation"),
