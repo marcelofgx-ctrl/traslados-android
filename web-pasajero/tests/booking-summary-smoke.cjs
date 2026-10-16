@@ -27,7 +27,7 @@ assert(css.includes(".route-extra:not([open])"),"Route details must remain folde
 assert(!html.includes('id="urgent-whatsapp"'),"Remove WhatsApp CTA from reservation form");
 assert(js.includes('selectedPickupMode!=="schedule"'),"Immediate booking must not use normal reservation RPC");
 assert(js.includes("Recibimos tu pedido de recogida. El conductor debe responder"),"Urgent pickup must require human acceptance");
-assert(js.includes('rpc("customer_request_pickup_v1"'),"Urgent pickup must reach backend");
+assert(js.includes('rpc("customer_request_pickup_fixed_v1"'),"Urgent pickup must reach fixed-fare backend");
 
 
 class E{
