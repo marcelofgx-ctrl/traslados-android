@@ -54,6 +54,7 @@
     const quotePending=q==="ENVIADO"&&total>0&&status==="PENDIENTE";
     const quoteExpired=quotePending&&expiredQuote(r);
     const urgentExpired=expiredImmediate(r);
+    const fixed=r?.fare_mode==="fixed";
     if(terminal.has(status)){
       if(status==="FINALIZADA")return {label:"Finalizada",tone:"complete",icon:"check-circle",rank:5,action:"Ver detalle"};
       if(status==="RECHAZADA_CLIENTE")return {label:"Presupuesto rechazado",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
@@ -70,6 +71,8 @@
     if(status==="EN_CAMINO")return {label:"Conductor en camino",tone:"moving",icon:"car-front",rank:3,action:"Ver llegada"};
     if(status==="EN_PUNTO")return {label:"Conductor llegó",tone:"moving",icon:"map-pin-check",rank:3,action:"Ver detalle"};
     if(accepted.has(status)||q==="ACEPTADO")return {label:"Confirmada",tone:"confirmed",icon:"check-circle-2",rank:2,action:"Ver detalle"};
+    if(fixed&&q==="PRECIO_FIJO"&&status==="PENDIENTE")
+      return {label:"Esperando al conductor",tone:"pending",icon:"clock-3",rank:0,action:"Seguir solicitud"};
     if(quotePending)return {label:"Presupuesto para responder",tone:"attention",icon:"wallet",rank:1,action:"Aceptar o rechazar"};
     if(q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
     return {label:"Pendiente",tone:"pending",icon:"clock-3",rank:0,action:"Ver detalle"};
@@ -80,8 +83,12 @@
     const meta=metadata(r);
     if(meta.tone==="expired")return "La hora prevista ya pasó sin confirmación. Podés solicitar otro traslado; esta reserva no se cancela automáticamente.";
     if(meta.tone==="attention")return "Tenés un presupuesto para responder. Revisá el importe y elegí si lo aceptás.";
-    if(meta.tone==="pending")return "Recibimos tu solicitud. El conductor la revisará.";
-    if(meta.tone==="confirmed")return "Tu traslado está confirmado. Podés escribirle al conductor.";
+    if(meta.tone==="pending")return r?.fare_mode==="fixed"
+      ?"Recibimos tu viaje con precio cerrado. El conductor puede aceptarlo o rechazarlo; no necesitás aprobar otro presupuesto."
+      :"Recibimos tu solicitud. El conductor la revisará.";
+    if(meta.tone==="confirmed")return r?.fare_mode==="fixed"
+      ?"El conductor aceptó tu viaje y el precio acordado. Podés escribirle mientras prepara la recogida."
+      :"Tu traslado está confirmado. Podés escribirle al conductor.";
     if(meta.tone==="moving"){
       if(r?.status==="EN_VIAJE")return "Tu traslado está en curso.";
       if(r?.pickup_phase==="EN_PUNTO"||r?.status==="EN_PUNTO")
