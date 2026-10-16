@@ -40,6 +40,10 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,1);
  assert.equal(nodes["pickup-presence"].dataset.phase,"routing");
+ assert.match(nodes["pickup-presence-title"].textContent,/calculando llegada/i,
+   "Disponibilidad positiva NO significa ETA conductor→origen validada");
+ assert.notEqual(nodes["pickup-presence-title"].textContent,"Conductor disponible para recogerte");
+ assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,1,"Repeated 15s presence polls must not send duplicate slow ETA");
@@ -54,6 +58,9 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  assert.equal(pickupCalls,2);
  pending[1].resolve({available:false,reason:"route_unavailable"});
  await tick();
+ assert.equal(nodes["pickup-presence"].dataset.presence,"eta-unavailable",
+   "route_unavailable deja estado degradado, nunca disponibilidad lista");
+ assert.match(nodes["pickup-presence-title"].textContent,/sin estimar/i);
  assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i);
  assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
