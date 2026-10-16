@@ -1801,14 +1801,7 @@ async function loadTrips({background=false}={}){
     const guests=jsonStorage(GUEST_KEY,[]).filter(g=>g&&typeof g.token==="string"&&g.token.length>0);
     if(guests.length){
       const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
-      const seen=new Set(rows.map(r=>String(r?.id||"")).filter(Boolean));
-      result.forEach((x,i)=>{
-        if(x.status!=="fulfilled"||!x.value||!x.value.id)return;
-        const id=String(x.value.id);
-        if(seen.has(id))return;
-        seen.add(id);
-        rows.push({...x.value,__guestToken:guests[i].token});
-      });
+      rows=window.TrasladosGuestHistory.merge(rows,guests,result);
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
     const nextRenderKey=tripDisplayKey(rows);
