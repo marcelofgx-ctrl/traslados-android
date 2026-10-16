@@ -1,0 +1,35 @@
+name: Restore stable PR99 v25 signed download
+on:
+  push:
+    branches: [feature/tu-viaje-premium-visual-20261015]
+    paths:
+      - '.github/workflows/restore-pr99-v25.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore original signed APK from independently verified 01:29 build
+        run: |
+          set -euo pipefail
+          ORIGIN_COMMIT=21713b0fb59cfab344b46ce85047fca42d991208
+          NAME=traslados-cliente-premium-pr99-v25-operativa.apk
+          git show "$ORIGIN_COMMIT:preview-artifacts/$NAME" > /tmp/pr99-original-v25.apk
+          echo '12eeb9066e66f96e02793201da07c008ca90f3f98dc8dd41e2512c0ea39091bd  /tmp/pr99-original-v25.apk' | sha256sum -c -
+          git config user.name "Traslados Restore CI"
+          git config user.email "actions@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin feature/tu-viaje-premium-visual-20261015
+            git reset --hard origin/feature/tu-viaje-premium-visual-20261015
+            cp /tmp/pr99-original-v25.apk "preview-artifacts/$NAME"
+            git add "preview-artifacts/$NAME"
+            git diff --cached --quiet && exit 0
+            git commit -m "Restaurar APK PR99 v25 original firmada sin nueva lógica"
+            if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
+          done
+          exit 1
