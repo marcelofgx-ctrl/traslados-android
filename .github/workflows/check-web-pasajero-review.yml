@@ -80,6 +80,7 @@ jobs:
           node web-pasajero/tests/public-config-v72-smoke.cjs
           node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
+          node web-pasajero/tests/guest-request-session-smoke.cjs
           node --check web-pasajero/sw.js
       - name: Verify review flow and offline safety
         run: |
