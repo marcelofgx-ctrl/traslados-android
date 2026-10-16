@@ -1757,7 +1757,18 @@ function renderTripsBoard({reset=false}={}){
   }
   const groups=tripBoard.groupReservations(tripRows,{scope:tripsScope,groupBy:tripsGroupBy,status:tripsFilter});
   if(!groups.length){
-    text(list,"div",tripRows.length?"No hay traslados que coincidan con estos filtros.":"Todavía no hay reservas para mostrar.","trip-empty");return;
+    if(tripRows.length){
+      text(list,"div","No hay traslados que coincidan con estos filtros.","trip-empty");
+    }else{
+      text(list,"div",authReady()
+        ?"No hay traslados vinculados a esta cuenta ni comprobantes de invitado en este navegador. Las solicitudes hechas desde otra app o navegador no se recuperan automáticamente."
+        :"No hay solicitudes guardadas en este navegador. Los viajes enviados como invitado solo pueden consultarse desde donde se enviaron; iniciá sesión para conservar un historial entre dispositivos.","trip-empty");
+      if(!authReady()){
+        const tools=text(list,"div","","trips-empty-actions");
+        button(tools,"MI CUENTA","secondary",()=>shiftView("cuenta"));
+      }
+    }
+    return;
   }
   groups.forEach((g,i)=>{
     const day=document.createElement("details");day.className="trips-day";day.dataset.key=g.key;
@@ -1779,14 +1790,25 @@ async function loadTrips({background=false}={}){
   tripsLoading=true;
   const status=$("trips-status");if(!background&&!tripLoaded)status.textContent="Consultando tus traslados…";
   try{
+    // One browser may contain BOTH a logged-in account and guest receipts
+    // created before login. Do not discard proof-of-ownership guest tokens.
+    // Each receipt is read through the existing token-authorized RPC only.
     let rows=[];
     if(requestSession){
       const result=await rpc("customer_list_reservations_v15",{p_session_token:requestSession});
       rows=Array.isArray(result)?result:[];
-    }else{
-      const guests=jsonStorage(GUEST_KEY,[]);
+    }
+    const guests=jsonStorage(GUEST_KEY,[]).filter(g=>g&&typeof g.token==="string"&&g.token.length>0);
+    if(guests.length){
       const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
-      result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
+      const seen=new Set(rows.map(r=>String(r?.id||"")).filter(Boolean));
+      result.forEach((x,i)=>{
+        if(x.status!=="fulfilled"||!x.value||!x.value.id)return;
+        const id=String(x.value.id);
+        if(seen.has(id))return;
+        seen.add(id);
+        rows.push({...x.value,__guestToken:guests[i].token});
+      });
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
     const nextRenderKey=tripDisplayKey(rows);
