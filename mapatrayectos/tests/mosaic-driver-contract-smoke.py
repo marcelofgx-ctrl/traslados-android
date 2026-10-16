@@ -22,7 +22,10 @@ assert "prepareEmbeddedConductor" not in mapa
 assert "replace('super.onResume();" not in mapa
 assert "uy.com.mapatrayectos" not in bridge
 assert "uy.com.mapatrayectos" not in monitor
-assert "uy.com.mapatrayectos" not in activity
+# A package-id string for UI labeling is allowed; importing Mapa Java types is not.
+assert "import uy.com.mapatrayectos." not in activity
+assert "uy.com.mapatrayectos.TransferAlerts" not in activity
+assert "uy.com.mapatrayectos.TrackingService" not in activity
 assert "DriverHostBridge.install(this)" in host
 assert 'android:name=".MapaHostApplication"' in manifest
 assert "DriverHostBridge.onPendingSnapshot(this,a)" in monitor
