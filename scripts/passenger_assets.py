@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Deterministic web-to-APK assets layer for the Traslados passenger mosaic.
+
+No network access and no dependencies. A native APK contains the same runtime
+files as the passenger PWA, except SW registration, test suites and downloads.
+Incremental sync preserves unchanged mtimes so local Gradle's input snapshots
+and caches can be reused; stale files are removed.
+"""
+from __future__ import annotations
+from pathlib import Path
+import hashlib
+import json
+import shutil
+
+EXTENSIONS = frozenset({".html", ".js", ".css", ".svg", ".png", ".jpg",
+                        ".jpeg", ".webp", ".webmanifest", ".woff", ".woff2", ".json"})
+EXCLUDED_DIRS = frozenset({"downloads", "tests", "node_modules", ".git", "__pycache__"})
+EXCLUDED_FILES = frozenset({"sw.js"})
+
+def runtime_files(web: Path) -> dict[str, Path]:
+    result = {}
+    for src in sorted(web.rglob("*")):
+        if not src.is_file():
+            continue
+        rel = src.relative_to(web)
+        if any(part in EXCLUDED_DIRS for part in rel.parts[:-1]):
+            continue
+        if rel.name in EXCLUDED_FILES or src.suffix.lower() not in EXTENSIONS:
+            continue
+        result[rel.as_posix()] = src
+    required = {"index.html", "app.js", "route-engine.js", "eta-engine.js",
+                "booking-contracts.js", "trip-board.js", "rpc-client.js"}
+    absent = required - result.keys()
+    if absent:
+        raise ValueError("Required passenger runtime missing: " + ", ".join(sorted(absent)))
+    return result
+
+def write_if_changed(destination: Path, data: bytes) -> bool:
+    if destination.is_file() and destination.read_bytes() == data:
+        return False
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+    return True
+
+def sync_runtime(web: Path, target: Path) -> dict[str, int]:
+    items = runtime_files(web)
+    target.mkdir(parents=True, exist_ok=True)
+    desired = set(items)
+    copied = 0
+    reused = 0
+    for rel, src in items.items():
+        dst = target / rel
+        if dst.is_file() and dst.stat().st_size == src.stat().st_size and                 hashlib.sha256(dst.read_bytes()).digest() == hashlib.sha256(src.read_bytes()).digest():
+            reused += 1
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, dst)
+            copied += 1
+    removed = 0
+    for dst in sorted(target.rglob("*"), reverse=True):
+        if dst.is_file() and dst.relative_to(target).as_posix() not in desired:
+            dst.unlink()
+            removed += 1
+        elif dst.is_dir() and not any(dst.iterdir()):
+            dst.rmdir()
+    return {"copied": copied, "reused": reused, "removed": removed}
+
+def sha256_manifest(target: Path) -> dict[str, str]:
+    return {p.relative_to(target).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted(target.rglob("*")) if p.is_file()}
+
+def manifest_json(target: Path) -> bytes:
+    return (json.dumps(sha256_manifest(target), ensure_ascii=False,
+                       sort_keys=True, indent=2) + "\n").encode("utf-8")
