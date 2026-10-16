@@ -29,7 +29,7 @@ public final class TripRequestCard extends ScrollView {
     private static final int GREEN=Color.rgb(116,213,174);
     private final Context context;
     private final JSONObject request;
-    private final Runnable dismiss, openDriver, onResize;
+    private final Runnable dismiss, openDriver, openHistory, onResize;
     private final Decision decision;
     private boolean expanded=false, busy=false, acceptUnavailable=false;
     private String issueMessage="";
@@ -40,12 +40,13 @@ public final class TripRequestCard extends ScrollView {
     private final double price;
 
     public TripRequestCard(Context context,JSONObject request,Runnable dismiss,
-                           Runnable openDriver,Runnable onResize,Decision decision){
+                           Runnable openDriver,Runnable openHistory,Runnable onResize,Decision decision){
         super(context);
         this.context=context;
         this.request=request;
         this.dismiss=dismiss;
         this.openDriver=openDriver;
+        this.openHistory=openHistory;
         this.onResize=onResize;
         this.decision=decision;
         price=request.optDouble("quote_final_total",0);
@@ -146,7 +147,12 @@ public final class TripRequestCard extends ScrollView {
             if(!comments.isEmpty()&&!"null".equalsIgnoreCase(comments))
                 field("OBSERVACIONES",comments);
             TextView more=text("◈  Ruta, chat, llamada y estados en Conductor",11,MUTED,false);
-            content.addView(more,space(4,8));
+            content.addView(more,space(4,5));
+            TextView history=text("▦  VER HISTORIAL DEL CONDUCTOR  ↗",12,GOLD,true);
+            history.setMinHeight(dp(42));history.setGravity(Gravity.CENTER);
+            history.setContentDescription("Abrir historial del Conductor");
+            content.addView(history,space(2,5));
+            history.setOnClickListener(v->openHistory.run());
         }
         TextView expand=text(expanded?"⌃  MENOS DETALLES":"⌄  VER DETALLES",11,GOLD,true);
         expand.setGravity(Gravity.CENTER);
