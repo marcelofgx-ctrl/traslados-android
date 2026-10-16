@@ -1232,7 +1232,7 @@ function showPreview(){
     const quote=latestRoad?.key===routeKeyOf([p.origin,...p.stops,p.destination])
       ? latestRoad.data.referenceFareUyu : null;
     text(budget,"strong",Number.isFinite(quote)&&quote>0
-      ? "$ "+quote.toLocaleString("es-UY",{maximumFractionDigits:0})+" aprox." : "A confirmar por el conductor");
+      ? "$ "+quote.toLocaleString("es-UY",{maximumFractionDigits:2})+" aprox." : "A confirmar por el conductor");
     text(budget,"p","Es una referencia sin peajes ni extras. El conductor enviará el presupuesto definitivo desde Mapa; no se cobra ni confirma el viaje al solicitar.");
 
     const tools=text(target,"div","","preview-tools");
