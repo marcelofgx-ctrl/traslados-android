@@ -35,7 +35,9 @@
   async function preload(){
     if(indexPromise)return indexPromise;
     catalogState="loading";
-    indexPromise=fetch(catalogUrl,{cache:"default"}).then(async r=>{
+    const ctrl=typeof AbortController==="function"?new AbortController():null;
+    const timer=ctrl&&typeof setTimeout==="function"?setTimeout(()=>ctrl.abort(),11000):null;
+    indexPromise=fetch(catalogUrl,{cache:"default",...(ctrl?{signal:ctrl.signal}:{})}).then(async r=>{
       if(!r.ok)throw new Error("Índice de lugares no publicado ("+r.status+")");
       const data=await r.json();
       if(data.version!==1||!Array.isArray(data.items)||data.items.length<5000)
@@ -43,7 +45,8 @@
       readyCount=data.items.length;
       catalogState="ready";
       return data.items.map(extract).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));
-    }).catch(e=>{indexPromise=null;catalogState="error";throw e;});
+    }).catch(e=>{indexPromise=null;catalogState="error";throw e;})
+      .finally(()=>{if(timer!==null)clearTimeout(timer);});
     return indexPromise;
   }
   function score(p,q,selectedDept){

@@ -1,0 +1,43 @@
+name: QA IDE Uruguay street search Roque Saenz Peña
+on:
+  push:
+    branches: [fix/uruguay-search-autocomplete-20261016]
+    paths:
+      - '.github/workflows/qa-ide-search-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-ide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect published IDE API parameters and Roque Saenz Pena search
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests,json
+          host='https://direcciones.ide.uy'
+          s=requests.Session()
+          try:
+            r=s.get(host+'/v2/api-docs',timeout=15);print('SWAGGER_HTTP',r.status_code)
+            spec=r.json()
+            for path in ['/api/v1/geocode/candidates','/api/v1/geocode/direcUnica','/api/v1/geocode/fuzzyGeocode','/api/v1/geocode/tramosCalle','/api/v1/geocode/find']:
+              x=spec['paths'][path]['get']
+              print('ENDPOINT',path,'PARAMS',[(p['name'],p.get('required'),p.get('default')) for p in x.get('parameters',[])])
+          except Exception as e:
+            print('SWAGGER_UNAVAILABLE',type(e).__name__,str(e)[:150])
+          for name,url,params in [
+            ('current_candidates',host+'/api/v1/geocode/candidates',{'limit':30,'q':'Roque saenz peña'}),
+            ('accentless_candidates',host+'/api/v1/geocode/candidates',{'limit':30,'q':'Roque Saenz Pena'}),
+            ('old_suggest',host+'/api/v0/geocode/SugerenciaCalleCompleta',{'entrada':'Roque Saenz Pena','tipoRespuesta':'json'}),
+            ('direcUnica_street',host+'/api/v1/geocode/direcUnica',{'limit':6,'q':'ROQUE SAENZ PEÑA, LAGOMAR, CANELONES'}),
+            ('direcUnica_number',host+'/api/v1/geocode/direcUnica',{'limit':6,'q':'ROQUE SAENZ PEÑA 1234, LAGOMAR, CANELONES'}),
+            ('fuzzy',host+'/api/v1/geocode/fuzzyGeocode',{'limit':6,'q':'Roque Saens Pena, Shangrila, Canelones'})
+          ]:
+            try:
+              r=s.get(url,params=params,timeout=18,headers={'Origin':'https://marcelofgx-ctrl.github.io'})
+              print('QUERY',name,'HTTP',r.status_code,'CORS',r.headers.get('access-control-allow-origin'),'BODY',r.text[:1500])
+            except Exception as e: print('QUERY_FAIL',name,type(e).__name__,str(e)[:150])
+          PY

@@ -632,7 +632,9 @@ function picker(name,mount,position){
     selectedBox.hidden=false;controls.hidden=true;
     const shown=text(selectedBox,"div","","location-chosen-content");
     text(shown,"strong",selected.text,"location-selected-label");
-    text(shown,"small",selected.department?selected.department+" · Ubicación seleccionada":"Ubicación seleccionada","location-selected-hint");
+    text(shown,"small",selected.approximate
+      ?(selected.department||"Uruguay")+" · Referencia aproximada de calle. Para una recogida precisa, indicá altura o esquina."
+      :selected.department?selected.department+" · Ubicación seleccionada":"Ubicación seleccionada","location-selected-hint");
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;box.classList.remove("is-selected");selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
@@ -644,10 +646,12 @@ function picker(name,mount,position){
     if(!isUruguayCoords(loc.lat,loc.lng))throw new Error("El punto no está dentro de Uruguay.");
     selected={...loc,lat:Number(loc.lat),lng:Number(loc.lng)};
     ++sequence;clearTimeout(debounce);
+    if(selected.department&&selected.department!==dept){dept=selected.department;highlight();}
     if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
     else record.stops[position]=selected;
     clear(results);repaint();renderRouteSummary();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
+       !record.origin.approximate&&!record.destination.approximate&&
        !routeStepAutoAdvanced&&bookingSteps?.active()==="route"){
       routeStepAutoAdvanced=true;
       bookingSteps.open("when",{scroll:true});
@@ -655,84 +659,120 @@ function picker(name,mount,position){
     }
   }
   function chooseDept(d){
+    ++sequence;clearTimeout(debounce);loading(search,false);
     dept=d;depts[key]=d;highlight();
     if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;}
     clear(results);feedback.hidden=true;renderRouteSummary();
     if(input.value.trim().length>=2)void lookup();
   }
   select.addEventListener("change",()=>{if(select.value)chooseDept(select.value);});
-  // El motor de direcciones se encuentra en address-engine.js.
-  function renderEntries(places,addresses,q){
+  // El motor IDE devuelve sugerencias de calles sin coordenadas. Es correcto:
+  // se muestra la calle y se obtiene su ubicación oficial al seleccionarla.
+  // Cuando el departamento no coincide, ofrecer alternativas nacionales sin
+  // forzar al pasajero a saber de antemano dónde está la dirección.
+  function renderEntries(places,addresses,q,otherPlaces=[],otherAddresses=[],issues=[],pending=false){
     if(selected)return;
     clear(results);source.hidden=true;
-    const dedup=new Set(),unique=[];
-    const all=[
-      ...places.map(p=>({type:"place",name:p.name,secondary:[p.hint,p.department].filter(Boolean).join(" · "),point:p})),
-      ...addresses.map(p=>({type:"address",name:p.address,secondary:p.departamento||"Uruguay",point:p})),
+    const normalize=window.TrasladosGeo.normalize;
+    const seen=new Set();
+    const makeItems=(ps,as,elsewhere)=>[
+      ...ps.map(p=>({type:"place",name:p.name,secondary:[p.hint,p.department].filter(Boolean).join(" · "),point:p,elsewhere})),
+      ...as.map(p=>({type:"address",name:p.address,
+        secondary:[p.localidad,p.departamento].filter(Boolean).join(" · "),point:p,elsewhere})),
     ];
-    for(const item of all){
-      const normalized=window.TrasladosGeo.normalize(item.name);
-      const key=normalized+"|"+item.type;
-      if(!normalized||dedup.has(key))continue;
-      dedup.add(key);unique.push(item);
-      if(unique.length>=11)break;
-    }
-    for(const item of unique){
+    const local=makeItems(places,addresses,false);
+    const other=makeItems(otherPlaces,otherAddresses,true);
+    let used=0,hasLocal=false,hasOther=false;
+    const addItem=(item)=>{
+      const normalized=normalize(item.name);
+      const loc=normalize(item.point.localidad||item.point.hint||"");
+      const k=normalized+"|"+item.type+"|"+normalize(item.point.department||item.point.departamento)+"|"+loc;
+      if(!normalized||seen.has(k)||used>=11)return;
+      seen.add(k);
+      if(item.elsewhere&&!hasOther){
+        text(results,"p","Otras ubicaciones en Uruguay","location-result-heading");
+        hasOther=true;
+      }else if(!item.elsewhere&&!hasLocal){
+        text(results,"p","En "+dept,"location-result-heading");
+        hasLocal=true;
+      }
       const btn=button(results,"",item.type==="place"?"result result-place":"result",async()=>{
+        const clickSequence=sequence;
+        if(btn.disabled)return;
+        btn.disabled=true;
+        feedback.hidden=false;
+        feedback.textContent="Comprobando la ubicación de "+item.name+"…";
         try{
           const p=item.point;
-          let lat=Number(p.lat),lng=Number(p.lng);
+          let lat=Number(p.lat),lng=Number(p.lng),approximate=false;
           if(item.type==="address"){
-            const resolved=await window.TrasladosAddress.resolve(p,q,dept);
-            lat=resolved.lat;lng=resolved.lng;
+            const resolved=await window.TrasladosAddress.resolve(p,q,p.departamento||dept);
+            lat=resolved.lat;lng=resolved.lng;approximate=Boolean(resolved.approximate);
           }
-          persist({text:item.name,lat,lng,department:item.type==="place"?p.department||dept:p.departamento||dept});
-        }catch(e){showError(e);}
+          if(clickSequence!==sequence||selected)return;
+          persist({text:item.name,lat,lng,approximate,
+            department:item.type==="place"?p.department||dept:p.departamento||dept});
+        }catch(e){
+          if(clickSequence===sequence&&!selected){
+            feedback.hidden=false;
+            feedback.textContent=String(e.message||"No pudimos verificar esta ubicación. Probá con una altura o esquina.");
+          }
+        }finally{btn.disabled=false;}
       });
       text(btn,"span",item.name,"result-title");
-      text(btn,"small",(item.type==="place"?"◉ Lugar · ":"⌖ Dirección · ")+item.secondary,"result-subtitle");
-    }
-    const fromOsm=places.some(p=>p.id?.startsWith("osm-"));
-    const local=places.some(p=>p.source==="local-verified");
-    if(fromOsm||local){
+      const typeName=item.type==="place"?"◉ Lugar":"⌖ "+(String(item.point.type||"").toUpperCase()==="CALLE"?"Calle · ubicación aproximada":"Dirección");
+      text(btn,"small",typeName+" · "+item.secondary,"result-subtitle");
+      used++;
+    };
+    for(const item of local)addItem(item);
+    for(const item of other)addItem(item);
+    const fromOsm=[...places,...otherPlaces].some(p=>p.id?.startsWith("osm-"));
+    const localPlace=[...places,...otherPlaces].some(p=>p.source==="local-verified");
+    if(fromOsm||localPlace||addresses.length||otherAddresses.length){
       source.hidden=false;
       source.textContent=(fromOsm?"Lugares: © OpenStreetMap contributors (ODbL). ":"")+
-        (local?"Guía de la Costa: ubicación de referencia. ":"")+
-        "Confirmá en el mapa el acceso exacto si es necesario.";
+        (localPlace?"Guía de la Costa: ubicación de referencia. ":"")+
+        (addresses.length||otherAddresses.length?"Calles: IDE Uruguay. ":"")+
+        "Confirmá la ubicación exacta para la recogida.";
     }
-    if(!unique.length){
-      feedback.hidden=false;
-      feedback.textContent=window.TrasladosGeo.catalogState==="error"
-        ?"No pudimos consultar los lugares. Revisá la conexión y volvé a buscar; también podés probar una dirección."
-        :"Sin coincidencias en "+dept+". Probá el nombre completo o una dirección. Para buscar en otro departamento, cambialo arriba.";
+    if(used){
+      feedback.hidden=true;
+      return;
     }
-    else feedback.hidden=true;
+    feedback.hidden=false;
+    if(pending)feedback.textContent="Buscando calles y lugares en Uruguay…";
+    else if(issues.length)feedback.textContent="No pudimos consultar todas las direcciones. Revisá la conexión o tocá Buscar para reintentar.";
+    else feedback.textContent="No encontramos esa dirección en Uruguay. Probá otra escritura, número o esquina.";
   }
   const lookup=async()=>{
     const q=input.value.trim();
-    if(q.length<2){clear(results);feedback.hidden=true;return;}
+    if(q.length<2){++sequence;clear(results);feedback.hidden=true;loading(search,false);return;}
     const seq=++sequence;
     const quick=window.TrasladosGeo.immediate(q,dept);
-    renderEntries(quick,[],q);
+    renderEntries(quick,[],q,[],[],[],q.length>=3);
     if(q.length<3)return;
-    let places=quick,addresses=[],done=0;
+    let places=quick,addresses=[],others=[],otherAddresses=[],issues=[],done=0;
     loading(search,true);
-    feedback.hidden=false;feedback.textContent=quick.length?"Buscando otros lugares…":"Buscando lugares y direcciones en "+dept+"…";
     const update=()=>{
       if(seq!==sequence||selected)return;
-      renderEntries(places,addresses,q);
-      if(done<2){
-        feedback.hidden=false;feedback.textContent="Buscando más resultados…";
-      }
+      renderEntries(places,addresses,q,others,otherAddresses,issues,done<2);
       if(done===2)loading(search,false);
     };
     const placesTask=(async()=>{
-      try{places=await window.TrasladosGeo.find(q,dept);}catch{/* IDE fallback still available */}
+      try{
+        const all=await window.TrasladosGeo.find(q,null);
+        const n=window.TrasladosGeo.normalize;
+        places=all.filter(p=>n(p.department)===n(dept));
+        others=all.filter(p=>n(p.department)!==n(dept)).slice(0,4);
+        if(window.TrasladosGeo.catalogState==="error")issues.push("catalog");
+      }catch{issues.push("catalog");}
       finally{done++;update();}
     })();
     const streetTask=(async()=>{
-      try{addresses=await window.TrasladosAddress.find(q,dept);}
-      catch{/* POI index still available */}
+      try{
+        const found=await window.TrasladosAddress.findAcross(q,dept);
+        addresses=found.local;otherAddresses=found.other.slice(0,5);
+      }catch{issues.push("directions");}
       finally{done++;update();}
     })();
     await Promise.allSettled([placesTask,streetTask]);
@@ -745,7 +785,7 @@ function picker(name,mount,position){
     }
   });
   input.addEventListener("input",()=>{
-    ++sequence;clearTimeout(debounce);clear(results);feedback.hidden=true;
+    ++sequence;clearTimeout(debounce);loading(search,false);clear(results);feedback.hidden=true;
     const q=input.value.trim();
     if(q.length<2)return;
     renderEntries(window.TrasladosGeo.immediate(q,dept),[],q);
