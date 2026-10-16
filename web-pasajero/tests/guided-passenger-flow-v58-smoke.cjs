@@ -45,7 +45,7 @@ assert(app.includes('if(activeTripChat.closed){')&&app.includes('tripChatDrafts.
 assert(app.includes('if(closed!==activeTripChat.closed)openTripChat'),
   "Terminal state from backend must force the open chat into archive mode");
 assert(app.includes('text(bubble,"span",item.body||"")'),"Customer messages are text, not HTML");
-assert(app.includes('tripProgress(historyBody,meta)')&&app.includes('tripTimeline(historyBody,r)'),
+assert(app.includes('tripProgress(historyBody,meta,r)')&&app.includes('tripTimeline(historyBody,r)'),
   "Progress and complete event history are preserved in on-demand details");
 assert(app.includes('tripLine(infoBody,"◉",r.origin_text||"Origen")')&&
   app.includes('tripLine(infoBody,"◆",r.destination_text||"Destino")'),"Full trip record is preserved");
