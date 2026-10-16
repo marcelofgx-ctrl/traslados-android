@@ -23,7 +23,7 @@ permissions:
   contents: write
 concurrency:
   group: cliente-mosaico-v27-signed
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -50,6 +50,23 @@ jobs:
           set -euo pipefail
           start=$SECONDS
           python3 scripts/prepare_premium_preview.py --operational
+          # Assert an unchanged second run is a true incremental no-op:
+          # WebView assets, Gradle and Java must keep exactly the same mtimes.
+          python3 - <<'PYIDEMPOTENT'
+          from pathlib import Path
+          import json,subprocess
+          files=[Path("cliente-premium/app/src/main/assets/premium-preview")/n
+                 for n in ("index.html","app.js","eta-engine.js","preview-isolation.css")]
+          files += [Path("cliente-premium/app/build.gradle"),
+                    Path("cliente-premium/app/src/main/java/uy/com/traslados/cliente/MainActivity.java"),
+                    Path("preview-web-sha256.json")]
+          previous={str(p):(p.stat().st_mtime_ns,p.read_bytes()) for p in files}
+          subprocess.run(["python3","scripts/prepare_premium_preview.py","--operational"],check=True)
+          for p in files:
+            original=previous[str(p)]
+            assert (p.stat().st_mtime_ns,p.read_bytes())==original,"Not incremental: "+str(p)
+          print("PASS: second operational package is a byte- and mtime-identical no-op")
+          PYIDEMPOTENT
           echo "PREPARE_SECONDS=$((SECONDS-start))" >> "$GITHUB_ENV"
           mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
           cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
