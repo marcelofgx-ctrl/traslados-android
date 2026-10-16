@@ -37,7 +37,7 @@ public class ReservationMonitorService extends Service {
     @Override public void onCreate(){super.onCreate();Api.init(getApplicationContext());createChannels();}
 
     @Override public int onStartCommand(Intent intent,int flags,int startId){
-        driverBubbleStartLoop();
+        if(!DriverHostBridge.isEmbedded())driverBubbleStartLoop();
         if(intent!=null){
   String bubbleAction=intent.getAction();
   if(DRIVER_BUBBLE_HIDE.equals(bubbleAction)){
@@ -72,7 +72,7 @@ public class ReservationMonitorService extends Service {
             try{
                 String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
                 if(!pin.isEmpty()){
-                    JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();
+                    JSONArray a=Api.listActive(pin);DriverHostBridge.onPendingSnapshot(this,a);Set<String> now=new HashSet<>();
                     for(int i=0;i<a.length();i++){
                         JSONObject r=a.getJSONObject(i);
                         if(!"PENDIENTE".equals(r.optString("status")))continue;
@@ -123,7 +123,8 @@ public class ReservationMonitorService extends Service {
     }
 
     private void notifyNew(JSONObject r){
-        driverBubbleMarkNew(r);
+        if(DriverHostBridge.isEmbedded())DriverHostBridge.onNewRequest(this,r);
+        else driverBubbleMarkNew(r);
         driverNewReservationCueOnce(r);
 
         Intent open=new Intent(this,MainActivity.class);open.putExtra("open_requests",true);open.putExtra("reservation_id",r.optString("id",""));open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -181,6 +182,7 @@ running=false;if(worker!=null)worker.interrupt();super.onDestroy();}
     };
 
     private void driverBubbleStartLoop(){
+        if(DriverHostBridge.isEmbedded())return;
         if(driverBubbleLoopStarted)return;
         driverBubbleLoopStarted=true;
         driverBubbleHandler.post(driverBubbleTick);
@@ -303,12 +305,13 @@ running=false;if(worker!=null)worker.interrupt();super.onDestroy();}
     private void driverBubbleSyncVisibility(){if(driverBubbleForeground())driverBubbleHide();else driverBubbleShowIfNeeded();}
 
     private void driverBubbleShowIfNeeded(){
+        if(DriverHostBridge.isEmbedded())return;
         if(driverBubbleView!=null){driverBubbleUpdateBadge(driverBubblePrefs().getInt("unread",0));return;}
         if(!driverBubbleEnabled()||driverBubbleForeground()||!android.provider.Settings.canDrawOverlays(this))return;
         driverBubbleWindowManager=(android.view.WindowManager)getSystemService(WINDOW_SERVICE);if(driverBubbleWindowManager==null)return;
         android.widget.FrameLayout root=new android.widget.FrameLayout(this);root.setPadding(driverBubbleDp(3),driverBubbleDp(3),driverBubbleDp(3),driverBubbleDp(3));
         android.graphics.drawable.GradientDrawable shell=new android.graphics.drawable.GradientDrawable();shell.setShape(android.graphics.drawable.GradientDrawable.OVAL);shell.setColor(android.graphics.Color.rgb(5,32,40));shell.setStroke(driverBubbleDp(2),android.graphics.Color.rgb(224,193,111));root.setBackground(shell);root.setElevation(driverBubbleDp(10));
-        android.widget.ImageView logo=new android.widget.ImageView(this);logo.setImageResource(R.drawable.app_icon);logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        android.widget.ImageView logo=new android.widget.ImageView(this);logo.setImageResource(R.drawable.conductor_app_icon);logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
         android.widget.FrameLayout.LayoutParams llp=new android.widget.FrameLayout.LayoutParams(driverBubbleDp(46),driverBubbleDp(46),android.view.Gravity.TOP|android.view.Gravity.CENTER_HORIZONTAL);llp.topMargin=driverBubbleDp(3);root.addView(logo,llp);
         android.widget.TextView role=new android.widget.TextView(this);role.setText("CONDUCTOR");role.setTextColor(android.graphics.Color.rgb(235,205,125));role.setTextSize(6.0f);role.setGravity(android.view.Gravity.CENTER);role.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);role.setLetterSpacing(.09f);role.setShadowLayer(2f,0,1f,android.graphics.Color.BLACK);
         android.widget.FrameLayout.LayoutParams rlp=new android.widget.FrameLayout.LayoutParams(driverBubbleDp(56),driverBubbleDp(13),android.view.Gravity.BOTTOM|android.view.Gravity.CENTER_HORIZONTAL);rlp.bottomMargin=driverBubbleDp(2);root.addView(role,rlp);
@@ -373,6 +376,7 @@ running=false;if(worker!=null)worker.interrupt();super.onDestroy();}
         String details="{\"reservation\":\""+r.optString("code","")+"\",\"level\":\""+level+"\",\"travel_min\":"+travelMin+",\"leave_in_min\":"+leaveIn+",\"route_method\":"+method+"}";new Thread(()->Api.logEvent(leave?"trip_leave_now_reminder":"trip_prepare_reminder",text,details),"log-trip-reminder").start();
     }
     private void driverBubbleShowTripCard(){
+        if(DriverHostBridge.isEmbedded())return;
         if(!driverTripReminderActive()){driverBubbleOpenApp();return;}if(driverTripCardView!=null){driverBubbleHideTripCard();return;}if(driverBubbleWindowManager==null)driverBubbleWindowManager=(android.view.WindowManager)getSystemService(WINDOW_SERVICE);if(driverBubbleWindowManager==null)return;
         android.content.SharedPreferences p=driverTripReminderPrefs();final String rid=p.getString("reservation_id","");final String origin=p.getString("origin","");String level=p.getString("level","");int travel=p.getInt("travel_min",0),leaveIn=p.getInt("leave_in_min",0);
         android.widget.LinearLayout shell=new android.widget.LinearLayout(this);shell.setOrientation(android.widget.LinearLayout.VERTICAL);shell.setPadding(driverBubbleDp(15),driverBubbleDp(13),driverBubbleDp(15),driverBubbleDp(13));android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setColor(android.graphics.Color.rgb(7,52,63));bg.setCornerRadius(driverBubbleDp(20));bg.setStroke(driverBubbleDp(2),android.graphics.Color.rgb(184,145,55));shell.setBackground(bg);shell.setElevation(driverBubbleDp(14));
