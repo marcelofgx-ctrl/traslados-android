@@ -70,43 +70,10 @@ jobs:
               print('PASS guest contract, state:',data.get('reason'))
           print('PASS configured fare: 3.1 km x 40 UYU = 124 UYU')
           PYLIVE
-      - name: Verify passenger route fare and pickup together with real public places
-        run: |
-          python3 - <<'PYTOGETHER'
-          import json,urllib.request,urllib.error,urllib.parse,concurrent.futures
-          api='https://zetaudvvutlouiqxopvg.supabase.co'
-          key='sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9'
-          def get(url,body=None):
-              headers={'Accept':'application/json'}
-              if url.startswith(api+'/'): headers['apikey']=key
-              if body: headers.update({'Origin':'https://marcelofgx-ctrl.github.io','Content-Type':'application/json'})
-              req=urllib.request.Request(url,data=json.dumps(body).encode() if body else None,headers=headers)
-              try: response=urllib.request.urlopen(req,timeout=30)
-              except urllib.error.HTTPError as e: response=e
-              raw=response.read()
-              try:
-                  data=json.loads(raw)
-                  if 'workers.dev/' in url and not data.get('available'):
-                      print('Public route response:',response.status,{k:v for k,v in data.items() if k!='geometry'})
-                  return data
-              except ValueError:
-                  print('Non-JSON public service response:',response.status,response.headers.get('Content-Type'),raw[:180].decode('utf8','replace'))
-                  return {'available':False,'reason':'non_json_http_'+str(response.status)}
-          def road(end):
-              points='-55.969099,-34.827469;'+end
-              return get('https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?'+urllib.parse.urlencode({'points':points}))
-          with concurrent.futures.ThreadPoolExecutor() as pool:
-              passenger=pool.submit(road,'-56.016380,-34.836960')
-              pickup=pool.submit(get,api+'/functions/v1/pickup-eta',{'originLat':-34.827469,'originLng':-55.969099})
-              route=passenger.result();eta=pickup.result()
-          assert route.get('available') and route.get('distanceKm',0)>0 and route.get('durationMin',-1)>=0,{k:route.get(k) for k in ('available','reason','source')}
-          quote=get(api+'/rest/v1/rpc/public_reference_quote_v1?'+urllib.parse.urlencode({'p_distance_km':route['distanceKm']}))
-          assert quote.get('available') and abs(quote['referenceFareUyu']-round(route['distanceKm']*quote['rateUyuPerKm'],2))<0.01
-          assert eta.get('available') or eta.get('reason') in ('not_available','occupied','route_unavailable','rate_limited','temporarily_unavailable')
-          print('PASS simultaneous road and pickup; passenger km/min/fare:',route['distanceKm'],route['durationMin'],quote['referenceFareUyu'],'pickup:',eta.get('available'),eta.get('reason'),eta.get('distanceKm'),eta.get('etaMin'))
-          centroid=road('-56.026232,-34.831572')
-          print('Airport polygon comparison:',{k:centroid.get(k) for k in ('available','reason','distanceKm','durationMin')})
-          PYTOGETHER
+      # Joint passenger route + fare + numeric pickup metrics are verified by
+      # qa-cliente-pr99-android.yml in the real Android WebView transport.
+      # Do not probe the Worker with Python's banned browser signature (1010)
+      # or impersonate another user agent to evade its policy.
       - name: Recover existing signing key
         env:
           KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
