@@ -11,9 +11,9 @@ assert(html.includes('data-view="viajes"')&&html.includes('data-view="cuenta"'))
 assert(html.includes('data-service="now"')&&html.includes('data-service="schedule"')&&html.includes('data-service="delivery"'));
 assert(html.includes('data-open-view="instalar"')&&html.includes('id="view-instalar"'));
 assert(html.includes('id="service-coming-soon"')&&html.includes("PRÓXIMAMENTE"));
-assert(html.includes('src="./service-home.js?v=3"')&&html.indexOf('service-home.js?v=3')<html.indexOf("app.js?v=74"));
-assert(html.includes('styles.css?v=74')&&html.includes('app.js?v=74'));
-assert(sw.includes('traslados-cliente-pwa-v74')&&sw.includes('./service-home.js'));
+assert(html.includes('src="./service-home.js?v=3"')&&html.indexOf('service-home.js?v=3')<html.indexOf("app.js?v=75"));
+assert(html.includes('styles.css?v=75')&&html.includes('app.js?v=75'));
+assert(sw.includes('traslados-cliente-pwa-v75')&&sw.includes('./service-home.js'));
 assert(css.includes(".service-card")&&css.includes(".home-hero")&&css.includes(".booking-back-services"));
 assert(app.includes('window.TrasladosServiceHome.mount(document,{'));
 assert(app.includes('onSelect:kind=>enterService(kind)')&&app.includes('setWhen(kind);')&&app.includes('bookingSteps.open("route");'));
