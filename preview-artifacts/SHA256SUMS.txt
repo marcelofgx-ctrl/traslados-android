@@ -1,1 +1,1 @@
-3a3672d554fbff46f466c48b39427d13ff0dc2ada9f96076aad8475d6b1900f8  traslados-cliente-premium-pr99-v25-operativa.apk
+d85afd8a6f7d17ddfcde9a2a65715eb76f97f0d27ad53e49b5db0eebaa10a9e1  traslados-cliente-premium-pr99-v23-prueba.apk
