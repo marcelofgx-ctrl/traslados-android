@@ -16,8 +16,8 @@ assert.equal(model.notifications(model.snapshot([next]),[next]).length,0,"Do not
 assert(html.includes('id="trips-alert-sound"')&&html.includes('id="trips-alert-vibrate"'));
 assert(html.includes('trip-board.js?v=6')&&html.includes('app.js?v=74')&&html.includes('styles.css?v=74'));
 assert(sw.includes("traslados-cliente-pwa-v74"));
-assert(app.includes('rpc("customer_list_reservations_v15"'));
-assert(app.includes('rpc("get_reservation_by_token_v4"'));
+assert(app.includes('rpc("customer_list_reservations_v16"'));
+assert(app.includes('rpc("get_reservation_by_token_v5"'));
 assert(app.includes('rpc("customer_trip_chat_v1"'));
 assert(app.includes('rpc("customer_trip_chat_send_v1"'));
 assert(app.includes('newClientRequestId()'));
