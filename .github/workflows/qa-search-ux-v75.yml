@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: qa-address-v75
+  cancel-in-progress: true
 jobs:
   search:
     runs-on: ubuntu-latest
