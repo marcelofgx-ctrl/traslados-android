@@ -47,17 +47,18 @@
     const key=endpoint+"|"+q+"|"+limit;
     const current=cache.get(key);
     if(current&&Date.now()-current.at<CACHE_MS)return current.rows;
-    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),9500);
+    const ctrl=typeof AbortController==="function"?new AbortController():null;
+    const timer=ctrl&&typeof setTimeout==="function"?setTimeout(()=>ctrl.abort(),9500):null;
     try{
       const resp=await fetch(IDE+"/"+endpoint+"?limit="+limit+"&q="+encodeURIComponent(q),
-        {cache:"no-store",signal:ctrl.signal});
+        {cache:"no-store",...(ctrl?{signal:ctrl.signal}:{})});
       if(!resp.ok)throw new Error("No pudimos consultar direcciones de Uruguay.");
       const rows=await resp.json();
       if(!Array.isArray(rows))throw new Error("Respuesta de direcciones inesperada.");
       if(cache.size>=MAX_CACHE)cache.delete(cache.keys().next().value);
       cache.set(key,{rows,at:Date.now()});
       return rows;
-    }finally{clearTimeout(timer);}
+    }finally{if(timer!==null)clearTimeout(timer);}
   }
   async function find(q,department){
     const trimmed=String(q||"").trim();
