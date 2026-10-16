@@ -193,6 +193,16 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 }
 .location-widget .location-selected-label{font-size:13.5px;line-height:1.35}
 .location-widget .location-selected-hint{font-size:10px;margin-top:3px;color:#b8d3c9}
+/* Sugerencias IDE: agrupación discreta y puntos aproximados con explicación. */
+.location-widget .location-result-heading{
+  margin:10px 4px 6px;color:#dabb80;font-size:10px;font-weight:750;
+  letter-spacing:.09em;text-transform:uppercase;line-height:1.4;
+}
+.location-widget .results .result{min-height:54px;max-width:100%;text-align:left}
+.location-widget .results .result[disabled]{opacity:.65;pointer-events:none}
+.location-widget .result-subtitle{line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.location-widget .geo-feedback{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+
 .location-widget .location-edit{min-height:39px!important;padding-inline:11px!important}
 .location-title{margin-bottom:6px}
 .route-overview{
