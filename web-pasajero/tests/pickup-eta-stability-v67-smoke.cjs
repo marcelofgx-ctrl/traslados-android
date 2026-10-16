@@ -40,6 +40,10 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,1);
  assert.equal(nodes["pickup-presence"].dataset.phase,"routing");
+ assert.match(nodes["pickup-presence-title"].textContent,/calculando llegada/i,
+  "A positive presence must not claim the driver is ready for pickup without routed ETA");
+ assert.notEqual(nodes["pickup-presence-title"].textContent,"Conductor disponible para recogerte");
+ assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,1,"Repeated 15s presence polls must not send duplicate slow ETA");
@@ -54,11 +58,14 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  assert.equal(pickupCalls,2);
  pending[1].resolve({available:false,reason:"route_unavailable"});
  await tick();
- assert.match(nodes["pickup-presence-subtitle"].textContent,/no hay tiempo estimado/i);
+ assert.equal(nodes["pickup-presence"].dataset.presence,"eta-unavailable",
+  "A route provider failure must be a separate degraded state, never ready");
+ assert.match(nodes["pickup-presence-title"].textContent,/sin estimar/i);
+ assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i);
  assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
  assert.equal(pickupCalls,2,"Respect cooldown after missing real route");
- assert.match(nodes["pickup-presence-subtitle"].textContent,/no hay tiempo estimado/i,
+ assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i,
   "Do not revert to an endless spinner on the next availability poll");
  vm.runInContext("lastPickupEtaAt=Date.now()-46000;",ctx);
  await ctx.refreshPickupPresence(true);
