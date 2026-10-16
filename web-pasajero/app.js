@@ -1139,9 +1139,13 @@ async function accountSubmit(){
     const guestTrips=jsonStorage(GUEST_KEY,[]);
     const unclaimed=[];
     for(const prior of guestTrips){
-      try{await rpc("customer_claim_reservation",{
-        p_session_token:session.token,p_public_token:prior.token
-      });}catch{unclaimed.push(prior);}
+      try{
+        const claimed=await rpc("customer_claim_reservation",{
+          p_session_token:session.token,p_public_token:prior.token
+        });
+        // A null or malformed response must NOT discard the only guest receipt.
+        if(!claimSucceededForGuest(prior,claimed))unclaimed.push(prior);
+      }catch{unclaimed.push(prior);}
     }
     saveStorage(GUEST_KEY,unclaimed);
     syncAuthUI();tell("Bienvenido: cuenta conectada con Traslados Conductor.");shiftView(selectedPickupMode==="schedule"?"reservar":"viaje");void loadTrips({background:true});
@@ -1252,6 +1256,25 @@ function showPreview(){
     $("booking-final").hidden=true;$("review-booking").hidden=true;$("submit-actions").hidden=false;
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){pendingReview=null;suggestBookingStep(e);showError(e);}
+}
+function claimSucceededForGuest(prior,claimed){
+  return Boolean(prior?.code&&claimed?.id&&claimed.code===prior.code);
+}
+function mergeAccountAndGuestTrips(accountRows,guestReceipts,lookups){
+  // Account-owned rows take precedence, but guest receipts from this device
+  // remain usable after login, including when account linking was skipped.
+  const rows=Array.isArray(accountRows)?accountRows.slice():[];
+  const seen=new Set(rows.map(r=>String(r?.id||r?.code||"")).filter(Boolean));
+  for(let i=0;i<lookups.length;i++){
+    const result=lookups[i];
+    const trip=result?.status==="fulfilled"?result.value:null;
+    const receipt=guestReceipts[i];
+    const identity=String(trip?.id||trip?.code||"");
+    if(!identity||!receipt?.token||seen.has(identity))continue;
+    rows.push({...trip,__guestToken:receipt.token});
+    seen.add(identity);
+  }
+  return rows;
 }
 function saveGuest(result){
   const old=jsonStorage(GUEST_KEY,[]).filter(x=>x.token!==result.public_token);
@@ -1924,10 +1947,13 @@ async function loadTrips({background=false}={}){
     if(requestSession){
       const result=await rpc("customer_list_reservations_v15",{p_session_token:requestSession});
       rows=Array.isArray(result)?result:[];
-    }else{
-      const guests=jsonStorage(GUEST_KEY,[]);
+    }
+    // A valid session must not hide receipts created as a guest on this device.
+    // Read-only token lookups preserve tracking without silently linking accounts.
+    const guests=jsonStorage(GUEST_KEY,[]).filter(g=>typeof g?.token==="string"&&g.token.length>0);
+    if(guests.length){
       const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
-      result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
+      rows=mergeAccountAndGuestTrips(rows,guests,result);
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
     const nextRenderKey=tripDisplayKey(rows);
