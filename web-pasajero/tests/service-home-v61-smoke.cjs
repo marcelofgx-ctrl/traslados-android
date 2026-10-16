@@ -18,7 +18,7 @@ assert(css.includes(".service-card")&&css.includes(".home-hero")&&css.includes("
 assert(app.includes('window.TrasladosServiceHome.mount(document,{'));
 assert(app.includes('onSelect:kind=>enterService(kind)')&&app.includes('setWhen(kind);')&&app.includes('bookingSteps.open("route");'));
 assert(app.includes('shiftView(quick?"viaje":"reservar")'));
-assert(app.includes('rpc("customer_request_pickup_v1"')&&app.includes('customer_create_reservation_v12'));
+assert(app.includes('rpc("customer_request_pickup_fixed_v1"')&&app.includes('customer_create_reservation_v12'));
 assert(app.includes('window.TrasladosETA.availability')&&app.includes('customer_trip_chat_v1'));
 const listeners=new Map();
 const scrolled=[];const notice={hidden:true,scrollIntoView:options=>scrolled.push(options)};
