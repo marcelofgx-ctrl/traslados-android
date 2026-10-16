@@ -143,7 +143,7 @@
     // tracking explanation after the main action, instead of between route/fare.
     const requestDescription=doc.getElementById("urgent-actions-description");
     requestHost.querySelector(".booking-final-note").insertAdjacentElement("afterend",requestDescription);
-    requestHost.querySelector("#urgent-route-recap .request-recap-metrics>span:last-child small").textContent="Precio orientativo";
+    requestHost.querySelector("#urgent-route-recap .request-recap-metrics>span:last-child small").textContent="Precio del viaje";
     const actions=make(doc,"footer","premium-actions"),warning=make(doc,"p","premium-error"),back=make(doc,"button","premium-previous","← Atrás"),next=make(doc,"button","premium-next","Continuar →");
     back.type="button";next.type="button";warning.setAttribute("role","alert");warning.hidden=true;
     actions.append(warning,back,next);screen.querySelector("#journey-field-host").insertAdjacentElement("afterend",actions);
