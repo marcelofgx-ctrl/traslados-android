@@ -74,6 +74,22 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertTrue(data.getDouble("durationMin")>=0);
         assertEquals("https://appassets.androidplatform.net",r.getResponseHeaders().get("Access-Control-Allow-Origin"));
     }
+    public void testAirportCatalogRouteFareAndPickupInSameScreen() throws Exception {
+        loaded();
+        js("document.querySelector('[data-service=now]').click();document.body.dataset.combinedCheck='pending';(async()=>{const origins=await TrasladosGeo.find('De Madrid','Canelones');const destinations=await TrasladosGeo.find('Aeropuerto Internacional de Carrasco','Canelones');if(destinations.length!==1||destinations[0].lng!==-56.01638)throw Error('airport_access');const a=origins[0],b=destinations[0];originPicker.persist({text:a.name,lat:a.lat,lng:a.lng,department:a.department});destPicker.persist({text:b.name,lat:b.lat,lng:b.lng,department:b.department});document.body.dataset.combinedCheck='selected';})().catch(e=>document.body.dataset.combinedCheck=String(e.message))");
+        for(int i=0;i<150;i++){if(!"\"pending\"".equals(js("document.body.dataset.combinedCheck")))break;Thread.sleep(100);}
+        assertEquals("One airport result uses verified terminal access","\"selected\"",js("document.body.dataset.combinedCheck"));
+        boolean complete=false;
+        for(int i=0;i<350;i++){
+            if("true".equals(js("Boolean(latestRoad&&TrasladosRoutes.verified(latestRoad.data)&&latestRoad.data.referenceFareUyu>0&&document.querySelector('.premium-route-canvas .premium-map-route')&&['busy','online'].includes(document.querySelector('#pickup-presence').dataset.presence))"))){complete=true;break;}
+            Thread.sleep(100);
+        }
+        assertTrue("Route, duration, map, central fare and real availability coexist: "+js("JSON.stringify({road:latestRoad?.data?{distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu}:null,diagnostic:TrasladosRoutes.diagnostic(activeRouteKey),presence:document.querySelector('#pickup-presence').dataset.presence})"),complete);
+        String route=js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})");
+        js("refreshPickupPresence()");
+        assertEquals("Refreshing pickup must retain passenger route and fare",route,js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})"));
+        assertEquals("true",js("Math.abs(latestRoad.data.referenceFareUyu-Math.round(latestRoad.data.distanceKm*latestRoad.data.referenceRateUyuPerKm*100)/100)<0.01"));
+    }
     public void testAddressKeyboardKeepsSuggestionsVisible() throws Exception {
         loaded();WebView w=web();
         getInstrumentation().runOnMainSync(()->w.requestFocus());

@@ -26,7 +26,7 @@ html = html.replace("default-src 'self';", "default-src 'self';")
 start = html.index("connect-src ")
 end = html.index(";", start)
 html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev" + html[end:]
-html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v21 · No envía reservas</div>')
+html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v22 · No envía reservas</div>')
 html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
 index.write_text(html)
@@ -56,12 +56,12 @@ eta.write_text(e)
 # No service-worker installation even if another component attempts it.
 (assets / "sw.js").unlink(missing_ok=True)
 gradle = app / "build.gradle"
-g = gradle.read_text().replace("versionCode 204", "versionCode 209").replace("versionName '16.0-Premium'", "versionName '21.0-PR99-Prueba'")
+g = gradle.read_text().replace("versionCode 204", "versionCode 210").replace("versionName '16.0-Premium'", "versionName '22.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
-assert "versionCode 209" in g
+assert "versionCode 210" in g
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
-j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/21 PR99Preview")
+j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/22 PR99Preview")
 needle = 'web.setWebViewClient(new WebViewClient() {'
 assert needle in j
 j = j.replace(needle, needle + """
@@ -167,5 +167,5 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code209, original applicationId.")
+print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code210, original applicationId.")
 

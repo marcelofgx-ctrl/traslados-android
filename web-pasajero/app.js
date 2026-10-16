@@ -997,7 +997,7 @@ function renderRouteSummary(){
         http_error:"El servicio de rutas no respondió correctamente. Podés reintentar sin cambiar las direcciones."
       };
       note.textContent=messages[reason]||"No pudimos verificar la ruta en este momento. Tocá Reintentar cálculo.";
-      detailCaption.textContent="Estado del motor: "+reason+". Sin ruta vial verificada no mostramos kilómetros, minutos ni tarifa inventados. Podés usar Maps mientras se restablece el cálculo.";
+      detailCaption.textContent="Tu recorrido sigue seleccionado. Podés reintentar el cálculo o abrirlo en Maps.";
       clear(map);
     }
     refreshBookingSteps();
