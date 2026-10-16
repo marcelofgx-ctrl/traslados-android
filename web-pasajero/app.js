@@ -1443,7 +1443,7 @@ function tripLine(parent,icon,label){
   const el=text(parent,"div","","trip-detail-line");
   text(el,"span",icon).setAttribute("aria-hidden","true");text(el,"span",label);
 }
-function tripProgress(parent,meta){
+function tripProgress(parent,meta,r){
   const stages=r.fare_mode==="fixed"?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
   const rail=text(parent,"div","","trip-steps");
   rail.setAttribute("aria-label","Etapa actual: "+meta.label);
@@ -1779,7 +1779,7 @@ function reservationView(r,guestToken){
   historical.open=openTripDetails.has(String(r.code||"")+":history");
   text(historical,"summary","Historial y etapas del viaje","trip-disclosure-head");
   const historyBody=text(historical,"div","","trip-disclosure-body");
-  tripProgress(historyBody,meta);
+  tripProgress(historyBody,meta,r);
   tripTimeline(historyBody,r);
   mountTripChat(inner,r,guestToken);
 
