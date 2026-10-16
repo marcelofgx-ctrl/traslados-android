@@ -1,5 +1,19 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## 16/10/2026 — Incidente real ETA conductor → origen (captura 08:58 UYT)
+
+**Síntoma confirmado:** `public_driver_availability_v1` confirmó presencia disponible mientras `pickup-eta` devolvió `route_unavailable`; la UI seguía mostrando “Conductor disponible para recogerte”, sin kilómetros/minutos de recogida. **La ruta origen→destino dibujada en el mapa es OTRO recorrido**, no demuestra ETA conductor→origen.
+
+**Por qué las pruebas anteriores no lo detectaron:** el test `pickup-eta-stability-v67-smoke.cjs` permitía explícitamente ese resultado como correcto; el test visual también exigía “Conductor disponible” aun sin respuesta vial. Se reforzaron ambos para separar estado `eta-pending`/`eta-unavailable` de ETA lista. No se inventan distancia ni minutos.
+
+**Servidor rutas:** [traslados-web PR #19](https://github.com/marcelofgx-ctrl/traslados-web/pull/19) pasó CI Bun+TypeScript y fue fusionado al `main` de **traslados-web** (commit `126432c0`). Incorpora caché privada 180s de rutas viales verificadas, *no* caché de tarifa y acepta segmentos reales ORS de 0 m solo si puntos <=120 m (caso GPS coincidente). **Cloudflare Worker NO se desplegó**: repo exige ejecutar workflow manual [Publicar Traslados Web en Cloudflare](https://github.com/marcelofgx-ctrl/traslados-web/actions/workflows/publicar-cloudflare-manual.yml). No afirmar ETA reparada en celular hasta publicar y verificar llamada conductor→origen. ORS respondió bien en prueba genérica anterior: eso no garantiza cada origen.
+
+**Frontend:** [PR #102](https://github.com/marcelofgx-ctrl/traslados-android/pull/102) probado y fusionado SOLO a rama draft PR #99 (`c18e4ee`), no a producción. Diferencia estado conectado/pendiente de ETA real; corregido también `tripProgress(parent,meta,r)` que causaba `ReferenceError: r is not defined` en Mis traslados. QA JS/PWA, visual, Android aislado y operativo pasaron; Cliente v26 operativa firmada regenerada bajo la misma URL de la rama de pruebas. Corrección portada y tests también llevada a PR #101 Mosaico para evitar divergencias.
+
+**Próximo requisito de cierre:** publicar Worker por canal autorizado, reinstalar APK Cliente de prueba (sin borrar datos), disponer Conductor/Mapa conectado con GPS reciente y solicitar origen real; comprobar km/min de recogida + km/min/precio O→D simultáneamente, contraste movimiento/quietud, actualización después de refrescar, logs de motivos sin exponer GPS y sin doble presupuestación. Si sigue dando `route_unavailable`, extraer categoría ORS de Cloudflare logs y diagnosticar el punto vial específico; nunca aprobar solo porque el conductor figura disponible.
+
+---
+
 
 ## PR99 v25: recuperar solicitudes de invitado en Mi cuenta (16/10/2026, 01:29 UYT)
 
