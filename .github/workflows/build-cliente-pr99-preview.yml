@@ -77,11 +77,17 @@ jobs:
           api='https://zetaudvvutlouiqxopvg.supabase.co'
           key='sb_publishable_HnbMZW2dKpm6mBq-y5qkaA_Jlfx4BB9'
           def get(url,body=None):
-              headers={'apikey':key,'Origin':'https://marcelofgx-ctrl.github.io','Content-Type':'application/json'}
+              headers={'Accept':'application/json'}
+              if url.startswith(api+'/'): headers['apikey']=key
+              if body: headers.update({'Origin':'https://marcelofgx-ctrl.github.io','Content-Type':'application/json'})
               req=urllib.request.Request(url,data=json.dumps(body).encode() if body else None,headers=headers)
               try: response=urllib.request.urlopen(req,timeout=30)
               except urllib.error.HTTPError as e: response=e
-              return json.load(response)
+              raw=response.read()
+              try: return json.loads(raw)
+              except ValueError:
+                  print('Non-JSON public service response:',response.status,response.headers.get('Content-Type'),raw[:180].decode('utf8','replace'))
+                  return {'available':False,'reason':'non_json_http_'+str(response.status)}
           def road(end):
               points='-55.969099,-34.827469;'+end
               return get('https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?'+urllib.parse.urlencode({'points':points}))
