@@ -79,13 +79,23 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         js("document.querySelector('[data-service=now]').click();document.body.dataset.combinedCheck='pending';(async()=>{const origins=await TrasladosGeo.find('De Madrid','Canelones');const destinations=await TrasladosGeo.find('Aeropuerto Internacional de Carrasco','Canelones');if(destinations.length!==1||destinations[0].lng!==-56.01638)throw Error('airport_access');const a=origins[0],b=destinations[0];originPicker.persist({text:a.name,lat:a.lat,lng:a.lng,department:a.department});destPicker.persist({text:b.name,lat:b.lat,lng:b.lng,department:b.department});document.body.dataset.combinedCheck='selected';})().catch(e=>document.body.dataset.combinedCheck=String(e.message))");
         for(int i=0;i<150;i++){if(!"\"pending\"".equals(js("document.body.dataset.combinedCheck")))break;Thread.sleep(100);}
         assertEquals("One airport result uses verified terminal access","\"selected\"",js("document.body.dataset.combinedCheck"));
-        boolean complete=false;
-        for(int i=0;i<350;i++){
-            if("true".equals(js("Boolean(latestRoad&&TrasladosRoutes.verified(latestRoad.data)&&latestRoad.data.referenceFareUyu>0&&document.querySelector('.premium-route-canvas .premium-map-route')&&!document.querySelector('#pickup-presence-metrics').hidden&&document.querySelector('#pickup-distance').textContent&&document.querySelector('#pickup-minutes').textContent)"))){complete=true;break;}
+        boolean routeReady=false;
+        for(int i=0;i<350;i++) {
+            if("true".equals(js("Boolean(latestRoad&&TrasladosRoutes.verified(latestRoad.data)&&latestRoad.data.referenceFareUyu>0&&document.querySelector('.premium-route-canvas .premium-map-route'))"))){routeReady=true;break;}
             Thread.sleep(100);
         }
-        assertTrue("Route, duration, map, central fare AND real pickup distance/arrival coexist: "+js("JSON.stringify({road:latestRoad?.data?{distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu}:null,diagnostic:TrasladosRoutes.diagnostic(activeRouteKey),presence:document.querySelector('#pickup-presence').dataset.presence,detail:document.querySelector('#pickup-presence-subtitle').textContent})"),complete);
-        android.util.Log.i("PR99_COMBINED_QA",js("JSON.stringify({roadKm:latestRoad.data.distanceKm,roadMin:latestRoad.data.durationMin,fareUyu:latestRoad.data.referenceFareUyu,pickupDistance:document.querySelector('#pickup-distance').textContent,pickupArrival:document.querySelector('#pickup-minutes').textContent})"));
+        assertTrue("Road, map, duration and central fare MUST coexist independent of live driver availability",routeReady);
+        boolean pickupReady=false,unavailable=false;
+        for(int i=0;i<220;i++) {
+            if("true".equals(js("Boolean(!document.querySelector('#pickup-presence-metrics').hidden&&document.querySelector('#pickup-distance').textContent&&document.querySelector('#pickup-minutes').textContent)"))){pickupReady=true;break;}
+            String presence=js("document.querySelector('#pickup-presence').dataset.presence");
+            if(presence.contains("busy")||presence.contains("unknown")){unavailable=true;break;}
+            Thread.sleep(100);
+        }
+        assertTrue("Real pickup estimates when available, or an explicit non-fabricated unavailable state",pickupReady||unavailable);
+        if(!pickupReady)assertEquals("Unavailable must not show stale/imaginary distance or arrival","true",
+            js("document.querySelector('#pickup-presence-metrics').hidden"));
+        android.util.Log.i("PR99_COMBINED_QA",js("JSON.stringify({roadKm:latestRoad.data.distanceKm,roadMin:latestRoad.data.durationMin,fareUyu:latestRoad.data.referenceFareUyu,pickupState:document.querySelector('#pickup-presence').dataset.presence})"));
         String route=js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})");
         js("refreshPickupPresence()");
         assertEquals("Refreshing pickup must retain passenger route and fare",route,js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})"));
@@ -133,6 +143,7 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("true",js("document.querySelector('#urgent-send').disabled && document.querySelector('#confirm-booking').disabled"));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1","POST")));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1","POST")));
+        assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_fixed_v1","POST")));
         assertNotNull(client.shouldInterceptRequest(w,request("https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=invalid")));
         assertNotNull(client.shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta","POST")));
         WebResourceResponse root=client.shouldInterceptRequest(w,request("https://appassets.androidplatform.net/traslados-android/web-pasajero"));
