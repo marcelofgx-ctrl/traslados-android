@@ -165,7 +165,8 @@ const {chromium}=require("playwright-core");
       ()=>localStorage.getItem("traslados.premium.contact.local.v1")),null,
       "Desactivar consentimiento debe eliminar datos locales");
         await page.screenshot({path:path.join(dest,"datos-"+width+".png"),fullPage:true,animations:"disabled"});
-    await page.locator('[data-booking-step="passenger"]').evaluate(el=>el.classList.add("is-complete"));
+    await page.locator('#person-name').fill('Prueba visual');
+    await page.locator('#person-phone').fill('099000000');
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"confirm");
     const selectedDestination=await page.locator("#destination-picker .location-selected-label").textContent();
