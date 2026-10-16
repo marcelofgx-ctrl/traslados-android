@@ -4,6 +4,7 @@ on:
     branches: [feature/mapa-driver-mosaico-modular-20261016]
     paths:
       - '.github/workflows/relocate-driver-mosaic.yml'
+      - 'scripts/migrate_driver_to_feature_library.sh'
   workflow_dispatch:
 permissions:
   contents: write
