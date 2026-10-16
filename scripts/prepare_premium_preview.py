@@ -3,7 +3,8 @@
 Only build output is changed. Production source and signing identity are retained.
 """
 from pathlib import Path
-import shutil, json, hashlib
+import shutil, json, hashlib, sys
+operational = "--operational" in sys.argv[1:]
 root = Path(__file__).resolve().parents[1]
 app = root / "cliente-premium/app"
 web = root / "web-pasajero"
@@ -26,8 +27,12 @@ html = html.replace("default-src 'self';", "default-src 'self';")
 start = html.index("connect-src ")
 end = html.index(";", start)
 html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev" + html[end:]
-html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v23 · No envía reservas</div>')
-html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
+if not operational:
+    html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v23 · No envía reservas</div>')
+    html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
+else:
+    html = html.replace('id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span>', 'id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span>')
+    assert 'SOLICITAR VIAJE' in html and 'name="traslados-preview"' not in html
 html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
 index.write_text(html)
 (assets / "preview-isolation.css").write_text(".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}")
@@ -59,6 +64,8 @@ gradle = app / "build.gradle"
 g = gradle.read_text().replace("versionCode 204", "versionCode 211").replace("versionName '16.0-Premium'", "versionName '23.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
 assert "versionCode 211" in g
+if operational:
+    g = g.replace("versionCode 211", "versionCode 212").replace("23.0-PR99-Prueba", "24.0-Premium-Operativa")
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
 j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/23 PR99Preview")
@@ -159,6 +166,29 @@ j = j.replace("    private boolean openExternal(Uri uri) {", """
         return true;
     }
     private boolean unusedProductionExternal(Uri uri) {""")
+if operational:
+    # Only the passenger RPC contracts already used by this bundled first-party
+    # app. Server session/token/PIN/ownership checks are unchanged. No tables,
+    # driver commands, arbitrary RPCs, service keys or JS bridge are exposed.
+    allowed = ["customer_request_pickup_v1", "customer_register", "customer_login",
+        "customer_logout", "customer_claim_reservation", "customer_reservation_vehicle_v1",
+        "customer_check_availability_v11_4", "customer_create_reservation_v12", "create_reservation",
+        "customer_trip_chat_v1", "customer_trip_chat_send_v1", "cancel_reservation_by_token",
+        "customer_cancel_reservation", "customer_quote_decision_v13", "customer_list_reservations_v15",
+        "get_reservation_by_token_v4", "public_app_config_v1", "public_driver_availability_v1",
+        "public_cached_route_preview_v1", "public_reference_quote_v1"]
+    paths = ",".join('"/rest/v1/rpc/'+name+'"' for name in allowed)
+    gate = '''                // Operational passenger contracts: authorization stays on the server.
+                if("https".equals(uri.getScheme()) && "zetaudvvutlouiqxopvg.supabase.co".equals(uri.getHost())
+                    && uri.getUserInfo()==null && uri.getPort()==-1 && uri.getQuery()==null
+                    && !request.isForMainFrame() && ("POST".equals(request.getMethod()) || "OPTIONS".equals(request.getMethod()))
+                    && java.util.Arrays.asList('''+paths+''').contains(uri.getPath())) return null;
+'''
+    j = j.replace('                // Public raster map images.', gate+'                // Public raster map images.')
+    j = j.replace('private boolean openExternal(Uri uri) {\n        Toast.makeText', 'private boolean unusedPreviewExternal(Uri uri) {\n        Toast.makeText')
+    j = j.replace('private boolean unusedProductionExternal(Uri uri)', 'private boolean openExternal(Uri uri)')
+    j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/24 Premium')
+    assert 'Operational passenger contracts' in j and 'private boolean openExternal(Uri uri)' in j
 java.write_text(j)
 assert "shouldInterceptRequest" in j and "tile.openstreetmap.org" in j
 assert "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev;" in html
@@ -167,5 +197,5 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: PR99 assets packaged, isolated HTTPS origin, public availability GET only, no production writes, no external contact, code211, original applicationId.")
+print("PASS: operational passenger v24/code212; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
 
