@@ -80,7 +80,7 @@ public class TrackingService extends Service implements LocationListener {
     private long shiftMoving=0,shiftStopped=0,shiftTripMs=0,tripMoving=0,tripStopped=0;
 
     private WindowManager bubbleWm;private View bubbleView;private WindowManager.LayoutParams bubbleLp;
-    private ReminderCallout activeTransferCallout;
+    private TripRequestCard activeTransferCallout;
     private WindowManager.LayoutParams activeTransferLp;
     private final Runnable transferTimeout=this::hideTransferCallout;
     private final BroadcastReceiver transferEvents=new BroadcastReceiver(){
@@ -495,9 +495,14 @@ public class TrackingService extends Service implements LocationListener {
                             if(longHandled)return true;
                             float dx=Math.abs(e.getRawX()-downX),dy=Math.abs(e.getRawY()-downY);
                             if(!moved&&dx<dp(8)&&dy<dp(8)&&System.currentTimeMillis()-downAt<800){
-                                Intent open=new Intent(TrackingService.this,MainActivity.class)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                startActivity(open);
+                                if(TransferAlerts.pendingCount(TrackingService.this)>0){
+                                    if(activeTransferCallout!=null)hideTransferCallout();
+                                    else showTransferCallout();
+                                }else{
+                                    Intent open=new Intent(TrackingService.this,MainActivity.class)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    startActivity(open);
+                                }
                             }else{
                                 int edge=Math.max(0,getResources().getDisplayMetrics().widthPixels-size);
                                 bubbleLp.x=bubbleLp.x<edge/2?0:edge;
@@ -579,55 +584,111 @@ public class TrackingService extends Service implements LocationListener {
             .putInt("floating_size",dp(56));
         e.apply();
     }
+    /** Native floating trip card, sourced only from the authenticated Conductor snapshot. */
     private void showTransferCallout(){
         hideTransferCallout();
-        if(bubbleWm==null||bubbleView==null||bubbleLp==null)return;
-        activeTransferCallout=new ReminderCallout(this,TransferAlerts.lastText(this),
-            ()->{
-                hideTransferCallout();TransferAlerts.markViewed(this);
-                Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
-                open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(open);
-            },this::hideTransferCallout,this::hideTransferCallout,
-            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
-        int width=dp(ReminderCallout.TOTAL_WIDTH_DP);
-        WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
-            width,WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                |WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);
-        lp.gravity=Gravity.TOP|Gravity.LEFT;
-        activeTransferLp=lp;
-        ReminderAnchorGeometry.Placement placement=transferPlacement(activeTransferCallout);
-        if(placement==null){hideTransferCallout();return;}
-        activeTransferCallout.setAnchorPlacement(placement.tailOnLeft,placement.tailCenterY);
-        lp.x=placement.x;lp.y=placement.y;
-        try{
-            bubbleWm.addView(activeTransferCallout,lp);
-            activeTransferCallout.reveal();
-            clockHandler.postDelayed(transferTimeout,30000L);
-        }catch(Exception ex){Log.w("MapaTransfers","Speech callout unavailable, Android notification remains",ex);hideTransferCallout();}
-    }
-    private ReminderAnchorGeometry.Placement transferPlacement(ReminderCallout callout){
-        if(bubbleLp==null||callout==null)return null;
-        int width=dp(ReminderCallout.TOTAL_WIDTH_DP),screenHeight=getResources().getDisplayMetrics().heightPixels;
-        callout.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(screenHeight,View.MeasureSpec.AT_MOST));
-        return ReminderAnchorGeometry.place(bubbleLp.x+dp(4),bubbleLp.y+dp(4),dp(56),
-            getResources().getDisplayMetrics().widthPixels,screenHeight,
-            width,callout.getMeasuredHeight(),
-            dp(ReminderCallout.TAIL_CENTER_DP),dp(ReminderCallout.TAIL_HEIGHT_DP)/2,dp(4));
-    }
-    private void realignTransferCallout(){
-        if(activeTransferCallout==null||activeTransferLp==null||bubbleWm==null)return;
-        ReminderAnchorGeometry.Placement p=transferPlacement(activeTransferCallout);
-        if(p==null){hideTransferCallout();return;}
-        activeTransferCallout.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
-        if(activeTransferLp.x!=p.x||activeTransferLp.y!=p.y){
-            activeTransferLp.x=p.x;activeTransferLp.y=p.y;
-            try{bubbleWm.updateViewLayout(activeTransferCallout,activeTransferLp);}
-            catch(Exception e){hideTransferCallout();}
+        if(bubbleWm==null||bubbleView==null||!Settings.canDrawOverlays(this))return;
+        org.json.JSONArray rows=TransferAlerts.snapshot(this);
+        String requestedId=getSharedPreferences("integrated_transfer_alerts",MODE_PRIVATE)
+                .getString("last_id","");
+        org.json.JSONObject selected=null;
+        for(int i=0;i<rows.length();i++){
+            org.json.JSONObject item=rows.optJSONObject(i);
+            if(item==null||!"PENDIENTE".equals(item.optString("status")))continue;
+            if(selected==null||requestedId.equals(item.optString("id")))selected=item;
+            if(requestedId.equals(item.optString("id")))break;
         }
+        if(selected==null)return;
+        final org.json.JSONObject request=selected;
+        TripRequestCard card=new TripRequestCard(this,request,
+            this::hideTransferCallout,
+            ()->openTransferInConductor(request.optString("id","")),
+            this::resizeTransferCallout,
+            accept->decideTransferRequest(request,accept));
+        activeTransferCallout=card;
+        WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
+            Math.max(dp(220),getResources().getDisplayMetrics().widthPixels-dp(24)),
+            card.heightPx(),WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT);
+        lp.gravity=Gravity.CENTER_HORIZONTAL|Gravity.BOTTOM;
+        lp.x=0;lp.y=dp(36);activeTransferLp=lp;
+        try{
+            bubbleWm.addView(card,lp);
+            TransferAlerts.markViewed(this);
+            // This only minimizes the overlay; it never declines the server request.
+            if(clockHandler!=null)clockHandler.postDelayed(transferTimeout,60000L);
+        }catch(Exception e){
+            Log.w("MapaTransfers","Unable to show floating request card",e);
+            hideTransferCallout();
+            openTransferInConductor(request.optString("id",""));
+        }
+    }
+
+    private void openTransferInConductor(String id){
+        hideTransferCallout();
+        Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        open.putExtra("open_requests",true);
+        if(id!=null&&!id.isEmpty())open.putExtra("reservation_id",id);
+        try{startActivity(open);}catch(Exception e){
+            android.widget.Toast.makeText(this,"Abrí Traslados Conductor para gestionar el viaje",
+                android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void decideTransferRequest(org.json.JSONObject r,boolean accept){
+        final String id=r.optString("id","");
+        final String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+        if(pin==null||pin.isEmpty()||id.isEmpty()||!
+                "PENDIENTE".equals(r.optString("status"))||
+                !"fixed".equals(r.optString("fare_mode"))||
+                !"PRECIO_FIJO".equals(r.optString("quote_status"))||
+                !(r.optDouble("quote_final_total",0)>0)){
+            if(activeTransferCallout!=null)activeTransferCallout.done(false,
+                "Verificá la sesión y el precio confirmado en Conductor.");
+            return;
+        }
+        // Stale cache is never evidence that a request is still actionable.
+        long age=System.currentTimeMillis()-TransferAlerts.lastSync(this);
+        if(age<0||age>60000L){
+            TransferAlerts.refreshAsync(this);
+            if(activeTransferCallout!=null)activeTransferCallout.done(false,
+                "Datos desactualizados. Reabrí el pedido después de actualizar.");
+            return;
+        }
+        final TripRequestCard submitted=activeTransferCallout;
+        new Thread(()->{
+            boolean ok=false;
+            String error="No se pudo confirmar el cambio. Abrí Conductor y revisá el estado.";
+            try{
+                org.json.JSONObject reply=uy.com.traslados.conductor.Api.decideFixedFare(pin,id,accept);
+                ok=(accept?"ACEPTADA":"RECHAZADA").equals(reply.optString("status"));
+            }catch(Exception ignored){
+                // No personal data, PIN or coordinates in logs.
+            }
+            final boolean success=ok;
+            final String failure=error;
+            if(clockHandler!=null)clockHandler.post(()->{
+                if(success)TransferAlerts.refreshAsync(this);
+                if(submitted!=null&&submitted==activeTransferCallout)
+                    submitted.done(success,failure);
+                android.widget.Toast.makeText(this,success?
+                    (accept?"Viaje aceptado":"Solicitud rechazada"):failure,
+                    android.widget.Toast.LENGTH_LONG).show();
+            });
+        },"mapa-fixed-fare-decision").start();
+    }
+
+    private void resizeTransferCallout(){
+        if(activeTransferCallout==null||activeTransferLp==null||bubbleWm==null)return;
+        activeTransferLp.height=activeTransferCallout.heightPx();
+        try{bubbleWm.updateViewLayout(activeTransferCallout,activeTransferLp);}
+        catch(Exception e){hideTransferCallout();}
+    }
+
+    private void realignTransferCallout(){
+        // The trip sheet is bottom-anchored, never follows a dragged GPS bubble.
     }
     private void hideTransferCallout(){
         if(clockHandler!=null)clockHandler.removeCallbacks(transferTimeout);
