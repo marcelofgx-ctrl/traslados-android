@@ -11,7 +11,7 @@ assert(html.includes('id="passenger-account-summary"')&&html.includes('id="passe
 assert(html.includes('id="passenger-identification"'));
 assert(html.includes('id="passenger-view-account"'),"Account panel must have a live navigation control");
 assert(html.includes('id="urgent-actions"')&&html.includes('id="urgent-send"'));
-assert(!html.includes('id="urgent-whatsapp"')&&html.includes("ENVIAR SOLICITUD"));
+assert(!html.includes('id="urgent-whatsapp"')&&html.includes("SOLICITAR VIAJE"));
 assert(html.includes("REVISAR Y CONFIRMAR"),"Programmed booking retains review");
 assert(css.includes(".passenger-account-summary")&&css.includes(".urgent-actions"));
 assert(html.includes("app.js?v=74")&&html.includes("styles.css?v=74")&&sw.includes("traslados-cliente-pwa-v74"));
