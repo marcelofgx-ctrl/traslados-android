@@ -507,6 +507,11 @@ public class MainActivity extends Activity {
         TextView customer=body(r.optString("customer_name"),15,TEXT);head.addView(customer,lpMatch(-2,0,1));
         String route=shortAddress(r.optString("origin_text"))+"  →  "+shortAddress(r.optString("destination_text"));
         TextView routeText=body(route,14,MUTED);routeText.setMaxLines(2);routeText.setEllipsize(android.text.TextUtils.TruncateAt.END);head.addView(routeText,lpMatch(-2,0,0));
+        if("fixed".equals(r.optString("fare_mode"))&&r.optDouble("quote_final_total",0)>0){
+            TextView locked=body("PRECIO DEL VIAJE · "+formatMoney(r.optDouble("quote_final_total",0)),15,GOLD);
+            locked.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+            head.addView(locked,lpMatch(-2,4,1));
+        }
         outer.addView(head);
 
         LinearLayout bodyBox=new LinearLayout(this);bodyBox.setOrientation(LinearLayout.VERTICAL);bodyBox.setPadding(dp(13),0,dp(13),dp(13));bodyBox.setVisibility(open?View.VISIBLE:View.GONE);
@@ -533,7 +538,7 @@ public class MainActivity extends Activity {
             if("EN_VIAJE".equals(status)&&!TripTelemetryService.STATE_ACTIVE.equals(telemState)){Button retryGps=secondaryButton("REINTENTAR GPS");retryGps.setTextSize(11);retryGps.setOnClickListener(v->{startTripTelemetry(r);handler.postDelayed(()->verifyTripTelemetryStart(r,0),700);});bodyBox.addView(retryGps,lpMatch(dp(46),2,4));}
         }
         String qs=r.optString("quote_status","SIN_PRESUPUESTO");
-        if("ENVIADO".equals(qs)||"ACEPTADO".equals(qs)){addDetail(bodyBox,"ticket",qs.equals("ACEPTADO")?"PRESUPUESTO ACEPTADO":"PRESUPUESTO ENVIADO",formatMoney(r.optDouble("quote_final_total",0)));String inc=r.optString("quote_includes","").trim();if(!inc.isEmpty()&&!"null".equalsIgnoreCase(inc))addDetail(bodyBox,"info","INCLUYE",inc);double qkm=r.optDouble("route_distance_km",0),realKm=telemetry.optDouble("distance_km",0),pkm=driverPickupKm(r),op=(realKm>0?realKm:qkm)+pkm,total=r.optDouble("quote_final_total",0),rate=r.optDouble("quote_price_per_km",0),tolls=r.optDouble("quote_tolls",0);StringBuilder eco=new StringBuilder();if(qkm>0&&rate>0)eco.append(formatDistance(qkm)).append(" × ").append(formatMoney(rate)).append("/km");if(tolls>0)eco.append(eco.length()>0?" · ":"").append("peajes ").append(formatMoney(tolls));if(pkm>0)eco.append(eco.length()>0?" · ":"").append("+").append(formatDistance(pkm)).append(" hasta origen");if(total>0&&op>0)eco.append(" · ").append(formatMoney(total/op)).append(realKm>0?"/km operativo real":"/km operativo estimado");if(eco.length()>0)addDetail(bodyBox,"info","RESUMEN ECONÓMICO",eco.toString());}
+        if("PRECIO_FIJO".equals(qs)||"ENVIADO".equals(qs)||"ACEPTADO".equals(qs)){addDetail(bodyBox,"ticket","fixed".equals(r.optString("fare_mode"))?"PRECIO ACORDADO":(qs.equals("ACEPTADO")?"PRESUPUESTO ACEPTADO":"PRESUPUESTO ENVIADO"),formatMoney(r.optDouble("quote_final_total",0)));String inc=r.optString("quote_includes","").trim();if(!inc.isEmpty()&&!"null".equalsIgnoreCase(inc))addDetail(bodyBox,"info","INCLUYE",inc);double qkm=r.optDouble("route_distance_km",0),realKm=telemetry.optDouble("distance_km",0),pkm=driverPickupKm(r),op=(realKm>0?realKm:qkm)+pkm,total=r.optDouble("quote_final_total",0),rate=r.optDouble("quote_price_per_km",0),tolls=r.optDouble("quote_tolls",0);StringBuilder eco=new StringBuilder();if(qkm>0&&rate>0)eco.append(formatDistance(qkm)).append(" × ").append(formatMoney(rate)).append("/km");if(tolls>0)eco.append(eco.length()>0?" · ":"").append("peajes ").append(formatMoney(tolls));if(pkm>0)eco.append(eco.length()>0?" · ":"").append("+").append(formatDistance(pkm)).append(" hasta origen");if(total>0&&op>0)eco.append(" · ").append(formatMoney(total/op)).append(realKm>0?"/km operativo real":"/km operativo estimado");if(eco.length()>0)addDetail(bodyBox,"info","RESUMEN ECONÓMICO",eco.toString());}
         String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(bodyBox,"comment","COMENTARIOS",com);
         if(!"FINALIZADA".equals(status)&&!"CANCELADA".equals(status)&&!"RECHAZADA".equals(status)){
             Button chat=secondaryButton("✉ MENSAJES DEL PASAJERO");
@@ -552,14 +557,24 @@ public class MainActivity extends Activity {
         if(!hist){
             if("PENDIENTE".equals(status)){
                 LinearLayout acts=new LinearLayout(this);acts.setOrientation(LinearLayout.HORIZONTAL);
-                Button quote=primaryButton("ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"),reject=dangerButton("RECHAZAR");
+                boolean fixed="fixed".equals(r.optString("fare_mode"))&&"PRECIO_FIJO".equals(qs);
+                Button quote=primaryButton(fixed?"ACEPTAR "+formatMoney(r.optDouble("quote_final_total",0)):
+                    ("ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"));
+                Button reject=dangerButton("RECHAZAR");
                 acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
-                quote.setOnClickListener(v->showQuoteDialog(r));reject.setOnClickListener(v->confirmReject(r));
+                if(fixed){
+                    quote.setTextSize(12);
+                    quote.setOnClickListener(v->confirmFixedDecision(r,true));
+                    reject.setOnClickListener(v->confirmFixedDecision(r,false));
+                }else{
+                    quote.setOnClickListener(v->showQuoteDialog(r));
+                    reject.setOnClickListener(v->confirmReject(r));
+                }
             }else if("ACEPTADA".equals(status)){
                 // Estado operativo explícito: no deducir «En camino» por el GPS.
                 String pickupPhase=r.optString("pickup_phase","SIN_INICIAR");
                 if("SIN_INICIAR".equals(pickupPhase)){
-                    Button moving=primaryButton("↗ VOY EN CAMINO");
+                    Button moving=primaryButton("fixed".equals(r.optString("fare_mode"))?"↗ IR A RECOGER":"↗ VOY EN CAMINO");
                     moving.setTextSize(12);
                     bodyBox.addView(moving,lpMatch(dp(49),5,2));
                     moving.setOnClickListener(v->showDriverConfirm("Avisar al pasajero",
@@ -584,6 +599,38 @@ public class MainActivity extends Activity {
         outer.addView(bodyBox);
         head.setContentDescription((open?"Contraer ":"Expandir ")+(code.isEmpty()?"reserva":code));head.setOnClickListener(v->{expandedId=open?"":id;hapticTick();renderRows(hist);});
         return outer;
+    }
+
+    private void confirmFixedDecision(JSONObject r,boolean accept){
+        String price=formatMoney(r.optDouble("quote_final_total",0));
+        showDriverConfirm(accept?"ACEPTAR VIAJE":"RECHAZAR VIAJE",
+            accept?"Confirmar este viaje por "+price+"? El pasajero NO deberá aprobar otro presupuesto.":
+              "¿Rechazar esta solicitud de viaje por "+price+"?",
+            "VOLVER",accept?"ACEPTAR":"RECHAZAR",()->decideFixedRequest(r,accept));
+    }
+    private void decideFixedRequest(JSONObject r,boolean accept){
+        String id=r.optString("id","");
+        if(id.isEmpty()||!driverStatusInFlight.add("fixed-"+id))return;
+        toast(accept?"Confirmando viaje con precio cerrado…":"Rechazando solicitud…");
+        pool.execute(()->{
+            try{
+                JSONObject result=Api.decideFixedFare(pin,id,accept);
+                runOnUiThread(()->{
+                    driverStatusInFlight.remove("fixed-"+id);
+                    if(!result.optString("status").equals(accept?"ACEPTADA":"RECHAZADA")){
+                        toast("No pudimos confirmar la respuesta del servidor.");return;
+                    }
+                    hapticTick();
+                    toast(accept?"✓ Viaje confirmado. Podés ir a recogerlo.":"Solicitud rechazada.");
+                    expandedId=accept?id:"";
+                    loadActive(true);
+                });
+            }catch(Exception e){runOnUiThread(()->{
+                driverStatusInFlight.remove("fixed-"+id);
+                toast("No se pudo "+(accept?"aceptar":"rechazar")+" el viaje: "+friendly(e));
+                loadActive(true);
+            });}
+        });
     }
 
     private void showQuoteDialog(JSONObject r){
