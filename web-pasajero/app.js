@@ -334,7 +334,7 @@ async function refreshPickupPresence(force=false){
     elapsedCheck<25?"Disponibilidad comprobada ahora":
     elapsedCheck<60?"Disponibilidad consultada hace "+elapsedCheck+" s":
     "Disponibilidad consultada hace "+Math.floor(elapsedCheck/60)+" min")+
-    " · La llegada se calcula por separado";
+    " · La recogida requiere confirmación del conductor";
   if(!driver.available){
     forgetPickupEta();
     // Backend confirms only a combined public yes/no. Its cause is private and
@@ -345,7 +345,7 @@ async function refreshPickupPresence(force=false){
     return;
   }
   if(!record.origin){
-    paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
+    paintPickupCard({presence:"online",title:"Conductor conectado",
       subtitle:"Elegí tu origen para ver cuánto tardaría en llegar.",
       checked:checkedLabel,phase:"origin"});
     return;
@@ -369,9 +369,12 @@ async function refreshPickupPresence(force=false){
         estimateNote:(freshEstimate?"Estimación obtenida ":"Última estimación ")+
           elapsedShort(estimateAge)+" · Puede variar.",checked:checkedLabel,phase:freshEstimate?"ready":requestActive?"routing":"waiting"});
     }else{
-      paintPickupCard({presence:"online",title:"Conductor disponible para recogerte",
-        subtitle:prefix||"Calculando llegada aproximada a tu origen…",
-        checked:checkedLabel,phase:requestActive?"routing":"waiting"});
+      // Backend presence does not guarantee a verified road pickup ETA.
+      const failed=lastEtaFailureKey===key&&Boolean(lastEtaFailureMessage);
+      paintPickupCard({presence:failed?"eta-unavailable":"eta-pending",
+        title:failed?"Llegada todavía sin estimar":"Conductor conectado · calculando llegada",
+        subtitle:prefix||"Calculando el recorrido del conductor hasta tu origen…",
+        checked:checkedLabel,phase:failed?"issue":requestActive?"routing":"waiting"});
     }
   };
   // Consulta de estado cada 15 s y ruta cada 25 s en movimiento / 45 s detenido.
@@ -452,7 +455,7 @@ async function refreshPickupPresence(force=false){
         reason==="login_required"?(signedIn
           ?"La sesión no permitió calcular la llegada. Revisá Mi cuenta."
           :"La llegada para visitantes no está disponible ahora. Reintentaremos."):
-        reason==="route_unavailable"?"Por ahora no hay tiempo estimado de llegada. Reintentaremos.":
+        reason==="route_unavailable"?"No pudimos verificar la ruta del conductor hasta tu origen. Reintentaremos.":
         "No pudimos calcular la llegada. Reintentaremos.";
       lastEtaFailureKey=pickupIdentityKey();lastEtaFailureMessage=text;
       showWaiting(text);
