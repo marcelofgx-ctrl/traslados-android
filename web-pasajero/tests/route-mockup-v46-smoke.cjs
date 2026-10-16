@@ -35,7 +35,7 @@ assert(css.includes('.departments select:has(option:checked:not([value=""]))'),"
 assert(css.includes('.wayline span::before')&&css.includes('.wayline span::after'));
 assert(css.includes('button:focus-visible'),"Keyboard focus retained on icon controls");
 assert(css.includes('prefers-reduced-motion:reduce'),"No forced animation");
-assert(js.includes('window.TrasladosAddress.find(q,dept)')&&js.includes('window.TrasladosGeo.find(q,dept)'));
+assert(js.includes('window.TrasladosAddress.findAcross(q,dept)')&&js.includes('window.TrasladosGeo.find(q,null)'));
 assert(js.includes('getCurrentPosition(async p=>'),"GPS consent flow retained");
 assert(js.includes('window.TrasladosBookingContracts.registeredReservation'));
 assert(js.includes('window.TrasladosBookingContracts.guestReservation'));
