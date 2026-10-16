@@ -110,6 +110,7 @@ public class MainActivity extends Activity {
         sendDriverBubbleAction("uy.com.traslados.conductor.HIDE_BUBBLE");
 
         super.onResume();
+        DriverHostBridge.onDriverVisible(this);
         handler.removeCallbacks(periodic);
         handler.postDelayed(periodic,10000);
         if(dashboardVisible)handler.postDelayed(this::actualizarGpsPreflightSilencioso,180);
@@ -120,6 +121,7 @@ public class MainActivity extends Activity {
         if(pin!=null&&!pin.isEmpty())sendDriverBubbleAction("uy.com.traslados.conductor.SHOW_BUBBLE");
 
         super.onPause();
+        DriverHostBridge.onDriverHidden(this);
         handler.removeCallbacks(periodic);
     }
 
@@ -1230,7 +1232,7 @@ public class MainActivity extends Activity {
         sc.setOnApplyWindowInsetsListener((view,insets)->{
             if(Build.VERSION.SDK_INT>=30){android.graphics.Insets safe=insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());android.graphics.Insets ime=insets.getInsets(WindowInsets.Type.ime());int dyn=Math.max(0,ime.bottom-safe.bottom);view.setPadding(safe.left,safe.top,safe.right,safe.bottom+dyn);if(dyn>0){View f=getCurrentFocus();if(f instanceof EditText)programarCampoVisibleConductor(f);}}else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
         });
-        try{BitmapDrawable bg=(BitmapDrawable)getDrawable(R.drawable.bg_texture);bg=(BitmapDrawable)bg.mutate();bg.setTileModeX(Shader.TileMode.REPEAT);bg.setTileModeY(Shader.TileMode.REPEAT);sc.setBackground(bg);}catch(Exception e){sc.setBackgroundColor(BG);}
+        try{BitmapDrawable bg=(BitmapDrawable)getDrawable(R.drawable.conductor_bg_texture);bg=(BitmapDrawable)bg.mutate();bg.setTileModeX(Shader.TileMode.REPEAT);bg.setTileModeY(Shader.TileMode.REPEAT);sc.setBackground(bg);}catch(Exception e){sc.setBackgroundColor(BG);}
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(14),dp(14),dp(14),dp(24));sc.addView(box,new ScrollView.LayoutParams(-1,-2));return sc;
     }
     private LinearLayout contentOf(ScrollView sc){return (LinearLayout)sc.getChildAt(0);}
@@ -1243,7 +1245,7 @@ public class MainActivity extends Activity {
         hero.setElevation(dp(4));
 
         LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.app_icon);logo.setScaleType(ImageView.ScaleType.CENTER_CROP);logo.setBackground(rounded(PANEL_2,GOLD_DARK,16));logo.setClipToOutline(true);row.addView(logo,new LinearLayout.LayoutParams(dp(64),dp(64)));
+        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.conductor_app_icon);logo.setScaleType(ImageView.ScaleType.CENTER_CROP);logo.setBackground(rounded(PANEL_2,GOLD_DARK,16));logo.setClipToOutline(true);row.addView(logo,new LinearLayout.LayoutParams(dp(64),dp(64)));
 
         LinearLayout col=new LinearLayout(this);col.setOrientation(LinearLayout.VERTICAL);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.setMargins(dp(11),0,0,0);row.addView(col,cp);
         TextView brand=heading("Traslados Conductor",22);col.addView(brand);
