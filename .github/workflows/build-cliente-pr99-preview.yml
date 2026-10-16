@@ -106,21 +106,21 @@ jobs:
           assert cert('artifacts/SIGNING.txt') == cert('/tmp/previous-signing.txt'), 'Certificate changed'
           badging=Path('artifacts/APK_INFO.txt').read_text()
           assert "package: name='uy.com.traslados.cliente'" in badging
-          assert "versionCode='210'" in badging
+          assert "versionCode='211'" in badging
           expected=json.loads(Path('preview-web-sha256.json').read_text())
           with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
               for name,digest in expected.items():
                   assert hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()==digest,name
-          print('PASS: SAME certificate as published v16; code210; all PR99 web assets verified inside APK')
+          print('PASS: SAME certificate as published v16; code211; all PR99 web assets verified inside APK')
           PY
-          cp "$APK" artifacts/traslados-cliente-premium-pr99-v22-prueba.apk
+          cp "$APK" artifacts/traslados-cliente-premium-pr99-v23-prueba.apk
           cp preview-web-sha256.json artifacts/
           git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
           date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
-          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v22-prueba.apk > SHA256SUMS.txt)
+          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v23-prueba.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
-          name: Cliente-PR99-v22-Prueba-Firmada
+          name: Cliente-PR99-v23-Prueba-Firmada
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
@@ -142,7 +142,7 @@ jobs:
             cp artifacts/* preview-artifacts/
             git add preview-artifacts
             git diff --cached --quiet && exit 0
-            git commit -m "APK PR99 v22 prueba firmada: sin producción"
+            git commit -m "APK PR99 v23 prueba firmada: sin producción"
             if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
           done
           exit 1

@@ -85,3 +85,40 @@ body.journey-mode-quick #view-viaje[data-premium-step="when"] .premium-actions{g
  body.journey-mode-quick .tabs .tab[data-view="cuenta"]::after{content:none}
  body.journey-mode-quick .tabs .tab[data-view="cuenta"]{font-size:10px}
 }
+
+/* Confirmation: one quiet itinerary, price first, an honest request action.
+   Existing IDs, live estimates and submit listeners remain the source of truth. */
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"]{padding-bottom:22px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-intro{margin:14px 2px 12px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-intro h2{font:700 23px/1.2 Manrope,Arial,sans-serif;margin-bottom:5px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .urgent-actions{padding:17px 16px 13px;border-radius:20px;background:#102f35;border:1px solid #9c90665c;box-shadow:0 8px 22px #0002}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .request-hero{margin-bottom:13px;gap:10px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .request-hero-icon{width:36px;height:36px;flex-basis:36px;background:#153a40;border-color:#bca57488;box-shadow:none}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .request-hero-icon svg{width:21px;height:21px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .urgent-actions-eyebrow{display:none}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .request-hero-copy h3{font-size:15px;font-weight:650;margin:0;color:#f3e1b8}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-route{margin:0 0 14px;padding:0;border:0;border-radius:0;background:transparent}
+body.journey-mode-quick #view-viaje .premium-confirm-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 3px}
+body.journey-mode-quick #view-viaje .premium-confirm-heading>span{font-size:9px;letter-spacing:.1em;color:#aebfba;font-weight:700}
+body.journey-mode-quick #view-viaje .premium-confirm-edit{min-height:36px;padding:5px 0 5px 8px;border:0;background:none;box-shadow:none;color:#edcf95;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-place{padding:7px 0;gap:9px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-place+.premium-confirm-place{border-top:0}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-copy small{font-size:10px;color:#b3c3bd;margin-bottom:2px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-copy strong{font-size:13px;font-weight:650;line-height:1.45}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-confirm-dot{font-size:13px;line-height:20px;flex-basis:13px}
+body.journey-mode-quick #view-viaje #urgent-route-recap{display:block;padding:13px 14px;margin:0 0 14px;border:1px solid #d1b47b33;border-radius:14px;background:#092229}
+body.journey-mode-quick #view-viaje #urgent-route-recap[hidden]{display:none!important}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-top{display:none}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics>span{display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;border:0}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics small{font-size:9px;letter-spacing:.06em;color:#a8bdb6}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics strong{font-size:15px;color:#f0f0e6;line-height:1.2;overflow-wrap:anywhere}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child{grid-column:1/-1;grid-row:1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #b8c9b51f}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child small{font-size:11px;letter-spacing:0;color:#d4ddd0}
+body.journey-mode-quick #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child strong{font-size:27px;font-weight:750;color:#f2d390;text-align:right}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-send{min-height:52px;padding:12px;font-size:13px;border-radius:12px;letter-spacing:0}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-send:disabled{opacity:1;background:#25454a;color:#d8c89f;border-color:#8f85594d;box-shadow:none}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .booking-final-note{font-size:10px;line-height:1.5;margin:11px 0 0;text-align:center;color:#c3d0c8}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-actions-description{font-size:10px;line-height:1.5;margin:8px 0 0;text-align:center;color:#9bb3ac}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-actions{display:flex;justify-content:flex-start;margin-top:5px}
+body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-previous{border:0;min-height:44px;padding:8px 4px;background:none;box-shadow:none;font-size:12px;color:#d6c095}

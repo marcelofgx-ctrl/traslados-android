@@ -2,8 +2,8 @@
 /* Presentación independiente: app.js conserva GPS, rutas, PIN, idempotencia y RPC. */
 (function(root){
   const STAGES=["route","when","passenger","confirm"];
-  const TITLES={route:"¿Dónde te buscamos?",when:"¿Cuándo querés viajar?",passenger:"Tus datos",confirm:"Tu traslado"};
-  const NOTES={route:"Elegí origen, destino y paradas.",when:"Ahora o en las próximas 2 horas.",passenger:"Tus datos permiten coordinar el traslado.",confirm:"Revisá tu recorrido antes de solicitar el viaje."};
+  const TITLES={route:"¿Dónde te buscamos?",when:"¿Cuándo querés viajar?",passenger:"Tus datos",confirm:"Revisá tu viaje"};
+  const NOTES={route:"Elegí origen, destino y paradas.",when:"Ahora o en las próximas 2 horas.",passenger:"Tus datos permiten coordinar el traslado.",confirm:"Todo listo para enviar tu solicitud."};
   function make(doc,tag,cls,content){
     const node=doc.createElement(tag);if(cls)node.className=cls;if(content!==undefined)node.textContent=content;return node;
   }
@@ -74,6 +74,10 @@
       routeCard.replaceChildren();
       if(!origin||!destination){routeCard.hidden=true;return;}
       routeCard.hidden=false;
+      const heading=make(doc,"div","premium-confirm-heading");
+      const edit=make(doc,"button","premium-confirm-edit","Editar recorrido");
+      edit.type="button";edit.addEventListener("click",()=>open("route"));
+      heading.append(make(doc,"span","","TU RECORRIDO"),edit);routeCard.append(heading);
       const stops=[...doc.querySelectorAll("#stops .location-selected-label")].map(n=>n.textContent.trim()).filter(Boolean);
       [[origin,"●","Origen"],...stops.map(v=>[v,"•","Parada"]),[destination,"●","Destino"]].forEach(([place,dot,type],idx)=>{
         const row=make(doc,"div","premium-confirm-place");
@@ -135,6 +139,11 @@
     hydrateContact();
     const requestHost=doc.getElementById("urgent-actions");
     requestHost.querySelector(".request-hero").insertAdjacentElement("afterend",routeCard);
+    // Preserve the real submission control and its listeners. Put the optional
+    // tracking explanation after the main action, instead of between route/fare.
+    const requestDescription=doc.getElementById("urgent-actions-description");
+    requestHost.querySelector(".booking-final-note").insertAdjacentElement("afterend",requestDescription);
+    requestHost.querySelector("#urgent-route-recap .request-recap-metrics>span:last-child small").textContent="Precio orientativo";
     const actions=make(doc,"footer","premium-actions"),warning=make(doc,"p","premium-error"),back=make(doc,"button","premium-previous","← Atrás"),next=make(doc,"button","premium-next","Continuar →");
     back.type="button";next.type="button";warning.setAttribute("role","alert");warning.hidden=true;
     actions.append(warning,back,next);screen.querySelector("#journey-field-host").insertAdjacentElement("afterend",actions);
@@ -159,7 +168,10 @@
         if(toggle?.getAttribute("aria-expanded")!=="true")toggle?.click();
       }
       if(name==="when")mountWhenExtras();
-      if(name==="confirm")renderConfirmRoute();
+      if(name==="confirm"){
+        renderConfirmRoute();
+        requestDescription.textContent="Recibirás un código para seguir la respuesta del conductor.";
+      }
       warning.hidden=true;back.hidden=name==="route";next.hidden=name==="confirm";
       next.textContent=name==="passenger"?"Revisar mi viaje →":"Continuar →";
       updateTimes();header.scrollIntoView?.({block:"start",behavior:"smooth"});
