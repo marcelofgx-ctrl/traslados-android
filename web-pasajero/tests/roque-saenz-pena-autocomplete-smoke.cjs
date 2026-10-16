@@ -53,6 +53,6 @@ const ide=ctx.window.TrasladosAddress;
  assert(app.includes("window.TrasladosAddress.findAcross(q,dept)"));
  assert(app.includes("Otras ubicaciones en Uruguay"));
  assert(app.includes("Referenci")||app.includes("referencia aproximada"));
- assert(!app.includes("Sin coincidencias en "+dept"),"Old misleading no-results error removed");
+ assert(!app.includes("Sin coincidencias en "), "Old misleading no-results error removed");
  console.log("PASS Roque Saenz Pena: 0,0 suggestions retained, cross-dept options, official resolve, no fictitious coordinate, clear UX");
 })().catch(e=>{console.error(e);process.exitCode=1;});
