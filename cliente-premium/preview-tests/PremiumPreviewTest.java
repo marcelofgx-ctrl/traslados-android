@@ -81,10 +81,11 @@ public class PremiumPreviewTest extends ActivityInstrumentationTestCase2<MainAct
         assertEquals("One airport result uses verified terminal access","\"selected\"",js("document.body.dataset.combinedCheck"));
         boolean complete=false;
         for(int i=0;i<350;i++){
-            if("true".equals(js("Boolean(latestRoad&&TrasladosRoutes.verified(latestRoad.data)&&latestRoad.data.referenceFareUyu>0&&document.querySelector('.premium-route-canvas .premium-map-route')&&['busy','online'].includes(document.querySelector('#pickup-presence').dataset.presence))"))){complete=true;break;}
+            if("true".equals(js("Boolean(latestRoad&&TrasladosRoutes.verified(latestRoad.data)&&latestRoad.data.referenceFareUyu>0&&document.querySelector('.premium-route-canvas .premium-map-route')&&!document.querySelector('#pickup-presence-metrics').hidden&&document.querySelector('#pickup-distance').textContent&&document.querySelector('#pickup-minutes').textContent)"))){complete=true;break;}
             Thread.sleep(100);
         }
-        assertTrue("Route, duration, map, central fare and real availability coexist: "+js("JSON.stringify({road:latestRoad?.data?{distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu}:null,diagnostic:TrasladosRoutes.diagnostic(activeRouteKey),presence:document.querySelector('#pickup-presence').dataset.presence})"),complete);
+        assertTrue("Route, duration, map, central fare AND real pickup distance/arrival coexist: "+js("JSON.stringify({road:latestRoad?.data?{distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu}:null,diagnostic:TrasladosRoutes.diagnostic(activeRouteKey),presence:document.querySelector('#pickup-presence').dataset.presence,detail:document.querySelector('#pickup-presence-subtitle').textContent})"),complete);
+        android.util.Log.i("PR99_COMBINED_QA",js("JSON.stringify({roadKm:latestRoad.data.distanceKm,roadMin:latestRoad.data.durationMin,fareUyu:latestRoad.data.referenceFareUyu,pickupDistance:document.querySelector('#pickup-distance').textContent,pickupArrival:document.querySelector('#pickup-minutes').textContent})"));
         String route=js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})");
         js("refreshPickupPresence()");
         assertEquals("Refreshing pickup must retain passenger route and fare",route,js("JSON.stringify({distance:latestRoad.data.distanceKm,minutes:latestRoad.data.durationMin,fare:latestRoad.data.referenceFareUyu})"));
