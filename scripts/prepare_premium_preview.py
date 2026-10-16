@@ -65,7 +65,7 @@ g = gradle.read_text().replace("versionCode 204", "versionCode 211").replace("ve
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
 assert "versionCode 211" in g
 if operational:
-    g = g.replace("versionCode 211", "versionCode 212").replace("23.0-PR99-Prueba", "24.0-Premium-Operativa")
+    g = g.replace("versionCode 211", "versionCode 213").replace("23.0-PR99-Prueba", "25.0-Premium-Operativa")
 gradle.write_text(g)
 java = app / "src/main/java/uy/com/traslados/cliente/MainActivity.java"
 j = java.read_text().replace('"marcelofgx-ctrl.github.io"', '"appassets.androidplatform.net"').replace("TrasladosClienteNative/16", "TrasladosClienteNative/23 PR99Preview")
@@ -187,7 +187,7 @@ if operational:
     j = j.replace('                // Public raster map images.', gate+'                // Public raster map images.')
     j = j.replace('private boolean openExternal(Uri uri) {\n        Toast.makeText', 'private boolean unusedPreviewExternal(Uri uri) {\n        Toast.makeText')
     j = j.replace('private boolean unusedProductionExternal(Uri uri)', 'private boolean openExternal(Uri uri)')
-    j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/24 Premium')
+    j = j.replace('TrasladosClienteNative/23 PR99Preview', 'TrasladosClienteNative/25 Premium')
     assert 'Operational passenger contracts' in j and 'private boolean openExternal(Uri uri)' in j
 java.write_text(j)
 assert "shouldInterceptRequest" in j and "tile.openstreetmap.org" in j
@@ -197,5 +197,5 @@ assert "appassets.androidplatform.net" in j and "appassets.androidplatform.net" 
 assert not (assets / "sw.js").exists()
 manifest = {str(p.relative_to(assets)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.rglob("*")) if p.is_file()}
 (root / "preview-web-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
-print("PASS: operational passenger v24/code212; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
+print("PASS: operational passenger v25/code213; original identity, existing server authorization, no JS bridge." if operational else "PASS: PR99 read-only v23/code211; original identity; no production writes.")
 
