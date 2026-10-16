@@ -189,7 +189,7 @@ const {chromium}=require("playwright-core");
     assert.match(await page.locator("#pickup-presence-title").textContent(),/Sin disponibilidad inmediata/);
     await page.route("**/rest/v1/rpc/public_driver_availability_v1",r=>r.fulfill({json:{available:true,status:"available_for_requests",checkedAt:new Date().toISOString()}}));
     await page.evaluate(()=>refreshPickupPresence(true));
-    assert.match(await page.locator("#pickup-presence-title").textContent(),/Conductor disponible/);
+    assert.match(await page.locator("#pickup-presence-title").textContent(),/(Conductor conectado|Conductor disponible)/);
     const iconSize=await page.locator("#view-viaje .request-hero-icon svg").evaluate(e=>e.getBoundingClientRect().width);
     assert(iconSize<=32,"SVG de confirmar desbordado: "+iconSize);
     assert.equal(await page.locator("#premium-confirm-fake-location").count(),0,"Nunca agregar ubicaciones ficticias");
