@@ -23,7 +23,7 @@ jobs:
           try:
             r=s.get(host+'/v2/api-docs',timeout=15);print('SWAGGER_HTTP',r.status_code)
             spec=r.json()
-            for path in ['/api/v1/geocode/candidates','/api/v1/geocode/direcUnica','/api/v1/geocode/fuzzyGeocode']:
+            for path in ['/api/v1/geocode/candidates','/api/v1/geocode/direcUnica','/api/v1/geocode/fuzzyGeocode','/api/v1/geocode/tramosCalle','/api/v1/geocode/find']:
               x=spec['paths'][path]['get']
               print('ENDPOINT',path,'PARAMS',[(p['name'],p.get('required'),p.get('default')) for p in x.get('parameters',[])])
           except Exception as e:
@@ -31,7 +31,10 @@ jobs:
           for name,url,params in [
             ('current_candidates',host+'/api/v1/geocode/candidates',{'limit':30,'q':'Roque saenz peña'}),
             ('accentless_candidates',host+'/api/v1/geocode/candidates',{'limit':30,'q':'Roque Saenz Pena'}),
-            ('old_suggest',host+'/api/v0/geocode/SugerenciaCalleCompleta',{'entrada':'Roque Saenz Pena','tipoRespuesta':'json'})
+            ('old_suggest',host+'/api/v0/geocode/SugerenciaCalleCompleta',{'entrada':'Roque Saenz Pena','tipoRespuesta':'json'}),
+            ('direcUnica_street',host+'/api/v1/geocode/direcUnica',{'limit':6,'q':'ROQUE SAENZ PEÑA, LAGOMAR, CANELONES'}),
+            ('direcUnica_number',host+'/api/v1/geocode/direcUnica',{'limit':6,'q':'ROQUE SAENZ PEÑA 1234, LAGOMAR, CANELONES'}),
+            ('fuzzy',host+'/api/v1/geocode/fuzzyGeocode',{'limit':6,'q':'Roque Saens Pena, Shangrila, Canelones'})
           ]:
             try:
               r=s.get(url,params=params,timeout=18,headers={'Origin':'https://marcelofgx-ctrl.github.io'})
