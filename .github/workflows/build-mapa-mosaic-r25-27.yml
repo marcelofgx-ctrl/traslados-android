@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/build-mapa-mosaic-r25-27.yml'
       - 'mapatrayectos/build.gradle'
+      - 'feature/driver/**'
   workflow_dispatch:
 permissions:
   contents: write
@@ -48,10 +49,10 @@ jobs:
           test -s feature/driver/build.gradle
           grep -q "java.setSrcDirs" feature/driver/build.gradle
           ! grep -q 'prepareEmbeddedConductor' mapatrayectos/build.gradle
-          grep -q 'DriverHostBridge.onPendingSnapshot' conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
+          grep -q 'DriverHostBridge.onPendingSnapshot' feature/driver/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java
           grep -q 'DriverHostBridge.install(this)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MapaHostApplication.java
-          grep -q 'driver_decide_fixed_pickup_v1' conductor/src/main/java/uy/com/traslados/conductor/Api.java
-          grep -q 'decideFixedRequest' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q 'driver_decide_fixed_pickup_v1' feature/driver/src/main/java/uy/com/traslados/conductor/Api.java
+          grep -q 'decideFixedRequest' feature/driver/src/main/java/uy/com/traslados/conductor/MainActivity.java
           test -s web-pasajero/downloads/mapa-trayectos-r25.25.apk
       - name: Restore permanent release signing
         env:
