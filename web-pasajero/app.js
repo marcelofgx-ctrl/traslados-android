@@ -1291,6 +1291,15 @@ function newClientRequestId(){
   const hex=[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("");
   return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
 }
+function verifiedFixedFareForBooking(p){
+  const points=[p.origin,...p.stops,p.destination];
+  const current=latestRoad?.key===routeKeyOf(points)?latestRoad.data:null;
+  if(!window.TrasladosRoutes.verified(current)||
+     !Number.isFinite(current.referenceFareUyu)||current.referenceFareUyu<=0||
+     !Number.isFinite(current.referenceRateUyuPerKm)||current.referenceRateUyuPerKm<=0)
+    throw new Error("Necesitamos calcular kilómetros y precio por carretera antes de solicitar el viaje.");
+  return current;
+}
 function renderBookingSuccess(result,mode="schedule"){
   const box=$("booking-success");clear(box);box.hidden=false;
   text(box,"div","✓","mark");
@@ -1300,6 +1309,10 @@ function renderBookingSuccess(result,mode="schedule"){
     ?"Recibimos tu pedido de recogida. El conductor debe responder; todavía no es un viaje confirmado."
     :"Recibimos tu solicitud. El conductor revisará el horario y podrá ofrecerte un presupuesto; el viaje se confirma únicamente cuando lo aceptes.");
   text(box,"div",result.code,"code");
+  if(urgent&&result.fare_mode==="fixed"&&Number(result.quote_final_total)>0){
+    text(box,"strong","Precio del viaje: "+tripMoney(Number(result.quote_final_total)));
+    text(box,"p","Precio establecido al solicitar. El conductor solo debe aceptar o rechazar; no tenés que aprobar un segundo presupuesto.");
+  }
   if(urgent&&result.pickup_date&&result.pickup_time){
     text(box,"p",mode==="now"
       ?"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+"."
@@ -1322,18 +1335,18 @@ async function submitUrgentPickup(){
     notice.hidden=false;refreshPickupPresence();
     return;
   }
-  let p;
-  try{p=bookingData();}catch(e){suggestBookingStep(e);showError(e);return;}
+  let p,road;
+  try{p=bookingData();road=verifiedFixedFareForBooking(p);}catch(e){suggestBookingStep(e);showError(e);return;}
   // Reintentos tras una respuesta ambigua reutilizan el mismo UUID.
   // Un cambio de datos o modalidad inicia otra solicitud, nunca reenvía la anterior.
-  const signature=JSON.stringify(p);
+  const signature=JSON.stringify([p,road.distanceKm,road.durationMin,road.referenceRateUyuPerKm,road.referenceFareUyu]);
   if(!urgentAttempt||urgentAttempt.signature!==signature)
     urgentAttempt={signature,id:newClientRequestId()};
   const btn=$("urgent-send");busy=true;loading(btn,true);
   try{
     guardConnection();
-    const result=await rpc("customer_request_pickup_v1",
-      window.TrasladosBookingContracts.immediatePickup(authReady()?session.token:null,p,urgentAttempt.id));
+    const result=await rpc("customer_request_pickup_fixed_v1",
+      window.TrasladosBookingContracts.fixedFarePickup(authReady()?session.token:null,p,urgentAttempt.id,road));
     if(!result?.code)throw new Error("El servidor no devolvió un código. Revisá Mis traslados antes de repetir.");
     if(result.public_token)saveGuest(result);
     urgentAttempt=null;
@@ -1342,7 +1355,9 @@ async function submitUrgentPickup(){
     const msg=String(e?.message||"");
     notice.textContent=/solicitud reciente pendiente|Demasiadas solicitudes/i.test(msg)
       ?"Ya existe una solicitud reciente o alcanzaste el límite. Revisá Mis traslados antes de enviar otra."
-      :"No pudimos confirmar si se envió tu solicitud. Revisá Mis traslados antes de volver a intentar.";
+      :/precio cambió|ruta indicada|verificar la distancia/i.test(msg)
+        ?"El precio o la ruta cambiaron. Volvé a calcular el recorrido antes de pedirlo."
+        :"No pudimos confirmar si se envió tu solicitud. Revisá Mis traslados antes de volver a intentar.";
     notice.hidden=false;
   }finally{busy=false;loading(btn,false);}
 }
@@ -1424,7 +1439,7 @@ function tripLine(parent,icon,label){
   text(el,"span",icon).setAttribute("aria-hidden","true");text(el,"span",label);
 }
 function tripProgress(parent,meta){
-  const stages=["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
+  const stages=r.fare_mode==="fixed"?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
   const rail=text(parent,"div","","trip-steps");
   rail.setAttribute("aria-label","Etapa actual: "+meta.label);
   stages.forEach((stage,i)=>{
@@ -1714,14 +1729,16 @@ function reservationView(r,guestToken){
   stop("◉",r.origin_text||"Origen");
   stop(/aeropuerto/i.test(r.destination_text||"")?"✈":"◆",r.destination_text||"Destino");
   const foot=text(top,"div","","trip-card-footer");
+  const fixedFare=r.fare_mode==="fixed";
   const amount=text(foot,"span",price>0?tripMoney(price):"Importe pendiente",price>0?"trip-card-quote":"trip-card-prompt");
-  if(price>0)amount.setAttribute("aria-label","Presupuesto "+tripMoney(price));
+  if(price>0)amount.setAttribute("aria-label",(fixedFare?"Precio acordado ":"Presupuesto ")+tripMoney(price));
   const affordance=meta.tone==="attention"?"Responder presupuesto":meta.tone==="moving"?"Ver seguimiento":"Ver detalles";
   text(foot,"span",affordance,"trip-card-open");
 
   const inner=text(d,"div","","trip-detail");
   const guidance=tripBoard.guidance(r);
   text(inner,"p",guidance,"trip-focus-message");
+  if(fixedFare&&price>0)text(inner,"p","Precio cerrado: "+tripMoney(price)+". El conductor acepta o rechaza tu viaje, sin enviarte otro presupuesto.","trip-focus-message");
   if(quoteExpired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
   else if(immediateExpired)text(inner,"p","⌛ El horario de esta solicitud inmediata ya venció sin confirmación. Si necesitás viajar, pedí una nueva recogida.","trip-expired-note");
 
@@ -1945,14 +1962,14 @@ async function loadTrips({background=false}={}){
   try{
     let rows=[];
     if(requestSession){
-      const result=await rpc("customer_list_reservations_v15",{p_session_token:requestSession});
+      const result=await rpc("customer_list_reservations_v16",{p_session_token:requestSession});
       rows=Array.isArray(result)?result:[];
     }
     // A valid session must not hide receipts created as a guest on this device.
     // Read-only token lookups preserve tracking without silently linking accounts.
     const guests=jsonStorage(GUEST_KEY,[]).filter(g=>typeof g?.token==="string"&&g.token.length>0);
     if(guests.length){
-      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
+      const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v5",{p_token:g.token})));
       rows=mergeAccountAndGuestTrips(rows,guests,result);
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
