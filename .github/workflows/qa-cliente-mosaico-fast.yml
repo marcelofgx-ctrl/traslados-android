@@ -1,0 +1,74 @@
+name: QA Traslados Cliente mosaico fast
+on:
+  push:
+    branches: [feature/traslados-cliente-mosaico-20261016]
+    paths:
+      - 'web-pasajero/**'
+      - 'scripts/passenger_assets.py'
+      - 'scripts/prepare_premium_preview.py'
+      - 'scripts/verify_passenger_mosaic.py'
+      - 'scripts/tests/test_passenger_assets.py'
+      - '.github/workflows/qa-cliente-mosaico-fast.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python and Node runtime preflight (no emulator or Supabase calls)
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -v
+          python3 scripts/verify_passenger_mosaic.py
+          node --check web-pasajero/app.js
+          node --check web-pasajero/booking-contracts.js
+          node --check web-pasajero/trip-board.js
+          node --check web-pasajero/sw.js
+          node web-pasajero/tests/premium-journey-v75-smoke.cjs
+          node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/booking-steps-smoke.cjs
+          node web-pasajero/tests/booking-finish-premium-smoke.cjs
+          node web-pasajero/tests/account-summary-smoke.cjs
+          node web-pasajero/tests/route-premium-v45-smoke.cjs
+          node web-pasajero/tests/route-mockup-v46-smoke.cjs
+          node web-pasajero/tests/route-selected-v47-smoke.cjs
+          node web-pasajero/tests/presence-honest-v48-smoke.cjs
+          node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
+          node web-pasajero/tests/urgent-request-v49-smoke.cjs
+          node web-pasajero/tests/trip-board-v50-smoke.cjs
+          node web-pasajero/tests/expired-quotes-v55-smoke.cjs
+          node web-pasajero/tests/trip-phase-v51-smoke.cjs
+          node web-pasajero/tests/customer-chat-v52-smoke.cjs
+          node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
+          node web-pasajero/tests/pickup-health-v54-smoke.cjs
+          node web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
+          node web-pasajero/tests/pickup-cadence-smoke.cjs
+          node web-pasajero/tests/booking-summary-smoke.cjs
+          node web-pasajero/tests/journey-composition-v57-smoke.cjs
+          node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
+          node web-pasajero/tests/stable-refresh-v58-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/pickup-context-copy-v60-smoke.cjs
+          node web-pasajero/tests/pickup-motion-v64-smoke.cjs
+          node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
+          node web-pasajero/tests/pickup-expired-session-v71-smoke.cjs
+          node web-pasajero/tests/owned-pickup-v65-smoke.cjs
+          node web-pasajero/tests/expired-urgent-v66-smoke.cjs
+          node web-pasajero/tests/flexible-schedule-r1-smoke.cjs
+          node web-pasajero/tests/service-home-v61-smoke.cjs
+          node web-pasajero/tests/service-art-v62-smoke.cjs
+          node web-pasajero/tests/location-permission-smoke.cjs
+          node web-pasajero/tests/public-branding-smoke.cjs
+          node web-pasajero/tests/install-flow-smoke.cjs
+          node web-pasajero/tests/public-config-v72-smoke.cjs
+          node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
+          node web-pasajero/tests/urgent-mode-smoke.cjs
+          node web-pasajero/tests/guest-request-session-smoke.cjs
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          echo 'PASS: passenger mosaic dependencies, 44 smoke tests, asset sync, fixed and scheduled booking contracts'
