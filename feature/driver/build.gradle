@@ -1,0 +1,34 @@
+plugins { id 'com.android.library' }
+
+android {
+    namespace 'uy.com.traslados.conductor'
+    compileSdk 35
+    defaultConfig { minSdk 26 }
+    sourceSets {
+        main {
+            java.setSrcDirs(['../../conductor/src/main/java', 'src/main/java'])
+            res.setSrcDirs(['../../conductor/src/main/res', "$buildDir/generated/driverOnlyRes"])
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies { api 'org.maplibre.gl:android-sdk:13.6.1' }
+
+// The artwork is kept byte-for-byte; only its resource name is namespaced.
+// Unlike the old Mapa build, no Conductor Java class is copied or rewritten.
+tasks.register('prepareDriverOnlyArt', Copy) {
+    from('../../conductor/src/main/res/drawable-nodpi') {
+        include 'app_icon.png'
+        rename { 'conductor_app_icon.png' }
+    }
+    from('../../conductor/src/main/res/drawable-nodpi') {
+        include 'bg_texture.png'
+        rename { 'conductor_bg_texture.png' }
+    }
+    into "$buildDir/generated/driverOnlyRes/drawable-nodpi"
+}
+tasks.named('preBuild') { dependsOn tasks.named('prepareDriverOnlyArt') }
