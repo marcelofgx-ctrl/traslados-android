@@ -66,7 +66,8 @@ public final class MosaicPreviewGateway {
         final String host=uri.getHost(),path=uri.getPath(),method=request.getMethod();
 
         if(APP_HOST.equalsIgnoreCase(host) && path!=null
-                && path.startsWith(APP_PATH) && "GET".equals(method)) {
+                && (path.equals(APP_PATH.substring(0,APP_PATH.length()-1))
+                    || path.startsWith(APP_PATH)) && "GET".equals(method)) {
             if ((APP_PATH+"_public/pickup-eta").equals(path)) {
                 try {
                     if(uri.getQueryParameterNames().size()!=2) return blocked();
@@ -80,7 +81,7 @@ public final class MosaicPreviewGateway {
                     return approvedPublicJson("https://"+API_HOST+"/functions/v1/pickup-eta",body.toString());
                 }catch(Exception invalid){return blocked();}
             }
-            String relative=path.substring(APP_PATH.length());
+            String relative=path.length()<APP_PATH.length() ? "" : path.substring(APP_PATH.length());
             if(relative.isEmpty())relative="index.html";
             if(relative.contains("..")||relative.contains("\\")||relative.startsWith("/"))
                 return blocked();
