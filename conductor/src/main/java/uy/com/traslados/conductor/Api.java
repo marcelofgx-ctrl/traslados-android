@@ -41,7 +41,14 @@ public final class Api {
 
     public static JSONArray listActive(String pin) throws Exception {
         JSONObject b=new JSONObject(); b.put("p_pin",pin);
-        String raw=postRpc("driver_list_reservations_v3",b);
+        String raw;
+        try{raw=postRpc("driver_list_reservations_v4",b);}
+        catch(ApiException e){
+            // Server deployment is independent. Old releases remain operable
+            // until the additive v4 RPC is available.
+            if(e.httpStatus!=404 && !e.backendMessage.contains("schema cache"))throw e;
+            raw=postRpc("driver_list_reservations_v3",b);
+        }
         return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
     }
 
@@ -49,6 +56,11 @@ public final class Api {
         JSONObject b=new JSONObject(); b.put("p_pin",pin);
         String raw=postRpc("driver_history_v2",b);
         return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
+    }
+
+    public static JSONObject decideFixedFare(String pin,String id,boolean accept) throws Exception {
+        JSONObject b=new JSONObject();b.put("p_pin",pin);b.put("p_reservation_id",id);b.put("p_accept",accept);
+        return new JSONObject(postRpc("driver_decide_fixed_pickup_v1",b));
     }
 
     public static JSONObject setStatus(String pin,String id,String status) throws Exception {
