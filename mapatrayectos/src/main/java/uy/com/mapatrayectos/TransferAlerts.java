@@ -146,6 +146,29 @@ public final class TransferAlerts {
         announce(c,ACTION_COUNT);
     }
 
+    /** Commit the *server-acknowledged* decision to the same single authenticated cache.
+     * No optimistic writes and no deletion of the reservation or its history. */
+    public static void applyConfirmedDecision(Context c,String id,boolean accepted){
+        if(id==null||id.isEmpty())return;
+        JSONArray rows=snapshot(c);
+        boolean found=false;
+        for(int i=0;i<rows.length();i++){
+            JSONObject r=rows.optJSONObject(i);
+            if(r==null||!id.equals(r.optString("id")))continue;
+            try{
+                r.put("status",accepted?"ACEPTADA":"RECHAZADA");
+                r.put("quote_status",accepted?"ACEPTADO":"RECHAZADO");
+                found=true;
+            }catch(Exception ignored){}
+            break;
+        }
+        if(!found)return;
+        SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+        if(id.equals(p.getString("last_id","")))
+            p.edit().remove("last_id").putBoolean("unseen",false).apply();
+        updatePending(c,rows);
+    }
+
     private static void announce(Context c,String action){
         Intent i=new Intent(action).setPackage(c.getPackageName());
         c.sendBroadcast(i);
