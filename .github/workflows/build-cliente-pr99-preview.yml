@@ -84,7 +84,11 @@ jobs:
               try: response=urllib.request.urlopen(req,timeout=30)
               except urllib.error.HTTPError as e: response=e
               raw=response.read()
-              try: return json.loads(raw)
+              try:
+                  data=json.loads(raw)
+                  if 'workers.dev/' in url and not data.get('available'):
+                      print('Public route response:',response.status,{k:v for k,v in data.items() if k!='geometry'})
+                  return data
               except ValueError:
                   print('Non-JSON public service response:',response.status,response.headers.get('Content-Type'),raw[:180].decode('utf8','replace'))
                   return {'available':False,'reason':'non_json_http_'+str(response.status)}
