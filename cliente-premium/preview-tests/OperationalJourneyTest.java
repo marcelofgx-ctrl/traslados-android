@@ -58,4 +58,23 @@ public class OperationalJourneyTest extends ActivityInstrumentationTestCase2<Mai
         js("document.querySelector('#booking-success button').click();window.fetch=window.__qaFetch");
         assertEquals("true",js("document.querySelector('#view-viajes').classList.contains('active')"));
     }
+    public void testDriverCommandsAndTablesStayBlocked() throws Exception {
+        loaded();final WebViewClient[] client={null};WebView w=web();
+        getInstrumentation().runOnMainSync(()->client[0]=w.getWebViewClient());
+        for(String path:new String[]{"/rest/v1/reservations","/rest/v1/rpc/driver_set_reference_rate_v1","/rest/v1/rpc/driver_update_status","/rest/v1/rpc/unknown_command"}){
+            WebResourceResponse response=client[0].shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co"+path,"POST"));
+            assertNotNull(path,response);assertEquals(path,503,response.getStatusCode());
+        }
+        assertNull(client[0].shouldInterceptRequest(w,request("https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/customer_request_pickup_v1","POST")));
+    }
+    private WebResourceRequest request(String url,String method) {
+        return new WebResourceRequest() {
+            public Uri getUrl(){return Uri.parse(url);}
+            public boolean isForMainFrame(){return false;}
+            public boolean isRedirect(){return false;}
+            public boolean hasGesture(){return false;}
+            public String getMethod(){return method;}
+            public Map<String,String> getRequestHeaders(){return Collections.emptyMap();}
+        };
+    }
 }
