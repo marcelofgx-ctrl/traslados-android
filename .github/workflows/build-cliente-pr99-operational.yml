@@ -106,21 +106,21 @@ jobs:
           assert cert('artifacts/SIGNING.txt') == cert('/tmp/previous-signing.txt'), 'Certificate changed'
           badging=Path('artifacts/APK_INFO.txt').read_text()
           assert "package: name='uy.com.traslados.cliente'" in badging
-          assert "versionCode='212'" in badging
+          assert "versionCode='213'" in badging
           expected=json.loads(Path('preview-web-sha256.json').read_text())
           with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/release/app-release.apk') as z:
               for name,digest in expected.items():
                   assert hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()==digest,name
-          print('PASS: SAME certificate as published v16; code212; all PR99 web assets verified inside APK')
+          print('PASS: SAME certificate as published v16; code213; all PR99 web assets verified inside APK')
           PY
-          cp "$APK" artifacts/traslados-cliente-premium-pr99-v24-operativa.apk
+          cp "$APK" artifacts/traslados-cliente-premium-pr99-v25-operativa.apk
           cp preview-web-sha256.json artifacts/
           git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
           date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
-          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v24-operativa.apk > SHA256SUMS.txt)
+          (cd artifacts && sha256sum traslados-cliente-premium-pr99-v25-operativa.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
-          name: Cliente-PR99-v24-Operativa-Firmada
+          name: Cliente-PR99-v25-Operativa-Firmada
           path: artifacts/
           if-no-files-found: error
           retention-days: 30
@@ -142,7 +142,7 @@ jobs:
             cp artifacts/* preview-artifacts/
             git add preview-artifacts
             git diff --cached --quiet && exit 0
-            git commit -m "APK PR99 v24 operativa firmada: servicios de pasajero existentes"
+            git commit -m "APK PR99 v25 operativa firmada: servicios de pasajero existentes"
             if git push origin HEAD:feature/tu-viaje-premium-visual-20261015; then exit 0; fi
           done
           exit 1
