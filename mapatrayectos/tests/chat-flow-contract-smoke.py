@@ -2,10 +2,10 @@
 No network, no database writes, no messages sent."""
 from pathlib import Path
 root=Path(__file__).resolve().parents[2]
-main=(root/"conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java").read_text()
-monitor=(root/"conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java").read_text()
+main=(root/"feature/driver/src/main/java/uy/com/traslados/conductor/MainActivity.java").read_text()
+monitor=(root/"feature/driver/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java").read_text()
 quick=(root/"mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java").read_text()
-api=(root/"conductor/src/main/java/uy/com/traslados/conductor/Api.java").read_text()
+api=(root/"feature/driver/src/main/java/uy/com/traslados/conductor/Api.java").read_text()
 assert 'openRequestedPassengerChatIfReady()' in main
 assert 'pendingChatReservationId=intent.getBooleanExtra("open_chat",false)' in main
 assert '?driverBubbleReservationId:"";' in main
