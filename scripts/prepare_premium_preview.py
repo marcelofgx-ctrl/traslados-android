@@ -10,34 +10,31 @@ root = Path(__file__).resolve().parents[1]
 app = root / "cliente-premium/app"
 web = root / "web-pasajero"
 assets = app / "src/main/assets/premium-preview"
-asset_stats = sync_runtime(web, assets)
-print("Passenger assets sync:", asset_stats)
-# Separate HTTPS origin means the review build cannot see production WebView storage.
-index = assets / "index.html"
-html = index.read_text()
-html = html.replace("default-src 'self';", "default-src 'self';")
-start = html.index("connect-src ")
-end = html.index(";", start)
-html = html[:start] + "connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev" + html[end:]
+# Derive every preview variant directly from the canonical web sources.
+# No intermediate writes of originals, so identical runs preserve APK inputs.
+html=(web / "index.html").read_text()
+start=html.index("connect-src ")
+end=html.index(";",start)
+html=html[:start]+"connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev"+html[end:]
 if not operational:
-    html = html.replace('<body>', '<body>\n<div class="preview-notice" role="status">Vista de prueba v23 · No envía reservas</div>')
-    html = html.replace('</head>', '<meta name="traslados-preview" content="read-only">\n</head>')
+    html=html.replace('<body>','<body>\n<div class="preview-notice" role="status">Vista de prueba v27 · No envía reservas</div>')
+    html=html.replace('</head>','<meta name="traslados-preview" content="read-only">\n</head>')
 else:
-    html = html.replace('id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span>', 'id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span>')
+    html=html.replace('id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">ENVIAR SOLICITUD</span>',
+                      'id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span>')
     assert 'SOLICITAR VIAJE' in html and 'name="traslados-preview"' not in html
-html = html.replace('</head>', '<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
-write_if_changed(index, html.encode("utf-8"))
-write_if_changed(assets / "preview-isolation.css", ".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}".encode("utf-8"))
-js = assets / "app.js"
-src = js.read_text()
-assert 'if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)' in src
-src = src.replace('if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)', 'if(false /* Isolated PR99 APK: no service workers */)')
-write_if_changed(js, src.encode("utf-8"))
-# A stable no-argument public RPC is callable with GET. No token or passenger data.
-eta = assets / "eta-engine.js"
-e = eta.read_text()
-e = e.replace('method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,', 'method:"GET",mode:"cors",cache:"no-store",signal:ctrl.signal,', 1)
-e = e.replace(',\n        body:"{}"', '', 1)
+html=html.replace('</head>','<link rel="stylesheet" href="./preview-isolation.css">\n</head>')
+
+src=(web / "app.js").read_text()
+needle='if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self)'
+assert needle in src, "Service-worker isolation must remain explicit"
+src=src.replace(needle,'if(false /* Isolated PR99 APK: no service workers */)')
+
+e=(web / "eta-engine.js").read_text()
+needle='method:"POST",mode:"cors",cache:"no-store",signal:ctrl.signal,'
+assert needle in e, "Unrecognized public ETA transport"
+e=e.replace(needle,'method:"GET",mode:"cors",cache:"no-store",signal:ctrl.signal,',1)
+e=e.replace(',\n        body:"{}"','',1)
 start=e.index("  async function pickup(")
 end=e.index("  root.TrasladosETA=",start)
 e=e[:start]+'''  async function pickup({originLat,originLng,request=fetch}){
@@ -49,19 +46,30 @@ e=e[:start]+'''  async function pickup({originLat,originLng,request=fetch}){
     }finally{clearTimeout(timer);}
   }
 '''+e[end:]
-write_if_changed(eta, e.encode("utf-8"))
-# No service-worker installation even if another component attempts it.
-(assets / "sw.js").unlink(missing_ok=True)
+
+css=".preview-notice{position:relative;z-index:10000;padding:5px 12px;background:#102a30;color:#dcc599;text-align:center;font:500 10px/1.4 sans-serif;border-bottom:1px solid #bda77533}"
+asset_stats=sync_runtime(web, assets, {
+    "index.html":html.encode("utf-8"),
+    "app.js":src.encode("utf-8"),
+    "eta-engine.js":e.encode("utf-8"),
+    "preview-isolation.css":css.encode("utf-8"),
+})
+print("Passenger assets sync:",asset_stats)
 gradle = app / "build.gradle"
-g = gradle.read_text().replace("versionCode 204", "versionCode 211").replace("versionName '16.0-Premium'", "versionName '23.0-PR99-Prueba'")
+g=gradle.read_text()
+# Repeated local builds and switching isolated/operational must be idempotent.
+for version in ("204","211","215"):
+    g=g.replace("versionCode "+version,"versionCode 211")
+for version in ("16.0-Premium","23.0-PR99-Prueba","27.0-Premium-Mosaico"):
+    g=g.replace("versionName '"+version+"'","versionName '23.0-PR99-Prueba'")
 g = g.replace("https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/", "https://appassets.androidplatform.net/traslados-android/web-pasajero/")
 assert "versionCode 211" in g
 if operational:
     g = g.replace("versionCode 211", "versionCode 215").replace("23.0-PR99-Prueba", "27.0-Premium-Mosaico")
-assert "MOSAIC_PREVIEW_MODE', 'false'" in g
+g=g.replace("MOSAIC_PREVIEW_MODE', 'true'", "MOSAIC_PREVIEW_MODE', 'false'")
+g=g.replace("MOSAIC_PREVIEW_OPERATIONAL', 'true'", "MOSAIC_PREVIEW_OPERATIONAL', 'false'")
 g=g.replace("MOSAIC_PREVIEW_MODE', 'false'", "MOSAIC_PREVIEW_MODE', 'true'")
 if operational:
-    assert "MOSAIC_PREVIEW_OPERATIONAL', 'false'" in g
     g=g.replace("MOSAIC_PREVIEW_OPERATIONAL', 'false'", "MOSAIC_PREVIEW_OPERATIONAL', 'true'")
 write_if_changed(gradle, g.encode("utf-8"))
 # The native WebView gateway is now real compiled Java, not a Python string
