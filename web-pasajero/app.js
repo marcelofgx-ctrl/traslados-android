@@ -2465,6 +2465,8 @@ function init(){
   $("account-submit").addEventListener("click",()=>void accountSubmit());
   window.addEventListener("online",updateConnectivity);window.addEventListener("offline",updateConnectivity);
   syncAuthUI();setAccountMode(false);updateConnectivity();refreshBookingSteps();installUI();
+  // Public homepage deep link opens the PWA installer view, not a separate app.
+  if(window.location.hash==="#instalar")shiftView("instalar");
   if(authReady()||jsonStorage(GUEST_KEY,[]).length)void loadTrips({background:true});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
