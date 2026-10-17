@@ -604,7 +604,7 @@ public class TrackingService extends Service implements LocationListener {
     private void showTransferCallout(){
         hideTransferCallout();
         if(bubbleWm==null||bubbleView==null||bubbleLp==null)return;
-        final JSONObject fixed=TransferAlerts.lastActionableFixed(this);
+        final org.json.JSONObject fixed=TransferAlerts.lastActionableFixed(this);
         final String fixedId=fixed==null?"":fixed.optString("id","");
         activeTransferCallout=new ReminderCallout(this,
             fixed==null?TransferAlerts.lastText(this):TransferAlerts.fixedSummary(fixed),

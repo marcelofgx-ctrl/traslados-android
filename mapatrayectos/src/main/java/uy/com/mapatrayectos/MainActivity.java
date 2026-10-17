@@ -1841,8 +1841,8 @@ public class MainActivity extends Activity {
         uiHandler.postDelayed(dismissReminderCallout,30000L);
     }
     private void decideInAppFixed(String id,boolean accept){
-        final ReminderCallout card=activeTransferCallout;
-        if(card==null)return;
+        if(!(activeTransferCallout instanceof ReminderCallout))return;
+        final ReminderCallout card=(ReminderCallout)activeTransferCallout;
         uiHandler.removeCallbacks(dismissTransferCallout);
         card.setProcessing(true,accept?"Aceptando solicitud…":"Rechazando solicitud…");
         TransferAlerts.decideFixed(this,id,accept,(success,message)->{
