@@ -889,6 +889,23 @@ public class MainActivity extends Activity {
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);popup.setElevation(dp(13));
         addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
+        if(shiftActive&&!tripActive){
+            addMainMenuRow(menu,shiftPaused?"▶":"Ⅱ",
+                shiftPaused?"Reanudar jornada":"Pausar jornada",
+                shiftPaused?"Volver a registrar desplazamientos":"Detener temporalmente el registro GPS",
+                popup,()->{
+                    SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);
+                    if(!live.getBoolean("shift_active",shiftActive)||
+                        live.getBoolean("trip_active",tripActive)){
+                        Toast.makeText(this,"Revisá el estado de la jornada y del viaje",Toast.LENGTH_LONG).show();
+                        requestServiceState();
+                        return;
+                    }
+                    boolean pausedNow=live.getBoolean("shift_paused",shiftPaused);
+                    sendAction(pausedNow?TrackingService.ACTION_RESUME_SHIFT:
+                        TrackingService.ACTION_PAUSE_SHIFT,null,null,0);
+                });
+        }
         if(shiftActive){
             addMainMenuRow(menu,"■","Finalizar jornada",
                 tripActive?"Primero finalizá el servicio actual":"Cerrar registro de hoy · confirmar",
