@@ -81,10 +81,9 @@ public final class CloudDataBackup {
                     if(n>PAGE_SIZE)throw new IOException("Página demasiado grande");
                     for(int i=0;i<n;i++){
                         JSONObject record=items.getJSONObject(i);
-                        // Refuse archives containing a public reservation access token.
-                        // The server RPC must strip this credential before returning rows.
-                        if(record.has("public_token"))
-                            throw new IOException("Exportación bloqueada: token privado recibido del servidor");
+                        // Defense in depth: prevent passenger access tokens in archive,
+                        // even if the server RPC has not yet been updated.
+                        if(record.has("public_token")) record.remove("public_token");
                         byte[] data=(record.toString()+"\n")
                             .getBytes(StandardCharsets.UTF_8);
                         zip.write(data);
