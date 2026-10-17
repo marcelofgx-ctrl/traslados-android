@@ -881,7 +881,14 @@ function picker(name,mount,position){
     },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   }
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
-  return {state:()=>selected,chooseDept,input,persist,box,useCurrent};
+  function resetSelection(){
+    ++sequence;clearTimeout(debounce);
+    selected=null;input.value="";loading(search,false);
+    clear(results);feedback.hidden=true;source.hidden=true;
+    if(gpsHelp)gpsHelp.hidden=true;
+    repaint();
+  }
+  return {state:()=>selected,chooseDept,input,persist,box,useCurrent,resetSelection};
 }
 // El motor vial no depende de la UI ni del estado de reservas.
 const roadEngine=window.TrasladosRoutes;
@@ -1291,7 +1298,23 @@ function newClientRequestId(){
   const hex=[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("");
   return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
 }
+/** Clear completed request input AFTER a confirmed server receipt, not on an
+ * ambiguous network response. Reservation records and account history remain intact. */
+function resetNewTripDraft(){
+  record.origin=null;record.destination=null;record.stops.length=0;
+  originPicker?.resetSelection?.();destPicker?.resetSelection?.();
+  renderStops();
+  for(const key of ["comments","person-name","person-phone"]){const field=$(key);if(field)field.value="";}
+  $("passengers").value="1";
+  routeStepAutoAdvanced=false;
+  pendingReview=null;urgentAttempt=null;latestRoad=null;activeRouteKey="";
+  renderRouteSummary();
+}
 function renderBookingSuccess(result,mode="schedule"){
+  resetNewTripDraft();
+  // A successful submission is now only visible as a server-owned reservation.
+  tripLoaded=false;
+  void loadTrips({background:true});
   const box=$("booking-success");clear(box);box.hidden=false;
   text(box,"div","✓","mark");
   text(box,"h2","Solicitud enviada");
