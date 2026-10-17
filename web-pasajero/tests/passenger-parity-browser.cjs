@@ -84,7 +84,14 @@ const {chromium}=require("playwright-core");
   const snapshots=await Promise.all(pages.map(page=>page.evaluate(()=>({id:tripRows[0].id,code:tripRows[0].code,
     status:tripRows[0].status,amount:tripRows[0].quote_final_total,origin:tripRows[0].origin_text,destination:tripRows[0].destination_text}))));
   assert.deepEqual(snapshots[0],snapshots[1]);assert.equal(requests.size,1,"Second storage container recovers the owned trip without creating another");
-  for(const [index,page] of pages.entries())await page.screenshot({path:path.join(output,"paridad-historial-"+index+".png"),fullPage:true,animations:"disabled"});
+  for(const [index,page] of pages.entries()){
+    await page.evaluate(()=>closeTripNotice());
+    await page.locator('[data-trips-scope="history"]').click();
+    assert.match(await page.locator("#trips-list").textContent(),/QA-PARIDAD/);
+    assert.match(await page.locator("#trips-list").textContent(),/256/);
+    await page.mouse.move(0,0);
+    await page.screenshot({path:path.join(output,"paridad-historial-"+index+".png"),fullPage:true,animations:"disabled"});
+  }
   await browser.close();assert.deepEqual(errors,[]);
   console.log("PASS browser parity: login returns to confirmation, receipt cleans only draft, separate stores show same account trip and final state; synthetic backend only");
 })().catch(error=>{console.error(error);process.exit(1);});
