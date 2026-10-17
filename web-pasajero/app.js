@@ -59,7 +59,7 @@ function syncPremiumLocationSummary(pickupOverride){
     ?(record.origin&&typeof latestPickupEstimate==="function"
        ?latestPickupEstimate(pickupIdentityKey()):null)
     :pickupOverride;
-  premiumJourney?.syncLocation?.({origin:record.origin,road,pickup});
+  if(typeof premiumJourney!=="undefined")premiumJourney?.syncLocation?.({origin:record.origin,road,pickup});
 }
 function refreshBookingSteps(){
   if(!bookingSteps)return;
