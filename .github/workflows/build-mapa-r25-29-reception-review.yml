@@ -72,7 +72,7 @@ jobs:
           assert s.count("applicationId 'uy.com.mapatrayectos'")==1
           assert s.count('versionCode 81')==1
           assert s.count("versionName '0.1-R25.29'")==1
-          print('PASS: Mapa ID preserved and source code80 > R25.29 code80')
+          print('PASS: Mapa original code81 > R25.28 code80')
           PY
       - name: Decode exact historical icons/fonts/alerts (no changes)
         shell: bash
@@ -123,7 +123,7 @@ jobs:
           mkdir -p artifacts /tmp/mapa-base
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > artifacts/APK_INFO.txt
-          gh release download mapa-r25.29-recepcion-review-20261017 -p 'Mapa_Trayectos_R25_29_Recepcion_REVIEW.apk' -D /tmp/mapa-base
+          gh release download mapa-r25.28-aceptar-rechazar-review-20261017 -p 'Mapa_Trayectos_R25_28_Aceptar_Rechazar_REVIEW.apk' -D /tmp/mapa-base
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs /tmp/mapa-base/*.apk > /tmp/mapa-old-cert.txt
           python3 - <<'PY'
           import re,zipfile
