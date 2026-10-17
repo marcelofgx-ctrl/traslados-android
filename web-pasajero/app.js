@@ -1312,8 +1312,17 @@ function renderBookingSuccess(result,mode="schedule"){
   pendingReview=null;
   box.scrollIntoView({behavior:"smooth",block:"start"});
 }
+/** New trips must be owned by a verified passenger account, not a device-local
+ * guest receipt. Preserve the route and form while navigating to account login. */
+function requireAccountForNewTrip(){
+  if(authReady())return true;
+  tell("Para enviar solicitudes y conservar el historial en tus dispositivos, ingresá o creá tu cuenta.");
+  shiftView("cuenta");
+  return false;
+}
 async function submitUrgentPickup(){
   if(selectedPickupMode==="schedule"||busy)return;
+  if(!requireAccountForNewTrip())return;
   const notice=$("urgent-send-error");notice.hidden=true;
   const same=window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops);
   if(same){
@@ -1350,6 +1359,7 @@ async function submitUrgentPickup(){
 async function submitBooking(){
   if(selectedPickupMode!=="schedule"){tell("Para ahora o en 10 minutos, tocá Enviar solicitud.");return;}
   if(busy||!pendingReview)return;
+  if(!requireAccountForNewTrip())return;
   clearBookingFeedback();
   // El resumen aprobado debe coincidir exactamente con los campos al enviar:
   // editar detrás del panel nunca puede registrar un viaje desactualizado.
