@@ -20,10 +20,16 @@ jobs:
         run: |
           set -euo pipefail
           for file in web-pasajero/*.js; do node --check "$file"; done
+          failures=0
           for file in web-pasajero/tests/*smoke.cjs; do
             echo "TEST $file"
-            node "$file"
+            if ! node "$file"; then
+              echo "FAILED: $file"
+              failures=$((failures+1))
+            fi
           done
+          echo "Total failed tests: $failures"
+          test "$failures" -eq 0
       - name: Verify frontend production files, CSP and unified install policy
         shell: bash
         run: |
