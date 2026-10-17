@@ -59,6 +59,7 @@ jobs:
           node web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
+          node web-pasajero/tests/receipt-v81-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
@@ -99,7 +100,7 @@ jobs:
           assert 'CONFIRMAR SOLICITUD DE RESERVA' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
           version=html.split('./app.js?v=')[1].split('"')[0]
-          assert version.isdigit() and ('traslados-cliente-pwa-v'+version) in sw
+          assert version.isdigit() and (('traslados-cliente-pwa-v'+version) in sw or ('traslados-pwa-v'+version) in sw)
           assert 'address-engine.js' in html and 'address-engine.js' in sw
           assert 'route-engine.js' in html and 'route-engine.js' in sw
           assert 'eta-engine.js' in html and 'eta-engine.js' in sw

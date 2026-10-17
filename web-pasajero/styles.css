@@ -2307,3 +2307,47 @@ body.trip-chat-modal-open{overflow:hidden}
   border:1px solid rgba(240,207,146,.48);background:rgba(15,49,54,.48);
   color:#f2d594;font-size:12px;font-weight:800;letter-spacing:.045em;
 }
+
+
+/* v81: confirmación breve con jerarquía legible en un Samsung estrecho. */
+#booking-success.success{
+  padding:clamp(20px,4vw,30px) clamp(16px,4vw,26px);
+  max-width:650px;margin-inline:auto;
+  border:1px solid rgba(229,195,125,.54);border-radius:24px;
+  background:linear-gradient(150deg,rgba(8,59,66,.97),rgba(7,42,50,.98));
+}
+#booking-success.success .mark{font-size:40px;line-height:1.1;margin-bottom:7px}
+#booking-success.success h2{font-size:clamp(23px,5.4vw,29px);line-height:1.2;margin:4px 0 10px}
+#booking-success.success .success-lead{
+  max-width:48ch;margin:0 auto 14px;
+  font-size:14px;line-height:1.6;color:#e7efe9;
+}
+#booking-success.success .success-receipt{
+  text-align:left;display:grid;gap:5px;
+  padding:15px 17px;border:1px solid rgba(227,195,130,.35);
+  border-radius:16px;background:rgba(5,35,43,.6);margin:12px 0;
+}
+#booking-success.success .success-label{
+  display:block;font-size:10px;letter-spacing:.13em;font-weight:800;color:#debc7b;
+}
+#booking-success.success .code{
+  margin:0 0 8px;font-size:clamp(20px,4.7vw,27px);
+  line-height:1.35;overflow-wrap:anywhere;color:#f5d796;
+}
+#booking-success.success .success-price{
+  color:#fff2d2;font-size:clamp(25px,6vw,32px);font-weight:850;line-height:1.2;
+}
+#booking-success.success .success-hint,
+#booking-success.success .success-time,
+#booking-success.success .success-footer{
+  font-size:12.5px;line-height:1.55;margin:10px auto;color:#dcece5;max-width:52ch;
+}
+#booking-success.success .success-time{
+  border-radius:12px;border:1px solid rgba(208,178,112,.25);
+  padding:9px 12px;background:rgba(7,29,38,.47);color:#f0dab3;
+}
+#booking-success.success .primary.full{margin-top:18px;min-height:54px}
+@media(max-width:400px){
+  #booking-success.success{padding:18px 13px}
+  #booking-success.success .success-receipt{padding:13px}
+}
