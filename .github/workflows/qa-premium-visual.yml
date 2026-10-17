@@ -34,6 +34,7 @@ jobs:
           node --check web-pasajero/premium-map.js
           node web-pasajero/tests/premium-map-smoke.cjs
           node web-pasajero/tests/premium-journey-visual.cjs
+          node web-pasajero/tests/passenger-parity-browser.cjs
       - name: Archive screenshots for visual review
         if: always()
         uses: actions/upload-artifact@v4
