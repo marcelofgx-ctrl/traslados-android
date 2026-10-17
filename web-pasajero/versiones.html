@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#062e36">
+  <meta name="description" content="Versiones oficiales de las aplicaciones Traslados para Android.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; base-uri 'self'; object-src 'none'">
+  <title>Aplicaciones oficiales · Traslados</title>
+  <link rel="icon" href="./icons/icon-192.png">
+  <style>
+  :root{color-scheme:dark;--gold:#e9c781;--muted:#c6d9d2}
+  *{box-sizing:border-box}body{margin:0;color:#f7f1e5;background:radial-gradient(ellipse at 40% 0%,#18515a,#061c25 65%);font:15px/1.55 system-ui,-apple-system,sans-serif;min-height:100dvh}
+  main{max-width:680px;margin:auto;padding:24px 17px 55px}header{display:flex;gap:13px;align-items:center;margin:12px 0 28px}
+  header img{width:58px;height:58px;border-radius:16px}small{color:var(--muted)}
+  h1{font:700 clamp(24px,6vw,33px)/1.2 Georgia,serif;margin:2px 0 7px}h2{margin:0 0 6px;font-size:17px}
+  .kicker{color:var(--gold);letter-spacing:.15em;font-size:11px;font-weight:800;margin:0}
+  .card{padding:19px;margin:14px 0;background:linear-gradient(140deg,#0c3d46,#09232d);border:1px solid #e9c78161;border-radius:19px}
+  .card p{color:var(--muted);margin:5px 0 16px;font-size:13px}
+  .version{color:var(--gold);font-size:12px;font-weight:800}
+  .download{display:block;text-align:center;text-decoration:none;background:linear-gradient(125deg,#c99d4e,#f0d49a);color:#082d36;border-radius:12px;padding:13px;margin-top:13px;font-weight:800}
+  .download[hidden]{display:none}a:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .footnote{margin-top:25px;border-top:1px solid #e9c78150;padding-top:18px;font-size:12px;color:var(--muted)}
+  .footnote a{color:var(--gold)}.explain{color:var(--muted)}
+  </style>
+</head>
+<body>
+<main>
+  <header><img src="./icons/icon-192.png" alt=""><div><p class="kicker">TRASLADOS · URUGUAY</p><h1>Aplicaciones oficiales</h1></div></header>
+  <p class="explain">Este es el punto único para descargar las versiones estables. Si ya tenés una aplicación instalada, la próxima versión compatible se instala encima de la anterior, sin crear otro ícono.</p>
+  <section id="release-cliente" class="card"><h2>Traslados Cliente</h2><span class="version" data-version>Consultando versión…</span><p>Para solicitar viajes, consultar reservas y comunicarte con el conductor.</p><a class="download" data-download hidden>Descargar Cliente</a><small data-status role="status">Verificando la publicación…</small></section>
+  <section id="release-mapa" class="card"><h2>Mapa Trayectos</h2><span class="version" data-version>Consultando versión…</span><p>Seguimiento de recorridos y jornadas del conductor.</p><a class="download" data-download hidden>Descargar Mapa</a><small data-status role="status">Verificando la publicación…</small></section>
+  <section id="release-conductor" class="card"><h2>Conductor</h2><span class="version" data-version>Consultando versión…</span><p>Aplicación independiente de respaldo operativo.</p><a class="download" data-download hidden>Descargar Conductor</a><small data-status role="status">Verificando la publicación…</small></section>
+  <div class="footnote">
+    <p>Una actualización requiere tu confirmación en Android. No instalamos APK automáticamente ni alteramos viajes, sesiones o datos históricos.</p>
+    <p>Las versiones de revisión tienen identificadores separados y no se anuncian aquí. Si Android indica «Aplicación no instalada», no desinstales la versión que contiene datos locales sin contar con un respaldo verificado.</p>
+    <a href="./">← Volver a Traslados</a>
+  </div>
+</main>
+<script src="./release-updates.js?v=1" defer></script>
+<script src="./release-center.js?v=1" defer></script>
+</body>
+</html>
