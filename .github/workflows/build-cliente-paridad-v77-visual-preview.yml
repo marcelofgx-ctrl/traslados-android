@@ -1,0 +1,136 @@
+name: Cliente v77 isolated visual APK (draft)
+on:
+  push:
+    branches: [integration/paridad-cliente-20261017]
+    paths:
+      - '.github/workflows/build-cliente-paridad-v77-visual-preview.yml'
+      - 'web-pasajero/**'
+      - 'scripts/prepare_premium_preview.py'
+      - 'scripts/passenger_assets.py'
+      - 'cliente-premium/app/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cliente-v77-isolated-preview
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Preserve backend and validate real v77 frontend before packaging
+        run: |
+          set -euo pipefail
+          python3 cliente-premium/tests/check_premium_shell.py
+          python3 scripts/verify_passenger_mosaic.py
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -q
+          node web-pasajero/tests/passenger-parity-v77-smoke.cjs
+          node web-pasajero/tests/sw-cache-paridad-v77-smoke.cjs
+          node --check web-pasajero/app.js
+          node --check web-pasajero/premium-journey.js
+      - name: Stage read-only v77 web assets and side-by-side Android identity
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/prepare_premium_preview.py')
+          source=p.read_text()
+          old="Vista de prueba v27 · No envía reservas"
+          assert source.count(old)==1
+          p.write_text(source.replace(old,"Vista de prueba v77 · No envía reservas"))
+          PY
+          python3 scripts/prepare_premium_preview.py
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle=Path('cliente-premium/app/build.gradle')
+          src=gradle.read_text()
+          assert src.count('versionCode 211')==1
+          assert src.count("versionName '23.0-PR99-Prueba'")==1
+          src=src.replace('versionCode 211','versionCode 277').replace(
+              "versionName '23.0-PR99-Prueba'", "versionName '77.0-Paridad-Visual'")
+          gradle.write_text(src)
+          assert "MOSAIC_PREVIEW_MODE', 'true'" in src
+          assert "MOSAIC_PREVIEW_OPERATIONAL', 'false'" in src
+          assert "applicationIdSuffix '.debug'" in src
+          assets=Path('cliente-premium/app/src/main/assets/premium-preview')
+          html=(assets/'index.html').read_text()
+          assert 'meta name="traslados-preview" content="read-only"' in html
+          assert 'Vista de prueba v77 · No envía reservas' in html
+          assert not (assets/'sw.js').exists()
+          print('PASS: v77 assets staged, isolated preview prohibits booking writes')
+          PY
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Android SDK 35
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile independent debug APK for Samsung visual review
+        run: gradle -p cliente-premium :app:assembleDebug --build-cache --no-daemon --console=plain
+      - name: Verify APK package, isolated flags, embedded assets and SHA256
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APK=cliente-premium/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          mkdir -p artifacts
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > artifacts/APK_INFO.txt
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs "$APK" > artifacts/SIGNING.txt
+          python3 - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          info=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.traslados.cliente.debug'" in info, info[:300]
+          assert "versionCode='277'" in info
+          assert "versionName='77.0-Paridad-Visual'" in info
+          expected=json.loads(Path('preview-web-sha256.json').read_text())
+          with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/debug/app-debug.apk') as z:
+              for name,digest in expected.items():
+                  got=hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()
+                  assert got==digest,name
+              html=z.read('assets/premium-preview/index.html').decode()
+              assert 'traslados-preview' in html and 'v77 · No envía reservas' in html
+          assert not any(p.startswith(('downloads/','tests/')) for p in expected)
+          print('PASS v77: independent DEBUG identity, all assets, read-only preview')
+          PY
+          cp "$APK" artifacts/traslados-cliente-v77-paridad-visual-prueba.apk
+          (cd artifacts && sha256sum traslados-cliente-v77-paridad-visual-prueba.apk > CLIENTE-V77-SHA256SUMS.txt)
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          cp preview-web-sha256.json artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-v77-Paridad-Visual-Prueba-APK
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish read-only debug APK ONLY to the integration branch
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados Preview CI'
+          git config user.email 'actions@users.noreply.github.com'
+          BRANCH=integration/paridad-cliente-20261017
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            mkdir -p preview-artifacts
+            cp artifacts/traslados-cliente-v77-paridad-visual-prueba.apk preview-artifacts/
+            cp artifacts/CLIENTE-V77-SHA256SUMS.txt preview-artifacts/
+            cp artifacts/BUILT_AT_UTC.txt preview-artifacts/CLIENTE-V77-BUILT_AT_UTC.txt
+            git add preview-artifacts/traslados-cliente-v77-paridad-visual-prueba.apk preview-artifacts/CLIENTE-V77-SHA256SUMS.txt preview-artifacts/CLIENTE-V77-BUILT_AT_UTC.txt
+            git diff --cached --quiet && exit 0
+            git commit -m 'Preview v77 aislada Android DEBUG: sin reservas ni publicación [skip ci]'
+            if git push origin "HEAD:$BRANCH"; then exit 0; fi
+          done
+          exit 1
