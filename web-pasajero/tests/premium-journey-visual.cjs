@@ -188,8 +188,13 @@ const {chromium}=require("playwright-core");
     await page.evaluate(()=>refreshPickupPresence(true));
     assert.match(await page.locator("#pickup-presence-title").textContent(),/Sin disponibilidad inmediata/);
     await page.route("**/rest/v1/rpc/public_driver_availability_v1",r=>r.fulfill({json:{available:true,status:"available_for_requests",checkedAt:new Date().toISOString()}}));
+    await page.route("**/functions/v1/pickup-eta",r=>r.fulfill({json:{available:false,reason:"route_unavailable"}}));
     await page.evaluate(()=>refreshPickupPresence(true));
-    assert.match(await page.locator("#pickup-presence-title").textContent(),/(Conductor conectado|Conductor disponible)/);
+    // Presence and routed ETA are separate contracts. The ETA finishes after
+    // the presence RPC; wait for its deterministic failed-route fixture.
+    await page.waitForFunction(()=>document.querySelector("#pickup-presence").dataset.presence==="eta-unavailable");
+    assert.match(await page.locator("#pickup-presence-title").textContent(),/sin estimar/);
+    assert.equal(await page.locator("#pickup-presence-metrics").isVisible(),false);
     const iconSize=await page.locator("#view-viaje .request-hero-icon svg").evaluate(e=>e.getBoundingClientRect().width);
     assert(iconSize<=32,"SVG de confirmar desbordado: "+iconSize);
     assert.equal(await page.locator("#premium-confirm-fake-location").count(),0,"Nunca agregar ubicaciones ficticias");
