@@ -80,7 +80,12 @@ public final class CloudDataBackup {
                     int n=items.length();
                     if(n>PAGE_SIZE)throw new IOException("Página demasiado grande");
                     for(int i=0;i<n;i++){
-                        byte[] data=(items.getJSONObject(i).toString()+"\n")
+                        JSONObject record=items.getJSONObject(i);
+                        // Refuse archives containing a public reservation access token.
+                        // The server RPC must strip this credential before returning rows.
+                        if(record.has("public_token"))
+                            throw new IOException("Exportación bloqueada: token privado recibido del servidor");
+                        byte[] data=(record.toString()+"\n")
                             .getBytes(StandardCharsets.UTF_8);
                         zip.write(data);
                     }
