@@ -1,0 +1,40 @@
+name: Publish Mapa Datos review APK as prerelease (no production change)
+on:
+  push:
+    branches:
+      - feature/mapa-datos-sin-borrado-20261017
+    paths:
+      - '.github/workflows/publish-mapa-datos-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify independently built APK, checksum and review identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd preview-artifacts
+          test -s Mapa_Trayectos_R25_26_Datos_Review.apk
+          sha256sum -c MAPA-DATOS-REVIEW-SHA256SUMS.txt
+          test "$(stat -c %s Mapa_Trayectos_R25_26_Datos_Review.apk)" -gt 1000000
+          echo 'APK de revisión verificada, no reemplaza Mapa instalado.'
+      - name: Publish to GitHub Releases (pre-release only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='mapa-r25.26-datos-review-20261017'
+          ASSET='preview-artifacts/Mapa_Trayectos_R25_26_Datos_Review.apk'
+          NOTES='APK independiente para revisar Datos, configuración separada, exportación local y exportación de nube protegida con PIN. No elimina registros GPS, viajes ni parámetros. Instala junto con la app existente. DEBUG/review: no es la actualización definitiva y requiere prueba en Samsung.'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber
+            echo 'Pre-release actualizada'
+          else
+            gh release create "$TAG" "$ASSET" --target "$GITHUB_SHA" --title "Mapa Trayectos R25.26 · Datos (prueba)" --notes "$NOTES" --prerelease
+            echo 'Pre-release creada'
+          fi

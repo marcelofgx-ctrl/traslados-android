@@ -26,7 +26,7 @@ import org.maplibre.android.style.sources.GeoJsonSource;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_NOTIF_SETTINGS=7004,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012;
+    private static final int REQ_LOCATION=7001,REQ_NOTIF=7002,REQ_OVERLAY=7003,REQ_NOTIF_SETTINGS=7004,REQ_EXPORT_DB=7010,REQ_IMPORT_DB=7011,REQ_IMPORT_SOUNDS=7012,REQ_EXPORT_CLOUD=7013;
     private static final long SPEED_UI_STALE_MS=3500L;
     private static final String STYLE_URL="https://tiles.openfreemap.org/styles/liberty";
     private static final String DRIVER_SOURCE="driver-source",DRIVER_LAYER="driver-layer",DRIVER_IMAGE="driver-arrow";
@@ -80,6 +80,8 @@ public class MainActivity extends Activity {
     private Location previewLastLocation; private boolean previewMoving=false; private int previewMovingEvidence=0,previewStoppedEvidence=0;
 
     private boolean resetAfterBackup=false;
+    private String pendingCloudBackupPin=null;
+    private Thread cloudExportWorker=null;
     private boolean mapCloseRequested=false;
     // Never persist "shown" before the user actually grants SYSTEM_ALERT_WINDOW:
     // R25.2 could suppress the dialog forever after upgrading the APK.
@@ -854,10 +856,17 @@ public class MainActivity extends Activity {
         }
         if(resultCode!=RESULT_OK||data==null||data.getData()==null){
             if(requestCode==REQ_EXPORT_DB)resetAfterBackup=false;
+            if(requestCode==REQ_EXPORT_CLOUD)pendingCloudBackupPin=null;
             return;
         }
         Uri uri=data.getData();
         if(requestCode==REQ_EXPORT_DB){performExport(uri);return;}
+        if(requestCode==REQ_EXPORT_CLOUD){
+            String pin=pendingCloudBackupPin;pendingCloudBackupPin=null;
+            if(pin!=null)performCloudExport(uri,pin);
+            else Toast.makeText(this,"Confirmá el PIN para exportar",Toast.LENGTH_LONG).show();
+            return;
+        }
         if(requestCode==REQ_IMPORT_DB){inspectAndConfirmImport(uri);return;}
         if(requestCode==REQ_IMPORT_SOUNDS){installOriginalSounds(uri);return;}
     }
@@ -880,6 +889,23 @@ public class MainActivity extends Activity {
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         popup.setOutsideTouchable(true);popup.setElevation(dp(13));
         addMainMenuRow(menu,"⌖","Mapa y jornada","Pantalla principal",popup,()->{});
+        if(shiftActive&&!tripActive){
+            addMainMenuRow(menu,shiftPaused?"▶":"Ⅱ",
+                shiftPaused?"Reanudar jornada":"Pausar jornada",
+                shiftPaused?"Volver a registrar desplazamientos":"Detener temporalmente el registro GPS",
+                popup,()->{
+                    SharedPreferences live=getSharedPreferences("tracking_state",MODE_PRIVATE);
+                    if(!live.getBoolean("shift_active",shiftActive)||
+                        live.getBoolean("trip_active",tripActive)){
+                        Toast.makeText(this,"Revisá el estado de la jornada y del viaje",Toast.LENGTH_LONG).show();
+                        requestServiceState();
+                        return;
+                    }
+                    boolean pausedNow=live.getBoolean("shift_paused",shiftPaused);
+                    sendAction(pausedNow?TrackingService.ACTION_RESUME_SHIFT:
+                        TrackingService.ACTION_PAUSE_SHIFT,null,null,0);
+                });
+        }
         if(shiftActive){
             addMainMenuRow(menu,"■","Finalizar jornada",
                 tripActive?"Primero finalizá el servicio actual":"Cerrar registro de hoy · confirmar",
@@ -896,9 +922,9 @@ public class MainActivity extends Activity {
         addPickupPresenceRow(menu,popup);
         addMainMenuRow(menu,"◈","Estado del sistema","Supabase · GPS · sincronización",popup,
             ()->startActivity(new Intent(this,SystemStatusActivity.class)));
-        addMainMenuRow(menu,"⚙","Configuración","Globito · permisos · pruebas",popup,
-            this::showConfiguration);
-        addMainMenuRow(menu,"⚒","Mantenimiento","Base de datos, audio y ajustes",popup,
+        addMainMenuRow(menu,"⚙","Configuración","Globito · sonidos · permisos",popup,
+            this::showDataSafeConfiguration);
+        addMainMenuRow(menu,"▣","Datos","Exportar · respaldos · almacenamiento",popup,
             ()->anchor.post(()->showMaintenanceMenu(anchor)));
         try{popup.showAsDropDown(anchor,dp(50)-menuWidth,dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
@@ -1094,42 +1120,167 @@ public class MainActivity extends Activity {
         row.setOnClickListener(v->{popup.dismiss();action.run();});
     }
 
+    /** Separate data management from device configuration. No deletion entry points. */
+    private void showDataSafeConfiguration(){
+        new AlertDialog.Builder(this)
+            .setTitle("Configuración")
+            .setItems(new String[]{"Globito, permisos y pruebas","Sonidos originales"},
+                (dialog,which)->{
+                    if(which==0)showConfiguration();
+                    else showSoundPackMenu();
+                })
+            .setNegativeButton("CERRAR",null).show();
+    }
+
+    /** Visible data actions are all read-only or explicit export/import, never purge. */
     private void showMaintenanceMenu(View anchor){
-        LinearLayout menu=new LinearLayout(this);menu.setOrientation(LinearLayout.VERTICAL);menu.setPadding(dp(10),dp(8),dp(10),dp(8));menu.setBackground(new TexturedDrawable(this,Color.rgb(8,55,63),Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
-        TextView title=text("MANTENIMIENTO",10.5f,GOLD,true);title.setPadding(dp(8),dp(3),dp(8),dp(6));menu.addView(title,new LinearLayout.LayoutParams(-1,-2));
-        TextView export=text("▣   Exportar base",15,TEXT,true);export.setGravity(Gravity.CENTER_VERTICAL);export.setPadding(dp(10),0,dp(10),0);menu.addView(export,new LinearLayout.LayoutParams(-1,dp(54)));
-        View divider=new View(this);divider.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
-        TextView imp=text("⇧   Importar base",15,TEXT,true);imp.setGravity(Gravity.CENTER_VERTICAL);imp.setPadding(dp(10),0,dp(10),0);menu.addView(imp,new LinearLayout.LayoutParams(-1,dp(54)));
+        LinearLayout menu=new LinearLayout(this);
+        menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setPadding(dp(11),dp(9),dp(11),dp(11));
+        menu.setBackground(new TexturedDrawable(this,Color.rgb(8,55,63),
+            Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
+        TextView title=text("DATOS · CONSERVACIÓN",11,GOLD,true);
+        title.setPadding(dp(8),dp(4),dp(8),dp(7));
+        menu.addView(title,new LinearLayout.LayoutParams(-1,-2));
+        int width=Math.min(dp(282),getResources().getDisplayMetrics().widthPixels-dp(24));
+        PopupWindow popup=new PopupWindow(menu,width,-2,true);
+        popup.setOutsideTouchable(true);popup.setElevation(dp(12));
+        popup.setBackgroundDrawable(new TexturedDrawable(this,Color.rgb(8,55,63),
+            Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
 
-        View divider2=new View(this);divider2.setBackgroundColor(Color.argb(70,224,193,111));menu.addView(divider2,new LinearLayout.LayoutParams(-1,dp(1)));
-        if(shiftActive&&!tripActive){
-            TextView pause=text(shiftPaused?"▶   Reanudar jornada":"Ⅱ   Pausar jornada",14.5f,TEXT,true);
-            pause.setGravity(Gravity.CENTER_VERTICAL);pause.setPadding(dp(10),0,dp(10),0);
-            menu.addView(pause,new LinearLayout.LayoutParams(-1,dp(52)));
-            pause.setOnClickListener(v->{
-                // Pop-up is created below; resolve its dismissal after it is shown.
-                sendAction(shiftPaused?TrackingService.ACTION_RESUME_SHIFT:TrackingService.ACTION_PAUSE_SHIFT,null,null,0);
-            });
+        addDataMenuRow(menu,"↓   Exportar base local",
+            "ZIP restaurable · Mapa de este teléfono",popup,this::startExportBase);
+        addDataMenuRow(menu,"⇧   Importar base local",
+            "Restaurar una copia ZIP verificada",popup,this::startImportBase);
+        addDataMenuRow(menu,"☁   Exportar historial de nube",
+            "ZIP · viajes, jornadas, GPS y reservas",popup,this::promptCloudExport);
+        addDataMenuRow(menu,"◈   Espacio y estadísticas",
+            "Consultar Supabase, GPS y base local",popup,
+            ()->startActivity(new Intent(this,SystemStatusActivity.class)));
+
+        TrackDb db=new TrackDb(this);
+        JSONObject counts;
+        try{counts=db.counts();}finally{db.close();}
+        long last=getSharedPreferences("maintenance_prefs",MODE_PRIVATE)
+            .getLong("last_backup_ms",0);
+        String lastText=last>0?
+            new java.text.SimpleDateFormat("dd/MM HH:mm",new Locale("es","UY")).format(new Date(last))
+            :"sin copia";
+        TextView status=text("En este teléfono: "+counts.optLong("shifts")+" jornadas · "+
+            counts.optLong("trips")+" viajes · "+counts.optLong("points")+" puntos GPS"+
+            "\nÚltimo ZIP local: "+lastText+
+            "\nConservación total: sin borrados automáticos ni purga.",
+            10.7f,MUTED,false);
+        status.setPadding(dp(9),dp(8),dp(9),dp(5));
+        menu.addView(status,new LinearLayout.LayoutParams(-1,-2));
+        popup.showAsDropDown(anchor,dp(50)-width,dp(5));
+    }
+
+    private void addDataMenuRow(LinearLayout parent,String heading,String description,
+                                PopupWindow popup,Runnable action){
+        LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(10),dp(3),dp(6),dp(3));
+        TextView name=text(heading,14.3f,TEXT,true);row.addView(name);
+        TextView details=text(description,10.8f,MUTED,false);row.addView(details);
+        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(62));
+        parent.addView(row,rp);
+        View divider=new View(this);divider.setBackgroundColor(Color.argb(60,224,193,111));
+        parent.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
+        row.setOnClickListener(v->{popup.dismiss();action.run();});
+    }
+
+    private void promptCloudExport(){
+        if(maintenanceBusy()){
+            new AlertDialog.Builder(this).setTitle("Respaldo de la nube")
+                .setMessage("Terminá el viaje y la jornada antes de exportar, para evitar datos en tránsito.")
+                .setPositiveButton("ENTENDIDO",null).show();
+            return;
         }
+        EditText input=new EditText(this);
+        input.setSingleLine(true);input.setHint("PIN del conductor");
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
+            android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        LinearLayout holder=new LinearLayout(this);
+        holder.setPadding(dp(20),dp(8),dp(20),dp(2));holder.addView(input,
+            new LinearLayout.LayoutParams(-1,-2));
+        new AlertDialog.Builder(this).setTitle("Exportar datos de Supabase")
+            .setMessage("Se conservarán todos los puntos GPS, viajes, jornadas y reservas. "+
+                "Se creará un ZIP de archivo, no restaurable automáticamente. "+
+                "Contiene ubicaciones y datos privados: guardalo en un lugar seguro. "+
+                "No se borrará nada del servidor.")
+            .setView(holder).setNegativeButton("CANCELAR",null)
+            .setPositiveButton("CONTINUAR",(dialog,which)->{
+                String pin=input.getText().toString().trim();
+                if(!pin.matches("[0-9]{4,10}")){
+                    Toast.makeText(this,"PIN inválido: 4 a 10 dígitos",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                Toast.makeText(this,"Verificando PIN en Supabase…",Toast.LENGTH_SHORT).show();
+                new Thread(()->{
+                    try{
+                        Api.getSystemStatus(pin);
+                        runOnUiThread(()->{
+                            pendingCloudBackupPin=pin;
+                            Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                .addCategory(Intent.CATEGORY_OPENABLE)
+                                .setType("application/zip")
+                                .putExtra(Intent.EXTRA_TITLE,CloudDataBackup.suggestedName());
+                            startActivityForResult(intent,REQ_EXPORT_CLOUD);
+                        });
+                    }catch(Exception ex){
+                        runOnUiThread(()->new AlertDialog.Builder(this)
+                            .setTitle("No se autorizó el respaldo")
+                            .setMessage("Revisá el PIN o la conexión. No se generó ningún ZIP.")
+                            .setPositiveButton("ENTENDIDO",null).show());
+                    }
+                },"cloud-backup-pin-check").start();
+            }).show();
+    }
 
-        TextView sound=text("♫   Sonidos originales",14.5f,TEXT,true);
-        sound.setGravity(Gravity.CENTER_VERTICAL);sound.setPadding(dp(10),0,dp(10),0);
-        menu.addView(sound,new LinearLayout.LayoutParams(-1,dp(54)));
-        TextView wipe=text("♻   Empezar de cero",14.5f,TEXT,true);wipe.setGravity(Gravity.CENTER_VERTICAL);wipe.setPadding(dp(10),0,dp(10),0);
-        menu.addView(wipe,new LinearLayout.LayoutParams(-1,dp(54)));
-
-        TrackDb db=new TrackDb(this);JSONObject cnt=db.counts();db.close();
-        long last=getSharedPreferences("maintenance_prefs",MODE_PRIVATE).getLong("last_backup_ms",0);
-        String lastText=last>0?new java.text.SimpleDateFormat("dd/MM HH:mm",new Locale("es","UY")).format(new Date(last)):"sin copia";
-        TextView status=text("Base OK · "+cnt.optInt("trips")+" viajes · Última copia "+lastText+
-            "\n"+SoundPack.describe(this),10.5f,MUTED,false);status.setPadding(dp(8),dp(7),dp(8),dp(5));menu.addView(status,new LinearLayout.LayoutParams(-1,-2));
-
-        PopupWindow popup=new PopupWindow(menu,dp(224),-2,true);popup.setOutsideTouchable(true);popup.setElevation(dp(10));popup.setBackgroundDrawable(new TexturedDrawable(this,Color.rgb(8,55,63),Color.rgb(12,76,82),Color.argb(210,224,193,111),18f,1f,false));
-        export.setOnClickListener(v->{popup.dismiss();startExportBase();});
-        imp.setOnClickListener(v->{popup.dismiss();startImportBase();});
-        sound.setOnClickListener(v->{popup.dismiss();showSoundPackMenu();});
-        wipe.setOnClickListener(v->{popup.dismiss();promptResetDatabase();});
-        popup.showAsDropDown(anchor,-dp(184),dp(5));
+    private void performCloudExport(Uri file,String pin){
+        TextView state=text("Preparando exportación segura…",13.5f,TEXT,false);
+        state.setPadding(dp(20),dp(20),dp(20),dp(20));
+        AlertDialog dialog=new AlertDialog.Builder(this)
+            .setTitle("Exportando historial de Supabase")
+            .setMessage("No cierres la aplicación hasta verificar el archivo. "+
+                "Esta operación no elimina ni modifica datos.")
+            .setView(state).setNegativeButton("CANCELAR",null).create();
+        dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+            .setOnClickListener(v->{
+                if(cloudExportWorker!=null)cloudExportWorker.interrupt();
+                dialog.dismiss();
+                Toast.makeText(this,"Exportación interrumpida. Eliminá el ZIP incompleto.",
+                    Toast.LENGTH_LONG).show();
+            }));
+        dialog.show();
+        cloudExportWorker=new Thread(()->{
+            try{
+                CloudDataBackup.Result info=CloudDataBackup.export(
+                    getApplicationContext(),file,pin,
+                    msg->runOnUiThread(()->{if(dialog.isShowing())state.setText(msg);}));
+                runOnUiThread(()->{
+                    dialog.dismiss();
+                    getSharedPreferences("maintenance_prefs",MODE_PRIVATE).edit()
+                        .putLong("last_cloud_backup_ms",System.currentTimeMillis()).apply();
+                    new AlertDialog.Builder(this).setTitle("✓ Respaldo de nube verificado")
+                        .setMessage(info.summary()+
+                            "\n\nNo se eliminó ningún dato. "+
+                            "La importación local anterior sigue separada.")
+                        .setPositiveButton("ENTENDIDO",null).show();
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    dialog.dismiss();
+                    new AlertDialog.Builder(this)
+                        .setTitle("La exportación no se completó")
+                        .setMessage("No se borró ningún dato del servidor. "+
+                            "Descartá cualquier archivo ZIP parcial. "+
+                            "\n\nDetalle: "+(e.getMessage()==null?"Error de exportación":e.getMessage()))
+                        .setPositiveButton("ENTENDIDO",null).show();
+                });
+            }finally{cloudExportWorker=null;}
+        },"cloud-history-export");
+        cloudExportWorker.start();
     }
 
     /** Select the file made from the five original ChatGPT uploads, once per phone. */
