@@ -1,0 +1,58 @@
+name: Normalize passenger PWA v80 version fixtures after APK Cliente retirement
+on:
+  push:
+    branches: [feature/cliente-seguimiento-integrado-20261017]
+    paths: ['.github/workflows/normalize-v80-pwa-test-fixtures.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update only stale frontend release identifiers in regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('web-pasajero/tests')
+          changed=[]
+          for p in sorted(root.glob('*smoke.cjs')):
+            s=p.read_text()
+            old=s
+            s=re.sub(r'app\\.js\\?v=(\d+)',r'app\\.js\\?v=80',s)
+            s=re.sub(r'styles\\.css\\?v=(\d+)',r'styles\\.css\\?v=80',s)
+            s=re.sub(r'app\.js\?v=(\d+)',r'app.js?v=80',s)
+            s=re.sub(r'styles\.css\?v=(\d+)',r'styles.css?v=80',s)
+            s=re.sub(r'traslados-cliente-pwa-v(\d+)',r'traslados-pwa-v80',s)
+            s=s.replace('traslados-cliente-pwa-v"+appVersion','traslados-pwa-v"+appVersion')
+            s=s.replace("traslados-cliente-pwa-v'+appVersion","traslados-pwa-v'+appVersion")
+            s=s.replace('Cliente Premium v16','Instalá Traslados')
+            s=s.replace('Download must identify the currently published signed v16',
+                        'Passenger install view remains web-only')
+            if s!=old:
+              p.write_text(s)
+              changed.append(str(p))
+          print('Updated release-only test fixtures: ',changed)
+          PY
+          node --check web-pasajero/app.js
+      - name: Commit deterministic fixture bump (PWA only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados PWA QA'
+          git config user.email 'actions@users.noreply.github.com'
+          BRANCH=feature/cliente-seguimiento-integrado-20261017
+          mkdir -p /tmp/qa-tests
+          cp -a web-pasajero/tests/. /tmp/qa-tests/
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          cp -a /tmp/qa-tests/. web-pasajero/tests/
+          git add web-pasajero/tests/
+          git diff --cached --quiet && exit 0
+          git commit -m 'test(pwa): update regression release fixtures to unified web v80 [skip ci]'
+          git push origin HEAD:"$BRANCH"
