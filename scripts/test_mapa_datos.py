@@ -28,6 +28,8 @@ assert "DatabaseBackup.exportBackup" in main
 assert "DatabaseBackup.importBackup" in main
 assert "CloudDataBackup.export" in main
 assert "REQ_EXPORT_CLOUD" in main
+assert "No se borró ningún dato" in main
+assert "promptCloudExport" in main
 
 for dataset in ("jornadas","viajes_mapa","puntos_gps","reservas",
                 "eventos_reserva","paradas_reserva","mensajes_reserva"):
