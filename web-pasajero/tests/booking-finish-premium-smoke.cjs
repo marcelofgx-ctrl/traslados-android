@@ -18,7 +18,7 @@ assert(css.includes(".booking-step-chevron::before"),"Chevron must be drawn usin
 assert(css.includes("appearance:none;-webkit-appearance:none"),"Replace OS default select arrow");
 assert(css.includes(".booking-cta-arrow")&&css.includes(".booking-final-note"),"Premium action details must remain");
 assert(css.includes("repeating-linear-gradient"),"Preserve approved card texture");
-const version=Number(html.match(/app\\.js\\?v=(\\d+)/)?.[1]);
+const version=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
 assert(Number.isInteger(version)&&version>=75);
 assert(html.includes('styles.css?v='+version));
 assert(sw.includes('traslados-cliente-pwa-v'+version));
