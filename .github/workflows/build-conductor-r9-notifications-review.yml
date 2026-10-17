@@ -1,0 +1,150 @@
+name: Conductor R9 — recover missed booking notifications (signed QA APK)
+on:
+  push:
+    branches: [feature/conductor-r9-entrega-peticiones-20261017]
+    paths:
+      - '.github/workflows/build-conductor-r9-notifications-review.yml'
+      - 'conductor/src/**'
+      - 'conductor/tests/**'
+      - 'conductor/build.gradle'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: conductor-r9-missed-notifications-review
+  cancel-in-progress: false
+jobs:
+  signed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Test notification policy and correct direct fixed-price workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=conductor/src/main/java/uy/com/traslados/conductor
+          mkdir -p /tmp/reservation-policy
+          javac -d /tmp/reservation-policy "$P/ReservationAlertPolicy.java" conductor/tests/ReservationAlertPolicyTest.java
+          java -cp /tmp/reservation-policy uy.com.traslados.conductor.ReservationAlertPolicyTest
+          grep -q 'driver_list_reservations_v4' "$P/Api.java"
+          grep -q 'driver_decide_fixed_pickup_v1' "$P/Api.java"
+          grep -q 'Api.decideFixedPickup' "$P/MainActivity.java"
+          grep -q 'claimPendingNotification' "$P/ReservationMonitorService.java"
+          grep -q 'ReservationAlertPolicy.recentPending' "$P/MainActivity.java"
+          grep -q 'PENDIENTE' "$P/ReservationMonitorService.java"
+          grep -q 'setOnClickListener' "$P/MainActivity.java"
+      - name: Use SAME Android ID and NEXT version only inside CI runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('conductor/build.gradle')
+          source=p.read_text()
+          assert source.count("applicationId 'uy.com.traslados.conductor'")==1
+          assert source.count('versionCode 130')==1
+          assert source.count("versionName '11.5-R8'")==1
+          source=source.replace('versionCode 130','versionCode 131').replace("versionName '11.5-R8'","versionName '11.5-R9-Alertas'")
+          p.write_text(source)
+          print('PASS same Conductor package, 131 > 130')
+          PY
+      - name: Install SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools' >/dev/null
+      - name: Retrieve original release signing key (no secret output)
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Assemble signed RELEASE APK (not .debug)
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :conductor:assembleRelease --no-daemon --stacktrace --console=plain
+      - name: Verify certificate and Android version against official R8
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          APK=conductor/build/outputs/apk/release/conductor-release.apk
+          OLD=web-pasajero/downloads/traslados-conductor-r8.apk
+          test -s "$APK" && test -s "$OLD"
+          mkdir -p artifacts
+          "$AAPT" dump badging "$APK" > artifacts/APK_INFO.txt
+          "$AAPT" dump badging "$OLD" > /tmp/conductor-original-info.txt
+          "$SIGNER" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SIGNER" verify --verbose --print-certs "$OLD" > /tmp/conductor-original-signing.txt
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          def identity(path):
+            m=re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'",Path(path).read_text())
+            assert m,'Missing APK identity'
+            return m.groups()
+          old=identity('/tmp/conductor-original-info.txt')
+          new=identity('artifacts/APK_INFO.txt')
+          assert old[0]=='uy.com.traslados.conductor' and old[1]=='130',old
+          assert new==('uy.com.traslados.conductor','131','11.5-R9-Alertas'),new
+          def cert(path):
+            m=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',Path(path).read_text())
+            assert m,'No signing certificate'
+            return m.group(1).lower()
+          assert cert('artifacts/SIGNING.txt')==cert('/tmp/conductor-original-signing.txt'),'CRITICAL: Android signature mismatch'
+          assert cert('artifacts/SIGNING.txt')=='d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d'
+          print('PASS original Conductor ID/signature; R9 > R8; signed APK')
+          PY
+          cp "$APK" artifacts/Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk
+          (cd artifacts && sha256sum Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > artifacts/BUILT_AT_UTC.txt
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Conductor-R9-Reservas-Alertas-SIGNED
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 60
+      - name: Publish only a review prerelease (never promote production APK or web)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=conductor-r9-reservas-alertas-review-20261017
+          APK=artifacts/Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk
+          NOTES='Conductor R9 revisión. Conserva identificador uy.com.traslados.conductor y firma oficial, versionCode 131. Corrige aviso de reservas recientes en primera lectura/reinicio y reconoce fare_mode=fixed para aceptar o rechazar directamente. No borra preferencias, PIN ni historial. Reserva y tarifas siguen en backend real. Verificar notificaciones y restricción batería Samsung antes de publicar como estable.'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --clobber
+          else
+            gh release create "$TAG" "$APK" artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --target "$GITHUB_SHA" --title 'Conductor R9 · Alertas y precio fijo (PRUEBA)' --notes "$NOTES" --prerelease
+          fi
+          mkdir -p /tmp/review-check
+          gh release download "$TAG" -p Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk -D /tmp/review-check
+          cmp "$APK" /tmp/review-check/*.apk
+          echo 'PASS: published signed QA APK bytes identical'
