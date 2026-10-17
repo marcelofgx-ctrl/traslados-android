@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const sw=fs.readFileSync(path.join(__dirname,"..","sw.js"),"utf8");
 const name=sw.match(/const CACHE="([^"]+)"/)?.[1];
-assert(name&&name.includes("pwa-v77"),"Expected named frontend release cache");
+assert(name&&name.includes("pwa-v80"),"Expected named frontend release cache");
 
 const scope="https://example.test/traslados-android/web-pasajero/";
 const handlers={},deleted=[],matches=[],puts=[];
@@ -49,10 +49,10 @@ async function dispatch(type,request){
   assert.deepEqual(deleted,["traslados-cliente-pwa-v75-old"],
     "Activating this PWA must never purge unrelated origin apps");
 
-  const req={url:scope+"app.js?v=77",mode:"same-origin",method:"GET"};
+  const req={url:scope+"app.js?v=80",mode:"same-origin",method:"GET"};
   const offline=await dispatch("fetch",req);
   assert.equal((await offline).kind,"cached-versionless-app",
-    "Offline request with ?v=77 must find the precached ./app.js");
+    "Offline request with ?v=80 must find the precached ./app.js");
   assert(matches.some(m=>m.url===req.url&&!m.ignoreSearch),
     "Prefer a precise current-version cache hit when present");
   assert(matches.some(m=>m.url===req.url&&m.ignoreSearch),
@@ -65,5 +65,5 @@ async function dispatch(type,request){
   await dispatch("fetch",req);
   assert.equal(puts.length,1);
   assert.equal(puts[0].url,req.url,"Fresh versioned asset written back into app cache");
-  console.log("PASS SW v77: cache ownership, offline query fallback, navigation and network refresh");
+  console.log("PASS SW v80: cache ownership, offline query fallback, navigation and network refresh");
 })().catch(err=>{console.error(err);process.exitCode=1;});
