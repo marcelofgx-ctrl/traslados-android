@@ -1840,14 +1840,35 @@ public class MainActivity extends Activity {
         uiHandler.removeCallbacks(dismissReminderCallout);
         uiHandler.postDelayed(dismissReminderCallout,30000L);
     }
+    private void decideInAppFixed(String id,boolean accept){
+        final ReminderCallout card=activeTransferCallout;
+        if(card==null)return;
+        uiHandler.removeCallbacks(dismissTransferCallout);
+        card.setProcessing(true,accept?"Aceptando solicitud…":"Rechazando solicitud…");
+        TransferAlerts.decideFixed(this,id,accept,(success,message)->{
+            if(success){
+                TransferAlerts.markViewed(this);
+                hideInAppTransfer(true);
+                updateTransferBadge();
+            }else if(activeTransferCallout==card){
+                card.setProcessing(false,message+" Tocá para reintentar.");
+                uiHandler.postDelayed(dismissTransferCallout,30000L);
+            }
+            android.widget.Toast.makeText(this,message,android.widget.Toast.LENGTH_SHORT).show();
+        });
+    }
     private void showInAppTransfer(){
         if(rootFrame==null||quickActionsAnchor==null)return;
         hideInAppReminder(false);hideInAppTransfer(false);
-        ReminderCallout card=new ReminderCallout(this,TransferAlerts.lastText(this),
-            this::openIntegratedConductor,
+        final JSONObject fixed=TransferAlerts.lastActionableFixed(this);
+        final String fixedId=fixed==null?"":fixed.optString("id","");
+        ReminderCallout card=new ReminderCallout(this,
+            fixed==null?TransferAlerts.lastText(this):TransferAlerts.fixedSummary(fixed),
+            fixed==null?this::openIntegratedConductor:()->decideInAppFixed(fixedId,true),
+            fixed==null?()->hideInAppTransfer(true):()->decideInAppFixed(fixedId,false),
             ()->hideInAppTransfer(true),
-            ()->hideInAppTransfer(true),
-            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
+            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud",
+            fixed==null?"DESPUÉS":"RECHAZAR",fixed==null?"VER PEDIDO":"ACEPTAR");
         ReminderAnchorGeometry.Placement p=inAppPlacement(card);
         if(p==null)return; // The regular Android notification remains.
         card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);

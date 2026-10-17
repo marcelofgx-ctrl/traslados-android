@@ -579,17 +579,40 @@ public class TrackingService extends Service implements LocationListener {
             .putInt("floating_size",dp(56));
         e.apply();
     }
+    private void openTransferFromBubble(){
+        hideTransferCallout();TransferAlerts.markViewed(this);
+        Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(open);
+    }
+    private void decideTransferFromBubble(String id,boolean accept){
+        final ReminderCallout card=activeTransferCallout;
+        if(card==null)return;
+        if(clockHandler!=null)clockHandler.removeCallbacks(transferTimeout);
+        card.setProcessing(true,accept?"Aceptando solicitud…":"Rechazando solicitud…");
+        TransferAlerts.decideFixed(this,id,accept,(success,message)->{
+            if(success){
+                TransferAlerts.markViewed(this);
+                hideTransferCallout();
+            }else if(activeTransferCallout==card){
+                card.setProcessing(false,message+" Tocá para reintentar.");
+                if(clockHandler!=null)clockHandler.postDelayed(transferTimeout,30000L);
+            }
+            android.widget.Toast.makeText(getApplicationContext(),message,android.widget.Toast.LENGTH_SHORT).show();
+        });
+    }
     private void showTransferCallout(){
         hideTransferCallout();
         if(bubbleWm==null||bubbleView==null||bubbleLp==null)return;
-        activeTransferCallout=new ReminderCallout(this,TransferAlerts.lastText(this),
-            ()->{
-                hideTransferCallout();TransferAlerts.markViewed(this);
-                Intent open=new Intent(this,uy.com.traslados.conductor.MainActivity.class);
-                open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(open);
-            },this::hideTransferCallout,this::hideTransferCallout,
-            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
+        final JSONObject fixed=TransferAlerts.lastActionableFixed(this);
+        final String fixedId=fixed==null?"":fixed.optString("id","");
+        activeTransferCallout=new ReminderCallout(this,
+            fixed==null?TransferAlerts.lastText(this):TransferAlerts.fixedSummary(fixed),
+            fixed==null?this::openTransferFromBubble:()->decideTransferFromBubble(fixedId,true),
+            fixed==null?this::hideTransferCallout:()->decideTransferFromBubble(fixedId,false),
+            this::hideTransferCallout,
+            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud",
+            fixed==null?"DESPUÉS":"RECHAZAR",fixed==null?"VER PEDIDO":"ACEPTAR");
         int width=dp(ReminderCallout.TOTAL_WIDTH_DP);
         WindowManager.LayoutParams lp=new WindowManager.LayoutParams(
             width,WindowManager.LayoutParams.WRAP_CONTENT,

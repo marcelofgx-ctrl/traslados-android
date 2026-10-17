@@ -19,6 +19,7 @@ public final class ReminderCallout extends FrameLayout {
     private final int petrol=Color.rgb(5,49,56),gold=Color.rgb(212,174,96),ivory=Color.rgb(252,250,241);
     private Runnable doneAction,postponeAction,dismissAction;
     private LinearLayout cardView;
+    private TextView messageView,firstAction,secondAction;
     private View pointerView;
     private boolean tailOnLeft=false;
     private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
@@ -59,7 +60,10 @@ public final class ReminderCallout extends FrameLayout {
         hp.leftMargin=dp(5);head.addView(headings,hp);
         card.addView(head);
         TextView msg=title(message==null?"Recordatorio":message,14,petrol,true);
-        msg.setMaxLines(3);msg.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        messageView=msg;
+        if(heading!=null&&heading.contains("NUEVO TRASLADO")){msg.setMaxLines(5);msg.setTextSize(12);}
+        else msg.setMaxLines(3);
+        msg.setEllipsize(android.text.TextUtils.TruncateAt.END);
         msg.setPadding(dp(2),dp(8),dp(2),dp(8));card.addView(msg);
         LinearLayout actions=new LinearLayout(c);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -70,6 +74,7 @@ public final class ReminderCallout extends FrameLayout {
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(0,dp(33),1);ap.rightMargin=dp(7);
         actions.addView(later,ap);actions.addView(finish,new LinearLayout.LayoutParams(0,dp(33),1));
         card.addView(actions);
+        firstAction=later;secondAction=finish;
         later.setOnClickListener(v->{if(postponeAction!=null)postponeAction.run();});
         finish.setOnClickListener(v->{if(doneAction!=null)doneAction.run();});
         card.setOnClickListener(v->{if(dismissAction!=null)dismissAction.run();});
@@ -121,6 +126,11 @@ public final class ReminderCallout extends FrameLayout {
             pointerView.setLayoutParams(arrowLp);
         }
         pointerView.invalidate();
+    }
+    public void setProcessing(boolean busy,String message){
+        if(messageView!=null&&message!=null&&!message.isEmpty())messageView.setText(message);
+        if(firstAction!=null){firstAction.setEnabled(!busy);firstAction.setAlpha(busy?.4f:1f);}
+        if(secondAction!=null){secondAction.setEnabled(!busy);secondAction.setAlpha(busy?.4f:1f);}
     }
     public void reveal(){
         setAlpha(0f);setTranslationX(dp(10));
