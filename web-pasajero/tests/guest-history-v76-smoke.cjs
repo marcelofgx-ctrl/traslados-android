@@ -30,6 +30,11 @@ assert.equal(merge([],receipts,[fulfilled({id:""}),fulfilled(guest)]).length,1,"
 const app=fs.readFileSync(path.join(root,"app.js"),"utf8");
 const html=fs.readFileSync(path.join(root,"index.html"),"utf8");
 const worker=fs.readFileSync(path.join(root,"sw.js"),"utf8");
+assert.match(app,/function resetNewTripDraft\(\)/);
+const confirmed=app.slice(app.indexOf('function renderBookingSuccess('),app.indexOf('async function submitUrgentPickup()'));
+assert.ok(confirmed.includes('resetNewTripDraft();'),"success clears only submitted form");
+assert.ok(confirmed.includes('loadTrips({background:true})'),"success refreshes history");
+assert.match(app,/function resetSelection\(\)/);
 assert.match(app,/function requireAccountForNewTrip\(\)/);
 assert.match(app,/if\(!requireAccountForNewTrip\(\)\)return;/);
 const urgent=app.slice(app.indexOf("async function submitUrgentPickup()"),app.indexOf("async function submitBooking()"));
