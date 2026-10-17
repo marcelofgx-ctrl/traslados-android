@@ -23,6 +23,10 @@ function historyContext(token,receipts,server){
   return ctx;
 }
 (async()=>{
+  const currency={Intl};vm.createContext(currency);
+  vm.runInContext(section("function tripMoney(","function tripDateTime("),currency);
+  assert.match(currency.tripMoney(256.25),/256,25/,"History and receipt must retain the quoted cents");
+  assert.match(currency.tripMoney(256),/256/);
   const row={id:"owned-1",code:"QA-ONE",status:"ACEPTADA",fare_mode:"fixed",quote_final_total:256,
     pickup_date:"2026-10-17",pickup_time:"12:00",created_at:new Date().toISOString()};
   const guest={id:"legacy-1",code:"QA-LEGACY",status:"RECHAZADA"};

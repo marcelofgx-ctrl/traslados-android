@@ -882,7 +882,11 @@ public class MainActivity extends Activity {
     private void setAgendaQuickState(Button b,String label,boolean active){if(b==null)return;b.setText(label);b.setAlpha(active?1.0f:0.84f);b.setTextColor(active?GOLD:TEXT);b.setBackground(rounded(active?Color.argb(52,224,193,111):PANEL_2,active?GOLD:LINE,16));}
     private String dayHeader(String d){try{Date x=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(d);return new java.text.SimpleDateFormat("EEEE dd/MM",new Locale("es","UY")).format(x).toUpperCase(new Locale("es","UY"));}catch(Exception e){return d;}}
     private String formatDistance(double km){return String.format(Locale.US,"%.1f km",km);}
-    private String formatMoney(double v){return String.format(Locale.US,"%,.0f",v).replace(',', '.')+" UYU";}
+    private String formatMoney(double v){
+        java.text.NumberFormat money=java.text.NumberFormat.getNumberInstance(new Locale("es","UY"));
+        money.setMinimumFractionDigits(0);money.setMaximumFractionDigits(2);
+        return money.format(v)+" UYU";
+    }
 
     private void changeStatus(JSONObject r,String to){
         if("EN_VIAJE".equals(to)&&!asegurarGpsAntesDeViaje())return;

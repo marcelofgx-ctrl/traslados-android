@@ -1503,7 +1503,7 @@ let activeTripChat=null,tripChatPreviouslyFocused=null,tripChatPollTimer=null;
 const tripChatDrafts=new Map(),tripChatAttempts=new Map();
 let tripAlertAudio=null;
 function statusName(s){return states[s]||s||"Sin estado";}
-function tripMoney(n){return new Intl.NumberFormat("es-UY",{style:"currency",currency:"UYU",maximumFractionDigits:0}).format(n);}
+function tripMoney(n){return new Intl.NumberFormat("es-UY",{style:"currency",currency:"UYU",minimumFractionDigits:0,maximumFractionDigits:2}).format(n);}
 function tripDateTime(t){
   if(!t)return "";
   const date=new Date(t);
