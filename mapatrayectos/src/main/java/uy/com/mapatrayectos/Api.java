@@ -115,12 +115,18 @@ public final class Api {
         return new JSONObject(postRpc("driver_system_status_v1",b));
     }
 
+    /** Pair this APK's unique device secret with the server before archiving. */
+    public static void registerCloudBackupDevice() throws Exception {registerDevice();}
+
     /** Authenticated, read-only page for archive creation. The PIN is never saved. */
     public static JSONObject getCloudHistoryPage(String pin,String dataset,String cursor,long cutoffMs,int limit)
         throws Exception {
         if(pin==null||!pin.matches("[0-9]{4,10}"))
             throw new IllegalArgumentException("PIN requerido");
         JSONObject b=new JSONObject();
+        String[] c=credentials();
+        b.put("p_device_id",c[0]);
+        b.put("p_device_secret",c[1]);
         b.put("p_pin",pin);
         b.put("p_dataset",dataset);
         b.put("p_after_cursor",cursor==null?"":cursor);
