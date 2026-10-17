@@ -1964,28 +1964,18 @@ function renderPremiumTracking(){
   text(pill,"strong",meta.label);
   text(hero,"h2",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Conductor en camino");
   text(hero,"p",tripBoard.guidance(r));
+  // The expanded detail shares the EXACT authorized GPS/road component used
+  // in Mis traslados. No second static map that contradicts the live car route.
   const mapHost=text(content,"section","","premium-tracking-map");
-  const from=[Number(r.origin_lat),Number(r.origin_lng)];
-  const to=[Number(r.destination_lat),Number(r.destination_lng)];
-  const coordinatesReal=from.every(Number.isFinite)&&to.every(Number.isFinite)&&
-    isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
-    (from[0]!==to[0]||from[1]!==to[1]);
-  if(coordinatesReal){
-    const loader=text(mapHost,"p","Cargando mapa de tu recorrido…","premium-tracking-map-message");
-    void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
-      {api:API,publishableKey:KEY}).then(route=>{
-        if(!mapHost.isConnected||premiumTrackingKey!==String(r.id||r.code||""))return;
-        if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||
-          !window.TrasladosPremiumMap?.render(mapHost,route.geometry,{height:178})){
-          loader.textContent="No pudimos mostrar el mapa verificado en este momento.";
-        }
-      }).catch(()=>{
-        if(loader.isConnected)loader.textContent="El mapa está temporalmente no disponible.";
-      });
-  }else{
-    text(mapHost,"div","El recorrido se mostrará cuando estén disponibles sus coordenadas verificadas.","premium-tracking-map-message");
-  }
-  text(content,"p","Mapa del recorrido contratado. No muestra la posición en tiempo real del conductor.","premium-tracking-disclaimer");
+  mapHost.setAttribute("aria-label",onBoard
+    ?"Seguimiento del automóvil hasta el destino"
+    :"Seguimiento del automóvil hasta la recogida");
+  window.TrasladosReservationLive?.mount(mapHost,{
+    reservation:r,guestToken:r.__guestToken||null,
+    sessionToken:authReady()?session?.token:null,
+    rpc,engine:roadEngine,api:API,key:KEY,renderer:window.TrasladosPremiumMap
+  });
+  text(content,"p","La ubicación y el tiempo solo aparecen con GPS reciente y una ruta vial verificada. Si no hay señal, verás el trayecto contratado.","premium-tracking-disclaimer");
   const card=text(content,"section","","premium-tracking-card");
   const stepHead=text(card,"div","","premium-tracking-stephead");
   text(stepHead,"strong","Estado del viaje");
