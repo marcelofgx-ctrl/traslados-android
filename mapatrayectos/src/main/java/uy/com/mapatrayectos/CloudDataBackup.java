@@ -139,7 +139,7 @@ public final class CloudDataBackup {
                     JSONObject m=new JSONObject(out.toString("UTF-8"));
                     if(!"traslados-cloud-history-export".equals(m.optString("format")))
                         throw new IOException("Manifest no reconocido");
-                    if(!expected.similar(m.getJSONObject("counts")))
+                    if(!sameCounts(expected,m.getJSONObject("counts")))
                         throw new IOException("No coincide el resumen del respaldo");
                     manifest=true;
                 }else if(name.startsWith("historial/")&&name.endsWith(".jsonl")){
@@ -155,12 +155,22 @@ public final class CloudDataBackup {
                 }else throw new IOException("Entrada ZIP inesperada");
                 zip.closeEntry();
             }
-            if(!manifest||found.length()!=DATASETS.length||!found.similar(expected))
+            if(!manifest||found.length()!=DATASETS.length||!sameCounts(found,expected))
                 throw new IOException("Contenido incompleto o conteos incorrectos");
         }
         StringBuilder hash=new StringBuilder();
         for(byte b:digest.digest())hash.append(String.format(Locale.US,"%02x",b&0xff));
         return hash.toString();
+    }
+
+    /** Android org.json does not provide JSONObject.similar(). */
+    private static boolean sameCounts(JSONObject a,JSONObject b){
+        if(a.length()!=DATASETS.length||b.length()!=DATASETS.length)return false;
+        for(String name:DATASETS){
+            if(!a.has(name)||!b.has(name)||a.optLong(name,-1)!=b.optLong(name,-1))
+                return false;
+        }
+        return true;
     }
 
     private static boolean containsDataset(String input){
