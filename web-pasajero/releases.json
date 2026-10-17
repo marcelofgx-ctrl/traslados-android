@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "channel": "stable",
+  "releases": {
+    "cliente": {
+      "name": "Cliente Premium",
+      "packageName": "uy.com.traslados.cliente",
+      "versionName": "16.0-Premium",
+      "versionCode": 204,
+      "displayVersion": "v16",
+      "file": "traslados-cliente-premium-v16.apk",
+      "sha256": "9ab8b822bf8e27ef8c95ea7b348cc4c2771f1594b7e3ba46ce5c1c246fa29e8b"
+    },
+    "mapa": {
+      "name": "Mapa Trayectos",
+      "packageName": "uy.com.mapatrayectos",
+      "versionName": "0.1-R25.25",
+      "versionCode": 77,
+      "displayVersion": "R25.25",
+      "file": "mapa-trayectos-r25.25.apk",
+      "sha256": "94906f09133b93678a9c9ca169e461ee5f664829a9ab2201caa7dcddc52fdb05"
+    },
+    "conductor": {
+      "name": "Conductor",
+      "packageName": "uy.com.traslados.conductor",
+      "versionName": "11.5-R8",
+      "versionCode": 130,
+      "displayVersion": "R8",
+      "file": "traslados-conductor-r8.apk",
+      "sha256": "9f23226ec93eb7248a8776ece473a59c3b692728fdf06e362f598b7050807bd4"
+    }
+  }
+}
