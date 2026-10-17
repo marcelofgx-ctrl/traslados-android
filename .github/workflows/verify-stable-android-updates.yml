@@ -1,0 +1,36 @@
+name: Verify stable Android update catalog
+on:
+  pull_request:
+    paths:
+      - 'web-pasajero/releases.json'
+      - 'web-pasajero/release-updates.js'
+      - 'web-pasajero/release-center.js'
+      - 'web-pasajero/versiones.html'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/sw.js'
+      - 'web-pasajero/tests/release-updates-smoke.cjs'
+      - 'scripts/sync_stable_release_catalog.py'
+      - '.github/workflows/verify-stable-android-updates.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax and native update behavior
+        run: |
+          node --check web-pasajero/release-updates.js
+          node --check web-pasajero/release-center.js
+          node web-pasajero/tests/release-updates-smoke.cjs
+          node web-pasajero/tests/install-flow-smoke.cjs
+      - name: Validate stable APK checksums against published files
+        run: python3 scripts/sync_stable_release_catalog.py --mode check
+      - name: Check exact Android package IDs, version codes, and signing certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          python3 scripts/sync_stable_release_catalog.py --mode check --android-tools
