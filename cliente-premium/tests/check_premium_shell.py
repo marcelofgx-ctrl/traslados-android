@@ -10,7 +10,7 @@ workflow=Path('.github/workflows/build-cliente-premium-v16.yml').read_text()
 expected='https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/'
 assert expected in gradle, 'Native Cliente must load the canonical passenger PWA'
 assert "marcelofgx-ctrl.github.io" in app and "OFFICIAL_PATH" in app
-assert 'TrasladosClienteNative/16' in app, "Native APK must identify itself without any JS bridge"
+assert 'TrasladosClienteNative/' in app and 'TrasladosNativeCode/' in app and 'BuildConfig.VERSION_CODE' in app, "Native APK must publish stable identity and numeric version without any JS bridge"
 assert "uy.com.traslados.cliente" in gradle and "uy.com.traslados.cliente" in app
 assert "versionCode 204" in gradle
 assert 'targetSdk 35' in gradle
