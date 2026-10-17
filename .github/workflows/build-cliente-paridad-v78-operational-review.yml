@@ -1,0 +1,142 @@
+name: Cliente v78 operational REVIEW APK (draft only)
+on:
+  push:
+    branches: [integration/paridad-cliente-20261017]
+    paths:
+      - '.github/workflows/build-cliente-paridad-v78-operational-review.yml'
+      - 'web-pasajero/**'
+      - 'scripts/prepare_premium_preview.py'
+      - 'scripts/passenger_assets.py'
+      - 'cliente-premium/app/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cliente-v78-operational-review
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Validate routes, account ownership, GPS presentation and passenger wizard
+        run: |
+          set -euo pipefail
+          python3 cliente-premium/tests/check_premium_shell.py
+          python3 scripts/verify_passenger_mosaic.py
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -q
+          for t in web-pasajero/tests/*smoke.cjs; do node "$t"; done
+          node --check web-pasajero/app.js
+          node --check web-pasajero/premium-journey.js
+      - name: Embed v78 operational passenger UI (separate package, real backend)
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_premium_preview.py --operational
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,'scripts')
+          from passenger_assets import manifest_json,write_if_changed
+          gradle=Path('cliente-premium/app/build.gradle')
+          src=gradle.read_text()
+          assert src.count('versionCode 215')==1
+          assert src.count("versionName '27.0-Premium-Mosaico'")==1
+          assert src.count("applicationIdSuffix '.debug'")==1
+          src=src.replace('versionCode 215','versionCode 278')
+          src=src.replace("versionName '27.0-Premium-Mosaico'","versionName '78.0-Paridad-Review'")
+          src=src.replace("applicationIdSuffix '.debug'","applicationIdSuffix '.paridad'")
+          assert "MOSAIC_PREVIEW_MODE', 'true'" in src
+          assert "MOSAIC_PREVIEW_OPERATIONAL', 'true'" in src
+          gradle.write_text(src)
+          assets=Path('cliente-premium/app/src/main/assets/premium-preview')
+          html_file=assets/'index.html'
+          html=html_file.read_text()
+          assert 'name="traslados-preview"' not in html
+          html=html.replace('<body>', '<body>\n<div class="paridad-review-notice" role="status">PRUEBA OPERATIVA v78 · Las solicitudes se registran de verdad</div>', 1)
+          assert 'PRUEBA OPERATIVA v78' in html
+          html_file.write_text(html)
+          css=assets/'preview-isolation.css'
+          css.write_text(css.read_text()+'\n.paridad-review-notice{padding:7px 10px;background:#4a2515;color:#ffe5b9;font:750 11px/1.4 Arial;text-align:center;border-bottom:1px solid #ecc287;}\n')
+          write_if_changed(Path('preview-web-sha256.json'),manifest_json(assets))
+          assert not (assets/'sw.js').exists()
+          journey=(assets/'premium-journey.js').read_text()
+          assert 'CONFIRMAR Y SOLICITAR VIAJE' in journey
+          assert 'premium-position-summary' in journey and 'premium-position-gps' in journey
+          print('PASS independent .paridad operational code278, confirm control, GPS and verified distances')
+          PY
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Android SDK 35
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile signed-by-debug review APK
+        run: gradle -p cliente-premium :app:assembleDebug --build-cache --no-daemon --console=plain
+      - name: Check APK identity, full bundle SHA-256 and operational indicators
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          APK=cliente-premium/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          mkdir -p artifacts
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > artifacts/APK_INFO.txt
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs "$APK" > artifacts/SIGNING.txt
+          python3 - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          info=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.traslados.cliente.paridad'" in info
+          assert "versionCode='278'" in info
+          assert "versionName='78.0-Paridad-Review'" in info
+          expected=json.loads(Path('preview-web-sha256.json').read_text())
+          with zipfile.ZipFile('cliente-premium/app/build/outputs/apk/debug/app-debug.apk') as z:
+              for name,digest in expected.items():
+                  got=hashlib.sha256(z.read('assets/premium-preview/'+name)).hexdigest()
+                  assert got==digest,name
+              html=z.read('assets/premium-preview/index.html').decode()
+              assert 'name="traslados-preview"' not in html
+              assert 'PRUEBA OPERATIVA v78' in html
+              js=z.read('assets/premium-preview/premium-journey.js').decode()
+              assert 'CONFIRMAR Y SOLICITAR VIAJE' in js
+          print('PASS v78 operational isolated package .paridad, assets verified')
+          PY
+          cp "$APK" artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk
+          (cd artifacts && sha256sum traslados-cliente-v78-paridad-operativa-prueba.apk > CLIENTE-V78-SHA256SUMS.txt)
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/BUILT_AT_UTC.txt
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          cp preview-web-sha256.json artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-v78-Paridad-Operativa-APK-Revision
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Save APK only to draft integration branch; NEVER publish production
+        run: |
+          set -euo pipefail
+          git config user.name 'Traslados Review CI'
+          git config user.email 'actions@users.noreply.github.com'
+          BRANCH=integration/paridad-cliente-20261017
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            mkdir -p preview-artifacts
+            cp artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk preview-artifacts/
+            cp artifacts/CLIENTE-V78-SHA256SUMS.txt preview-artifacts/
+            cp artifacts/BUILT_AT_UTC.txt preview-artifacts/CLIENTE-V78-BUILT_AT_UTC.txt
+            git add preview-artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk preview-artifacts/CLIENTE-V78-SHA256SUMS.txt preview-artifacts/CLIENTE-V78-BUILT_AT_UTC.txt
+            git diff --cached --quiet && exit 0
+            git commit -m 'Cliente v78 operational test APK, staging only [skip ci]'
+            if git push origin "HEAD:$BRANCH"; then exit 0; fi
+          done
+          exit 1
