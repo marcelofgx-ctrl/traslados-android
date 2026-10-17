@@ -1,0 +1,58 @@
+name: Mirror signed Cliente v17 QA APK for direct Android download
+on:
+  push:
+    branches: [feature/versionado-actualizaciones-20261017]
+    paths: ['.github/workflows/mirror-cliente-v17-review-raw.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: mirror-cliente-v17-review
+  cancel-in-progress: false
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified review release asset and compare original checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='cliente-v17-actualizaciones-review-20261017'
+          FILE='Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk'
+          mkdir -p /tmp/cliente-v17-review web-pasajero/downloads/revisiones
+          gh release download "$TAG" -p "$FILE" -p 'SHA256SUMS.txt' -D /tmp/cliente-v17-review
+          (cd /tmp/cliente-v17-review && sha256sum -c SHA256SUMS.txt)
+          test "$(stat -c %s /tmp/cliente-v17-review/$FILE)" -gt 10000
+          test "$(stat -c %s /tmp/cliente-v17-review/$FILE)" -lt 200000
+          cp "/tmp/cliente-v17-review/$FILE" "web-pasajero/downloads/revisiones/$FILE"
+          cp /tmp/cliente-v17-review/SHA256SUMS.txt web-pasajero/downloads/revisiones/SHA256SUMS.txt
+          (cd web-pasajero/downloads/revisiones && sha256sum -c SHA256SUMS.txt)
+          file "web-pasajero/downloads/revisiones/$FILE"
+      - name: Commit to review branch ONLY, never promote official update catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET=feature/versionado-actualizaciones-20261017
+          FILE='Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk'
+          mkdir -p /tmp/mirror-copy
+          cp "web-pasajero/downloads/revisiones/$FILE" /tmp/mirror-copy/
+          cp web-pasajero/downloads/revisiones/SHA256SUMS.txt /tmp/mirror-copy/
+          git fetch origin "$TARGET"
+          git reset --hard "origin/$TARGET"
+          mkdir -p web-pasajero/downloads/revisiones
+          cp "/tmp/mirror-copy/$FILE" web-pasajero/downloads/revisiones/
+          cp /tmp/mirror-copy/SHA256SUMS.txt web-pasajero/downloads/revisiones/
+          git config user.name 'Traslados Review CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add web-pasajero/downloads/revisiones/
+          if git diff --cached --quiet; then
+            echo 'Verified review APK mirror already exists'
+            exit 0
+          fi
+          git commit -m 'qa: provide direct raw download for signed Cliente v17 review APK'
+          git push origin "HEAD:$TARGET"
+          echo 'Mirror ready on review branch, production web remains unchanged'
