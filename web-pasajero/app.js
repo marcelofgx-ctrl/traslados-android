@@ -275,7 +275,7 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
       " km · "+window.TrasladosPickupCadence.arrivalLabel(minutes)+" aproximados":"",estimateNote,checked].filter(Boolean).join(" · ");
     if(status.textContent!==announcement)status.textContent=announcement;
   }
-  syncPremiumLocationSummary(hasEstimate?{km,minutes}:null);
+  if(typeof syncPremiumLocationSummary==="function")syncPremiumLocationSummary(hasEstimate?{km,minutes}:null);
 }
 function latestPickupEstimate(key){
   return lastVerifiedEtaResult&&lastVerifiedEtaKey===key&&Date.now()-lastVerifiedEtaAt<=300000
