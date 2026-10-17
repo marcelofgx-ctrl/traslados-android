@@ -625,6 +625,13 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
 #view-viaje[data-premium-step="when"] .premium-time-options{gap:6px}
 
 
+/* Estado recibido, NO disponibilidad confirmada del conductor. */
+#view-seguimiento .premium-tracking-hero[data-tone="waiting"] .premium-tracking-pill{
+  color:#f6dfb5;background:#5545267a;border-color:#d6b26f99;
+}
+#view-seguimiento .premium-tracking-hero[data-tone="waiting"] .premium-tracking-pill span{
+  color:#edc879;
+}
 /* Pantalla 6/8 · espera premium con datos de servidor, sin simular GPS. */
 #view-seguimiento .premium-tracking-wait{
   display:grid;justify-items:center;gap:11px;margin:0 0 12px;padding:18px 13px 17px;
