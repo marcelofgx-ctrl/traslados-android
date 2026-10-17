@@ -1874,8 +1874,15 @@ function installUI(){
   const android=/Android/i.test(navigator.userAgent||"");
   let apkReady=false,installConfirmed=false;
   function applyPublishedApk(){
-    if(!catalog)return;
-    const published=catalog.get();
+    // El catálogo estable validado tiene prioridad sobre una RPC antigua: quien
+    // instala por primera vez recibe la misma APK que quien actualiza.
+    const releaseFeed=window.TrasladosReleases;
+    const stable=releaseFeed?.current?.()?.releases?.cliente;
+    const official=releaseFeed?.approvedRelease?.(stable,"cliente");
+    const published=official?{
+      clientApkUrl:releaseFeed.urlFor(stable),
+      clientVersion:String(stable.displayVersion).slice(1)
+    }:catalog?.get?.();
     if(!published?.clientApkUrl)return;
     const version=String(published.clientVersion||"");
     if(!/^[1-9][0-9]*$/.test(version))return;
@@ -2001,6 +2008,9 @@ function installUI(){
   applyPublishedApk(); // Apply any valid cached remote release immediately.
   catalog?.subscribe?.(applyPublishedApk);
   void catalog?.refresh?.(); // Bounded background fetch, never blocks booking.
+  // La misma release firmada alimenta la página de versiones y el instalador.
+  const releaseRequest=window.TrasladosReleases?.refresh?.();
+  if(releaseRequest)void releaseRequest.then(applyPublishedApk);
   void checkVerifiedApk();
   if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self){
     const register=()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});
