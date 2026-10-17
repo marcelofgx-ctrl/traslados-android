@@ -83,6 +83,7 @@ jobs:
           node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node --check web-pasajero/sw.js
+          node web-pasajero/tests/sw-cache-paridad-v77-smoke.cjs
       - name: Verify review flow and offline safety
         run: |
           python3 - <<'PY'
