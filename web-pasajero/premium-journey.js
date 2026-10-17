@@ -205,6 +205,10 @@
       if(name==="confirm"){
         renderConfirmRoute();
         requestDescription.textContent="Recibirás un código para seguir la respuesta del conductor.";
+        if(!doc.querySelector('meta[name="traslados-preview"]')){
+          const label=doc.querySelector("#urgent-send .booking-cta-label");
+          if(label)label.textContent="CONFIRMAR Y SOLICITAR VIAJE";
+        }
       }
       warning.hidden=true;back.hidden=name==="route";next.hidden=name==="confirm";
       next.textContent=name==="passenger"?"Revisar mi viaje →":"Continuar →";
