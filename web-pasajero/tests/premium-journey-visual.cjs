@@ -245,12 +245,26 @@ const {chromium}=require("playwright-core");
         "No permitir cancelar/finalizar unilateralmente un viaje activo");
       await page.screenshot({path:path.join(dest,kind+"-"+width+".png"),
         fullPage:true,animations:"disabled"});
-      if(kind!=="buscando"){
+      {
         const full=page.locator("#view-viajes .premium-open-tracking");
         assert.equal(await full.count(),1,"Falta acceso a seguimiento independiente");
         await full.click();
         assert.equal(await page.locator("#view-seguimiento.active").count(),1,
           "Seguimiento no abrió su pantalla");
+        if(kind==="buscando"){
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-wait").count(),1,
+            "Buscando debe disponer de una pantalla independiente");
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-wait-stage").count(),3,
+            "Faltan fases de espera");
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-actions").count(),0,
+            "La solicitud pendiente no debe mostrar contacto de conductor confirmado");
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-wait-radar").getAttribute("aria-hidden"),"true",
+            "El radar decorativo no es un GPS");
+          assert.match(await page.locator("#view-seguimiento .premium-tracking-hero").textContent(),/esperando respuesta/i);
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-hero").getAttribute("data-tone"),"waiting");
+          const bounds=await page.locator("#view-seguimiento .premium-tracking-wait").evaluate(el=>el.getBoundingClientRect());
+          assert(bounds.width<=width+1&&bounds.left>=-1,"Radar fuera de pantalla en "+width);
+        }else{
         assert.equal(await page.locator("#view-seguimiento .premium-tracking-timeline [aria-current='step']").count(),1,
           "Fase activa inconsistente en pantalla completa");
         assert.equal(await page.locator("#view-seguimiento .premium-tracking-disclaimer").count(),2,
@@ -265,8 +279,30 @@ const {chromium}=require("playwright-core");
         });
         assert(trackingFit.bottom<=trackingFit.navTop-4&&trackingFit.top>=0,
           "Acciones de seguimiento tapadas por menú o fuera de pantalla "+width+": "+JSON.stringify(trackingFit));
+        }
         await page.screenshot({path:path.join(dest,kind+"-pantalla-"+width+".png"),
           fullPage:true,animations:"disabled"});
+        if(kind==="buscando"){
+          // A single tracked request advances through server-owned phases:
+          // the focused view must transition without creating another trip.
+          await page.evaluate(()=>{
+            tripRows[0].status="CONFIRMADA";
+            tripRows[0].pickup_phase="EN_CAMINO";
+            renderTripsBoard({reset:true});
+          });
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-wait").count(),0,
+            "No mantener el radar una vez informado EN_CAMINO");
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-timeline [aria-current='step']").count(),1,
+            "EN_CAMINO no actualizó el seguimiento");
+          await page.evaluate(()=>{
+            tripRows[0].status="FINALIZADA";
+            tripRows[0].pickup_phase="";
+            tripsScope="upcoming";
+            renderTripsBoard({reset:true});
+          });
+          assert.equal(await page.locator("#view-seguimiento .premium-tracking-empty").count(),1,
+            "Al finalizar, la vista de seguimiento no debe quedar congelada si Próximos está vacío");
+        }
         await page.locator("#premium-tracking-back").click();
       }
     }
