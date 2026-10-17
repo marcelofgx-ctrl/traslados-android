@@ -29,6 +29,13 @@ assert "DatabaseBackup.importBackup" in main
 assert "CloudDataBackup.export" in main
 assert "REQ_EXPORT_CLOUD" in main
 assert "No se borró ningún dato" in main
+# The former Maintenance menu also contained a user-facing pause action.
+# Splitting Data/Settings must not silently remove this operational control.
+main_menu=part(main,"private void showMainMenu(View anchor){",
+                    "private void showEndShiftConfirmation(){")
+assert '"Pausar jornada"' in main_menu and '"Reanudar jornada"' in main_menu
+assert "TrackingService.ACTION_PAUSE_SHIFT" in main_menu
+assert "TrackingService.ACTION_RESUME_SHIFT" in main_menu
 assert "promptCloudExport" in main
 
 for dataset in ("jornadas","viajes_mapa","puntos_gps","reservas",
