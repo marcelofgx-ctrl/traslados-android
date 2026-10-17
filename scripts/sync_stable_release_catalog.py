@@ -65,7 +65,7 @@ def android_info(path: Path) -> tuple[str, int, str]:
 def signature(path: Path) -> str:
     result = subprocess.check_output([android_command("apksigner"), "verify", "--print-certs", str(path)],
                                      text=True, stderr=subprocess.STDOUT)
-    match = re.search(r"Signer #1 certificate SHA-256 digest:\s*([a-fA-F0-9]{64})", result)
+    match = re.search(r"(?:V[1-4] Signer:|Signer #1) certificate SHA-256 digest:\\s*([a-fA-F0-9]{64})", result)
     if not match:
         raise RuntimeError(f"Sin certificado Android verificable: {path.name}; salida: {result[:650]!r}")
     return match[1].lower()
