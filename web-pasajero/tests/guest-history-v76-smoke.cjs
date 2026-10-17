@@ -48,5 +48,5 @@ assert.match(app,/customer_list_reservations_v16/);
 assert.match(app,/otra app o navegador no se recuperan automáticamente/);
 assert.ok(html.indexOf("guest-history.js?v=1")<html.indexOf("app.js?v=80"));
 assert.match(worker,/guest-history.js/);
-assert.match(worker,/pwa-v77-paridad/);
+assert.match(worker,/pwa-v80-unificada/);
 console.log("OK: session + valid guest union, dedup, closed history, auth safeguards and asset order");
