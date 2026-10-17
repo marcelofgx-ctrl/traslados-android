@@ -31,6 +31,7 @@
   function mount(host,{reservation:r,guestToken=null,sessionToken=null,rpc,engine,api,key,renderer}={}){
     if(!host||!r||!activeStatus.has(String(r.status))||typeof rpc!=="function")return;
     const ride=String(r.status)==="EN_VIAJE";
+    const atPickup=!ride&&String(r.pickup_phase)==="EN_PUNTO";
     // Only the currently visible app surface may request private vehicle GPS.
     // Prevent parallel polls from the collapsed trips screen and tracking screen.
     function visible(){
@@ -46,7 +47,7 @@
     const icon=place(heading,"span","reservation-live-heading-icon","🚘");
     icon.setAttribute("aria-hidden","true");
     const headingCopy=css(heading,"reservation-live-heading-copy");
-    place(headingCopy,"strong","",ride?"Tu viaje está en curso":"Seguimiento de tu recogida");
+    place(headingCopy,"strong","",ride?"Tu viaje está en curso":atPickup?"Tu conductor llegó":"Seguimiento de tu recogida");
     const status=place(headingCopy,"small","reservation-live-status",ride?"Consultando recorrido":"Consultando posición del conductor");
     const mapHost=css(host,"reservation-live-map");
     mapHost.setAttribute("role","group");
@@ -85,9 +86,10 @@
       const mins=Number(result.durationMin);
       if(kind!=="contract"){
         distanceTitle.textContent=ride?"AUTO → DESTINO":"AUTO → RECOGIDA";
-        etaTitle.textContent=ride?"TIEMPO AL DESTINO":"LLEGADA APROX.";
+        etaTitle.textContent=ride?"TIEMPO AL DESTINO":atPickup?"ESTADO DE RECOGIDA":"LLEGADA APROX.";
         if(Number.isFinite(km)&&km>=0)distance.textContent=formatKm(km);
-        if(Number.isFinite(mins)&&mins>=0)eta.textContent=Math.max(1,Math.ceil(mins))+" min";
+        if(atPickup)eta.textContent="En el punto";
+        else if(Number.isFinite(mins)&&mins>=0)eta.textContent=Math.max(1,Math.ceil(mins))+" min";
       }
       if(kind==="contract"){
         distanceTitle.textContent="RECORRIDO PREVISTO";
@@ -139,8 +141,9 @@
             clearDriverRoute();
             void paint([from,to],"contract");
           }
-          status.textContent=ride?"Posición del vehículo pendiente"
-            :value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
+          status.textContent=ride?"Posición del vehículo pendiente":
+            atPickup?"Conductor llegó · posición GPS pendiente":
+            value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
               "Recogida confirmada · posición pendiente";
           explanation.textContent="Vista del origen y destino contratados. Todavía no tenemos una posición GPS reciente del auto.";
           privacy.textContent="La llegada del conductor no puede estimarse sin su ubicación verificada.";
@@ -150,8 +153,11 @@
         if(host.dataset.liveDriver!=="true"){
           distance.textContent="Calculando";eta.textContent="—";
         }
-        status.textContent=ride?"En viaje · automóvil hacia el destino":"Automóvil en camino a recogerte";
-        explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":"Distancia del vehículo a tu recogida por carretera.";
+        status.textContent=ride?"En viaje · automóvil hacia el destino":
+          atPickup?"Conductor en el punto de recogida":"Automóvil en camino a recogerte";
+        explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":
+          atPickup?"Llegada registrada por el conductor. El GPS puede variar algunos metros.":
+          "Distancia del vehículo a tu recogida por carretera.";
         privacy.textContent="🚘 GPS real recibido hace "+Math.round(fresh)+" s · actualiza aprox. cada 12 s con la página abierta";
         // If a prior contract-route request is still in-flight, paint the latest
         // driver route once it settles: never leave the static route over GPS.
