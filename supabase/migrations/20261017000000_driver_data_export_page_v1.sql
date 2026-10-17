@@ -64,7 +64,7 @@ begin
 
   -- Hardcoded table/column allowlist (never interpolate caller-supplied SQL).
   execute format(
-     'select coalesce(jsonb_agg(to_jsonb(s) - ''__cursor'' order by s.__cursor), ''[]''::jsonb), max(s.__cursor)
+     'select coalesce(jsonb_agg(to_jsonb(s) - ''__cursor'' - ''public_token'' order by s.__cursor), ''[]''::jsonb), max(s.__cursor)
         from (select t.*, %1$s as __cursor from public.%2$I t
               where %1$s > $1 and %3$s order by %1$s limit $3) s',
       v_key,v_table,v_time_clause)
