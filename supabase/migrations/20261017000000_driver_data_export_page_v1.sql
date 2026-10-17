@@ -2,6 +2,7 @@
 -- Never exports accounts, password/PIN hashes, device_secret, sessions or settings.
 -- No DELETE/TRUNCATE and no background retention job.
 create or replace function public.driver_data_export_page_v1(
+  p_device_id uuid, p_device_secret text,
   p_pin text, p_dataset text, p_after_cursor text, p_cutoff_ms bigint, p_limit integer
 ) returns jsonb
 language plpgsql security definer set search_path = ''
@@ -16,6 +17,13 @@ declare
 begin
   if p_pin is null or length(p_pin) not between 4 and 10 or not public.driver_pin_valid(p_pin) then
     raise exception 'No autorizado' using errcode = '28000';
+  end if;
+  if p_device_id is null or p_device_secret is null
+     or length(p_device_secret)<24 or not exists(
+       select 1 from public.mapa_trayectos_devices d
+       where d.device_id=p_device_id and d.device_secret=p_device_secret
+     ) then
+    raise exception 'Dispositivo no autorizado' using errcode = '28000';
   end if;
   if p_after_cursor is null or length(p_after_cursor)>160 or p_cutoff_ms is null or p_cutoff_ms <= 0 then
     raise exception 'Parámetros inválidos' using errcode = '22023';
@@ -68,7 +76,7 @@ begin
     'has_more',jsonb_array_length(v_rows)=v_limit);
 end;
 $$;
-revoke all on function public.driver_data_export_page_v1(text,text,text,bigint,integer) from public;
-grant execute on function public.driver_data_export_page_v1(text,text,text,bigint,integer) to anon,authenticated,service_role;
-comment on function public.driver_data_export_page_v1(text,text,text,bigint,integer)
+revoke all on function public.driver_data_export_page_v1(uuid,text,text,text,text,bigint,integer) from public;
+grant execute on function public.driver_data_export_page_v1(uuid,text,text,text,text,bigint,integer) to anon,authenticated,service_role;
+comment on function public.driver_data_export_page_v1(uuid,text,text,text,text,bigint,integer)
   is 'Solo lectura; exporta historial en bloques tras validar PIN del conductor. No elimina datos.';
