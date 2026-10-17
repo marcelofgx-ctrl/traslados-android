@@ -65,6 +65,7 @@
       if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return;}
       if(!renderer.render(mapHost,result.geometry,{height:188}))return;
       host.dataset.mapRoute=cacheKey;
+      host.dataset.liveDriver=kind==="driver"?"true":"false";
       const km=Number(result.distanceKm);
       const mins=Number(result.durationMin);
       if(kind!=="contract"){
@@ -103,6 +104,11 @@
         const pos=value?.available?coordinates(value.driverLat,value.driverLng):null;
         const fresh=Number(value?.gpsAgeSec);
         if(!pos||!Number.isFinite(fresh)||fresh<0||fresh>75){
+          if(host.dataset.liveDriver==="true"){
+            host.dataset.mapRoute="";host.dataset.liveDriver="false";
+            distance.textContent="—";eta.textContent="—";
+            void paint([from,to],"contract");
+          }
           status.textContent=ride?"Posición del vehículo pendiente"
             :value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
               "Recogida confirmada · posición pendiente";
@@ -111,6 +117,9 @@
           return;
         }
         const destination=ride?to:from;
+        if(host.dataset.liveDriver!=="true"){
+          distance.textContent="Calculando";eta.textContent="—";
+        }
         status.textContent=ride?"Vehículo hacia el destino":"Vehículo rumbo a tu origen";
         explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":"Distancia del vehículo a tu recogida por carretera.";
         privacy.textContent="GPS recibido hace "+Math.round(fresh)+" s · estimación vial aproximada";
@@ -120,6 +129,11 @@
         if(host.isConnected)await paint([pos,destination],"driver");
       }catch(e){
         if(!host.isConnected)return;
+        if(host.dataset.liveDriver==="true"){
+          host.dataset.mapRoute="";host.dataset.liveDriver="false";
+          distance.textContent="—";eta.textContent="—";
+          void paint([from,to],"contract");
+        }
         status.textContent="Seguimiento temporalmente no disponible";
         explanation.textContent="Tu reserva sigue confirmada. Podés consultar su estado y mensajes.";
       }
