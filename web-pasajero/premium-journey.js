@@ -21,6 +21,40 @@
     const presenceHost=make(doc,"section","premium-live-presence");
     presenceHost.setAttribute("aria-label","Disponibilidad del conductor");
     header.insertAdjacentElement("afterend",presenceHost);
+    // Live summaries are from the chosen origin, verified road route and
+    // server-returned pickup ETA. A selected origin is not a continuous GPS feed.
+    const locationCard=make(doc,"section","premium-position-summary");
+    locationCard.setAttribute("aria-label","Mi punto de recogida y distancias");
+    const positionRow=make(doc,"div","premium-position-row");
+    const positionCopy=make(doc,"div","premium-position-copy");
+    positionCopy.append(make(doc,"small","","MI PUNTO DE RECOGIDA"));
+    const positionLabel=make(doc,"strong","premium-position-label","Sin seleccionar");
+    positionCopy.append(positionLabel);
+    const locate=make(doc,"button","premium-position-gps","⌖ Usar mi GPS");
+    locate.type="button";
+    locate.setAttribute("aria-label","Usar mi ubicación actual como origen de recogida");
+    locate.addEventListener("click",()=>doc.getElementById("pickup-use-location")?.click());
+    positionRow.append(positionCopy,locate);
+    const metrics=make(doc,"div","premium-position-metrics");
+    const pickupDistance=make(doc,"span","premium-position-distance","Conductor → origen: pendiente");
+    const rideDistance=make(doc,"span","premium-position-ride","Recorrido: pendiente");
+    metrics.append(pickupDistance,rideDistance);
+    locationCard.append(positionRow,metrics);
+    presenceHost.insertAdjacentElement("afterend",locationCard);
+    function syncLocation({origin=null,road=null,pickup=null}={}){
+      positionLabel.textContent=origin?.text||"Sin seleccionar";
+      positionLabel.dataset.source=origin?.source==="gps"?"gps":origin?"chosen":"none";
+      positionCopy.querySelector("small").textContent=origin?.source==="gps"
+        ?"ORIGEN SELECCIONADO CON GPS":"MI PUNTO DE RECOGIDA";
+      locate.textContent=origin?"⌖ Actualizar GPS":"⌖ Usar mi GPS";
+      const hasPickup=origin&&pickup&&Number.isFinite(pickup.km)&&Number.isFinite(pickup.minutes);
+      pickupDistance.textContent=hasPickup
+        ?"Conductor → origen: "+pickup.km.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+Math.round(pickup.minutes)+" min aprox."
+        :origin?"Conductor → origen: sin estimación verificada":"Conductor → origen: seleccioná tu punto";
+      rideDistance.textContent=road&&Number.isFinite(road.distanceKm)
+        ?"Recorrido: "+road.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km"
+        :"Recorrido: pendiente de ruta verificada";
+    }
     function placePresence(quick){
       if(quick)presenceHost.append(presence);
       else presenceAnchor.after(presence);
@@ -205,7 +239,7 @@
         const label=b.querySelector(".booking-cta-label");if(label)label.textContent="Vista de prueba · Sin envíos";
       }
     }
-    return Object.freeze({activate:()=>{placePresence(true);open("route");},placePresence,open,current:()=>stage});
+    return Object.freeze({activate:()=>{placePresence(true);open("route");},placePresence,open,syncLocation,current:()=>stage});
   }
   root.TrasladosPremiumJourney=Object.freeze({mount});
 })(window);
