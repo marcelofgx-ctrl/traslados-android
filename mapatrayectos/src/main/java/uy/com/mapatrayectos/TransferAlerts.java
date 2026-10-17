@@ -146,6 +146,92 @@ public final class TransferAlerts {
         announce(c,ACTION_COUNT);
     }
 
+
+    /** The authenticated reservation snapshot is the source of truth for the floating notice. */
+    public static JSONObject actionableFixedById(Context context,String id){
+        if(id==null||id.isEmpty())return null;
+        JSONArray rows=snapshot(context);
+        for(int i=0;i<rows.length();i++){
+            JSONObject r=rows.optJSONObject(i);
+            if(r!=null&&id.equals(r.optString("id"))&&isActionableFixed(r))return r;
+        }
+        return null;
+    }
+    public static JSONObject lastActionableFixed(Context c){
+        String id=c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getString("last_id","");
+        return actionableFixedById(c,id);
+    }
+    private static boolean isActionableFixed(JSONObject r){
+        return r!=null&&"fixed".equals(r.optString("fare_mode"))
+            &&"PRECIO_FIJO".equals(r.optString("quote_status"))
+            &&r.optDouble("quote_final_total",0)>0
+            &&uy.com.traslados.conductor.ReservationAlertPolicy.recentPending(
+                r.optString("status"),r.optString("created_at"),System.currentTimeMillis());
+    }
+    private static String shortStop(String value){
+        if(value==null||value.trim().isEmpty())return "Dirección no disponible";
+        String v=value.trim().replaceAll("\\s+"," ");
+        return v.length()>36?v.substring(0,35)+"…":v;
+    }
+    public static String fixedSummary(JSONObject r){
+        if(r==null)return "Nueva solicitud";
+        double km=r.optDouble("route_distance_km",0);
+        int minutes=r.optInt("route_duration_min",0);
+        String distance=km>0?String.format(java.util.Locale.US,"%.1f km",km):"";
+        if(minutes>0)distance+=(distance.isEmpty()?"":" · ")+minutes+" min";
+        return "Origen: "+shortStop(r.optString("origin_text"))+
+            "\nDestino: "+shortStop(r.optString("destination_text"))+
+            "\n"+(distance.isEmpty()?"":distance+" · ")+"UYU "+Math.round(r.optDouble("quote_final_total",0));
+    }
+    public interface FixedDecisionCallback{void finished(boolean confirmed,String message);}
+    private static final java.util.Set<String> IN_FLIGHT=
+        java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    /** Perform a real backend decision. Never fake an acceptance after a network failure. */
+    public static void decideFixed(Context context,String id,boolean accept,FixedDecisionCallback callback){
+        Context app=context.getApplicationContext();
+        android.os.Handler ui=new android.os.Handler(android.os.Looper.getMainLooper());
+        if(actionableFixedById(app,id)==null){
+            if(callback!=null)ui.post(()->callback.finished(false,"La solicitud ya no está disponible."));
+            return;
+        }
+        if(!IN_FLIGHT.add(id)){
+            if(callback!=null)ui.post(()->callback.finished(false,"Ya se está procesando esta solicitud."));
+            return;
+        }
+        new Thread(()->{
+            boolean ok=false;
+            String message="No se pudo confirmar la operación. Revisá la conexión.";
+            try{
+                String pin=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+                if(pin.isEmpty())throw new IllegalStateException("Sesión de conductor no disponible");
+                JSONArray current=uy.com.traslados.conductor.Api.listActive(pin);
+                JSONObject live=null;
+                for(int i=0;i<current.length();i++){
+                    JSONObject r=current.optJSONObject(i);
+                    if(r!=null&&id.equals(r.optString("id"))){live=r;break;}
+                }
+                if(!isActionableFixed(live))
+                    throw new IllegalStateException("Solicitud cerrada, modificada o vencida");
+                JSONObject result=uy.com.traslados.conductor.Api.decideFixedPickup(pin,id,accept);
+                String status=result.optString("status","");
+                if(!(accept&&"ACEPTADA".equals(status)||!accept&&"RECHAZADA".equals(status)))
+                    throw new IllegalStateException("El servidor no confirmó la decisión");
+                ok=true;
+                message=accept?"Traslado aceptado":"Solicitud rechazada";
+                refreshAsync(app);
+            }catch(Exception ex){
+                android.util.Log.w("MapaTransfers","Fixed decision was not confirmed: "+ex.getClass().getSimpleName());
+                if(ex instanceof IllegalStateException)message=ex.getMessage();
+            }
+            final boolean confirmed=ok;
+            final String result=message;
+            ui.post(()->{
+                IN_FLIGHT.remove(id);
+                if(callback!=null)callback.finished(confirmed,result);
+            });
+        },"mapa-fixed-reservation-decision").start();
+    }
+
     private static void announce(Context c,String action){
         Intent i=new Intent(action).setPackage(c.getPackageName());
         c.sendBroadcast(i);

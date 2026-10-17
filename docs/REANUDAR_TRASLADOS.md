@@ -1,5 +1,27 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## 17/10/2026 — rectificación prioritaria: **una sola APK Android (Mapa)**
+
+**Decisión del usuario vigente y vinculante:** la arquitectura productiva consta de (1) página pública, (2) web/PWA de pasajeros, y (3) APK Android Mapa Trayectos. **No generar ni compilar APK independiente Conductor o APK Cliente.** La gestión de reservas/alertas/aceptación/rechazo es una funcionalidad dentro de Mapa, no un producto Android separado.
+
+**Corrección a la entrega de esta misma sesión:** la APK Conductor R10 de revisión se produjo por error; no se debe instalar, difundir ni recomendar como versión actual. Queda archivada como artefacto histórico de QA. La única APK de prueba vigente es **Mapa R25.28/code80**, que ya contiene el código necesario y está disponible en https://github.com/marcelofgx-ctrl/traslados-android/releases/tag/mapa-r25.28-aceptar-rechazar-review-20261017 . No se ha validado todavía en Samsung.
+
+**CI/Gradle:** se eliminan las rutas automáticas de compilación de Conductor DEBUG/RELEASE y la publicación R10, y se elimina `:conductor:assembleDebug` de la validación modular. `settings.gradle` incluye solo `:core-reservations` y `:mapatrayectos`. El directorio `conductor/src` sigue como **fuente interna embebida** por `mapatrayectos/build.gradle`, sin compilar un APK separado. La modularización de clases y recursos podrá refinarse después, sin reintroducir la APK independiente.
+
+**No se modifica la base Supabase, no se borran GPS/reservas, no se publica web, ni se vuelve a habilitar APK Cliente.** La revisión PR #116 sigue draft hasta QA física. Los antiguos apartados del historial debajo de este bloque son antecedentes, no arquitectura vigente.
+
+
+## 17/10/2026 — QA Mapa R25.28 + Conductor R10: decisión directa con precio fijo
+
+- **Funcionalidad:** La solicitud «Tu viaje» con precio fijo no pide un segundo presupuesto. La ventana pequeña de Mapa (en app y overlay) presenta origen, destino, km/min cuando existen y precio acordado con **RECHAZAR / ACEPTAR**, y ejecuta `driver_decide_fixed_pickup_v1` mediante el PIN de la sesión. Consulta nuevamente el servidor y no confirma éxito sin estado real. Conductor integrado y Conductor independiente R10 usan los mismos dos botones y no agregan confirmación intermedia. Reserva programada con presupuesto anterior conserva su flujo.
+- **Base de trabajo:** PR [#116](https://github.com/marcelofgx-ctrl/traslados-android/pull/116) en estado **draft**, construida desde PR #113 (Mapa GPS privado) e incorporando fuentes de PR #114 (Conductor R9 notificación/v4). Incidencia [#115](https://github.com/marcelofgx-ctrl/traslados-android/issues/115) sigue abierta hasta QA físico.
+- **Mapa R25.28/code80:** [APK firmada para revisión](https://github.com/marcelofgx-ctrl/traslados-android/releases/tag/mapa-r25.28-aceptar-rechazar-review-20261017), [CI firmada y verificación de certificado SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/39058372837) 17/10/2026 ~15:32 UYT. Mismo `uy.com.mapatrayectos` y certificado que R25.27/code79.
+- **Conductor R10/code132:** [APK firmada para revisión](https://github.com/marcelofgx-ctrl/traslados-android/releases/tag/conductor-r10-aceptar-rechazar-review-20261017), [CI firmada SUCCESS](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/39058670532) 17/10/2026 ~15:35 UYT. Mismo `uy.com.traslados.conductor` y certificado histórico que R8/R9. Mantiene Conductor R9 como rollback QA.
+- **Pendiente indispensable:** prueba física Samsung Android 16 de Mapa/Conductor instalados encima de los anteriores, notificación en primer polling, globito sobre web y dentro de mapa, aceptación y rechazo reales, web que refleje el estado, controles de fallo de red, vencimientos y doble pulsación. FCM para notificación inmediata 24/7 sigue pendiente; servicio polling Android no lo garantiza.
+- **Web/PWA:** mismo producto pasajero, sin APK Cliente; cambios visuales adicionales de fecha, contraste, copia de disponibilidad y ETA siguen en el backlog, **no se publicaron con esta revisión**. No se borraron datos, cuentas, PIN, GPS ni se hicieron mutaciones de solicitudes productivas en esta fase.
+- **No confundir:** compilación firmada y CI SUCCESS no son aprobación funcional en Samsung ni promoción a estable/Pages. No fusionar PR #116 antes de QA.
+
+
 ## PR99: primera APK de revisión aislada (15/10/2026)
 
 Hay una APK real del rediseño en la rama `feature/tu-viaje-premium-visual-20261015`: [Cliente PR99 v17 de prueba](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v17-prueba.apk). Compilación firmada [38770070213](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38770070213), 15/10/2026 13:34:58 UYT, versionCode205, mismo paquete y certificado que Cliente v16. Incluye recursos web del PR y catálogo local. **No es la versión operativa final:** sirve recursos empaquetados desde un origen separado y bloquea backend/externos para no enviar reservas reales. La web pública y el catálogo productivo no cambiaron.
