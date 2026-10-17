@@ -76,7 +76,11 @@
         eta.textContent="Al confirmar salida";
       }
     }
+    let updating=false;
     async function run(){
+      if(updating)return;
+      updating=true;
+      try{
       if(!from||!to){
         status.textContent="Direcciones sin coordenadas verificadas";
         explanation.textContent="Consultá los detalles de origen y destino.";
@@ -84,7 +88,7 @@
       }
       // Map is ALWAYS inline within the same reservation card, even before
       // authorized vehicle GPS exists. This is the booked route only.
-      void paint([from,to],"contract");
+      if(!host.dataset.mapRoute)void paint([from,to],"contract");
       if(!r.id||(!sessionToken&&!guestToken)){
         status.textContent="Seguimiento disponible con tu cuenta";
         return;
@@ -119,6 +123,17 @@
         status.textContent="Seguimiento temporalmente no disponible";
         explanation.textContent="Tu reserva sigue confirmada. Podés consultar su estado y mensajes.";
       }
+      }finally{updating=false;}
+    }
+    // Booking status rarely changes during a drive. GPS must refresh even if
+    // loadTrips skips repainting the card due to its stable status signature.
+    // One timer per visible mounted card, automatically cleared on removal.
+    if(typeof setInterval==="function"){
+      const timer=setInterval(()=>{
+        if(!host.isConnected){clearInterval(timer);return;}
+        if(document.visibilityState==="hidden"||root.navigator?.onLine===false)return;
+        void run();
+      },12000);
     }
     // Defer until the document appends the newly constructed reservation node.
     Promise.resolve().then(run);
