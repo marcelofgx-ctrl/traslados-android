@@ -1,0 +1,141 @@
+name: Cliente v17 update review — signed same-package APK (NO PROD)
+on:
+  push:
+    branches:
+      - feature/versionado-actualizaciones-20261017
+    paths:
+      - '.github/workflows/build-cliente-v17-update-review.yml'
+      - 'cliente-premium/app/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: cliente-v17-update-review
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools' >/dev/null
+      - name: Validate official Cliente shell and frontend update flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 cliente-premium/tests/check_premium_shell.py
+          node web-pasajero/tests/release-updates-smoke.cjs
+          node --check web-pasajero/release-updates.js
+          python3 scripts/sync_stable_release_catalog.py --mode check --android-tools
+      - name: Use NEXT version only inside runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('cliente-premium/app/build.gradle')
+          src=p.read_text()
+          assert src.count('versionCode 204')==1
+          assert src.count("versionName '16.0-Premium'")==1
+          assert src.count("applicationId 'uy.com.traslados.cliente'")==1
+          src=src.replace('versionCode 204','versionCode 205').replace(
+            "versionName '16.0-Premium'","versionName '17.0-Premium'")
+          p.write_text(src)
+          print('OK: same Android ID, versionCode 205, versionName 17.0-Premium')
+          PY
+      - name: Recover ORIGINAL release keystore (never printed)
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Copy the original branded icon
+        run: |
+          mkdir -p cliente-premium/app/src/main/res/drawable-nodpi
+          cp web-pasajero/icons/icon-512.png cliente-premium/app/src/main/res/drawable-nodpi/traslados_brand.png
+      - name: Assemble compatible signed RELEASE (not debug)
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle -p cliente-premium :app:assembleRelease --no-daemon --console=plain --stacktrace
+      - name: Compare Android package ID, version, signing certificate and SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          APK=cliente-premium/app/build/outputs/apk/release/app-release.apk
+          OLD=web-pasajero/downloads/traslados-cliente-premium-v16.apk
+          test -s "$APK" && test -s "$OLD"
+          mkdir -p artifacts
+          "$AAPT" dump badging "$APK" > artifacts/APK_INFO.txt
+          "$SIGNER" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SIGNER" verify --verbose --print-certs "$OLD" > /tmp/cliente-original-signature.txt
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          info=Path("artifacts/APK_INFO.txt").read_text()
+          pattern=r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'"
+          match=re.search(pattern,info)
+          assert match and match.groups()==('uy.com.traslados.cliente','205','17.0-Premium'), f'Unexpected signed APK identity: {info[:300]}'
+          def cert(filename):
+            body=Path(filename).read_text()
+            match=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',body)
+            assert match, 'Missing signing certificate SHA-256'
+            return match.group(1).lower()
+          assert cert('artifacts/SIGNING.txt')==cert('/tmp/cliente-original-signature.txt'), 'CRITICAL: signing key mismatch vs v16'
+          assert 'Verified using v2 scheme (APK Signature Scheme v2): true' in Path('artifacts/SIGNING.txt').read_text() or 'Verified using v3 scheme (APK Signature Scheme v3): true' in Path('artifacts/SIGNING.txt').read_text()
+          print('PASS: signed stable Cliente identity, higher versionCode and matching existing certificate')
+          PY
+          cp "$APK" artifacts/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk
+          (cd artifacts && sha256sum Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > artifacts/BUILT_AT_UTC.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cliente-v17-Actualizaciones-Review-SIGNED
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 60
+      - name: Publish explicit review prerelease, not public passenger webpage
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=cliente-v17-actualizaciones-review-20261017
+          TITLE="Cliente v17 · Actualizaciones (REVIEW, NO PUBLICA)"
+          BODY="APK REVIEW firmada con el certificado oficial; package uy.com.traslados.cliente; versionCode 205. Reemplaza v16 si Android valida el certificado, no crea un segundo icono. La web publica sigue sin cambios. Usa reservas reales: probar con cuidado. No instalar si se desea mantener v16 para ensayar el primer aviso de actualizacion. No se recomienda para pasajeros."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --clobber
+          else
+            gh release create "$TAG" artifacts/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --target "$GITHUB_SHA" --title "$TITLE" --notes "$BODY" --prerelease
+          fi
+          gh release view "$TAG" --json url,assets,isPrerelease
+          gh release download "$TAG" -p 'Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk' -D /tmp/verify-release
+          sha256sum artifacts/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk /tmp/verify-release/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk
+          cmp artifacts/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk /tmp/verify-release/Traslados_Cliente_v17_Actualizaciones_Review_RELEASE.apk
