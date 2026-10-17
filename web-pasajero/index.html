@@ -13,11 +13,19 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=75">
+  <link rel="stylesheet" href="./styles.css?v=76">
   <title>Traslados con Reserva · Uruguay</title>
 </head>
 <body>
   <div id="offline-band" class="offline-band" hidden>Sin conexión. Ninguna reserva será enviada hasta recuperar Internet.</div>
+  <section id="native-update-notice" class="native-update-notice" role="status" aria-live="polite" hidden>
+    <div><strong id="native-update-title">Actualización disponible</strong>
+      <small>Tu aplicación tiene una versión nueva. Tus viajes y tu cuenta se conservan.</small></div>
+    <div class="native-update-actions">
+      <a id="native-update-download" href="./versiones.html">ACTUALIZAR</a>
+      <button type="button" id="native-update-later">Ahora no</button>
+    </div>
+  </section>
   <header class="header">
     <div class="header-inner">
       <a class="identity" href="./" aria-label="Traslados con Reserva · inicio">
@@ -423,6 +431,7 @@
           <button id="install-copy-link" class="secondary full" type="button">COPIAR ENLACE DE TRASLADOS</button>
         </div>
       </div>
+      <p class="install-versions-link"><a href="./versiones.html">Ver versiones y descargas oficiales →</a></p>
       <div class="card"><h3>Tu espacio de viajes</h3><p class="hint">Instalá Traslados en tu pantalla principal para entrar rápidamente, consultar solicitudes y revisar tus presupuestos.</p><p class="hint">Las reservas necesitan conexión a Internet; <strong>no se envían solicitudes sin conexión.</strong></p></div>
     </section>
 
@@ -466,6 +475,6 @@
   <script src="./service-home.js?v=3" defer></script>
   <script src="./owned-pickup.js?v=1" defer></script>
   <script src="./public-config.js?v=1" defer></script>
-  <script src="./app.js?v=75" defer></script>
+  <script src="./release-updates.js?v=1" defer></script>\n  <script src="./app.js?v=76" defer></script>
 </body>
 </html>
