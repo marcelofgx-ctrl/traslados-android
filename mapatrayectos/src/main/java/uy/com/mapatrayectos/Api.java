@@ -63,6 +63,30 @@ public final class Api {
                 body.put("p_accuracy_m",accuracy);body.put("p_gps_at_ms",gpsTimeMs);
                 body.put("p_last_move_at_ms",lastMovingAtMs);
                 JSONObject result=new JSONObject(postRpc("mapa_presence_ping_v1",body));
+                // A second, private endpoint stores only the latest location for
+                // one uniquely active, authorized reservation. It NEVER alters
+                // public availability semantics, local GPS history or shift data.
+                // Invalid/stale fixes, disabled consent and closed journeys
+                // are rejected server-side; no position is returned in this RPC.
+                if(result.optBoolean("ok",false)&&active&&!paused
+                    &&gpsTimeMs>0&&accuracy>=0&&accuracy<=45
+                    &&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9
+                    &&pickupPresenceEnabled()){
+                    try {
+                        JSONObject privateBody=new JSONObject();
+                        privateBody.put("p_device_id",ids[0]);
+                        privateBody.put("p_device_secret",ids[1]);
+                        privateBody.put("p_shift_active",active);
+                        privateBody.put("p_shift_paused",paused);
+                        privateBody.put("p_lat",lat);
+                        privateBody.put("p_lng",lng);
+                        privateBody.put("p_accuracy_m",accuracy);
+                        privateBody.put("p_gps_at_ms",gpsTimeMs);
+                        postRpc("mapa_reservation_position_v1",privateBody);
+                    }catch(Exception ignored){
+                        // Optional ride tracking must not disrupt GPS collection.
+                    }
+                }
                 // The server only returns this hint after device authentication.
                 // Expire it locally even if the network later goes offline.
                 pickupDemandExpiresAt=result.optBoolean("ok",false)
