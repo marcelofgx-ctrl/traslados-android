@@ -1512,6 +1512,7 @@ function tripDisplayKey(rows){
 }
 let tripsScope="upcoming",tripsGroupBy="day",tripsFilter="all",tripFocused=null,tripPreviouslyFocused=null;
 let tripsScopeChosen=false,openTripCards=new Set(),openTripGroups=new Set(),openTripDetails=new Set();
+const autoExpandedActiveTrips=new Set();
 let activeTripChat=null,tripChatPreviouslyFocused=null,tripChatPollTimer=null;
 const tripChatDrafts=new Map(),tripChatAttempts=new Map();
 let tripAlertAudio=null;
@@ -1710,7 +1711,11 @@ function reservationView(r,guestToken){
   const immediateExpired=tripBoard.expiredImmediate(r);
   const expired=quoteExpired||immediateExpired;
   const d=document.createElement("details");d.className="reservation trip-card";
-  d.dataset.tripCode=r.code||"";d.dataset.tone=meta.tone;d.open=openTripCards.has(r.code);
+  d.dataset.tripCode=r.code||"";d.dataset.tone=meta.tone;
+  const acceptedOrMoving=meta.tone==="confirmed"||meta.tone==="moving";
+  const firstConfirmation=acceptedOrMoving&&!autoExpandedActiveTrips.has(String(r.code||r.id));
+  if(firstConfirmation)autoExpandedActiveTrips.add(String(r.code||r.id));
+  d.open=openTripCards.has(r.code)||firstConfirmation;
   d.addEventListener("toggle",()=>{if(d.open)openTripCards.add(r.code);else openTripCards.delete(r.code);});
   const top=text(d,"summary"),head=text(top,"div","","trip-head");
   const date=text(head,"div","","trip-date-wrap");
@@ -1742,9 +1747,7 @@ function reservationView(r,guestToken){
     follow.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
   }
   if(meta.tone==="moving"){
-    const fullscreen=button(top,"◉ Abrir seguimiento","premium-open-tracking",()=>openPremiumTracking(r));
-    fullscreen.setAttribute("aria-label","Abrir seguimiento de este viaje en pantalla completa");
-    fullscreen.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
+    // Live tracking stays in this same trip card; no second full-screen map.
     // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
     const onBoard=r.status==="EN_VIAJE";
     const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
@@ -1760,24 +1763,6 @@ function reservationView(r,guestToken){
     if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
     // El conductor es la única fuente de verdad de fases: no crear ETA ni GPS ficticios.
     const actualStage=onBoard?2:arrived?1:0;
-    // Si esta reserva autorizada incluye coordenadas de ambos puntos, cargar
-    // SOLO el trayecto vial verificado. No representar la ubicación del auto:
-    // ese dato requiere un endpoint privado de seguimiento por reserva.
-    const from=[Number(r.origin_lat),Number(r.origin_lng)];
-    const to=[Number(r.destination_lat),Number(r.destination_lng)];
-    if(from.every(Number.isFinite)&&to.every(Number.isFinite)&&
-       isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
-       (from[0]!==to[0]||from[1]!==to[1])){
-      const mapShell=text(top,"div","","premium-active-map-shell");
-      const mapStage=text(mapShell,"div","","premium-active-route-map");
-      text(mapShell,"small","Mapa del trayecto contratado, no posición del conductor.","premium-active-map-note");
-      void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
-        {api:API,publishableKey:KEY}).then(route=>{
-          if(!mapStage.isConnected)return;
-          if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||route.geometry.length<2||
-            !window.TrasladosPremiumMap?.render(mapStage,route.geometry))mapShell.remove();
-        }).catch(()=>mapShell.remove());
-    }
     const liveSteps=text(top,"div","","premium-trip-timeline");
     liveSteps.setAttribute("aria-label","Estado de recogida y traslado informado por el conductor");
     for(const [index,label] of ["En camino","En el punto de recogida","Durante el viaje"].entries()){
@@ -1819,6 +1804,13 @@ function reservationView(r,guestToken){
   }
   stop("◉",r.origin_text||"Origen");
   stop(/aeropuerto/i.test(r.destination_text||"")?"✈":"◆",r.destination_text||"Destino");
+  if(acceptedOrMoving){
+    const inlineMap=text(top,"section","","reservation-live-slot");
+    window.TrasladosReservationLive?.mount(inlineMap,{
+      reservation:r,guestToken,sessionToken:authReady()?session?.token:null,
+      rpc,engine:roadEngine,api:API,key:KEY,renderer:window.TrasladosPremiumMap
+    });
+  }
   const foot=text(top,"div","","trip-card-footer");
   const fixedFare=r.fare_mode==="fixed";
   const amount=text(foot,"span",price>0?tripMoney(price):"Importe pendiente",price>0?"trip-card-quote":"trip-card-prompt");
