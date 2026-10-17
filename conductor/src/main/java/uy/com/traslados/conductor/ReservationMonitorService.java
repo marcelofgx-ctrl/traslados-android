@@ -87,6 +87,8 @@ public class ReservationMonitorService extends Service {
     private void loop(){
         while(running){
             try{
+                android.content.SharedPreferences health=getSharedPreferences("driver_monitor_health",MODE_PRIVATE);
+                health.edit().putLong("last_attempt_at",System.currentTimeMillis()).apply();
                 String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
                 if(!pin.isEmpty()){
                     JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();
@@ -99,7 +101,12 @@ public class ReservationMonitorService extends Service {
                         if(!known.contains(id)&&claimPendingNotification(r))notifyNew(r);
                     }
                     known.clear();known.addAll(now);
+                    health.edit().putLong("last_success_at",System.currentTimeMillis())
+                        .putInt("last_row_count",a.length())
+                        .putString("last_error_type","").apply();
                     try{checkDriverMessages(pin);}catch(Exception ignored){}
+                }else{
+                    health.edit().putString("last_error_type","driver_pin_required").apply();
                 }
             }catch(Exception e){
                 // Never log the PIN or personal reservation fields.
