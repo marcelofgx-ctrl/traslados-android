@@ -4,8 +4,8 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 const root=path.join(__dirname,"..");
 const read=name=>fs.readFileSync(path.join(root,name),"utf8");
 const js=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
-assert(html.includes('app.js?v=75')&&html.includes('styles.css?v=75'));
-assert(sw.includes('traslados-cliente-pwa-v75'));
+assert(html.includes('app.js?v=76')&&html.includes('styles.css?v=76'));
+assert(sw.includes('traslados-cliente-pwa-v76'));
 const chat=js.slice(js.indexOf('function closeTripChat()'),js.indexOf('function armTripSound()'));
 assert(chat.includes('},6000);'),"Open conversation should poll every six seconds");
 assert(chat.includes('document.visibilityState!=="visible"'),"No rapid background polling");
