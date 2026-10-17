@@ -1,0 +1,106 @@
+name: Publish official unified website and installable PWA v80 (NO Cliente APK)
+on:
+  push:
+    branches: [feature/cliente-seguimiento-integrado-20261017]
+    paths:
+      - '.github/workflows/publish-unified-web-pwa-v80.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: official-traslados-web-pwa-publish
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - name: Checkout source of unified web/PWA
+        uses: actions/checkout@v4
+        with:
+          path: source
+      - name: Checkout public GitHub Pages main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: published
+          fetch-depth: 1
+      - name: Prepublication QA — every web booking, map, login, search and installation regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          for js in web-pasajero/*.js; do node --check "$js"; done
+          for test in web-pasajero/tests/*smoke.cjs; do
+            echo "Validating: $test"
+            node "$test"
+          done
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -q
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('web-pasajero')
+          html=(root/'index.html').read_text()
+          js=(root/'app.js').read_text()
+          sw=(root/'sw.js').read_text()
+          landing=Path('index.html').read_text()
+          manifest=json.loads((root/'manifest.webmanifest').read_text())
+          assert 'app.js?v=80' in html and 'styles.css?v=80' in html
+          assert 'reservation-live.js?v=1' in html
+          assert 'traslados-pwa-v80' in sw
+          assert manifest['display']=='standalone' and manifest['start_url']=='./'
+          assert 'customer_reservation_position_v1' in (root/'reservation-live.js').read_text()
+          assert 'customer_request_pickup_fixed_v1' in js
+          assert 'serviceWorker.register' in js and 'beforeinstallprompt' in js
+          for src in (html,landing):
+            assert 'install-apk-link' not in src and 'traslados-cliente-premium-' not in src
+          assert 'checkVerifiedApk' not in js and 'applyPublishedApk' not in js
+          assert 'href="./web-pasajero/"' in landing
+          print("PASS official site and PWA share exactly one web runtime; no native Cliente APK")
+          PY
+      - name: Stage ONLY root landing and web/PWA runtime; protect all GPS and historical APK binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp source/index.html published/index.html
+          mkdir -p published/web-pasajero
+          rsync -a --delete \
+            --exclude 'downloads/' \
+            --exclude 'node_modules/' \
+            --exclude '__pycache__/' \
+            --exclude '*.apk' \
+            source/web-pasajero/ published/web-pasajero/
+          python3 - <<'PY'
+          from pathlib import Path
+          dst=Path('published/web-pasajero')
+          assert 'app.js?v=80' in (dst/'index.html').read_text()
+          assert 'traslados-pwa-v80' in (dst/'sw.js').read_text()
+          assert (dst/'reservation-live.js').is_file()
+          assert (dst/'downloads/traslados-conductor-r8.apk').stat().st_size>50000000
+          assert (dst/'downloads/mapa-trayectos-r25.25.apk').stat().st_size>50000000
+          print("PASS public landing and canonical PWA; historical signed app downloads preserved")
+          PY
+      - name: Commit canonical website/PWA to main without replacing unrelated sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd published
+          git config user.name 'Traslados Web QA'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html web-pasajero
+          if git diff --cached --quiet; then
+            echo 'PWA v80 already deployed'
+            exit 0
+          fi
+          git commit -m 'web: publish unified v80 site and PWA, retire native Cliente download [skip ci]'
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo 'PASS DEPLOY: https://marcelofgx-ctrl.github.io/traslados-android/'
+              echo 'PASS PWA: https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/'
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'Cannot publish without violating main branch updates' >&2
+          exit 1
