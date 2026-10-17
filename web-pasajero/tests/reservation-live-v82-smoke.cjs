@@ -69,6 +69,15 @@ const renderer={render(_host,_route,options){modes.push(options.routeMode);retur
   assert.equal(host.dataset.liveDriver,"false","Road engine error cannot leave stale car marker");
   assert.match(textOf(host),/ruta vial no disponible/i);
   assert.equal(modes.at(-1),"contract","Failed vehicle route falls back to planned leg");
+  failingDriver=false;
+  const arrivedHost=element();
+  follow.mount(arrivedHost,{reservation:{...trip,pickup_phase:"EN_PUNTO"},
+    sessionToken:"synthetic-session",
+    rpc:async()=>({available:true,driverLat:-34.81,driverLng:-56.04,gpsAgeSec:3}),
+    engine,renderer,api:"synthetic",key:"synthetic"});
+  await sleep();
+  assert.match(textOf(arrivedHost),/Tu conductor llegó/);
+  assert.match(textOf(arrivedHost),/En el punto/);
   assert.match(app,/function renderPremiumTracking\(\)[\s\S]*?TrasladosReservationLive\?\.mount\(mapHost/);
   assert.match(style,/#view-seguimiento \.reservation-live-map/);
   console.log("PASS v82: only active view polls private GPS, stale/routing failure clears driver map, detail reuses same tracker");
