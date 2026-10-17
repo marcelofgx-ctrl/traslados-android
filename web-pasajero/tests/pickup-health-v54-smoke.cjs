@@ -28,7 +28,7 @@ assert(html.includes("app.js?v=81")&&html.includes("styles.css?v=81"));
 assert(sw.includes("traslados-pwa-v81")&&sw.includes("pickup-observability.js"));
 assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("availability"'));
 assert(js.includes('window.TrasladosPickupHealth?.recordContext?.("eta"'));
-assert(js.includes('presence:"busy",title:"Sin disponibilidad inmediata"'));
+assert(js.includes('presence:"busy",title:"Recogida por confirmar"'));
 assert(js.includes('phase:"blocked"')&&js.includes('phase:"checking"'));
 assert(js.includes('phase:"ready"')&&js.includes('phase:"issue"'));
 assert(js.includes('if(!driver.available){')&&js.includes("forgetPickupEta()"));
