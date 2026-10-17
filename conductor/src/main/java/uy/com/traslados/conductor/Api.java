@@ -41,8 +41,17 @@ public final class Api {
 
     public static JSONArray listActive(String pin) throws Exception {
         JSONObject b=new JSONObject(); b.put("p_pin",pin);
-        String raw=postRpc("driver_list_reservations_v3",b);
+        String raw=postRpc("driver_list_reservations_v4",b);
         return raw==null||raw.trim().isEmpty()?new JSONArray():new JSONArray(raw);
+    }
+
+    /** Fixed fare: one decision by the driver; no second quote workflow. */
+    public static JSONObject decideFixedPickup(String pin,String reservationId,boolean accept) throws Exception {
+        JSONObject body=new JSONObject();
+        body.put("p_pin",pin);
+        body.put("p_reservation_id",reservationId);
+        body.put("p_accept",accept);
+        return new JSONObject(postRpc("driver_decide_fixed_pickup_v1",body));
     }
 
     public static JSONArray listHistory(String pin) throws Exception {
