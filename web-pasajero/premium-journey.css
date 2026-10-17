@@ -756,3 +756,66 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
 #view-viaje[data-premium-step="when"] .premium-position-summary,
 #view-viaje[data-premium-step="passenger"] .premium-position-summary{display:none}
 #view-viaje[data-premium-step="when"] .premium-actions{margin-top:0}
+
+/* R79 · Aceptación destacada y mapa privado en la misma tarjeta. */
+#view-viajes .trip-card[data-tone="confirmed"]{
+  border:1px solid rgba(171,217,174,.65);
+  box-shadow:0 0 0 1px rgba(84,169,124,.15),0 12px 28px rgba(0,0,0,.22)
+}
+#view-viajes .trip-card[data-tone="confirmed"] .trip-status,
+#view-viajes .trip-card[data-tone="moving"] .trip-status{
+  font-size:13px;font-weight:850;letter-spacing:.01em
+}
+#view-viajes .trip-route{padding:12px 10px;margin:7px 0;
+  border:1px solid rgba(221,197,147,.35);border-radius:12px;
+  background:rgba(4,32,40,.62);display:grid;gap:12px}
+#view-viajes .trip-route-stop{display:grid;grid-template-columns:30px minmax(0,1fr);
+  align-items:start;gap:9px;min-width:0}
+#view-viajes .trip-route-icon{display:grid;place-items:center;width:29px;height:29px;
+  border:1px solid rgba(227,197,130,.5);border-radius:10px;color:#f4d597;
+  background:#113d43;font-size:17px;font-weight:850}
+#view-viajes .trip-route-label{font-size:15px;font-weight:770;line-height:1.36;
+  color:#fff5df;overflow-wrap:anywhere}
+#view-viajes .trip-card-footer .trip-card-quote{font-size:23px;font-weight:850;color:#ffe1a4}
+#view-viajes .reservation-live-slot{margin:12px 0 8px;padding:12px;
+  border:1px solid rgba(197,171,112,.65);border-radius:16px;
+  background:linear-gradient(135deg,#0a3640,#071e2c);
+  box-shadow:inset 0 1px rgba(255,245,218,.08),0 8px 22px #0003}
+#view-viajes .reservation-live-heading{display:flex;align-items:center;gap:10px;
+  margin-bottom:10px;min-width:0}
+#view-viajes .reservation-live-heading-icon{display:grid;place-items:center;
+  font-size:24px;width:40px;height:40px;flex:0 0 40px;
+  border:1px solid #bfa16d;border-radius:13px;background:#0e3b40}
+#view-viajes .reservation-live-heading-copy{display:grid;gap:3px;min-width:0}
+#view-viajes .reservation-live-heading-copy strong{font-size:15px;line-height:1.25;
+  font-weight:800;color:#fff4df}
+#view-viajes .reservation-live-status{font-size:12px;font-weight:660;color:#b7e9cb;
+  line-height:1.35}
+#view-viajes .reservation-live-map{min-height:188px;overflow:hidden;border-radius:12px;
+  background:#0b2633}
+#view-viajes .reservation-live-map .premium-real-map{position:relative;width:100%;
+  border:1px solid #5e8a8877;border-radius:12px;overflow:hidden;
+  background:linear-gradient(115deg,#143942,#0b2331)}
+#view-viajes .reservation-live-map .premium-map-tiles{position:absolute;inset:0;overflow:hidden;
+  filter:grayscale(.45) brightness(.72)}
+#view-viajes .reservation-live-map .premium-map-tiles img{position:absolute;
+  width:256px;height:256px;max-width:none;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-overlays{position:absolute;
+  inset:0;width:100%;height:100%;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-credit{position:absolute;right:4px;
+  bottom:4px;background:#08242bdc;padding:3px 5px;border-radius:5px;color:#fff;font-size:9px}
+#view-viajes .reservation-live-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#view-viajes .reservation-live-metric{background:#062531;border:1px solid #9baf9a55;
+  border-radius:11px;padding:10px 12px;min-width:0}
+#view-viajes .reservation-live-metric small{display:block;color:#bfd2c4;
+  font-size:10px;font-weight:750;letter-spacing:.08em}
+#view-viajes .reservation-live-metric strong{display:block;color:#ffe1a8;
+  margin-top:4px;font-size:20px;font-weight:850;line-height:1.2}
+#view-viajes .reservation-live-note{margin:10px 1px 3px;font-size:11px;
+  line-height:1.45;color:#d2e4dd}
+#view-viajes .reservation-live-freshness{display:block;font-size:10px;color:#a9bdba}
+@media(max-width:359px){
+  #view-viajes .trip-route-label{font-size:13px}
+  #view-viajes .reservation-live-metric strong{font-size:17px}
+  #view-viajes .reservation-live-slot{padding:9px}
+}
