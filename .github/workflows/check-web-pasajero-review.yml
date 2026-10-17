@@ -36,6 +36,7 @@ jobs:
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/public-config.js
+          node --check web-pasajero/reservation-live.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
@@ -63,6 +64,7 @@ jobs:
           node web-pasajero/tests/premium-map-smoke.cjs
           node web-pasajero/tests/reservation-live-v79-smoke.cjs
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
