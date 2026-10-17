@@ -119,7 +119,8 @@ begin
   select * into v_loc from public.reservation_live_position
   where reservation_id=p_reservation_id;
   select * into v_presence from public.driver_live_presence where singleton_id=1;
-  if not found or not coalesce(v_presence.enabled,false)
+  if v_loc.reservation_id is null or v_presence.singleton_id is null
+     or not coalesce(v_presence.enabled,false)
      or not coalesce(v_presence.shift_active,false)
      or coalesce(v_presence.shift_paused,true)
      or v_presence.device_id is distinct from v_loc.device_id
