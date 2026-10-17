@@ -1,11 +1,12 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
-## Paridad Cliente — integración A (17/10/2026, BORRADOR)
+## Paridad Cliente — integración A (16/10/2026, noche de Uruguay, BORRADOR)
 
 - Rama `integration/paridad-cliente-20261017`, creada desde main `73c69e234590`. Integra selectivamente historial/cuenta/limpieza del PR #106 (`a3c486b`), frontend premium/precio fijo del PR #99 (`4b36ce2`) y herramientas mosaico del PR #101 (`79417d6`). PWA propuesta v77; NO publicada. El plan maestro sigue siendo PR #108.
 - Conserva el buscador v75 de main (incluidas sugerencias IDE y otros departamentos); no sustituirlo por el snapshot viejo del PR #99. Una sola interfaz `web-pasajero/`; shell Cliente mantiene URL oficial y modos de revisión aislados por flags.
 - P0 adicional: retorno explícito al paso premium después de login; reconstrucción del resumen programado con identidad autenticada, sin envío automático. Al confirmar respuesta válida se limpia también email del formulario, sin eliminar sesión, comprobantes, preferencias consentidas ni reservas.
 - P0 adicional: recibo, historial y Conductor conservan hasta dos decimales del importe acordado; evita redondear centésimos al aceptar o consultar.
+- Empaquetado CI web: excluye tests y las 77 descargas históricas (1,66 GiB). Conserva todos los recursos runtime y enlaces oficiales; no borra ni mueve las APK publicadas. Evita recomprimir esos binarios al verificar cada cambio frontend.
 - P0 adicional: si un refresco del historial ya estaba en vuelo, se encola una consulta posterior. Evita que una lectura iniciada antes del envío oculte temporalmente el viaje nuevo. Cambios de cuenta descartan respuestas viejas y el refresco pendiente.
 - Un único reconciliador `guest-history.js`: resultados de cuenta prevalecen por ID; recibos antiguos solo con token del mismo contenedor. APIs v16/v5 y precio fijo comprobadas por firmas en Supabase, sin leer pasajeros ni modificar datos.
 - Se incorpora la dependencia mínima Conductor R9 (precio fijo: importe + aceptar/rechazar), ya existente en PR #99; no se publica APK ni se cambia Mapa. Una eventual publicación deberá coordinar Conductor compatible antes de habilitar el frontend de precio fijo.
