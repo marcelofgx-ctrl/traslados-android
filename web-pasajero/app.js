@@ -50,6 +50,17 @@ function refreshJourneyComposition(routeComplete,roadVerified){
       :"A confirmar";
   }
 }
+function syncPremiumLocationSummary(pickupOverride){
+  const points=record.origin&&record.destination&&record.stops.every(Boolean)
+    ?[record.origin,...record.stops,record.destination]:null;
+  const road=points&&latestRoad?.key===routeKeyOf(points)&&
+    window.TrasladosRoutes?.verified?.(latestRoad.data)?latestRoad.data:null;
+  const pickup=pickupOverride===undefined
+    ?(record.origin&&typeof latestPickupEstimate==="function"
+       ?latestPickupEstimate(pickupIdentityKey()):null)
+    :pickupOverride;
+  premiumJourney?.syncLocation?.({origin:record.origin,road,pickup});
+}
 function refreshBookingSteps(){
   if(!bookingSteps)return;
   const routeComplete=Boolean(record.origin&&record.destination&&record.stops.every(Boolean));
@@ -61,6 +72,7 @@ function refreshBookingSteps(){
     latestRoad?.key===routeKeyOf([record.origin,...record.stops,record.destination])&&
     window.TrasladosRoutes.verified(latestRoad.data));
   refreshJourneyComposition(routeComplete,verified);
+  syncPremiumLocationSummary();
   if(verified){
     const d=latestRoad.data;
     routeMetrics=d.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+d.durationMin+" min";
@@ -263,6 +275,7 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
       " km · "+window.TrasladosPickupCadence.arrivalLabel(minutes)+" aproximados":"",estimateNote,checked].filter(Boolean).join(" · ");
     if(status.textContent!==announcement)status.textContent=announcement;
   }
+  syncPremiumLocationSummary(hasEstimate?{km,minutes}:null);
 }
 function latestPickupEstimate(key){
   return lastVerifiedEtaResult&&lastVerifiedEtaKey===key&&Date.now()-lastVerifiedEtaAt<=300000
@@ -885,7 +898,7 @@ function picker(name,mount,position){
             address=result.address;selectedDept=result.departamento||dept;
           }
         }catch{/* Las coordenadas GPS siguen siendo válidas sin geocodificación. */}
-        persist({text:address,lat,lng,department:selectedDept});
+        persist({text:address,lat,lng,department:selectedDept,source:"gps"});
       }catch{showGpsPermissionHelp(2);}
       finally{finish();}
     },error=>{
