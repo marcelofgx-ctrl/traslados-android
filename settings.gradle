@@ -13,7 +13,9 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = 'TrasladosAndroid'
-include ':cliente', ':conductor', ':core-reservations'
+// One Android application target: Mapa Trayectos. Driver logic is embedded source only.
+// Legacy Cliente and Conductor are NOT standalone Gradle modules.
+include ':core-reservations'
 if (file('mapatrayectos/build.gradle').exists()) {
     include ':mapatrayectos'
 }

@@ -1,5 +1,16 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## 17/10/2026 — rectificación prioritaria: **una sola APK Android (Mapa)**
+
+**Decisión del usuario vigente y vinculante:** la arquitectura productiva consta de (1) página pública, (2) web/PWA de pasajeros, y (3) APK Android Mapa Trayectos. **No generar ni compilar APK independiente Conductor o APK Cliente.** La gestión de reservas/alertas/aceptación/rechazo es una funcionalidad dentro de Mapa, no un producto Android separado.
+
+**Corrección a la entrega de esta misma sesión:** la APK Conductor R10 de revisión se produjo por error; no se debe instalar, difundir ni recomendar como versión actual. Queda archivada como artefacto histórico de QA. La única APK de prueba vigente es **Mapa R25.28/code80**, que ya contiene el código necesario y está disponible en https://github.com/marcelofgx-ctrl/traslados-android/releases/tag/mapa-r25.28-aceptar-rechazar-review-20261017 . No se ha validado todavía en Samsung.
+
+**CI/Gradle:** se eliminan las rutas automáticas de compilación de Conductor DEBUG/RELEASE y la publicación R10, y se elimina `:conductor:assembleDebug` de la validación modular. `settings.gradle` incluye solo `:core-reservations` y `:mapatrayectos`. El directorio `conductor/src` sigue como **fuente interna embebida** por `mapatrayectos/build.gradle`, sin compilar un APK separado. La modularización de clases y recursos podrá refinarse después, sin reintroducir la APK independiente.
+
+**No se modifica la base Supabase, no se borran GPS/reservas, no se publica web, ni se vuelve a habilitar APK Cliente.** La revisión PR #116 sigue draft hasta QA física. Los antiguos apartados del historial debajo de este bloque son antecedentes, no arquitectura vigente.
+
+
 ## 17/10/2026 — QA Mapa R25.28 + Conductor R10: decisión directa con precio fijo
 
 - **Funcionalidad:** La solicitud «Tu viaje» con precio fijo no pide un segundo presupuesto. La ventana pequeña de Mapa (en app y overlay) presenta origen, destino, km/min cuando existen y precio acordado con **RECHAZAR / ACEPTAR**, y ejecuta `driver_decide_fixed_pickup_v1` mediante el PIN de la sesión. Consulta nuevamente el servidor y no confirma éxito sin estado real. Conductor integrado y Conductor independiente R10 usan los mismos dos botones y no agregan confirmación intermedia. Reserva programada con presupuesto anterior conserva su flujo.

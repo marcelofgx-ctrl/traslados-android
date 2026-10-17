@@ -138,11 +138,11 @@ jobs:
       - name: Validate core build and native Mapa integration
         shell: bash
         run: |
-          # Mantiene la misma compilación DEBUG. La telemetría nunca firma
-          # ni reemplaza las APK RELEASE que usan los pasajeros y conductor.
+          # Un único binario Android: Mapa. El código driver se embebe desde conductor/src.
+          # No se compila el APK histórico Conductor ni APK de pasajeros.
           set -uo pipefail
           started=$SECONDS
-          gradle :core-reservations:classes :mapatrayectos:assembleDebug :conductor:assembleDebug \
+          gradle :core-reservations:classes :mapatrayectos:assembleDebug \
             --build-cache --stacktrace --no-daemon --console=plain --profile \
             2>&1 | tee "$RUNNER_TEMP/mapa-gradle-build.log"
           result=${PIPESTATUS[0]}

@@ -6,6 +6,8 @@ on:
       - '.github/workflows/build-mapa-r25-28-decision-review.yml'
       - 'mapatrayectos/src/**'
       - 'mapatrayectos/build.gradle'
+      - 'settings.gradle'
+      - 'conductor/build.gradle'
       - 'scripts/test_mapa_datos.py'
       - 'core-reservations/**'
       - 'conductor/src/**'
