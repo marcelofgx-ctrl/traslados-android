@@ -1,5 +1,17 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## GPS, distancias y confirmación — Cliente v78 operativa de revisión (17/10/2026)
+
+- Ante reporte del usuario «No hay botón de confirmación... Mi posición y distancia?», se confirmó que **v77 era read-only**: `meta[name=traslados-preview]` deshabilitaba los CTA, sin fallar la RPC. Eso fue una entrega incorrecta para probar el viaje completo.
+- Frontend v77 integrado mejorado: en el paso «Recorrido» y en «Confirmar», nueva tarjeta **Mi punto de recogida** (dirección elegida, etiqueta de GPS solo si proviene de `getCurrentPosition` real, botón «Usar mi GPS»/«Actualizar GPS»). Dos métricas distintas, conservando la privacidad: **Conductor → origen** (km y minutos solo de respuesta validada `pickup-eta`, nunca GPS del conductor expuesto) y **Recorrido** (km únicamente de `TrasladosRoutes.verified`); ausencia se informa explícitamente, sin valores inventados. En «Cuándo»/«Tus datos» el nuevo panel se oculta para que no tape «Continuar», pero la tarjeta existente de disponibilidad permanece visible. La prueba visual 360/393/412 verificó ausencia de superposición tras esa corrección.
+- Cuarto paso inmediato: CTA **«CONFIRMAR Y SOLICITAR VIAJE»**, vinculada a la RPC existente `customer_request_pickup_fixed_v1`, propiedad de usuario/cuenta, sin envío silencioso ni doble click.
+- Nuevo workflow `.github/workflows/build-cliente-paridad-v78-operational-review.yml` construye APK **operativa DE PRUEBA** code278 / `78.0-Paridad-Review`; paquete debug independiente `uy.com.traslados.cliente.paridad`, `MOSAIC_PREVIEW_MODE=true`, `MOSAIC_PREVIEW_OPERATIONAL=true`. NO incluye meta read-only; usa las mismas RPC de Supabase. Banner de advertencia **«PRUEBA OPERATIVA v78 · Las solicitudes se registran de verdad»**. La prueba NO es el ambiente staging backend: toda solicitud real impactará la base activa.
+- **APK confirmada en integración**: https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/integration/paridad-cliente-20261017/preview-artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk
+- Compilación verificada de APK: `2026-10-17T03:24:55Z` (Uruguay 17/10 00:24:55), SHA-256 `95bfa458538a7ac7d5face72ac8a96a055c6df9dec213de2ebb06b78b413339d`. Puede recompilarse desde esta rama; consultar `preview-artifacts/CLIENTE-V78-SHA256SUMS.txt` para hash más reciente. El código pasa build Android y pruebas en rama; **aún NO está verificado GPS físico ni recorrido/ETA real WebView→Supabase**. No modificar `main`, ni desplegar web v77 ni firmar como release final hasta QA Samsung controlado.
+- PR #109 borrador permanece sin fusionar. La v16 y v77 visual se instalan independientemente; v78 utiliza sufijo `.paridad`. Si se solicita prueba, hacerlo estacionado, permitir ubicación al tocar GPS, validar distancia a origen y distancia de recorrido, crear una sola solicitud controlada y verificar que Conductor la reciba.
+
+
+
 ## APK Cliente v77 visual — entregada, aislada, no operativa (17/10/2026 02:19:54 UTC)
 
 - APK Android **DEBUG**, aplicación paralela `uy.com.traslados.cliente.debug`, versión `77.0-Paridad-Visual` / code277. Incluye frontal v77 empaquetado desde la rama integradora y el seguimiento premium. Es de lectura/navegación: banner «Vista de prueba v77 · No envía reservas», metadato `traslados-preview=read-only`, `MOSAIC_PREVIEW_MODE=true` y `MOSAIC_PREVIEW_OPERATIONAL=false`. **NO** habilita crear reservas, login operativo o validación end-to-end de Conductor; no sustituye Cliente v16 instalada. No requiere desinstalar nada.
