@@ -114,6 +114,9 @@ jobs:
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/booking-summary-smoke.cjs
           node web-pasajero/tests/receipt-v81-smoke.cjs
+          node web-pasajero/tests/premium-map-smoke.cjs
+          node web-pasajero/tests/reservation-live-v79-smoke.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
