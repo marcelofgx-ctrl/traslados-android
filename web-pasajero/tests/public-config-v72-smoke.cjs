@@ -72,12 +72,10 @@ function scenario({data=snapshot(16,2),initial={},broken=false}={}){
  const old=scenario({data:snapshot(16,1),initial:v17.stored});
  await old.api.refresh({force:true});
  assert.equal(old.api.get().revision,3,"old revision cannot roll back cache");
- assert(html.includes('<script src="./public-config.js?v=1" defer></script>'));
- assert(html.indexOf("public-config.js?v=1")<html.indexOf("app.js?v=75"));
- assert(html.includes("install-apk-hint")&&!html.includes("Cliente Premium v15, firmada"));
- assert(sw.includes('traslados-cliente-pwa-v75')&&sw.includes("./public-config.js"));
- assert(app.includes("const catalog=window.TrasladosPublicConfig;"));
- assert(app.includes("catalog?.subscribe?.(applyPublishedApk)")&&app.includes("void catalog?.refresh?.()"));
- assert(app.includes("if(apkLink.href!==candidate)return;"),"stale HEAD cannot reinstate old APK");
+ assert(!html.includes('public-config.js'),"Legacy Android download catalog is not loaded by official PWA");
+ assert(!html.includes('install-apk-link'),"Only PWA install controls are offered");
+ assert(!app.includes('applyPublishedApk')&&!app.includes('checkVerifiedApk'),
+   "Legacy Cliente APK installation removed from application");
+ assert(sw.includes('traslados-pwa-v80')&&!sw.includes('"./public-config.js"'));
  console.log("PASS v72: public config cache/TTL/rollback/offline/security + dynamic APK install UI contract");
 })().catch(error=>{console.error(error);process.exitCode=1;});

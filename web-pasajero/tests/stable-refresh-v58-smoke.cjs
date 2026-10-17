@@ -29,7 +29,7 @@ assert(app.includes("const requestEpoch=tripQueryEpoch,requestSession=authReady(
 assert(app.includes('p_session_token:requestSession'),"Request must use captured session");
 assert.equal((app.match(/if\(requestEpoch!==tripQueryEpoch\)return;/g)||[]).length,2,
   "Old response and old error cannot mutate visible state");
-assert(app.includes("if(requestEpoch===tripQueryEpoch)tripsLoading=false"),
+assert(/if\(requestEpoch===tripQueryEpoch\)\{\s*tripsLoading=false/.test(app),
   "Stale request cannot unlock a newer request");
 assert(css.includes(".trip-chat-dialog-header{flex-direction:row-reverse}"),
   "Samsung passenger chat close must be on the left, away from the native bubble");

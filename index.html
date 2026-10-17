@@ -3,46 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b272e">
-  <meta name="description" content="Accesos a Traslados Cliente, Mapa Trayectos y documentación del proyecto.">
-  <title>Traslados — Acceso a aplicaciones y proyecto</title>
+  <meta name="theme-color" content="#082b35">
+  <meta name="description" content="Traslados con Reserva en Uruguay. Reservá tu viaje, consultá el conductor y seguí tu recorrido desde la web instalable.">
+  <meta name="robots" content="index,follow">
+  <title>Traslados con Reserva · Uruguay</title>
   <style>
-    :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-    *{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 70% 0%,#194449,#091f29 60%);color:#f4eee1}
-    .wrap{max-width:800px;margin:auto;padding:38px 20px 64px}header{display:flex;gap:12px;align-items:center;border-bottom:1px solid #bf9e6240;padding-bottom:24px}
-    .mark{display:grid;place-items:center;width:46px;height:46px;border:1px solid #d7b877;border-radius:14px;color:#e6c583;font-size:24px}
-    .eyebrow{color:#ddb970;letter-spacing:.19em;font-size:11px;font-weight:800;text-transform:uppercase}
-    h1{font-size:clamp(29px,7vw,47px);letter-spacing:-.045em;line-height:1.14;margin:29px 0 12px}
-    .lead{color:#c2d3cd;line-height:1.75;font-size:15px;max-width:610px}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:15px;margin-top:28px}
-    .card{border:1px solid #d4b5745a;background:linear-gradient(145deg,#1c4247,#0e2a33);border-radius:20px;padding:22px;box-shadow:0 20px 45px #0003}
-    .card h2{font-size:19px;margin:10px 0}.card p{line-height:1.65;font-size:14px;color:#c5d8cf;margin:0 0 19px}
-    a.action{display:flex;align-items:center;justify-content:center;min-height:50px;text-align:center;padding:10px 15px;background:#e8c77f;color:#102831;font-size:14px;font-weight:800;border-radius:12px;text-decoration:none}
-    a.action.secondary{background:transparent;color:#f1d69b;border:1px solid #c8aa70}
-    a:focus-visible{outline:3px solid #f7d89b;outline-offset:4px}
-    h3{font-size:17px;margin:34px 0 12px}.docs{margin:0;padding:0;display:grid;gap:8px;list-style:none}
-    .docs a{display:flex;align-items:center;min-height:42px;color:#e9d7b0;text-decoration:none;border-bottom:1px solid #8db2ae25;padding:7px 2px}
-    .docs a:hover{text-decoration:underline}
-    footer{margin-top:32px;color:#9db5ad;font-size:12px;line-height:1.7}
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 60% -20%,#25616b,#0a2e37 57%,#071c27);color:#faf0df}
+    main{max-width:900px;margin:auto;padding:24px 19px 60px}
+    header{display:flex;align-items:center;gap:12px;border-bottom:1px solid #cfae684f;padding:6px 0 22px}
+    .logo{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:#15414a;border:1px solid #dbbc78;color:#efdfb0;font-size:29px}
+    .brand{font-size:19px;font-weight:850;letter-spacing:.12em}
+    .brand span{display:block;margin-top:4px;color:#c9d7cb;font-size:10px;font-weight:600;letter-spacing:.14em}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:.18em;color:#f4cd7a;text-transform:uppercase}
+    .hero{padding:55px 0 24px}
+    h1{font-family:Georgia,serif;font-size:clamp(36px,8.7vw,65px);font-weight:600;letter-spacing:-.055em;line-height:1.05;max-width:670px;margin:15px 0}
+    h1 em{color:#f2cd8a;font-weight:400}
+    .lead{color:#d3e0d8;font-size:16px;line-height:1.75;max-width:580px;margin:0 0 27px}
+    .actions{display:flex;gap:11px;flex-wrap:wrap}
+    a.action{display:inline-flex;justify-content:center;align-items:center;min-height:50px;padding:11px 22px;border-radius:14px;background:#e8c584;color:#0d2a33;font-size:14px;font-weight:850;text-decoration:none}
+    a.action.outline{background:transparent;color:#e8d4a3;border:1px solid #d4b477}
+    .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:37px}
+    article{padding:22px 19px;border:1px solid #bca86a69;border-radius:18px;background:linear-gradient(143deg,#153e44e8,#092934ed)}
+    article strong{font-size:16px;color:#fff2d5}article p{font-size:13px;line-height:1.7;color:#cadbd4;margin:9px 0 0}
+    footer{border-top:1px solid #cfb47939;margin-top:46px;padding-top:18px;color:#bdcec8;font-size:12px;line-height:1.7}
+    a:focus-visible{outline:3px solid #ffe4a5;outline-offset:3px}
+    @media(max-width:420px){.hero{padding-top:42px}.action{width:100%}}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <header><span class="mark" aria-hidden="true">➤</span><div><span class="eyebrow">Uruguay · Proyecto de movilidad</span><div style="font-size:20px;font-weight:800;letter-spacing:.15em">TRASLADOS</div></div></header>
-    <h1>Elegí dónde querés entrar.</h1>
-    <p class="lead">Este es el <strong>índice estable del proyecto</strong>, para retomar el trabajo desde cualquier sesión. La web de reservas y el desarrollo de Mapa Trayectos tienen accesos separados.</p>
-    <section class="cards" aria-label="Aplicaciones">
-      <article class="card"><span class="eyebrow">Pasajeros · Web instalable</span><h2>Traslados con Reserva</h2><p>Reservar recorridos, consultar solicitudes, presupuestos y datos del viaje desde el celular.</p><a class="action" href="./web-pasajero/">Abrir web del pasajero ↗</a></article>
-      <article class="card"><span class="eyebrow">Desarrollo Android</span><h2>Mapa Trayectos</h2><p>Documentación técnica, compilaciones nativas y contexto maestro para continuar el proyecto.</p><a class="action secondary" href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/RETOMAR_MAPA_TRAYECTOS.md">Retomar proyecto Mapa →</a></article>
+  <main>
+    <header><div class="logo" aria-hidden="true">➤</div><div class="brand">TRASLADOS <span>CON RESERVA · URUGUAY</span></div></header>
+    <section class="hero" aria-labelledby="titulo">
+      <p class="eyebrow">Tu movilidad, con atención personal</p>
+      <h1>Tu próximo viaje <em>empieza acá.</em></h1>
+      <p class="lead">Reservá un traslado, consultá su estado y seguí la llegada del conductor desde un solo lugar. Funciona en el navegador o instalada en tu celular como aplicación web.</p>
+      <div class="actions">
+        <a class="action" href="./web-pasajero/">RESERVAR MI VIAJE →</a>
+        <a class="action outline" href="./web-pasajero/#instalar">INSTALAR WEB EN MI CELULAR ↗</a>
+      </div>
     </section>
-    <h3>Documentos y recursos del proyecto</h3>
-    <ul class="docs">
-      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/CONTEXTO_MAESTRO_PROYECTOS.md"><strong>★ CONTEXTO MAESTRO DE TODOS LOS PROYECTOS — empezar aquí ↗</strong></a></li>
-      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/HISTORIAL_VERSIONES_MAPA_TRAYECTOS.md">Historial de versiones de Mapa Trayectos ↗</a></li>
-      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/blob/main/docs/CONTEXTO_MAESTRO_MAPA_TRAYECTOS.md">Contexto maestro ampliado ↗</a></li>
-      <li><a href="https://github.com/marcelofgx-ctrl/traslados-android/actions">Compilaciones y pruebas GitHub Actions ↗</a></li>
-      <li><a href="https://traslados-web.marcelof-gx.workers.dev/">Traslados Premium (web Cloudflare separada) ↗</a></li>
-    </ul>
-    <footer>El índice y la web del pasajero se publican juntos para evitar reemplazos accidentales. Nunca ingreses secretos o claves de servicio en esta página.</footer>
+    <section class="panels" aria-label="Ventajas">
+      <article><strong>◉ Reservas claras</strong><p>Origen, destino, kilómetros y precio en una misma experiencia.</p></article>
+      <article><strong>↗ Estado del traslado</strong><p>Consultá la confirmación del conductor y el seguimiento cuando exista GPS autorizado.</p></article>
+      <article><strong>▣ Una sola aplicación web</strong><p>El sitio y la PWA comparten funcionalidad; no necesitás una APK Cliente adicional.</p></article>
+    </section>
+    <footer>Traslados con Reserva · Uruguay · Atención personal · <a style="color:#f1d69b" href="tel:+59897228175">097 228 175</a></footer>
   </main>
-</body></html>
+</body>
+</html>

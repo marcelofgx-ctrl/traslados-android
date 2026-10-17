@@ -4,8 +4,8 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const root=path.join(__dirname,".."),read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const app=read("app.js"),html=read("index.html"),css=read("styles.css"),eta=read("eta-engine.js"),sw=read("sw.js");
-assert(html.includes("app.js?v=75")&&html.includes("styles.css?v=75"));
-assert(sw.includes("traslados-cliente-pwa-v75"));
+assert(html.includes("app.js?v=80")&&html.includes("styles.css?v=80"));
+assert(sw.includes("traslados-pwa-v80"));
 assert(eta.includes("setTimeout(()=>ctrl.abort(),18000)"));
 assert(!html.includes('id="pickup-route-caption"'));
 assert(!app.includes("Animación ilustrativa · No es seguimiento en vivo"));
@@ -24,7 +24,7 @@ const nodes={
  "pickup-presence-meta":{textContent:""},"pickup-presence-status":{textContent:""}
 };
 let pickupCalls=0;const pending=[];
-const ctx={
+const ctx={PREVIEW_READ_ONLY:false,
  window:{TrasladosETA:{
   availability:async()=>({available:true,status:"available_for_requests",checkedAt:new Date().toISOString(),motionHint:"stationary"}),
   pickup:()=>{pickupCalls++;return new Promise((resolve,reject)=>pending.push({resolve,reject}));}
@@ -41,7 +41,7 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  assert.equal(pickupCalls,1);
  assert.equal(nodes["pickup-presence"].dataset.phase,"routing");
  assert.match(nodes["pickup-presence-title"].textContent,/calculando llegada/i,
-   "Disponibilidad positiva NO significa ETA conductor→origen validada");
+  "A positive presence must not claim the driver is ready for pickup without routed ETA");
  assert.notEqual(nodes["pickup-presence-title"].textContent,"Conductor disponible para recogerte");
  assert.equal(nodes["pickup-presence-metrics"].hidden,true);
  await ctx.refreshPickupPresence(true);
@@ -59,7 +59,7 @@ async function tick(){await Promise.resolve();await new Promise(setImmediate);}
  pending[1].resolve({available:false,reason:"route_unavailable"});
  await tick();
  assert.equal(nodes["pickup-presence"].dataset.presence,"eta-unavailable",
-   "route_unavailable deja estado degradado, nunca disponibilidad lista");
+  "A route provider failure must be a separate degraded state, never ready");
  assert.match(nodes["pickup-presence-title"].textContent,/sin estimar/i);
  assert.match(nodes["pickup-presence-subtitle"].textContent,/No pudimos verificar la ruta/i);
  assert.equal(nodes["pickup-presence-metrics"].hidden,true);

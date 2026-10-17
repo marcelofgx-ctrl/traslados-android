@@ -1,132 +1,78 @@
 "use strict";
-const { readFileSync }=require("node:fs");
-const { join }=require("node:path");
-const { runInNewContext }=require("node:vm");
-const { strict:assert }=require("node:assert");
-const root=join(__dirname,"..");
-const js=readFileSync(join(root,"app.js"),"utf8");
-const html=readFileSync(join(root,"index.html"),"utf8");
-const css=readFileSync(join(root,"styles.css"),"utf8");
-const sw=readFileSync(join(root,"sw.js"),"utf8");
+const assert=require("node:assert/strict");
+const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
+const root=path.resolve(__dirname,"..");
+const js=fs.readFileSync(path.join(root,"app.js"),"utf8");
+const html=fs.readFileSync(path.join(root,"index.html"),"utf8");
+const sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");
 const start=js.indexOf("// La instalación automática depende del navegador");
 const end=js.indexOf("\nfunction init(){",start);
-assert(start>=0&&end>start,"Function installUI must have explicit browser fallback");
+assert(start>=0&&end>start,"PWA install UI must be present");
+assert(!html.includes("install-apk-option")&&!html.includes("install-apk-link"));
+assert(!html.includes("traslados-cliente-premium-v"));
+assert(!html.includes("public-config.js"));
+assert(!js.slice(start,end).includes("apkLink"));
+assert(!js.slice(start,end).includes("clientApkUrl"));
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
-assert(css.includes(".install-guide[hidden]"));
-const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
-const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
-assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
-assert(sw.includes("traslados-cliente-pwa-v"+appVersion),"Service Worker and UI release must match");
-assert(html.includes('id="install-apk-option"')&&html.includes('class="install-apk-option" hidden')&&html.includes("traslados-cliente-premium-v16.apk"));
-assert(css.includes(".install-apk-option[hidden]"));
-
-function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140",apkAvailable=false}={}){
-  const events={};let copied="",visited="",apkClicks=0;
-  const element=(id)=>({
-    id,textContent:"",hidden:id==="install-guide",disabled:false,children:[],listeners:{},
-    addEventListener(type,handler){this.listeners[type]=handler;},
-    replaceChildren(){this.children=[];},
-    appendChild(node){this.children.push(node);},
-  });
-  const elements=Object.fromEntries([
-    "install-action","install-info","install-guide","install-guide-title",
-    "install-guide-steps","install-guide-note","install-copy-link",
-    "install-apk-option","install-apk-link","install-apk-web-guide"
-  ].map(id=>[id,element(id)]));
-  elements["install-apk-link"].href="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v16.apk";
-  elements["install-apk-link"].click=()=>{apkClicks++;};
-  const browser={
+const v=Number(html.match(/\.\/app\.js\?v=(\d+)/)?.[1]);
+assert.equal(v,80);
+assert(sw.includes("traslados-pwa-v"+v),"PWA cache matches frontend version");
+function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140"}={}){
+  const events={},el={},steps=[];
+  let copied="",view="",downloads=0;
+  for(const id of ["install-action","install-info","install-guide","install-guide-title",
+    "install-guide-steps","install-guide-note","install-copy-link"]){
+    el[id]={id,textContent:"",hidden:id==="install-guide",disabled:false,listeners:{},children:[],
+      addEventListener(t,f){this.listeners[t]=f;},
+      replaceChildren(){this.children=[];},
+      appendChild(node){this.children.push(node);}
+    };
+  }
+  const window={location:{href:"https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/"},
+    isSecureContext:true,top:null,self:null,
     matchMedia:()=>({matches:standalone}),
-    location:{href:"https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/"},
-    addEventListener:(type,handler)=>{events[type]=handler;},
-  };
-  const navigator={
-    userAgent:agent,standalone:false,
-    clipboard:{async writeText(str){copied=str;}}
-  };
-  const ctx={
-    window:browser,navigator,document:{readyState:"complete"},
-    $:id=>elements[id],text:(parent,tag,value)=>{const node=element(tag);node.textContent=value;parent.appendChild(node);return node;},
-    shiftView:to=>{visited=to;},URL,Boolean,
-    fetch:async(url,opts)=>({
-      ok:apkAvailable&&opts.method==="HEAD"&&String(url).endsWith(".apk"),
-      headers:{get:k=>k==="content-type"?"application/vnd.android.package-archive":k==="content-length"?"17764":""}
-    }),
-  };
-  const fn=runInNewContext("let installEvent=null;\n"+js.slice(start,end)+"\ninstallUI;",ctx);
-  fn();
-  return {elements,events,click:async()=>elements["install-action"].listeners.click(),
-    copy:async()=>elements["install-copy-link"].listeners.click(),
-    getCopied:()=>copied,view:()=>visited,apkClicks:()=>apkClicks};
+    addEventListener:(event,fn)=>{events[event]=fn;}};
+  window.top=window;window.self=window;
+  const navigator={userAgent:agent,standalone:false,
+    clipboard:{async writeText(s){copied=s;}}};
+  const document={readyState:"complete"};
+  const ctx={window,navigator,document,
+    $:id=>el[id],text:(p,t,val)=>{const n={textContent:val};p.appendChild(n);return n;},
+    shiftView:t=>{view=t;},URL,Boolean};
+  vm.runInNewContext("let installEvent=null;\n"+js.slice(start,end)+"\ninstallUI()",ctx);
+  return {el,events,click:()=>el["install-action"].listeners.click(),
+    copy:()=>el["install-copy-link"].listeners.click(),
+    getCopied:()=>copied,getView:()=>view,getDownloads:()=>downloads};
 }
-
 (async()=>{
-  const settled=async()=>{await Promise.resolve();await new Promise(setImmediate);};
-  const noEvent=setup();
-  await settled();
-  assert.equal(noEvent.elements["install-action"].textContent,"VER CÓMO INSTALAR");
-  await noEvent.click();
-  assert.equal(noEvent.elements["install-guide"].hidden,false,"Fallback should be persistent");
-  assert.equal(noEvent.elements["install-guide-steps"].children.length,3,"Actionable three steps");
-  assert.match(noEvent.elements["install-guide-title"].textContent,/Chrome/);
-  assert.match(noEvent.elements["install-guide-steps"].children.map(x=>x.textContent).join(" "),/Instalar y crear acceso directo/);
-  assert.match(noEvent.elements["install-guide-note"].textContent,/Crear acceso directo/);
-  await noEvent.copy();
-  assert.match(noEvent.getCopied(),/github\.io\/traslados-android\/web-pasajero\/$/);
-  const apkFallback=setup({apkAvailable:true});
-  await settled();
-  assert.equal(apkFallback.elements["install-action"].textContent,"DESCARGAR TRASLADOS PARA ANDROID");
-  assert.equal(apkFallback.elements["install-apk-option"].hidden,false,"APK should be visible only after real HEAD success");
-  await apkFallback.click();
-  assert.equal(apkFallback.apkClicks(),1,"APK must download only after explicit tap");
-  const noAndroid=setup({agent:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Safari/605",apkAvailable:true});
-  await settled();
-  assert.equal(noAndroid.elements["install-apk-option"].hidden,true,"APK should be hidden for iPhone");
-  const installable=setup({apkAvailable:true});let promptCalls=0,prevented=false;
-  await settled();
-  installable.events.beforeinstallprompt({
-    preventDefault(){prevented=true;},
-    async prompt(){promptCalls++;},
+  const a=setup();
+  assert.equal(a.el["install-action"].textContent,"VER CÓMO INSTALAR");
+  await a.click();
+  assert.equal(a.el["install-guide"].hidden,false);
+  assert(a.el["install-guide-steps"].children.length>=3);
+  await a.copy();
+  assert.match(a.getCopied(),/\/web-pasajero\/$/);
+  const b=setup({standalone:true});
+  assert.equal(b.el["install-action"].textContent,"ABRIR MIS TRASLADOS");
+  await b.click();
+  assert.equal(b.getView(),"viajes");
+  const c=setup({agent:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Safari/605"});
+  await c.click();
+  assert.match(c.el["install-guide-title"].textContent,/Safari/);
+  const d=setup();
+  let prompted=0,prevented=0;
+  d.events.beforeinstallprompt({
+    preventDefault(){prevented++;},
+    prompt:async()=>{prompted++;},
     userChoice:Promise.resolve({outcome:"accepted"})
   });
-  assert(prevented,"Browser controls auto installation prompt");
-  assert.equal(installable.elements["install-action"].textContent,"INSTALAR TRASLADOS");
-  assert.equal(installable.elements["install-apk-option"].hidden,false,"APK must remain an explicit choice even when PWA prompt exists");
-  await installable.click();
-  assert.equal(promptCalls,1,"Native installer must run on user click");
-  assert.match(installable.elements["install-info"].textContent,/Confirmaste/);
-  assert.equal(installable.apkClicks(),0,"Prefer PWA when Chrome offers installation");
-  const nativeApk=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/14",apkAvailable:true});
-  const nativeV15=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/15",apkAvailable:true});
-  await settled();
-  assert.equal(nativeApk.elements["install-apk-option"].hidden,true,"Native Cliente must not offer re-installing itself");
-  assert.equal(nativeV15.elements["install-apk-option"].hidden,true,"Native v15 must display the same installed UX as v14");
-  assert.equal(nativeV15.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
-  await nativeV15.click();
-  assert.equal(nativeV15.view(),"viajes","Native v15 opens the same trip history");
-  const nativeV16=setup({agent:"Mozilla/5.0 (Linux; Android 16) AppleWebKit Chrome/140 TrasladosClienteNative/16",apkAvailable:true});
-  await settled();
-  assert.equal(nativeV16.elements["install-apk-option"].hidden,true,"Native v16 must not invite reinstallation");
-  await nativeV16.click();
-  assert.equal(nativeV16.view(),"viajes","Native v16 opens the same trip history");
-  assert.equal(nativeApk.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
-  await nativeApk.click();
-  assert.equal(nativeApk.view(),"viajes","Native Cliente must open real trip history");
-  const installed=setup({standalone:true,apkAvailable:true});
-  await settled();
-  assert.equal(installed.elements["install-apk-option"].hidden,true,"No APK offered inside already installed PWA");
-  assert.equal(installed.elements["install-action"].textContent,"ABRIR MIS TRASLADOS");
-  await installed.click();
-  assert.equal(installed.view(),"viajes","Already installed must open trips instead of failing");
-  const failed=setup();
-  failed.events.beforeinstallprompt({
-    preventDefault(){},async prompt(){throw Error("blocked")},
-    userChoice:Promise.resolve({outcome:"dismissed"})
-  });
-  await failed.click();
-  assert.equal(failed.elements["install-guide"].hidden,false,"Failed installer must show persistent alternative");
-  const ios=setup({agent:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Safari/605"});
-  await ios.click();
-  assert.match(ios.elements["install-guide-title"].textContent,/Safari/);
-  console.log("PASS: PWA priority; signed APK HEAD fallback; manual download; no broken link; installed/iOS/Chrome states.");
+  assert.equal(d.el["install-action"].textContent,"INSTALAR TRASLADOS");
+  await d.click();
+  assert.equal(prompted,1);
+  assert.equal(prevented,1);
+  assert.equal(d.el["install-action"].textContent,"INSTALACIÓN SOLICITADA");
+  const old=setup({agent:"Mozilla/5.0 (Android 16) TrasladosClienteNative/18"});
+  assert.equal(old.el["install-action"].textContent,"ABRIR MIS TRASLADOS");
+  assert.equal(old.getDownloads(),0);
+  console.log("PASS unified web/PWA browser install, menu fallback, no Cliente APK");
 })().catch(e=>{console.error(e);process.exitCode=1;});

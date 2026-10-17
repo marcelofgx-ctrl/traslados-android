@@ -41,13 +41,13 @@ assert.throws(()=>contracts.immediatePickup(null,{...p,pickupMode:"schedule"},uu
 assert(html.includes('id="urgent-send"'),"Actual submit CTA");
 assert(!html.includes('href="https://wa.me/'),"WhatsApp removed from public booking interface");
 assert(!html.includes('id="urgent-switch-scheduled"'),"Urgent no longer reroutes to programming");
-assert(html.includes('app.js?v=75')&&html.includes('styles.css?v=75'));
-assert(sw.includes('traslados-cliente-pwa-v75'));
-assert(src.includes('rpc("customer_request_pickup_v1"'),"New backend RPC connected");
-assert(src.includes("window.TrasladosBookingContracts.immediatePickup"));
+assert(html.includes('app.js?v=80')&&html.includes('styles.css?v=80'));
+assert(sw.includes('traslados-pwa-v80'));
+assert(src.includes('rpc("customer_request_pickup_fixed_v1"'),"Fixed fare RPC connected");
+assert(src.includes("window.TrasladosBookingContracts.fixedFarePickup"));
 assert(src.includes('renderBookingSuccess(result,p.pickupMode)'),"Real receipt");
 assert(src.includes('if(!result?.code)throw'),"No false success without server code");
-assert(src.includes('const signature=JSON.stringify(p)'),"Idempotent retry fingerprint");
+assert(src.includes('const signature=JSON.stringify([p,road.distanceKm'),"Idempotent retry fingerprint includes locked fare");
 assert(src.includes('urgentAttempt={signature,id:newClientRequestId()}'));
 assert(src.includes('if(result.public_token)saveGuest(result)'),"Guest reservation token stored");
 assert(src.includes('if(scheduled&&(!date||!time))'),"Schedule validates date");

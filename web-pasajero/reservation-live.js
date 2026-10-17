@@ -1,0 +1,156 @@
+"use strict";
+/* Tracking inline for an authorized, accepted reservation. The location is
+   NEVER inferred from a requested pickup, demo data or the public presence.
+   Uses only customer_reservation_position_v1, and road routes verified by the
+   existing engine. Shared by PWA, mobile web and native WebView. */
+(function(root){
+  const routeCache=new Map();
+  const MAX_ROUTES=30;
+  const activeStatus=new Set(["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"]);
+  const css=(node,name)=>{const e=document.createElement("div");e.className=name;node.append(e);return e;};
+  function place(parent,tag,name,label){
+    const e=document.createElement(tag);e.className=name;if(label!=null)e.textContent=label;parent.append(e);return e;
+  }
+  function coordinates(lat,lng){
+    const a=Number(lat),b=Number(lng);
+    return Number.isFinite(a)&&Number.isFinite(b)&&a>=-35.3&&a<=-30&&b>=-58.8&&b<=-52.9?{lat:a,lng:b}:null;
+  }
+  function keyOf(points){return points.map(p=>p.lat.toFixed(4)+","+p.lng.toFixed(4)).join("|");}
+  async function verifiedRoute(points,engine,api,key){
+    if(!engine||!engine.estimate||!engine.verified)return null;
+    const cacheKey=keyOf(points);
+    const existing=routeCache.get(cacheKey);
+    if(existing&&Date.now()-existing.stamp<30000)return existing.route;
+    const route=await engine.estimate(points,{api,publishableKey:key});
+    if(!engine.verified(route)||!Array.isArray(route.geometry)||route.geometry.length<2)return null;
+    routeCache.set(cacheKey,{stamp:Date.now(),route});
+    if(routeCache.size>MAX_ROUTES)routeCache.delete(routeCache.keys().next().value);
+    return route;
+  }
+  function formatKm(km){return Number(km).toLocaleString("es-UY",{maximumFractionDigits:1})+" km";}
+  function mount(host,{reservation:r,guestToken=null,sessionToken=null,rpc,engine,api,key,renderer}={}){
+    if(!host||!r||!activeStatus.has(String(r.status))||typeof rpc!=="function")return;
+    const ride=String(r.status)==="EN_VIAJE";
+    const from=coordinates(r.origin_lat,r.origin_lng);
+    const to=coordinates(r.destination_lat,r.destination_lng);
+    host.classList.add("reservation-live");
+    host.setAttribute("aria-label","Mapa y seguimiento de este traslado");
+    const heading=css(host,"reservation-live-heading");
+    const icon=place(heading,"span","reservation-live-heading-icon","🚘");
+    icon.setAttribute("aria-hidden","true");
+    const headingCopy=css(heading,"reservation-live-heading-copy");
+    place(headingCopy,"strong","",ride?"Tu viaje está en curso":"Seguimiento de tu recogida");
+    const status=place(headingCopy,"small","reservation-live-status",ride?"Consultando recorrido":"Consultando posición del conductor");
+    const mapHost=css(host,"reservation-live-map");
+    mapHost.setAttribute("role","group");
+    mapHost.setAttribute("aria-label","Cartografía de la recogida o viaje");
+    const metrics=css(host,"reservation-live-metrics");
+    const distanceBox=css(metrics,"reservation-live-metric");
+    place(distanceBox,"small","","DISTANCIA");
+    const distance=place(distanceBox,"strong","","—");
+    const etaBox=css(metrics,"reservation-live-metric");
+    place(etaBox,"small","","LLEGADA APROX.");
+    const eta=place(etaBox,"strong","","—");
+    const explanation=place(host,"p","reservation-live-note","La posición solo aparece cuando Mapa envía GPS válido.");
+    const privacy=place(host,"small","reservation-live-freshness","");
+    let routePromise=null;
+    async function paint(points,kind){
+      if(!points||points.length<2||!renderer?.render){return;}
+      const cacheKey=keyOf(points);
+      if(host.dataset.mapRoute===cacheKey)return;
+      if(routePromise)return;
+      routePromise=verifiedRoute(points,engine,api,key).catch(()=>null);
+      let result=await routePromise;routePromise=null;
+      if(!host.isConnected)return;
+      if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return;}
+      if(!renderer.render(mapHost,result.geometry,{height:188}))return;
+      host.dataset.mapRoute=cacheKey;
+      host.dataset.liveDriver=kind==="driver"?"true":"false";
+      const km=Number(result.distanceKm);
+      const mins=Number(result.durationMin);
+      if(kind!=="contract"){
+        if(Number.isFinite(km)&&km>=0)distance.textContent=formatKm(km);
+        if(Number.isFinite(mins)&&mins>=0)eta.textContent=Math.max(1,Math.ceil(mins))+" min";
+      }
+      if(kind==="contract"){
+        distance.textContent=Number.isFinite(km)&&km>=0?formatKm(km):"—";
+        eta.textContent="Al confirmar salida";
+      }
+    }
+    let updating=false;
+    async function run(){
+      if(updating)return;
+      updating=true;
+      try{
+      if(!from||!to){
+        status.textContent="Direcciones sin coordenadas verificadas";
+        explanation.textContent="Consultá los detalles de origen y destino.";
+        return;
+      }
+      // Map is ALWAYS inline within the same reservation card, even before
+      // authorized vehicle GPS exists. This is the booked route only.
+      if(!host.dataset.mapRoute)void paint([from,to],"contract");
+      if(!r.id||(!sessionToken&&!guestToken)){
+        status.textContent="Seguimiento disponible con tu cuenta";
+        return;
+      }
+      try{
+        const value=await rpc("customer_reservation_position_v1",{
+          p_reservation_id:r.id,
+          p_session_token:sessionToken||null,
+          p_public_token:sessionToken?null:guestToken||null
+        });
+        if(!host.isConnected)return;
+        const pos=value?.available?coordinates(value.driverLat,value.driverLng):null;
+        const fresh=Number(value?.gpsAgeSec);
+        if(!pos||!Number.isFinite(fresh)||fresh<0||fresh>75){
+          if(host.dataset.liveDriver==="true"){
+            host.dataset.mapRoute="";host.dataset.liveDriver="false";
+            distance.textContent="—";eta.textContent="—";
+            void paint([from,to],"contract");
+          }
+          status.textContent=ride?"Posición del vehículo pendiente"
+            :value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
+              "Recogida confirmada · posición pendiente";
+          explanation.textContent="El mapa muestra el recorrido contratado; no simula el movimiento del vehículo.";
+          privacy.textContent="Se mostrará el automóvil cuando el conductor tenga GPS disponible.";
+          return;
+        }
+        const destination=ride?to:from;
+        if(host.dataset.liveDriver!=="true"){
+          distance.textContent="Calculando";eta.textContent="—";
+        }
+        status.textContent=ride?"Vehículo hacia el destino":"Vehículo rumbo a tu origen";
+        explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":"Distancia del vehículo a tu recogida por carretera.";
+        privacy.textContent="GPS recibido hace "+Math.round(fresh)+" s · estimación vial aproximada";
+        // If a prior contract-route request is still in-flight, paint the latest
+        // driver route once it settles: never leave the static route over GPS.
+        if(routePromise)try{await routePromise;}catch(_){}
+        if(host.isConnected)await paint([pos,destination],"driver");
+      }catch(e){
+        if(!host.isConnected)return;
+        if(host.dataset.liveDriver==="true"){
+          host.dataset.mapRoute="";host.dataset.liveDriver="false";
+          distance.textContent="—";eta.textContent="—";
+          void paint([from,to],"contract");
+        }
+        status.textContent="Seguimiento temporalmente no disponible";
+        explanation.textContent="Tu reserva sigue confirmada. Podés consultar su estado y mensajes.";
+      }
+      }finally{updating=false;}
+    }
+    // Booking status rarely changes during a drive. GPS must refresh even if
+    // loadTrips skips repainting the card due to its stable status signature.
+    // One timer per visible mounted card, automatically cleared on removal.
+    if(typeof setInterval==="function"){
+      const timer=setInterval(()=>{
+        if(!host.isConnected){clearInterval(timer);return;}
+        if(document.visibilityState==="hidden"||root.navigator?.onLine===false)return;
+        void run();
+      },12000);
+    }
+    // Defer until the document appends the newly constructed reservation node.
+    Promise.resolve().then(run);
+  }
+  root.TrasladosReservationLive=Object.freeze({mount,coordinates});
+})(window);

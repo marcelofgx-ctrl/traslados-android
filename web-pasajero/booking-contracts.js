@@ -62,7 +62,26 @@
       }))
     };
   }
+  function fixedFarePickup(sessionToken,p,requestId,road){
+    if(!road||!Number.isFinite(road.distanceKm)||!Number.isInteger(road.durationMin)||
+       !Number.isFinite(road.referenceFareUyu)||!Number.isFinite(road.referenceRateUyuPerKm)||
+       !["openrouteservice","supabase_route_cache"].includes(road.source)||
+       road.distanceKm<=0||road.durationMin<1||road.referenceFareUyu<=0||road.referenceRateUyuPerKm<=0)
+      throw new Error("Calculá una ruta y un precio verificados antes de solicitar el viaje.");
+    const routeKm=Math.round(road.distanceKm*10)/10;
+    const exact=Math.round((routeKm*road.referenceRateUyuPerKm+Number.EPSILON)*100)/100;
+    if(Math.abs(exact-road.referenceFareUyu)>0.009)
+      throw new Error("El precio cambió. Volvé a calcular el recorrido.");
+    return {
+      ...immediatePickup(sessionToken,p,requestId),
+      p_route_distance_km:routeKm,
+      p_route_duration_min:road.durationMin,
+      p_expected_rate:road.referenceRateUyuPerKm,
+      p_expected_total:exact,
+      p_route_source:road.source
+    };
+  }
   root.TrasladosBookingContracts=Object.freeze({
-    checkAvailability,registeredReservation,guestReservation,immediatePickup
+    checkAvailability,registeredReservation,guestReservation,immediatePickup,fixedFarePickup
   });
 })(window);
