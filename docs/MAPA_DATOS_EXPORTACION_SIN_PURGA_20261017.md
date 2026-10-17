@@ -44,3 +44,15 @@ La opción **Configuración** abre controles de permisos/globito y sonidos. El p
 - Se comprobó que existen todavía 80.563 puntos GPS y 8 reservas después de aplicar la RPC.
 - Pendientes: compilación Android, prueba física Samsung, exportar ZIP real con PIN y comprobar el checksum/archivo, validar conteos con servidor sin modificar datos.
 - No fusionar, desplegar versión principal ni habilitar purga sin QA y petición explícita.
+
+## Auditoría de continuidad (17/10/2026, tarde)
+
+Se confirmó directamente en Supabase Traslados (ID `zetaudvvutlouiqxopvg`) que hay 87.111 puntos GPS, de los cuales 33.183 están asociados a viajes y 53.928 fuera de viajes; además, 39 viajes Mapa, 15 jornadas, 11 reservas, 22 eventos, 0 paradas y 3 mensajes. Son conteos posteriores y superiores a la auditoría inicial; no equivalen a una demostración fila por fila de ausencia de borrados.
+
+**Revisión de seguridad:** la tabla `reservations` contiene `public_token`. La versión inicial del RPC exportaba `t.*` y por lo tanto podía incluir ese token privado en el JSONL. El código de la rama ahora propone excluir `public_token` en el SQL, y `CloudDataBackup` también lo elimina antes de escribir el ZIP como defensa adicional.
+
+**Estado de despliegue:** la corrección SQL está versionada en GitHub, pero NO quedó aplicada en Supabase; el intento de actualizar la función desde el conector fue bloqueado. La función instalada sigue siendo la versión previa hasta que se despliegue el SQL con un procedimiento autorizado. No confundir corrección en rama con cambio ya aplicado al servidor.
+
+Se añadió un verificador externo de lectura `scripts/verify_mapa_cloud_zip.py`: valida ZIP/CRC, siete JSONL, JSON por registro, manifest, conteos y ausencia de tokens; imprime solo cifras agregadas y SHA-256. Uso local: `python3 scripts/verify_mapa_cloud_zip.py /ruta/al/respaldo.zip`. No subir los ZIP de pasajeros al repositorio.
+
+**Pendiente para promoción:** CI posterior a cambios, prueba Samsung, exportación con PIN real (jornada cerrada), comparar conteos con base y aplicar/validar exclusión SQL; mantener PR en borrador y R25.25 como versión pública.
