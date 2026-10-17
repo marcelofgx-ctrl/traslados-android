@@ -1,0 +1,81 @@
+name: Publish isolated R79 web review (never overwrite production PWA)
+on:
+  push:
+    branches: [feature/cliente-seguimiento-integrado-20261017]
+    paths: ['.github/workflows/publish-cliente-seguimiento-web-review.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: traslados-review-web-only
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: published
+          fetch-depth: 1
+      - name: Validate private GPS authorization and JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check source/web-pasajero/reservation-live.js
+          node --check source/web-pasajero/app.js
+          node source/web-pasajero/tests/reservation-live-v79-smoke.cjs
+          grep -q 'customer_reservation_position_v1' source/web-pasajero/reservation-live.js
+          grep -q 'reservation-live.js?v=1' source/web-pasajero/index.html
+          test -s source/web-pasajero/premium-map.js
+      - name: Copy SAME frontend to an isolated nonproduction review URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p published/seguimiento-review
+          rsync -av --delete \
+            --exclude 'downloads/' --exclude 'tests/' \
+            --exclude 'node_modules/' --exclude '*.apk' \
+            source/web-pasajero/ published/seguimiento-review/ >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('published/seguimiento-review')
+          html=root/'index.html'
+          s=html.read_text()
+          assert '<body>' in s and 'reservation-live.js?v=1' in s
+          s=s.replace('</head>','<meta name="robots" content="noindex,nofollow">\n</head>',1)
+          s=s.replace('<body>','<body>\n<div role="status" style="background:#3b2511;color:#ffe6b5;text-align:center;padding:7px;font:750 12px Arial">PRUEBA DE SEGUIMIENTO · LOS VIAJES ENVIADOS SON REALES</div>',1)
+          html.write_text(s)
+          assert not any(root.rglob('*.apk'))
+          assert (root/'app.js').is_file()
+          assert (root/'reservation-live.js').is_file()
+          assert (root/'premium-journey.css').is_file()
+          (root/'robots.txt').write_text('User-agent: *\nDisallow: /\n')
+          print('Review UI isolated at seguimiento-review/, no replacement of web-pasajero/')
+          PY
+      - name: Commit isolated preview folder to main with no force push
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd published
+          git config user.name 'Traslados QA Web'
+          git config user.email 'actions@users.noreply.github.com'
+          git add seguimiento-review/
+          if git diff --cached --quiet; then
+            echo 'Review page already current'
+            exit 0
+          fi
+          git commit -m 'qa: publish isolated client live-tracking browser review R79'
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo 'https://marcelofgx-ctrl.github.io/traslados-android/seguimiento-review/'
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'Unable to publish without changing production history'
+          exit 1
