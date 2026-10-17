@@ -2177,9 +2177,9 @@ async function loadTrips({background=false}={}){
 // La instalación automática depende del navegador: no hay API para abrir su menú
 // cuando beforeinstallprompt no se emitió. La alternativa siempre debe ser visible.
 function isStandaloneTraslados(){
-  // Cliente Android v14/v15/v16 abre esta misma web con WebView nativa.
-  // Nunca ofrecer otra APK o instalación PWA desde dentro de esa misma APK.
-  return Boolean(/TrasladosClienteNative\/(?:14|15|16)/i.test(navigator.userAgent||"")||
+  // Standalone PWA o WebView legado: ambos deben poder consultar sus reservas;
+  // nunca se invita a instalar una segunda APK Cliente.
+  return Boolean(/TrasladosClienteNative\/\d+/i.test(navigator.userAgent||"")||
     window.matchMedia?.("(display-mode: standalone)")?.matches||navigator.standalone===true);
 }
 function installHelpContent(){
@@ -2209,50 +2209,14 @@ function installHelpContent(){
   };
 }
 function installUI(){
+  // Única aplicación de pasajeros: el sitio oficial y su instalación PWA
+  // comparten exactamente el mismo origen, código y sesión del navegador.
+  // No se ofrece ni descarga ninguna APK Cliente.
   const action=$("install-action"),info=$("install-info"),guide=$("install-guide");
   const guideTitle=$("install-guide-title"),guideSteps=$("install-guide-steps"),guideNote=$("install-guide-note");
   const copyButton=$("install-copy-link");
-  const apkOption=$("install-apk-option"),apkLink=$("install-apk-link");
-  const apkGuideButton=$("install-apk-web-guide");
-  const catalog=window.TrasladosPublicConfig;
-  const android=/Android/i.test(navigator.userAgent||"");
-  let apkReady=false,installConfirmed=false;
-  function applyPublishedApk(){
-    if(!catalog)return;
-    const published=catalog.get();
-    if(!published?.clientApkUrl)return;
-    const version=String(published.clientVersion||"");
-    if(!/^[1-9][0-9]*$/.test(version))return;
-    if(apkLink.href===published.clientApkUrl)return;
-    apkLink.href=published.clientApkUrl;
-    apkLink.download="Traslados_Cliente_Premium_v"+version+"_RELEASE.apk";
-    const hint=$("install-apk-hint");
-    if(hint)hint.textContent="Cliente Premium v"+version+
-      ", firmada y con la misma interfaz de Traslados con Reserva. Las reservas necesitan conexión a Internet. Android puede pedir autorización para instalar aplicaciones descargadas.";
-    apkReady=false;
-    updateUI();
-    void checkVerifiedApk();
-  }
-  const isReady=()=>Boolean(installEvent);
-  // No suponer que una URL existe: comprobar HEAD y tipo binario antes de
-  // mostrar el botón de descarga; nunca dar un enlace al workflow de GitHub.
-  async function checkVerifiedApk(){
-    if(!android||isStandaloneTraslados())return;
-    const candidate=apkLink.href;
-    let verified=false;
-    try{
-      const response=await fetch(candidate,{method:"HEAD",cache:"no-store"});
-      const type=(response.headers.get("content-type")||"").toLowerCase();
-      const length=Number(response.headers.get("content-length")||"0");
-      verified=response.ok&&length>10000&&!/text\/html|application\/json|text\/plain/.test(type);
-    }catch{verified=false;}
-    // An old HEAD reply must never re-enable a superseded APK link.
-    if(apkLink.href!==candidate)return;
-    apkReady=verified;
-    updateUI();
-  }
+  let installConfirmed=false;
   function showGuide(){
-    if(!guide)return;
     const content=installHelpContent();
     guide.hidden=false;
     guideTitle.textContent=content.title;
@@ -2261,91 +2225,58 @@ function installUI(){
     guideNote.textContent=content.note;
   }
   function updateUI(){
-    // Mostrar siempre APK como opción secundaria si el dispositivo es Android.
-    // No ocultarla porque Chrome también permite instalar la PWA.
-    apkOption.hidden=!(android&&apkReady)||isStandaloneTraslados();
     if(isStandaloneTraslados()){
       action.textContent="ABRIR MIS TRASLADOS";
-      info.textContent="Traslados ya está abierto como aplicación. No necesitás instalarlo otra vez.";
+      info.textContent="Ya estás usando Traslados como aplicación web. La página y la aplicación son la misma.";
       guide.hidden=true;
     }else if(installConfirmed){
       action.textContent="INSTALACIÓN SOLICITADA";
+      info.textContent="Buscá el ícono de Traslados en tu pantalla de inicio.";
       guide.hidden=true;
-    }else if(isReady()){
+    }else if(installEvent){
       action.textContent="INSTALAR TRASLADOS";
-      info.textContent="Chrome permite instalar Traslados como aplicación web. Tocá para confirmar.";
+      info.textContent="Tu navegador permite instalar la web como aplicación, sin APK.";
       guide.hidden=true;
-    }else if(android&&apkReady){
-      action.textContent="DESCARGAR TRASLADOS PARA ANDROID";
-      info.textContent="Chrome no ofreció instalación web automática. Podés instalar nuestra app nativa Cliente o consultar cómo agregar la web al inicio.";
-      apkOption.hidden=false;
     }else{
       action.textContent="VER CÓMO INSTALAR";
-      info.textContent="Si el navegador no ofrece instalar automáticamente, podés agregar Traslados desde su menú.";
+      info.textContent="Podés agregar Traslados a la pantalla de inicio desde el menú de Chrome o Samsung Internet.";
     }
   }
-  window.addEventListener("beforeinstallprompt",e=>{
-    e.preventDefault();
-    installEvent=e;
+  window.addEventListener("beforeinstallprompt",event=>{
+    event.preventDefault();
+    installEvent=event;
     updateUI();
   });
   window.addEventListener("appinstalled",()=>{
     installEvent=null;
     installConfirmed=true;
-    action.textContent="ABRIR MIS TRASLADOS";
-    info.textContent="Traslados se agregó a tu dispositivo. Buscá su ícono en la pantalla de inicio.";
-    guide.hidden=true;
+    updateUI();
   });
   action.addEventListener("click",async()=>{
     if(isStandaloneTraslados()){shiftView("viajes");return;}
-    if(installConfirmed){info.textContent="Instalación solicitada. Buscá el ícono de Traslados en el inicio.";return;}
-    if(!installEvent){
-      if(android&&apkReady){
-        // El enlace real es el de esta misma web, a una APK cuya presencia
-        // y tamaño ya fueron comprobados. El usuario inicia la descarga.
-        apkLink.click();
-        info.textContent="Descarga solicitada. Android puede pedir autorización para instalar la aplicación.";
-        return;
-      }
-      showGuide();return;
-    }
-    const pending=installEvent;
-    installEvent=null; // Un evento de instalación no se reutiliza.
+    if(installConfirmed){updateUI();return;}
+    if(!installEvent){showGuide();return;}
+    const prompt=installEvent;
+    installEvent=null;
     action.disabled=true;
     try{
-      await pending.prompt();
-      const choice=await pending.userChoice;
-      if(choice?.outcome==="accepted"){
-        installConfirmed=true;
-        info.textContent="Confirmaste la instalación. Buscá el ícono de Traslados en el inicio.";
-        guide.hidden=true;
-      }else{
-        info.textContent="No se completó la instalación. Podés volver cuando quieras.";
-        showGuide();
-      }
-    }catch{
-      info.textContent="El navegador no abrió la instalación automática. Probá desde su menú.";
-      showGuide();
-    }finally{
-      action.disabled=false;
-      if(!isStandaloneTraslados()&&!isReady()&&!installConfirmed)updateUI();
-    }
+      await prompt.prompt();
+      const outcome=await prompt.userChoice;
+      if(outcome?.outcome==="accepted"){installConfirmed=true;guide.hidden=true;}
+      else showGuide();
+    }catch{showGuide();}
+    finally{action.disabled=false;updateUI();if(!installConfirmed&&!isStandaloneTraslados())showGuide();}
   });
   copyButton.addEventListener("click",async()=>{
     const link=new URL("./",window.location.href).href;
     try{
       await navigator.clipboard.writeText(link);
-      info.textContent="Enlace de Traslados copiado. Pegalo en la barra de Chrome para abrirlo allí.";
+      info.textContent="Enlace de Traslados copiado. Abrilo directamente en el navegador para instalar.";
     }catch{
-      info.textContent="Abrí esta misma dirección directamente en Chrome para instalar Traslados.";
+      info.textContent="Abrí esta dirección directamente en Chrome o Samsung Internet.";
     }
   });
-  apkGuideButton.addEventListener("click",showGuide);
   updateUI();
-  applyPublishedApk(); // Apply any valid cached remote release immediately.
-  catalog?.subscribe?.(applyPublishedApk);
-  void catalog?.refresh?.(); // Bounded background fetch, never blocks booking.
-  void checkVerifiedApk();
   if("serviceWorker" in navigator&&window.isSecureContext&&window.top===window.self){
     const register=()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});
     if(document.readyState==="complete")void register();
