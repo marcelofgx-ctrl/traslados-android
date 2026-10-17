@@ -1,6 +1,6 @@
 -- Data-only, READ-ONLY paginated export for the driver's private archive.
 -- Never exports accounts, password/PIN hashes, device_secret, sessions or settings.
--- No DELETE/TRUNCATE and no background retention job.
+-- Only SELECT queries. No automated retention jobs.
 create or replace function public.driver_data_export_page_v1(
   p_device_id uuid, p_device_secret text,
   p_pin text, p_dataset text, p_after_cursor text, p_cutoff_ms bigint, p_limit integer
