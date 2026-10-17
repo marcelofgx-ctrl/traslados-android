@@ -881,7 +881,14 @@ function picker(name,mount,position){
     },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   }
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
-  return {state:()=>selected,chooseDept,input,persist,box,useCurrent};
+  function resetSelection(){
+    ++sequence;clearTimeout(debounce);
+    selected=null;input.value="";loading(search,false);
+    clear(results);feedback.hidden=true;source.hidden=true;
+    if(gpsHelp)gpsHelp.hidden=true;
+    repaint();
+  }
+  return {state:()=>selected,chooseDept,input,persist,box,useCurrent,resetSelection};
 }
 // El motor vial no depende de la UI ni del estado de reservas.
 const roadEngine=window.TrasladosRoutes;
@@ -1291,7 +1298,23 @@ function newClientRequestId(){
   const hex=[...bytes].map(x=>x.toString(16).padStart(2,"0")).join("");
   return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
 }
+/** Clear completed request input AFTER a confirmed server receipt, not on an
+ * ambiguous network response. Reservation records and account history remain intact. */
+function resetNewTripDraft(){
+  record.origin=null;record.destination=null;record.stops.length=0;
+  originPicker?.resetSelection?.();destPicker?.resetSelection?.();
+  renderStops();
+  for(const key of ["comments","person-name","person-phone"]){const field=$(key);if(field)field.value="";}
+  $("passengers").value="1";
+  routeStepAutoAdvanced=false;
+  pendingReview=null;urgentAttempt=null;latestRoad=null;activeRouteKey="";
+  renderRouteSummary();
+}
 function renderBookingSuccess(result,mode="schedule"){
+  resetNewTripDraft();
+  // A successful submission is now only visible as a server-owned reservation.
+  tripLoaded=false;
+  void loadTrips({background:true});
   const box=$("booking-success");clear(box);box.hidden=false;
   text(box,"div","✓","mark");
   text(box,"h2","Solicitud enviada");
@@ -1312,8 +1335,17 @@ function renderBookingSuccess(result,mode="schedule"){
   pendingReview=null;
   box.scrollIntoView({behavior:"smooth",block:"start"});
 }
+/** New trips must be owned by a verified passenger account, not a device-local
+ * guest receipt. Preserve the route and form while navigating to account login. */
+function requireAccountForNewTrip(){
+  if(authReady())return true;
+  tell("Para enviar solicitudes y conservar el historial en tus dispositivos, ingresá o creá tu cuenta.");
+  shiftView("cuenta");
+  return false;
+}
 async function submitUrgentPickup(){
   if(selectedPickupMode==="schedule"||busy)return;
+  if(!requireAccountForNewTrip())return;
   const notice=$("urgent-send-error");notice.hidden=true;
   const same=window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops);
   if(same){
@@ -1350,6 +1382,7 @@ async function submitUrgentPickup(){
 async function submitBooking(){
   if(selectedPickupMode!=="schedule"){tell("Para ahora o en 10 minutos, tocá Enviar solicitud.");return;}
   if(busy||!pendingReview)return;
+  if(!requireAccountForNewTrip())return;
   clearBookingFeedback();
   // El resumen aprobado debe coincidir exactamente con los campos al enviar:
   // editar detrás del panel nunca puede registrar un viaje desactualizado.
@@ -1757,7 +1790,18 @@ function renderTripsBoard({reset=false}={}){
   }
   const groups=tripBoard.groupReservations(tripRows,{scope:tripsScope,groupBy:tripsGroupBy,status:tripsFilter});
   if(!groups.length){
-    text(list,"div",tripRows.length?"No hay traslados que coincidan con estos filtros.":"Todavía no hay reservas para mostrar.","trip-empty");return;
+    if(tripRows.length){
+      text(list,"div","No hay traslados que coincidan con estos filtros.","trip-empty");
+    }else{
+      text(list,"div",authReady()
+        ?"No hay traslados vinculados a esta cuenta ni comprobantes de invitado en este navegador. Las solicitudes hechas desde otra app o navegador no se recuperan automáticamente."
+        :"No hay solicitudes guardadas en este navegador. Los viajes enviados como invitado solo pueden consultarse desde donde se enviaron; iniciá sesión para conservar un historial entre dispositivos.","trip-empty");
+      if(!authReady()){
+        const tools=text(list,"div","","trips-empty-actions");
+        button(tools,"MI CUENTA","secondary",()=>shiftView("cuenta"));
+      }
+    }
+    return;
   }
   groups.forEach((g,i)=>{
     const day=document.createElement("details");day.className="trips-day";day.dataset.key=g.key;
@@ -1779,14 +1823,18 @@ async function loadTrips({background=false}={}){
   tripsLoading=true;
   const status=$("trips-status");if(!background&&!tripLoaded)status.textContent="Consultando tus traslados…";
   try{
+    // One browser may contain BOTH a logged-in account and guest receipts
+    // created before login. Do not discard proof-of-ownership guest tokens.
+    // Each receipt is read through the existing token-authorized RPC only.
     let rows=[];
     if(requestSession){
       const result=await rpc("customer_list_reservations_v15",{p_session_token:requestSession});
       rows=Array.isArray(result)?result:[];
-    }else{
-      const guests=jsonStorage(GUEST_KEY,[]);
+    }
+    const guests=jsonStorage(GUEST_KEY,[]).filter(g=>g&&typeof g.token==="string"&&g.token.length>0);
+    if(guests.length){
       const result=await Promise.allSettled(guests.map(g=>rpc("get_reservation_by_token_v4",{p_token:g.token})));
-      result.forEach((x,i)=>{if(x.status==="fulfilled"&&x.value)rows.push({...x.value,__guestToken:guests[i].token});});
+      rows=window.TrasladosGuestHistory.merge(rows,guests,result);
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
     const nextRenderKey=tripDisplayKey(rows);
