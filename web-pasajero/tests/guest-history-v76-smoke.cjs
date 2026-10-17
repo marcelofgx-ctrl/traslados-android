@@ -30,6 +30,12 @@ assert.equal(merge([],receipts,[fulfilled({id:""}),fulfilled(guest)]).length,1,"
 const app=fs.readFileSync(path.join(root,"app.js"),"utf8");
 const html=fs.readFileSync(path.join(root,"index.html"),"utf8");
 const worker=fs.readFileSync(path.join(root,"sw.js"),"utf8");
+assert.match(app,/function requireAccountForNewTrip\(\)/);
+assert.match(app,/if\(!requireAccountForNewTrip\(\)\)return;/);
+const urgent=app.slice(app.indexOf("async function submitUrgentPickup()"),app.indexOf("async function submitBooking()"));
+const schedule=app.slice(app.indexOf("async function submitBooking()"),app.indexOf("const tripBoard=window.TrasladosTripBoard"));
+assert.ok(urgent.indexOf("if(!requireAccountForNewTrip())return")<urgent.indexOf('rpc("customer_request_pickup_v1"'),"urgent account gate before RPC");
+assert.ok(schedule.indexOf("if(!requireAccountForNewTrip())return")<schedule.indexOf('rpc("customer_create_reservation_v12"'),"schedule account gate before RPC");
 assert.match(app,/window\.TrasladosGuestHistory\.merge\(rows,guests,result\)/);
 assert.match(app,/const guests=jsonStorage\(GUEST_KEY,\[\]\)/);
 assert.match(app,/get_reservation_by_token_v4/);
