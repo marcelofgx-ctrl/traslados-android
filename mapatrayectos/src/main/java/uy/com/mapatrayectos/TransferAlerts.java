@@ -13,16 +13,52 @@ public final class TransferAlerts {
     public static final String ACTION_NEW="uy.com.mapatrayectos.NEW_TRANSFER_REQUEST";
     public static final String ACTION_COUNT="uy.com.mapatrayectos.TRANSFER_REQUEST_COUNT";
     private static final String PREF="integrated_transfer_alerts";
+    private static final java.util.concurrent.atomic.AtomicBoolean QUICK_REFRESH=
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    private static final long MONITOR_STALE_MS=60000L;
     private TransferAlerts(){}
 
     public static void ensureMonitor(Context c){
         String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
-        if(pin==null||pin.trim().isEmpty())return;
+        if(pin==null||pin.trim().isEmpty()){
+            c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE).edit()
+                .putString("last_error_type","driver_pin_required").apply();
+            return;
+        }
         try{
             Intent i=new Intent(c,uy.com.traslados.conductor.ReservationMonitorService.class);
             if(Build.VERSION.SDK_INT>=26)c.startForegroundService(i);
             else c.startService(i);
         }catch(Exception e){Log.w("MapaTransfers","Unable to start authenticated reservation monitor",e);}
+    }
+
+    /** Only restart a stalled monitor; do not repeatedly start it every polling tick. */
+    public static boolean monitorNeedsRestart(Context c){
+        String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+        if(pin==null||pin.trim().isEmpty())return false;
+        long last=c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE)
+            .getLong("last_attempt_at",0L);
+        long age=System.currentTimeMillis()-last;
+        return last<=0L||age<0L||age>MONITOR_STALE_MS;
+    }
+    public static String receptionStatus(Context c){
+        String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+        if(pin==null||pin.trim().isEmpty())
+            return "Sin acceso del conductor. Abrí TRASLADOS CONDUCTOR e ingresá con tu PIN.";
+        SharedPreferences health=c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE);
+        long now=System.currentTimeMillis();
+        long last=health.getLong("last_success_at",0L);
+        long quick=lastSync(c);
+        long newest=Math.max(last,quick);
+        String error=syncError(c);
+        if(newest>0&&now>=newest&&now-newest<=45000L)
+            return "Conexión verificada hace "+Math.max(0,(now-newest)/1000)+" s · "+
+                pendingCount(c)+" pendiente(s).";
+        if(newest>0&&now>=newest)
+            return "Sin actualización hace "+((now-newest)/60000L)+" min"+
+                (error.isEmpty()?"":(" · "+error))+".";
+        return error.isEmpty()?"Todavía no hay una consulta de reservas confirmada.":
+            "No se pudieron consultar reservas · "+error+".";
     }
 
     /** Last authenticated server snapshot. All quick-panel views consume this same cache. */
@@ -45,13 +81,20 @@ public final class TransferAlerts {
         final Context app=c.getApplicationContext();
         final String pin=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
             .getString("pin","");
-        if(pin==null||pin.isEmpty())return;
+        if(pin==null||pin.isEmpty()){
+            app.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit()
+                .putString("sync_error","Se requiere iniciar sesión como conductor").apply();
+            announce(app,ACTION_COUNT);
+            return;
+        }
+        if(!QUICK_REFRESH.compareAndSet(false,true))return;
         new Thread(()->{
             try{
                 JSONArray rows=uy.com.traslados.conductor.Api.listActive(pin);
                 if(pin.equals(app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
                         .getString("pin","")))updatePending(app,rows);
             }catch(Exception e){recordSyncError(app,e);}
+            finally{QUICK_REFRESH.set(false);}
         },"mapa-quick-reservations").start();
     }
     public static int pendingCount(Context c){
@@ -87,6 +130,37 @@ public final class TransferAlerts {
         p.edit().putString("snapshot",asText).putLong("synced_at",System.currentTimeMillis())
             .putInt("pending",pending).putString("sync_error","").apply();
         if(changed||oldCount!=pending)announce(c,ACTION_COUNT);
+        // While Mapa itself is open, the service may have been killed by Android.
+        // Recover recent NEW requests from the authenticated snapshot as well.
+        // Foreground only: background Android alerts remain the monitor's job.
+        if(c.getSharedPreferences("bubble_state",Context.MODE_PRIVATE).getBoolean("ui_visible",false)){
+            JSONObject recent=null;
+            long newestTime=0L;
+            for(int i=0;i<rows.length();i++){
+                JSONObject fresh=rows.optJSONObject(i);
+                if(fresh==null)continue;
+                String id=fresh.optString("id","");
+                if(id.isEmpty()||
+                    !uy.com.traslados.conductor.ReservationAlertPolicy.recentPending(
+                        fresh.optString("status",""),fresh.optString("created_at",""),
+                        System.currentTimeMillis()))continue;
+                boolean alreadyPending=false;
+                for(int j=0;j<prior.length();j++){
+                    JSONObject old=prior.optJSONObject(j);
+                    if(old!=null&&id.equals(old.optString("id",""))&&
+                        QuickReservationLogic.pending(old.optString("status",""))){
+                        alreadyPending=true;break;
+                    }
+                }
+                if(!alreadyPending){
+                    long when=0L;
+                    try{when=java.time.Instant.parse(fresh.optString("created_at","")).toEpochMilli();}
+                    catch(Exception ignored){}
+                    if(recent==null||when>=newestTime){recent=fresh;newestTime=when;}
+                }
+            }
+            if(recent!=null)reportNew(c,recent);
+        }
         if(prior.length()>0){
             for(int i=0;i<rows.length();i++){
                 JSONObject fresh=rows.optJSONObject(i);
@@ -131,6 +205,18 @@ public final class TransferAlerts {
 
     public static void reportNew(Context c,JSONObject r){
         if(r==null)return;
+        // The monitor and foreground fallback can receive the same request.
+        // Deduplicate the IN-APP cue without suppressing the Android notification.
+        String id=r.optString("id","");
+        synchronized(TransferAlerts.class){
+            if(!id.isEmpty()){
+                SharedPreferences seen=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+                long now=System.currentTimeMillis();
+                long prior=seen.getLong("alert_"+id,0L);
+                if(prior>0L&&now>=prior&&now-prior<2*60*60*1000L)return;
+                seen.edit().putLong("alert_"+id,now).apply();
+            }
+        }
         String origin=r.optString("origin_text","Origen");
         String dest=r.optString("destination_text","Destino");
         String customer=r.optString("customer_name","");
