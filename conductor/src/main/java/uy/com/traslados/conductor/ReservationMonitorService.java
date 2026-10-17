@@ -66,8 +66,25 @@ public class ReservationMonitorService extends Service {
         return START_STICKY;
     }
 
+    // Persist *notification* delivery across Android process restarts. Never
+    // suppress a still-actionable pending request on the very first poll.
+    // 90-min age follows the server's fixed-fare acceptance window; no
+    // historical bookings are re-announced on device reboot.
+    private boolean claimPendingNotification(JSONObject r){
+        String id=r.optString("id","");
+        long now=System.currentTimeMillis();
+        if(id.isEmpty() || !ReservationAlertPolicy.recentPending(
+              r.optString("status",""),r.optString("created_at",""),now))return false;
+        synchronized(Api.class){
+            android.content.SharedPreferences p=getSharedPreferences("driver_alert_notifications",MODE_PRIVATE);
+            String key="sent_"+id;
+            if(!ReservationAlertPolicy.undelivered(p.getLong(key,0L),now))return false;
+            p.edit().putLong(key,now).apply();
+            return true;
+        }
+    }
+
     private void loop(){
-        boolean first=true;
         while(running){
             try{
                 String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
@@ -76,13 +93,20 @@ public class ReservationMonitorService extends Service {
                     for(int i=0;i<a.length();i++){
                         JSONObject r=a.getJSONObject(i);
                         if(!"PENDIENTE".equals(r.optString("status")))continue;
-                        String id=r.optString("id");now.add(id);
-                        if(!first&&!known.contains(id))notifyNew(r);
+                        String id=r.optString("id");
+                        if(id.isEmpty())continue;
+                        now.add(id);
+                        if(!known.contains(id)&&claimPendingNotification(r))notifyNew(r);
                     }
-                    known.clear();known.addAll(now);first=false;
+                    known.clear();known.addAll(now);
                     try{checkDriverMessages(pin);}catch(Exception ignored){}
                 }
-            }catch(Exception ignored){}
+            }catch(Exception e){
+                // Never log the PIN or personal reservation fields.
+                getSharedPreferences("driver_monitor_health",MODE_PRIVATE).edit()
+                    .putLong("last_failure_at",System.currentTimeMillis())
+                    .putString("last_error_type",e.getClass().getSimpleName()).apply();
+            }
             try{Thread.sleep(15000);}catch(InterruptedException e){return;}
         }
     }
