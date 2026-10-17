@@ -1833,9 +1833,9 @@ async function loadTrips({background=false}={}){
 // La instalación automática depende del navegador: no hay API para abrir su menú
 // cuando beforeinstallprompt no se emitió. La alternativa siempre debe ser visible.
 function isStandaloneTraslados(){
-  // Cliente Android v14/v15/v16 abre esta misma web con WebView nativa.
+  // Cualquier Cliente Android oficial abre esta misma web con WebView nativa.
   // Nunca ofrecer otra APK o instalación PWA desde dentro de esa misma APK.
-  return Boolean(/TrasladosClienteNative\/(?:14|15|16)/i.test(navigator.userAgent||"")||
+  return Boolean(/TrasladosClienteNative\/[0-9]+/i.test(navigator.userAgent||"")||
     window.matchMedia?.("(display-mode: standalone)")?.matches||navigator.standalone===true);
 }
 function installHelpContent(){
