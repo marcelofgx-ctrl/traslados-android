@@ -134,7 +134,8 @@ jobs:
             cp artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk preview-artifacts/
             cp artifacts/CLIENTE-V78-SHA256SUMS.txt preview-artifacts/
             cp artifacts/BUILT_AT_UTC.txt preview-artifacts/CLIENTE-V78-BUILT_AT_UTC.txt
-            git add preview-artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk preview-artifacts/CLIENTE-V78-SHA256SUMS.txt preview-artifacts/CLIENTE-V78-BUILT_AT_UTC.txt
+            cp artifacts/SOURCE_COMMIT.txt preview-artifacts/CLIENTE-V78-SOURCE_COMMIT.txt
+            git add preview-artifacts/traslados-cliente-v78-paridad-operativa-prueba.apk preview-artifacts/CLIENTE-V78-SHA256SUMS.txt preview-artifacts/CLIENTE-V78-BUILT_AT_UTC.txt preview-artifacts/CLIENTE-V78-SOURCE_COMMIT.txt
             git diff --cached --quiet && exit 0
             git commit -m 'Cliente v78 operational test APK, staging only [skip ci]'
             if git push origin "HEAD:$BRANCH"; then exit 0; fi
