@@ -123,7 +123,6 @@
         status.textContent="Seguimiento temporalmente no disponible";
         explanation.textContent="Tu reserva sigue confirmada. Podés consultar su estado y mensajes.";
       }
-    }
       }finally{updating=false;}
     }
     // Booking status rarely changes during a drive. GPS must refresh even if
