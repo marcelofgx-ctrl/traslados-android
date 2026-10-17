@@ -819,3 +819,11 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
   #view-viajes .reservation-live-metric strong{font-size:17px}
   #view-viajes .reservation-live-slot{padding:9px}
 }
+
+/* Seguimiento de fases: números legibles incluso en pantallas estrechas. */
+#view-viajes .reservation-live-metric strong{
+  font-size:clamp(16px,4.6vw,20px);overflow-wrap:anywhere
+}
+#view-viajes .reservation-live-map{min-height:208px}
+#view-viajes .reservation-live-map .premium-map-tiles{filter:grayscale(.28) brightness(.82)}
+#view-viajes .reservation-live-freshness{line-height:1.5}

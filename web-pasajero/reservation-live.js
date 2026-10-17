@@ -46,35 +46,45 @@
     mapHost.setAttribute("aria-label","Cartografía de la recogida o viaje");
     const metrics=css(host,"reservation-live-metrics");
     const distanceBox=css(metrics,"reservation-live-metric");
-    place(distanceBox,"small","","DISTANCIA");
+    const distanceTitle=place(distanceBox,"small","","RECORRIDO PREVISTO");
     const distance=place(distanceBox,"strong","","—");
     const etaBox=css(metrics,"reservation-live-metric");
-    place(etaBox,"small","","LLEGADA APROX.");
+    const etaTitle=place(etaBox,"small","","DURACIÓN PREVISTA");
     const eta=place(etaBox,"strong","","—");
-    const explanation=place(host,"p","reservation-live-note","La posición solo aparece cuando Mapa envía GPS válido.");
+    const explanation=place(host,"p","reservation-live-note","Hasta recibir GPS válido, este mapa representa el trayecto contratado, no al vehículo.");
     const privacy=place(host,"small","reservation-live-freshness","");
     let routePromise=null;
     async function paint(points,kind){
       if(!points||points.length<2||!renderer?.render){return;}
-      const cacheKey=keyOf(points);
+      const mode=kind==="driver"?(ride?"ride":"pickup"):"contract";
+      const cacheKey=mode+"|"+keyOf(points);
       if(host.dataset.mapRoute===cacheKey)return;
       if(routePromise)return;
       routePromise=verifiedRoute(points,engine,api,key).catch(()=>null);
       let result=await routePromise;routePromise=null;
       if(!host.isConnected)return;
       if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return;}
-      if(!renderer.render(mapHost,result.geometry,{height:188}))return;
+      if(!renderer.render(mapHost,result.geometry,{
+        height:208,routeMode:mode,
+        extraMarkers:kind==="driver"?[ride?
+          {lat:from.lat,lng:from.lng,label:"O"}:
+          {lat:to.lat,lng:to.lng,label:"D"}]:[]
+      }))return;
       host.dataset.mapRoute=cacheKey;
       host.dataset.liveDriver=kind==="driver"?"true":"false";
       const km=Number(result.distanceKm);
       const mins=Number(result.durationMin);
       if(kind!=="contract"){
+        distanceTitle.textContent=ride?"AUTO → DESTINO":"AUTO → RECOGIDA";
+        etaTitle.textContent=ride?"TIEMPO AL DESTINO":"LLEGADA APROX.";
         if(Number.isFinite(km)&&km>=0)distance.textContent=formatKm(km);
         if(Number.isFinite(mins)&&mins>=0)eta.textContent=Math.max(1,Math.ceil(mins))+" min";
       }
       if(kind==="contract"){
+        distanceTitle.textContent="RECORRIDO PREVISTO";
+        etaTitle.textContent="DURACIÓN PREVISTA";
         distance.textContent=Number.isFinite(km)&&km>=0?formatKm(km):"—";
-        eta.textContent="Al confirmar salida";
+        eta.textContent=Number.isFinite(mins)&&mins>=0?Math.max(1,Math.ceil(mins))+" min":"—";
       }
     }
     let updating=false;
@@ -112,17 +122,17 @@
           status.textContent=ride?"Posición del vehículo pendiente"
             :value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
               "Recogida confirmada · posición pendiente";
-          explanation.textContent="El mapa muestra el recorrido contratado; no simula el movimiento del vehículo.";
-          privacy.textContent="Se mostrará el automóvil cuando el conductor tenga GPS disponible.";
+          explanation.textContent="Vista del origen y destino contratados. Todavía no tenemos una posición GPS reciente del auto.";
+          privacy.textContent="La llegada del conductor no puede estimarse sin su ubicación verificada.";
           return;
         }
         const destination=ride?to:from;
         if(host.dataset.liveDriver!=="true"){
           distance.textContent="Calculando";eta.textContent="—";
         }
-        status.textContent=ride?"Vehículo hacia el destino":"Vehículo rumbo a tu origen";
+        status.textContent=ride?"En viaje · automóvil hacia el destino":"Automóvil en camino a recogerte";
         explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":"Distancia del vehículo a tu recogida por carretera.";
-        privacy.textContent="GPS recibido hace "+Math.round(fresh)+" s · estimación vial aproximada";
+        privacy.textContent="🚘 GPS real recibido hace "+Math.round(fresh)+" s · actualiza aprox. cada 12 s con la página abierta";
         // If a prior contract-route request is still in-flight, paint the latest
         // driver route once it settles: never leave the static route over GPS.
         if(routePromise)try{await routePromise;}catch(_){}
