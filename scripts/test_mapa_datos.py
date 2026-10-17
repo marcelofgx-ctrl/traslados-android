@@ -44,7 +44,7 @@ assert "driver_pin_valid" in migration
 assert "limit $3" in migration.lower()
 assert "grant execute" in migration.lower()
 assert "- ''public_token''" in migration, "Cloud RPC must strip reservation public tokens"
-assert 'record.has("public_token")' in backup, "Android export must reject tokens"
+assert 'record.remove("public_token")' in backup, "Android archive must strip access tokens"
 for forbidden in ("truncate", "delete from", "drop table", "drop function",
                   "update public", "insert into public"):
     assert forbidden not in migration.lower(), forbidden
