@@ -73,9 +73,11 @@
       if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return false;}
       if(!renderer.render(mapHost,result.geometry,{
         height:208,routeMode:mode,
-        // Show only the active leg: car to passenger, then car to destination.
-        // The old pickup/destination pin can artificially zoom out the live leg.
-        extraMarkers:[]
+        // Keep three distinct points for orientation while the route line
+        // still follows the active leg (car→pickup or car→destination).
+        extraMarkers:kind==="driver"?[ride?
+          {lat:from.lat,lng:from.lng,label:"O"}:
+          {lat:to.lat,lng:to.lng,label:"D"}]:[]
       }))return false;
       host.dataset.mapRoute=cacheKey;
       host.dataset.liveDriver=kind==="driver"?"true":"false";
