@@ -96,7 +96,7 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},55);
         }
-        pool.execute(()->Api.logEvent("app_start","Conductor v11.5 R4 iniciado","{}"));
+        pool.execute(()->Api.logEvent("app_start","Conductor v11.5 R9 iniciado","{}"));
         checkSetup();
     }
 
@@ -317,7 +317,8 @@ public class MainActivity extends Activity {
                     JSONObject r=a.getJSONObject(i);rows.add(r);
                     if("PENDIENTE".equals(r.optString("status"))){
                         String id=r.optString("id");current.add(id);
-                        if(!firstLoad&&!seenPending.contains(id))fresh.add(r);
+                        if(!seenPending.contains(id)&&(!firstLoad||ReservationAlertPolicy.recentPending(
+                            r.optString("status",""),r.optString("created_at",""),System.currentTimeMillis())))fresh.add(r);
                     }
                 }
                 String snapshot=rows.toString();
@@ -552,9 +553,19 @@ public class MainActivity extends Activity {
         if(!hist){
             if("PENDIENTE".equals(status)){
                 LinearLayout acts=new LinearLayout(this);acts.setOrientation(LinearLayout.HORIZONTAL);
-                Button quote=primaryButton("ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"),reject=dangerButton("RECHAZAR");
+                boolean fixed="fixed".equals(r.optString("fare_mode"))&&"PRECIO_FIJO".equals(qs);
+                Button quote=primaryButton(fixed?"ACEPTAR "+formatMoney(r.optDouble("quote_final_total",0)):
+                        "ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"),
+                    reject=dangerButton("RECHAZAR");
                 acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
-                quote.setOnClickListener(v->showQuoteDialog(r));reject.setOnClickListener(v->confirmReject(r));
+                if(fixed) {
+                    addDetail(bodyBox,"ticket","PRECIO FIJO ACORDADO",formatMoney(r.optDouble("quote_final_total",0)));
+                    quote.setOnClickListener(v->showDriverConfirm("Aceptar traslado",
+                        "¿Confirmás "+formatMoney(r.optDouble("quote_final_total",0))+
+                        " por el viaje "+r.optString("code","")+"?","VOLVER","ACEPTAR",
+                        ()->decideFixedPickup(r,true)));
+                }else quote.setOnClickListener(v->showQuoteDialog(r));
+                reject.setOnClickListener(v->confirmReject(r));
             }else if("ACEPTADA".equals(status)){
                 // Estado operativo explícito: no deducir «En camino» por el GPS.
                 String pickupPhase=r.optString("pickup_phase","SIN_INICIAR");
@@ -1065,7 +1076,41 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void confirmReject(JSONObject r){showDriverConfirm("Rechazar solicitud","¿Confirmás rechazar la reserva "+r.optString("code")+"?","VOLVER","RECHAZAR",()->changeStatus(r,"RECHAZADA"));}
+    private void confirmReject(JSONObject r){showDriverConfirm("Rechazar solicitud",
+        "¿Confirmás rechazar la reserva "+r.optString("code")+"?",
+        "VOLVER","RECHAZAR",()->{
+            if("fixed".equals(r.optString("fare_mode"))&&"PRECIO_FIJO".equals(r.optString("quote_status")))
+                decideFixedPickup(r,false);
+            else changeStatus(r,"RECHAZADA");
+        });}
+
+    private void decideFixedPickup(JSONObject r,boolean accept){
+        String id=r.optString("id","");
+        String key="fixed-"+id;
+        if(id.isEmpty()||!driverStatusInFlight.add(key))return;
+        toast(accept?"Aceptando traslado…":"Rechazando solicitud…");
+        pool.execute(()->{
+            try{
+                JSONObject result=Api.decideFixedPickup(pin,id,accept);
+                String status=result.optString("status","");
+                if(!("ACEPTADA".equals(status)&&accept||"RECHAZADA".equals(status)&&!accept))
+                    throw new java.io.IOException("El servidor no confirmó la decisión");
+                Api.logEvent("fixed_pickup_decision",accept?"Aceptada":"Rechazada","{}");
+                runOnUiThread(()->{
+                    driverStatusInFlight.remove(key);
+                    toast(accept?"✓ Solicitud aceptada · precio confirmado":"Solicitud rechazada");
+                    expandedId=accept?id:"";
+                    loadActive(true);
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    driverStatusInFlight.remove(key);
+                    toast("No se pudo "+(accept?"aceptar":"rechazar")+": "+friendly(e));
+                    loadActive(true);
+                });
+            }
+        });
+    }
 
     private void alertNew(JSONObject r){
         String incomingId=r.optString("id","");String incomingCode=r.optString("code","");boolean dashboardPresent=false;
@@ -1115,9 +1160,19 @@ public class MainActivity extends Activity {
             showReservationChat(r); // Do not cover this conversation with another alert.
         });
 
-        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton("PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
+        boolean fixedPrice="fixed".equals(r.optString("fare_mode"))&&"PRECIO_FIJO".equals(r.optString("quote_status"));
+        if(fixedPrice)addDetail(content,"ticket","PRECIO CONFIRMADO",formatMoney(r.optDouble("quote_final_total",0)));
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton(fixedPrice?"ACEPTAR "+formatMoney(r.optDouble("quote_final_total",0)):"PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
         list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
-        quote.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");showQuoteDialog(r);showNextDriverAlertIfAny();});
+        quote.setOnClickListener(v->{
+            ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");
+            if(fixedPrice){
+                showDriverConfirm("Aceptar traslado",
+                    "¿Confirmás "+formatMoney(r.optDouble("quote_final_total",0))+" por el viaje "+r.optString("code","")+"?",
+                    "VOLVER","ACEPTAR",()->decideFixedPickup(r,true));
+            }else showQuoteDialog(r);
+            showNextDriverAlertIfAny();
+        });
         dialog.setOnDismissListener(x->{if(driverAlertDialog==dialog)driverAlertDialog=null;});dialog.setContentView(shell);
         dialog.setOnShowListener(d->{Window dw=dialog.getWindow();if(dw!=null){dw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));dw.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);WindowManager.LayoutParams a=dw.getAttributes();a.dimAmount=.68f;dw.setAttributes(a);int width=(int)(getResources().getDisplayMetrics().widthPixels*.92f);dw.setLayout(width,WindowManager.LayoutParams.WRAP_CONTENT);dw.setGravity(Gravity.CENTER);}});dialog.show();
     }

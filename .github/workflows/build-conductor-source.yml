@@ -76,7 +76,7 @@ jobs:
           grep -q 'org.maplibre.gl:android-sdk:13.6.1' conductor/build.gradle
           grep -q 'DemandMapActivity' conductor/src/main/AndroidManifest.xml
           grep -q 'showKeyboardSafeQuoteDialog' "$D/MainActivity.java"
-          grep -q 'driver_list_reservations_v3' "$D/Api.java"
+          grep -Eq 'driver_list_reservations_v(3|4)' "$D/Api.java"
           grep -q 'driver_set_pickup_phase_v1' "$D/Api.java"
           grep -q 'changePickupPhase' "$D/MainActivity.java"
           grep -q 'driver_trip_chat_v1' "$D/Api.java"
