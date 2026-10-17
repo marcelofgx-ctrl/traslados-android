@@ -1,5 +1,14 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Fase 2 — pantalla «Buscando conductor» + transición de seguimiento (17/10/2026 UTC · staging)
+
+- En la rama `integration/paridad-cliente-20261017` / PR #109 la solicitud inmediata PENDIENTE ahora ofrece **«Ver solicitud en seguimiento»**. Abre la misma vista dedicada de seguimiento que se usa en EN_CAMINO y EN_VIAJE, pero con presentación y permisos apropiados a cada etapa. Antes la espera existía solo como radar en una tarjeta de Mis traslados.
+- Espera: cabecera **ámbar, no verde de conductor confirmado**, radar champagne expresamente decorativo, tres etapas de progreso con solo recepción acreditada, texto honesto sin GPS del coche ni conductor asignado ficticio. Mapa únicamente del **recorrido vial verificado** si hay coordenadas del propio pedido. Datos visibles: origen/destino, código y monto solo si procede de la reserva. Sin botón de finalizar ni comunicación fingida con conductor asignado.
+- La vista queda suscrita a la lectura periódica existente de Supabase: **8 s mientras muestra una solicitud activa y la pestaña está visible**, 20 s fuera de ese foco, sin polling permanente en background. Al recibir EN_CAMINO/EN_PUNTO/EN_VIAJE cambia la pantalla sobre los estados recibidos de servidor, no animaciones como GPS.
+- Corrección P0: `renderTripsBoard()` actualiza el seguimiento dedicado **antes** de revisar si el filtro de Próximos devolvió cero grupos. Así, al pasar a FINALIZADA/RECHAZADA ya no queda congelado el estado activo en una vista ahora vacía. Apertura de seguimiento sin doble render para evitar solicitudes de cálculo vial duplicadas.
+- QA de navegador actualizado para **360/393/412 px**: captura adicional `buscando-pantalla-WIDTH.png`; comprueba radar y fases, ausencia de controles de conductor confirmado, navegación, transición pendiente→en camino→finalizada y que no queda información obsoleta. Es fixture sintético local, **no** una reserva en Supabase.
+- Queda pendiente comparar contra las **dos láminas originales de ocho pantallas** (no forman parte del repo) y validar en Samsung físico. CI del commit y capturas **no equivalen** a aprobación visual exacta del arte original; no publicar automáticamente, no fusionar ni generar una APK operativa por estos cambios web.
+
 ## Paridad Cliente — integración A (16/10/2026, noche de Uruguay, BORRADOR)
 
 - Rama `integration/paridad-cliente-20261017`, creada desde main `73c69e234590`. Integra selectivamente historial/cuenta/limpieza del PR #106 (`a3c486b`), frontend premium/precio fijo del PR #99 (`4b36ce2`) y herramientas mosaico del PR #101 (`79417d6`). PWA propuesta v77; NO publicada. El plan maestro sigue siendo PR #108.
