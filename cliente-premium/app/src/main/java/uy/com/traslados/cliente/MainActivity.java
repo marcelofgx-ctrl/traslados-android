@@ -92,7 +92,8 @@ public final class MainActivity extends Activity {
         WebSettings cfg=web.getSettings();
         // Identidad local de la APK firmada: la web evita ofrecer otro instalador
         // dentro de la aplicación nativa (sin bridge JavaScript ni privilegios extra).
-        cfg.setUserAgentString(cfg.getUserAgentString() + " TrasladosClienteNative/16");
+        String nativeMajor=BuildConfig.VERSION_NAME.split("\\.")[0];
+        cfg.setUserAgentString(cfg.getUserAgentString() + " TrasladosClienteNative/" + nativeMajor + " TrasladosNativeCode/" + BuildConfig.VERSION_CODE);
         cfg.setJavaScriptEnabled(true);
         cfg.setDomStorageEnabled(true);
         cfg.setDatabaseEnabled(true);
