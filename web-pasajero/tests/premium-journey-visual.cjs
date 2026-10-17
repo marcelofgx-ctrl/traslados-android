@@ -67,6 +67,10 @@ const {chromium}=require("playwright-core");
     await page.waitForSelector('#view-viaje[data-premium-step="route"]',{timeout:10000});
     assert.equal(await page.locator(".premium-step").count(),4);
     assert.equal(await page.locator("#view-viaje > .premium-live-presence #pickup-presence").isVisible(),true,"Disponibilidad visible sin desplegar campos");
+    assert.equal(await page.locator("#view-viaje .premium-position-summary").isVisible(),true,"Falta mi punto de recogida y distancia");
+    assert.equal(await page.locator("#view-viaje .premium-position-gps").isVisible(),true,"GPS visible en todos los pasos");
+    assert.match(await page.locator("#view-viaje .premium-position-metrics").textContent(),/Conductor → origen: seleccioná tu punto/);
+    assert.match(await page.locator("#view-viaje .premium-position-metrics").textContent(),/Recorrido: pendiente/);
     const searchWidth=await page.locator('#view-viaje #origin-picker input[type="search"]').evaluate(
       el=>el.getBoundingClientRect().width);
     assert(searchWidth>=165,"El buscador de origen queda demasiado estrecho: "+searchWidth+"px en "+width);
@@ -108,6 +112,8 @@ const {chromium}=require("playwright-core");
     await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
     assert(await page.locator("#origin-picker .location-selected-label").textContent());
     assert(await page.locator("#destination-picker .location-selected-label").textContent());
+    assert.match(await page.locator("#view-viaje .premium-position-label").textContent(),/Carrasco|Terminal/i,
+      "El origen elegido no se refleja en el resumen persistente");
     await page.screenshot({path:path.join(dest,"recorrido-elegido-"+width+".png"),fullPage:true,animations:"disabled"});
     await page.locator(".premium-next").click();
     assert.equal(await page.locator("#view-viaje").getAttribute("data-premium-step"),"when");
@@ -195,6 +201,12 @@ const {chromium}=require("playwright-core");
     await page.waitForFunction(()=>document.querySelector("#pickup-presence").dataset.presence==="eta-unavailable");
     assert.match(await page.locator("#pickup-presence-title").textContent(),/sin estimar/);
     assert.equal(await page.locator("#pickup-presence-metrics").isVisible(),false);
+    assert.equal(await page.locator("#view-viaje .premium-position-gps").isVisible(),true,
+      "El acceso GPS desaparece en el resumen de confirmación");
+    assert.equal(await page.locator("#view-viaje .premium-position-ride").isVisible(),true,
+      "Falta separar distancia del viaje en confirmación");
+    assert.equal(await page.locator("#urgent-send").isVisible(),true,"No se ve botón de confirmación en Tu viaje");
+    assert.match(await page.locator("#urgent-send .booking-cta-label").textContent(),/CONFIRMAR Y SOLICITAR VIAJE/);
     const iconSize=await page.locator("#view-viaje .request-hero-icon svg").evaluate(e=>e.getBoundingClientRect().width);
     assert(iconSize<=32,"SVG de confirmar desbordado: "+iconSize);
     assert.equal(await page.locator("#premium-confirm-fake-location").count(),0,"Nunca agregar ubicaciones ficticias");
