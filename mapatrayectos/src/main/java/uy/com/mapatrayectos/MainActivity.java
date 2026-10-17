@@ -91,6 +91,17 @@ public class MainActivity extends Activity {
     private boolean reopenConfigurationAfterOverlay=false;
     private boolean navigatingWithinMapa=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
+    // The map's visible window independently reconciles reservations even if
+    // Samsung stopped the notification service while it was in the background.
+    private final Runnable transferReceptionTick=new Runnable(){
+        @Override public void run(){
+            if(isFinishing()||isDestroyed())return;
+            if(TransferAlerts.monitorNeedsRestart(MainActivity.this))
+                TransferAlerts.ensureMonitor(MainActivity.this);
+            TransferAlerts.refreshAsync(MainActivity.this);
+            uiHandler.postDelayed(this,15000L);
+        }
+    };
 
     private void scheduleBubblePermissionCheck(){
         if(bubbleIntroShownThisActivity||runtimePermissionInProgress||returningFromOverlaySettings)return;
@@ -895,9 +906,15 @@ public class MainActivity extends Activity {
                 popup,this::showEndShiftConfirmation);
         }
         int pending=TransferAlerts.pendingCount(this);
+        String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
         addMainMenuRow(menu,"🚘","TRASLADOS CONDUCTOR",
+            (pin==null||pin.isEmpty())?"Iniciar sesión para recibir solicitudes":
             pending>0?pending+" solicitud(es) pendiente(s)":"Solicitudes · Agenda · Presupuestos",
             popup,this::openIntegratedConductor);
+        addMainMenuRow(menu,"↻","Recepción de peticiones",
+            (pin==null||pin.isEmpty())?"Sin sesión · avisos desactivados":
+            "Consultar estado · reconectar monitor",
+            popup,this::showTransferReception);
         addMainMenuRow(menu,"◷","Recordatorios","Avisos y tareas programadas",popup,
             ()->startActivity(new Intent(this,ReminderActivity.class)));
         addMainMenuRow(menu,"▤","Historial y estadísticas","Viajes, kilómetros y jornadas",popup,
@@ -912,6 +929,26 @@ public class MainActivity extends Activity {
         try{popup.showAsDropDown(anchor,dp(50)-menuWidth,dp(4));}
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
+    private void showTransferReception(){
+        boolean loggedIn=!getSharedPreferences("driver_session",MODE_PRIVATE)
+            .getString("pin","").trim().isEmpty();
+        String state=TransferAlerts.receptionStatus(this);
+        new AlertDialog.Builder(this)
+            .setTitle("Recepción de peticiones")
+            .setMessage(state+"\n\nLa reserva puede estar registrada en Supabase "+
+                "aunque Android haya detenido la notificación. "+
+                "Revisar no borra datos ni modifica ninguna solicitud.")
+            .setNegativeButton("CERRAR",null)
+            .setNeutralButton("VER SOLICITUDES",(dialog,which)->openIntegratedConductor())
+            .setPositiveButton(loggedIn?"REVISAR AHORA":"INICIAR SESIÓN",(dialog,which)->{
+                if(!loggedIn){openIntegratedConductor();return;}
+                TransferAlerts.ensureMonitor(this);
+                TransferAlerts.refreshAsync(this);
+                Toast.makeText(this,"Consultando reservas en Supabase…",
+                    Toast.LENGTH_LONG).show();
+            }).show();
+    }
+
     /** Fin de jornada separado de la acción operativa principal para respetar
      *  la maqueta aprobada. Validación doble (interfaz + servicio) y confirmación. */
     private void showEndShiftConfirmation(){
@@ -1927,6 +1964,8 @@ public class MainActivity extends Activity {
         }
         updateTransferBadge();
         TransferAlerts.ensureMonitor(this);
+        uiHandler.removeCallbacks(transferReceptionTick);
+        uiHandler.post(transferReceptionTick);
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
@@ -1934,7 +1973,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();}
-    @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+    @Override protected void onPause(){uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);
