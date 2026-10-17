@@ -57,6 +57,7 @@ public final class CloudDataBackup {
         JSONObject status=Api.getSystemStatus(pin);
         if(status.optLong("database_bytes",-1)<0)
             throw new IOException("No se pudo verificar el acceso al servidor");
+        Api.registerCloudBackupDevice();
         long cutoffMs=System.currentTimeMillis();
         JSONObject counts=new JSONObject();
         OutputStream raw=context.getContentResolver().openOutputStream(destination,"w");
