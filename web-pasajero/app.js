@@ -1724,6 +1724,9 @@ function reservationView(r,guestToken){
       text(item,"i").setAttribute("aria-hidden","true");
       text(item,"span",label);
     }
+    const follow=button(top,"◉ Ver solicitud en seguimiento","premium-open-tracking",()=>openPremiumTracking(r));
+    follow.setAttribute("aria-label","Abrir la solicitud pendiente y su estado real");
+    follow.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
   }
   if(meta.tone==="moving"){
     const fullscreen=button(top,"◉ Abrir seguimiento","premium-open-tracking",()=>openPremiumTracking(r));
@@ -1884,9 +1887,63 @@ function renderPremiumTracking(){
     return;
   }
   const meta=tripBoard.metadata(r);
-  if(meta.tone!=="moving"){
+  const waiting=meta.tone==="pending"&&tripBoard.isImmediateRequest(r)&&
+    !tripBoard.expiredQuote(r)&&!tripBoard.expiredImmediate(r);
+  if(meta.tone!=="moving"&&!waiting){
     text(content,"p",tripBoard.guidance(r),"premium-tracking-empty");
     button(content,"Ver estado en Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    return;
+  }
+  if(waiting){
+    const hero=text(content,"section","","premium-tracking-hero");
+    const pill=text(hero,"div","","premium-tracking-pill");
+    text(pill,"span","●").setAttribute("aria-hidden","true");
+    text(pill,"strong","Solicitud recibida");
+    text(hero,"h2","Esperando respuesta del conductor");
+    text(hero,"p","Recibimos tu solicitud, pero el viaje todavía no está confirmado.");
+    const waitingCard=text(content,"section","","premium-tracking-wait");
+    waitingCard.setAttribute("aria-label","Solicitud pendiente, esperando confirmación");
+    const radar=text(waitingCard,"div","","premium-tracking-wait-radar");
+    radar.setAttribute("aria-hidden","true");
+    text(radar,"span","◎","premium-tracking-wait-center");
+    text(waitingCard,"strong","Estamos pendientes de la respuesta");
+    text(waitingCard,"p","La animación no representa una búsqueda GPS. La confirmación llegará mediante el estado real de la solicitud.");
+    const stages=text(waitingCard,"div","","premium-tracking-wait-stages");
+    for(const [index,label] of ["Recibida","Esperando","Confirmación pendiente"].entries()){
+      const cell=text(stages,"div","","premium-tracking-wait-stage");
+      cell.dataset.stage=index===0?"complete":index===1?"current":"upcoming";
+      text(cell,"span",index===0?"✓":String(index+1)).setAttribute("aria-hidden","true");
+      text(cell,"small",label);
+    }
+    const mapHost=text(content,"section","","premium-tracking-map");
+    mapHost.setAttribute("aria-label","Mapa del recorrido solicitado");
+    const from=[Number(r.origin_lat),Number(r.origin_lng)];
+    const to=[Number(r.destination_lat),Number(r.destination_lng)];
+    if(from.every(Number.isFinite)&&to.every(Number.isFinite)&&
+       isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
+       (from[0]!==to[0]||from[1]!==to[1])){
+      const loader=text(mapHost,"p","Consultando recorrido vial…","premium-tracking-map-message");
+      void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
+        {api:API,publishableKey:KEY}).then(route=>{
+          if(!mapHost.isConnected||premiumTrackingKey!==String(r.id||r.code||""))return;
+          if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||
+            !window.TrasladosPremiumMap?.render(mapHost,route.geometry,{height:178}))
+            loader.textContent="Todavía no hay una ruta vial verificada para mostrar.";
+        }).catch(()=>{if(loader.isConnected)loader.textContent="El mapa está temporalmente no disponible.";});
+    }else{
+      text(mapHost,"p","Origen y destino disponibles en el detalle de tu solicitud.","premium-tracking-map-message");
+    }
+    text(content,"p","Este mapa corresponde al trayecto solicitado, no a la posición del conductor.","premium-tracking-disclaimer");
+    const details=text(content,"section","","premium-tracking-card");
+    text(details,"strong","Solicitud "+String(r.code||"recibida"),"premium-tracking-wait-code");
+    for(const [name,value] of [["Origen",r.origin_text],["Destino",r.destination_text]]){
+      const row=text(details,"div","","premium-tracking-place");
+      text(row,"small",name);text(row,"strong",String(value||"Dirección no disponible"));
+    }
+    const amount=Number(r.quote_final_total);
+    if(Number.isFinite(amount)&&amount>0)
+      text(details,"p","Importe indicado: "+tripMoney(amount),"premium-tracking-wait-fare");
+    button(content,"← Volver a Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
     return;
   }
   const onBoard=r.status==="EN_VIAJE";
@@ -1985,6 +2042,9 @@ function showTripNotice(change){
   playTripAlertSound();
 }
 function renderTripsBoard({reset=false}={}){
+  // Keep the dedicated screen in sync even when the upcoming filter becomes
+  // empty after a trip is finalized or rejected.
+  if($("view-seguimiento")?.classList.contains("active"))renderPremiumTracking();
   const list=$("trips-list");
   if(!reset&&list.children.length){
     openTripGroups=new Set([...list.querySelectorAll(".trips-day[open]")].map(x=>x.dataset.key));
@@ -2025,7 +2085,6 @@ function renderTripsBoard({reset=false}={}){
     }
     return;
   }
-  if($("view-seguimiento")?.classList.contains("active"))renderPremiumTracking();
   groups.forEach((g,i)=>{
     const day=document.createElement("details");day.className="trips-day";day.dataset.key=g.key;
     day.open=openTripGroups.size?openTripGroups.has(g.key):i<2;
@@ -2455,7 +2514,10 @@ function init(){
   setInterval(()=>{
     if(!tripLoaded||navigator.onLine===false||document.visibilityState!=="visible")return;
     const inTrips=$("view-viajes")?.classList.contains("active");
-    const activeTrip=inTrips&&tripRows.some(r=>!tripBoard.isHistory(r));
+    const inTracking=$("view-seguimiento")?.classList.contains("active");
+    const tracked=inTracking&&tripRows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
+    const activeTrip=(inTrips&&tripRows.some(r=>!tripBoard.isHistory(r)))||
+      Boolean(tracked&&!tripBoard.isHistory(tracked));
     const cadence=activeTrip?8000:20000;
     if(Date.now()-lastBackgroundTripsCheck<cadence)return;
     lastBackgroundTripsCheck=Date.now();
