@@ -1,0 +1,46 @@
+name: Mirror verified Conductor R9 signed QA APK for Samsung direct download
+on:
+  push:
+    branches: [feature/conductor-r9-entrega-peticiones-20261017]
+    paths: ['.github/workflows/mirror-conductor-r9-review-raw.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: mirror-conductor-r9-only
+  cancel-in-progress: false
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download signed release and validate original SHA256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk
+          mkdir -p /tmp/conductor-validated
+          gh release download conductor-r9-reservas-alertas-review-20261017 -p "$FILE" -p SHA256SUMS.txt -D /tmp/conductor-validated
+          (cd /tmp/conductor-validated && sha256sum -c SHA256SUMS.txt)
+          test "$(stat -c %s "/tmp/conductor-validated/$FILE")" -gt 50000000
+          file "/tmp/conductor-validated/$FILE"
+      - name: Write only QA artifact to branch (not official passenger downloads)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH=feature/conductor-r9-entrega-peticiones-20261017
+          FILE=Traslados_Conductor_R9_Reservas_Alertas_REVIEW.apk
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          mkdir -p preview-artifacts
+          cp "/tmp/conductor-validated/$FILE" preview-artifacts/
+          (cd preview-artifacts && sha256sum "$FILE" > CONDUCTOR-R9-SHA256SUMS.txt && sha256sum -c CONDUCTOR-R9-SHA256SUMS.txt)
+          git config user.name 'Traslados QA CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add "preview-artifacts/$FILE" preview-artifacts/CONDUCTOR-R9-SHA256SUMS.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'qa: provide direct Conductor R9 signed review APK download [skip ci]'
+          git push origin "HEAD:$BRANCH"
