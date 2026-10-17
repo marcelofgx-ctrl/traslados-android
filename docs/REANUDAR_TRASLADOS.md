@@ -1,5 +1,15 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## APK Cliente v77 visual — entregada, aislada, no operativa (17/10/2026 02:19:54 UTC)
+
+- APK Android **DEBUG**, aplicación paralela `uy.com.traslados.cliente.debug`, versión `77.0-Paridad-Visual` / code277. Incluye frontal v77 empaquetado desde la rama integradora y el seguimiento premium. Es de lectura/navegación: banner «Vista de prueba v77 · No envía reservas», metadato `traslados-preview=read-only`, `MOSAIC_PREVIEW_MODE=true` y `MOSAIC_PREVIEW_OPERATIONAL=false`. **NO** habilita crear reservas, login operativo o validación end-to-end de Conductor; no sustituye Cliente v16 instalada. No requiere desinstalar nada.
+- Descarga directa GitHub: https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/integration/paridad-cliente-20261017/preview-artifacts/traslados-cliente-v77-paridad-visual-prueba.apk
+- SHA256 manifest: `53f4c10bdc3706eeb8c9bfbd4cd4d728fa01824882ef678782dbd6fa2fed0eac`. Fecha build registrada: `2026-10-17T02:19:54Z` (Uruguay: 16/10/2026 23:19:54). Commit GitHub que incorporó APK y manifiesto a rama de pruebas: `74605240e2941b8bb26ec79ef5eb4a19381e63ae`.
+- Workflow `.github/workflows/build-cliente-paridad-v77-visual-preview.yml`: ejecuta pruebas JS y mosaico, empaquetado solo lectura, Gradle debug, verificación de paquete/versión, firma debug, hashes de TODOS los recursos web embebidos y publicación **solo en `preview-artifacts/` de integración**; no altera `main`, Supabase, PWA publicada ni firma original release.
+- Próximas condiciones para entrega operativa: cotejo visual manual de capturas con 2 láminas aprobadas, prueba física Samsung y E2E controlado con Conductor. No presentar APK de revisión como v77 productiva.
+
+
+
 ## Fase 2 — pantalla «Buscando conductor» + transición de seguimiento (17/10/2026 UTC · staging)
 
 - En la rama `integration/paridad-cliente-20261017` / PR #109 la solicitud inmediata PENDIENTE ahora ofrece **«Ver solicitud en seguimiento»**. Abre la misma vista dedicada de seguimiento que se usa en EN_CAMINO y EN_VIAJE, pero con presentación y permisos apropiados a cada etapa. Antes la espera existía solo como radar en una tarjeta de Mis traslados.
