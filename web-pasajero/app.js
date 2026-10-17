@@ -1873,8 +1873,8 @@ let premiumTrackingKey=null;
 function openPremiumTracking(r){
   premiumTrackingKey=String(r?.id||r?.code||"");
   if(!premiumTrackingKey)return;
+  // shiftView renders once; avoid launching duplicate route fetches.
   shiftView("seguimiento");
-  renderPremiumTracking();
 }
 function renderPremiumTracking(){
   const content=$("premium-tracking-content");
@@ -1896,6 +1896,7 @@ function renderPremiumTracking(){
   }
   if(waiting){
     const hero=text(content,"section","","premium-tracking-hero");
+    hero.dataset.tone="waiting";
     const pill=text(hero,"div","","premium-tracking-pill");
     text(pill,"span","●").setAttribute("aria-hidden","true");
     text(pill,"strong","Solicitud recibida");
