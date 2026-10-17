@@ -707,3 +707,45 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
 @media(prefers-reduced-motion:reduce){
   #view-seguimiento .premium-tracking-wait-radar::before{animation:none}
 }
+
+/* Posición de recogida y las dos distancias, visibles en las cuatro etapas.
+   El punto GPS se fija solo tras consentimiento; sin verificación no hay cifras. */
+#view-viaje .premium-position-summary{
+  display:grid;gap:8px;margin:0 0 12px;padding:11px 12px;
+  border:1px solid #bba46d74;border-radius:14px;
+  background:linear-gradient(145deg,#10383f,#08252e);
+}
+#view-viaje .premium-position-row{display:flex;gap:8px;align-items:center;min-width:0}
+#view-viaje .premium-position-copy{min-width:0;flex:1}
+#view-viaje .premium-position-copy small{
+  display:block;font:750 9px/1.4 Manrope,Arial,sans-serif;
+  letter-spacing:.09em;color:#ddc99a;
+}
+#view-viaje .premium-position-label{
+  display:block;max-height:40px;overflow:hidden;
+  color:#fbefe0;font-size:12px;line-height:1.5;
+  overflow-wrap:anywhere;
+}
+#view-viaje .premium-position-label[data-source="none"]{color:#b7c8c0;font-weight:600}
+#view-viaje .premium-position-gps{
+  flex:0 0 auto;max-width:122px;min-height:41px;
+  border:1px solid #e1c8878a;border-radius:10px;
+  background:#d6b573;color:#102e33;
+  padding:6px 9px;font-weight:850;font-size:11px;cursor:pointer;
+}
+#view-viaje .premium-position-gps:focus-visible{
+  outline:2px solid #ffe9ba;outline-offset:2px;
+}
+#view-viaje .premium-position-metrics{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;
+}
+#view-viaje .premium-position-metrics>span{
+  min-width:0;overflow-wrap:anywhere;min-height:39px;
+  padding:7px;border:1px solid #78958b47;border-radius:10px;
+  background:#061f28;color:#e8e5d6;
+  font-size:10px;line-height:1.45;
+}
+@media(max-width:359px){
+  #view-viaje .premium-position-metrics{grid-template-columns:1fr}
+  #view-viaje .premium-position-gps{max-width:106px}
+}
