@@ -708,7 +708,7 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
   #view-seguimiento .premium-tracking-wait-radar::before{animation:none}
 }
 
-/* Posición de recogida y las dos distancias, visibles en las cuatro etapas.
+/* Posición de recogida y las dos distancias: recorrido y confirmación.
    El punto GPS se fija solo tras consentimiento; sin verificación no hay cifras. */
 #view-viaje .premium-position-summary{
   display:grid;gap:8px;margin:0 0 12px;padding:11px 12px;
@@ -749,3 +749,10 @@ body:not(.journey-mode-quick) .premium-contact-extras{display:none!important}
   #view-viaje .premium-position-metrics{grid-template-columns:1fr}
   #view-viaje .premium-position-gps{max-width:106px}
 }
+
+/* La pantalla Cuándo es intencionadamente compacta en Samsung:
+   la disponibilidad/ETA permanece arriba y el detalle de origen/km
+   queda visible en Recorrido y Confirmar para no tapar CONTINUAR. */
+#view-viaje[data-premium-step="when"] .premium-position-summary,
+#view-viaje[data-premium-step="passenger"] .premium-position-summary{display:none}
+#view-viaje[data-premium-step="when"] .premium-actions{margin-top:0}
