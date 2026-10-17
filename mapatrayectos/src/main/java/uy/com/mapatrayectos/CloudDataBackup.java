@@ -69,6 +69,8 @@ public final class CloudDataBackup {
                 zip.putNextEntry(new ZipEntry("historial/"+dataset+".jsonl"));
                 long total=0;String cursor="";int pages=0;
                 while(true){
+                    if(Thread.currentThread().isInterrupted())
+                        throw new IOException("Exportación interrumpida");
                     if(++pages>MAX_PAGES_PER_DATASET)
                         throw new IOException("Se superó el límite seguro de páginas");
                     JSONObject reply=Api.getCloudHistoryPage(pin,dataset,cursor,cutoffMs,PAGE_SIZE);
