@@ -19,7 +19,7 @@ const cache={
   put:async(request,copy)=>{puts.push({url:request.url,copy});}
 };
 const caches={
-  keys:async()=>["unrelated-product-cache","traslados-cliente-pwa-v75-old",name],
+  keys:async()=>["unrelated-product-cache","traslados-pwa-v80-old",name],
   delete:async key=>{deleted.push(key);return true;},
   open:async key=>{assert.equal(key,name,"Only use the passenger cache");return cache;}
 };
@@ -46,7 +46,7 @@ async function dispatch(type,request){
 }
 (async()=>{
   await dispatch("activate");
-  assert.deepEqual(deleted,["traslados-cliente-pwa-v75-old"],
+  assert.deepEqual(deleted,["traslados-pwa-v80-old"],
     "Activating this PWA must never purge unrelated origin apps");
 
   const req={url:scope+"app.js?v=80",mode:"same-origin",method:"GET"};
