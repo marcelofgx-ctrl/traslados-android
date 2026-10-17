@@ -1,0 +1,46 @@
+name: Publish stable Android update metadata
+# Only signed official release filenames already committed to main are eligible.
+# Debug APKs, .debug application IDs and review releases are ignored.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-pasajero/downloads/traslados-cliente-premium-v*.apk'
+      - 'web-pasajero/downloads/mapa-trayectos-r*.apk'
+      - 'web-pasajero/downloads/traslados-conductor-r*.apk'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: stable-android-releases
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Require original certificate, higher Android version and valid files
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          python3 scripts/sync_stable_release_catalog.py --mode sync --android-tools
+          node --check web-pasajero/release-updates.js
+          node web-pasajero/tests/release-updates-smoke.cjs
+      - name: Advance catalog only if verified official RELEASE changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- web-pasajero/releases.json; then
+            echo 'Stable catalog already current; no publication necessary.'
+            exit 0
+          fi
+          git config user.name "Traslados CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add web-pasajero/releases.json
+          git commit -m "release: advance verified stable Android update catalog"
+          git pull --rebase origin main
+          git push origin HEAD:main
