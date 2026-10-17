@@ -10,11 +10,12 @@
     const phi=lat*Math.PI/180;
     return [(lng+180)/360,(1-Math.log(Math.tan(phi)+1/Math.cos(phi))/Math.PI)/2];
   }
-  function layout(geometry,width=355,height=240){
+  function layout(geometry,width=355,height=240,extraPoints=[]){
     if(!Array.isArray(geometry)||geometry.length<2||geometry.length>20000)return null;
     const points=geometry.map(project);
     if(points.some(p=>!p))return null;
-    const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+    const fitPoints=points.concat(Array.isArray(extraPoints)?extraPoints.map(project).filter(Boolean):[]);
+    const xs=fitPoints.map(p=>p[0]),ys=fitPoints.map(p=>p[1]);
     const minX=Math.min(...xs),maxX=Math.max(...xs);
     const minY=Math.min(...ys),maxY=Math.max(...ys);
     const deltaX=Math.max(0.0000001,maxX-minX),deltaY=Math.max(0.0000001,maxY-minY);
@@ -32,13 +33,20 @@
     const height=options.height!=null&&Number.isFinite(proposed)
       ?Math.max(160,Math.min(420,Math.round(proposed)))
       :width<400?232:258;
-    const view=layout(geometry,width,height);
+    // Extra markers are real known route locations, not invented vehicle positions.
+    const extra=Array.isArray(options.extraMarkers)?options.extraMarkers.filter(m=>
+      m&&project([m.lat,m.lng])&&["O","P","D"].includes(m.label)):[];
+    const view=layout(geometry,width,height,extra.map(m=>[m.lat,m.lng]));
     if(!view)return false;
     host.replaceChildren();
     const frame=document.createElement("div");
     frame.className="premium-real-map";
     frame.setAttribute("role","img");
-    frame.setAttribute("aria-label",options.overview?"Mapa geográfico de referencia, sin posición GPS ni ruta calculada":"Mapa cartográfico del trayecto por calles, con origen y destino");
+    const live=options.routeMode==="pickup"||options.routeMode==="ride";
+    frame.setAttribute("aria-label",options.overview?"Mapa geográfico de referencia, sin posición GPS ni ruta calculada":
+      options.routeMode==="pickup"?"Posición GPS reciente del automóvil, ruta por calles hasta la recogida y destino marcado":
+      options.routeMode==="ride"?"Posición GPS reciente del automóvil con pasajero a bordo, ruta por calles hasta el destino":
+      "Mapa del recorrido contratado entre origen y destino; no muestra el automóvil");
     frame.style.height=height+"px";
     const tiles=document.createElement("div");tiles.className="premium-map-tiles";
     const scale=view.scale;
@@ -74,20 +82,33 @@
     }
     if(!options.overview){
     path("#042e46",9,"premium-map-route-shadow");
-    path("#6ce4ff",5,"premium-map-route");
+    path(live?"#56cba0":"#6ce4ff",5,"premium-map-route");
     const start=view.points[0],end=view.points[view.points.length-1];
-    for(const [p,name,color] of [[start,"O","#49e0a7"],[end,"D","#ef6e65"]]){
+    function drawMarker(p,name,color,isCar=false){
       const circle=document.createElementNS(NS,"circle");
       circle.setAttribute("cx",String(p[0]));circle.setAttribute("cy",String(p[1]));
-      circle.setAttribute("r","10");circle.setAttribute("fill",color);
-      circle.setAttribute("stroke","#052b35");circle.setAttribute("stroke-width","3");
+      circle.setAttribute("r",isCar?"15":"10");circle.setAttribute("fill",color);
+      circle.setAttribute("stroke",isCar?"#f5d08f":"#052b35");
+      circle.setAttribute("stroke-width",isCar?"3":"3");
       svg.append(circle);
       const label=document.createElementNS(NS,"text");
-      label.setAttribute("x",String(p[0]));label.setAttribute("y",String(p[1]+3.5));
+      label.setAttribute("x",String(p[0]));label.setAttribute("y",String(p[1]+(isCar?5:3.5)));
       label.setAttribute("text-anchor","middle");
       label.setAttribute("fill","#062630");
-      label.setAttribute("font-size","10");label.setAttribute("font-weight","800");
+      label.setAttribute("font-size",isCar?"17":"10");
+      label.setAttribute("font-weight","800");
       label.textContent=name;svg.append(label);
+    }
+    // The car glyph is NEVER rendered unless the caller used a fresh, authorized GPS fix.
+    if(live)drawMarker(start,"🚘","#f6e0ae",true);
+    else drawMarker(start,"O","#49e0a7");
+    drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
+    for(const marker of extra){
+      const projected=project([marker.lat,marker.lng]);
+      if(!projected)continue;
+      const at=[(projected[0]*view.scale-view.centerX)+width/2,
+                (projected[1]*view.scale-view.centerY)+height/2];
+      drawMarker(at,marker.label,marker.label==="D"?"#ef8f70":"#49e0a7");
     }
     }
     const credit=document.createElement("span");credit.className="premium-map-credit";
