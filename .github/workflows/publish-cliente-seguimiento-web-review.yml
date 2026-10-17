@@ -2,7 +2,7 @@ name: Publish isolated R79 web review (never overwrite production PWA)
 on:
   push:
     branches: [feature/cliente-seguimiento-integrado-20261017]
-    paths: ['.github/workflows/publish-cliente-seguimiento-web-review.yml']
+    paths: ['.github/workflows/publish-cliente-seguimiento-web-review.yml', 'web-pasajero/reservation-live.js']
   workflow_dispatch:
 permissions:
   contents: write
