@@ -1085,27 +1085,36 @@ public class MainActivity extends Activity {
         });}
 
     private void decideFixedPickup(JSONObject r,boolean accept){
+        decideFixedPickup(r,accept,null,null);
+    }
+    private void decideFixedPickup(JSONObject r,boolean accept,Runnable onSuccess,Runnable onFailure){
         String id=r.optString("id","");
         String key="fixed-"+id;
-        if(id.isEmpty()||!driverStatusInFlight.add(key))return;
+        if(id.isEmpty()||!driverStatusInFlight.add(key)){
+            toast("La solicitud ya se está procesando o no es válida");
+            if(onFailure!=null)onFailure.run();
+            return;
+        }
         toast(accept?"Aceptando traslado…":"Rechazando solicitud…");
         pool.execute(()->{
             try{
                 JSONObject result=Api.decideFixedPickup(pin,id,accept);
                 String status=result.optString("status","");
-                if(!("ACEPTADA".equals(status)&&accept||"RECHAZADA".equals(status)&&!accept))
+                if(!(accept&&"ACEPTADA".equals(status)||!accept&&"RECHAZADA".equals(status)))
                     throw new java.io.IOException("El servidor no confirmó la decisión");
                 Api.logEvent("fixed_pickup_decision",accept?"Aceptada":"Rechazada","{}");
                 runOnUiThread(()->{
                     driverStatusInFlight.remove(key);
                     toast(accept?"✓ Solicitud aceptada · precio confirmado":"Solicitud rechazada");
                     expandedId=accept?id:"";
+                    if(onSuccess!=null)onSuccess.run();
                     loadActive(true);
                 });
             }catch(Exception e){
                 runOnUiThread(()->{
                     driverStatusInFlight.remove(key);
                     toast("No se pudo "+(accept?"aceptar":"rechazar")+": "+friendly(e));
+                    if(onFailure!=null)onFailure.run();
                     loadActive(true);
                 });
             }
@@ -1135,6 +1144,9 @@ public class MainActivity extends Activity {
         prev.setAlpha(prev.isEnabled()?1f:.35f);next.setAlpha(next.isEnabled()?1f:.35f);
         prev.setOnClickListener(v->showDriverAlertAt(driverAlertIndex-1));next.setOnClickListener(v->showDriverAlertAt(driverAlertIndex+1));
 
+        final boolean fixedPrice="fixed".equals(r.optString("fare_mode"))
+            &&"PRECIO_FIJO".equals(r.optString("quote_status"))
+            &&r.optDouble("quote_final_total",0)>0;
         // Size to content instead of filling 74% of the screen with an empty panel.
         // Long routes and comments still scroll, while the actions stay visible below.
         ScrollView scroll=new ScrollView(this){
@@ -1149,7 +1161,8 @@ public class MainActivity extends Activity {
 
         LinearLayout labelRow=new LinearLayout(this);labelRow.setGravity(Gravity.CENTER_VERTICAL);TextView label=body("NUEVA SOLICITUD",11,GOLD);label.setTypeface(Typeface.DEFAULT,Typeface.BOLD);label.setLetterSpacing(.08f);label.setGravity(Gravity.CENTER);label.setPadding(dp(12),0,dp(12),0);label.setBackground(rounded(Color.argb(32,224,193,111),GOLD_DARK,16));labelRow.addView(label,new LinearLayout.LayoutParams(-2,dp(32)));TextView code=body(r.optString("code"),11,MUTED);code.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);LinearLayout.LayoutParams codeLp=new LinearLayout.LayoutParams(0,dp(32),1);codeLp.setMargins(dp(10),0,0,0);labelRow.addView(code,codeLp);content.addView(labelRow);
         TextView customer=heading(r.optString("customer_name"),23);content.addView(customer,lpMatch(-2,10,2));String dt=prettyDate(r.optString("pickup_date"))+" · "+trimTime(r.optString("pickup_time"))+" · "+r.optInt("passengers",1)+" pasajero(s)";content.addView(body(dt,13,GOLD),lpMatch(-2,0,9));
-        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(content,"comment","COMENTARIOS",com);
+        View div=new View(this);div.setBackgroundColor(Color.rgb(51,96,106));content.addView(div,new LinearLayout.LayoutParams(-1,dp(1)));addRouteBlock(content,"pin","ORIGEN",r.optString("origin_text"));addRouteBlock(content,"flag","DESTINO",r.optString("destination_text"));if(!fixedPrice){LinearLayout popupNav=new LinearLayout(this);Button popupNavOrigin=secondaryButton("IR AL ORIGEN"),popupNavDest=secondaryButton("IR AL DESTINO");popupNavOrigin.setTextSize(10);popupNavDest.setTextSize(10);popupNav.addView(popupNavOrigin,new LinearLayout.LayoutParams(0,dp(44),1));spacerH(popupNav,7);popupNav.addView(popupNavDest,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(popupNav,lpMatch(dp(46),4,4));popupNavOrigin.setOnClickListener(v->openNavigation(r.optString("origin_text","")));popupNavDest.setOnClickListener(v->openNavigation(r.optString("destination_text","")));}double km=r.optDouble("route_distance_km",0);int mins=r.optInt("route_duration_min",0);if(km>0)addDetail(content,"car","DISTANCIA",formatDistance(km)+(mins>0?" · aprox. "+mins+" min":""));String com=r.optString("comments","").trim();if(!com.isEmpty()&&!com.equalsIgnoreCase("null")&&!com.equalsIgnoreCase("undefined"))addDetail(content,"comment","COMENTARIOS",com);
+        if(!fixedPrice){
         Button openChat=secondaryButton("✉  CONVERSAR CON EL PASAJERO");
         openChat.setTextSize(11);
         content.addView(openChat,lpMatch(dp(46),5,5));
@@ -1160,19 +1173,32 @@ public class MainActivity extends Activity {
             showReservationChat(r); // Do not cover this conversation with another alert.
         });
 
-        boolean fixedPrice="fixed".equals(r.optString("fare_mode"))&&"PRECIO_FIJO".equals(r.optString("quote_status"));
+                }
+
+        // Fixed-fare trips already have a passenger-approved price.
         if(fixedPrice)addDetail(content,"ticket","PRECIO CONFIRMADO",formatMoney(r.optDouble("quote_final_total",0)));
-        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton(fixedPrice?"ACEPTAR "+formatMoney(r.optDouble("quote_final_total",0)):"PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
-        list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
-        quote.setOnClickListener(v->{
-            ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");
-            if(fixedPrice){
-                showDriverConfirm("Aceptar traslado",
-                    "¿Confirmás "+formatMoney(r.optDouble("quote_final_total",0))+" por el viaje "+r.optString("code","")+"?",
-                    "VOLVER","ACEPTAR",()->decideFixedPickup(r,true));
-            }else showQuoteDialog(r);
-            showNextDriverAlertIfAny();
-        });
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=fixedPrice?dangerButton("RECHAZAR"):secondaryButton("VER LISTA");Button quote=primaryButton(fixedPrice?"ACEPTAR":"PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
+        Runnable enableActions=()->{list.setEnabled(true);quote.setEnabled(true);};
+        if(fixedPrice){
+            list.setOnClickListener(v->{
+                list.setEnabled(false);quote.setEnabled(false);
+                decideFixedPickup(r,false,()->{
+                    ackDriverAlert(r);dialog.dismiss();showNextDriverAlertIfAny();
+                },enableActions);
+            });
+            quote.setOnClickListener(v->{
+                list.setEnabled(false);quote.setEnabled(false);
+                decideFixedPickup(r,true,()->{
+                    ackDriverAlert(r);dialog.dismiss();showNextDriverAlertIfAny();
+                },enableActions);
+            });
+        }else{
+            list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
+            quote.setOnClickListener(v->{
+                ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");
+                showQuoteDialog(r);showNextDriverAlertIfAny();
+            });
+        }
         dialog.setOnDismissListener(x->{if(driverAlertDialog==dialog)driverAlertDialog=null;});dialog.setContentView(shell);
         dialog.setOnShowListener(d->{Window dw=dialog.getWindow();if(dw!=null){dw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));dw.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);WindowManager.LayoutParams a=dw.getAttributes();a.dimAmount=.68f;dw.setAttributes(a);int width=(int)(getResources().getDisplayMetrics().widthPixels*.92f);dw.setLayout(width,WindowManager.LayoutParams.WRAP_CONTENT);dw.setGravity(Gravity.CENTER);}});dialog.show();
     }
