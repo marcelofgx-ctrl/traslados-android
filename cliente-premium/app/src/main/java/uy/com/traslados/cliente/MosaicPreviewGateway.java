@@ -43,7 +43,7 @@ public final class MosaicPreviewGateway {
     private static final Set<String> OPERATIONAL_RPC = immutableSet(
         "customer_request_pickup_v1", "customer_request_pickup_fixed_v1",
         "customer_register", "customer_login", "customer_logout",
-        "customer_claim_reservation", "customer_reservation_vehicle_v1",
+        "customer_claim_reservation", "customer_reservation_vehicle_v1", "customer_reservation_position_v1",
         "customer_check_availability_v11_4", "customer_create_reservation_v12",
         "create_reservation", "customer_trip_chat_v1", "customer_trip_chat_send_v1",
         "cancel_reservation_by_token", "customer_cancel_reservation",
