@@ -1,0 +1,66 @@
+name: QA unified web and installable PWA v80 (NO Cliente APK)
+on:
+  push:
+    branches: [feature/cliente-seguimiento-integrado-20261017]
+    paths:
+      - '.github/workflows/qa-unified-web-pwa-v80.yml'
+      - 'web-pasajero/**'
+      - 'index.html'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate all passenger JavaScript and comprehensive nonnetwork regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in web-pasajero/*.js; do node --check "$file"; done
+          for file in web-pasajero/tests/*smoke.cjs; do
+            echo "TEST $file"
+            node "$file"
+          done
+      - name: Verify frontend production files, CSP and unified install policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          root=Path('web-pasajero')
+          index=(root/'index.html').read_text()
+          app=(root/'app.js').read_text()
+          sw=(root/'sw.js').read_text()
+          home=Path('index.html').read_text()
+          manifest=json.loads((root/'manifest.webmanifest').read_text())
+          assert manifest['display']=='standalone'
+          assert manifest['start_url']=='./' and manifest['scope']=='./'
+          assert 'traslados-pwa-v80' in sw
+          assert './app.js?v=80' in index
+          assert './styles.css?v=80' in index
+          assert './reservation-live.js?v=1' in index
+          assert 'customer_reservation_position_v1' in (root/'reservation-live.js').read_text()
+          assert './web-pasajero/' in home
+          assert 'https://zetaudvvutlouiqxopvg.supabase.co' in app
+          assert 'customer_request_pickup_fixed_v1' in app
+          assert 'serviceWorker.register' in app
+          assert 'beforeinstallprompt' in app
+          assert 'download' not in index[index.find('id="view-instalar"'):index.find('id="view-instalar"')+1600].lower()
+          for text in (index,home):
+            assert 'traslados-cliente-premium-' not in text
+            assert 'install-apk-link' not in text
+          assert 'checkVerifiedApk' not in app and 'applyPublishedApk' not in app
+          assert 'public-config.js?v' not in index
+          assert not re.search(r'<script\b[^>]*https?://',index)
+          assert not any(s in index for s in ('service_role','sb_secret_'))
+          assert '<meta name="viewport"' in index
+          print('PASS: canonical production HTML, shared PWA and web; NO Client APK install controls')
+          PY
+      - name: Run existing unified asset tests
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/tests -p test_passenger_assets.py -q
