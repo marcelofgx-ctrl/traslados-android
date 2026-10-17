@@ -8,7 +8,7 @@ const js=fs.readFileSync(path.join(root,"app.js"),"utf8");
 const html=fs.readFileSync(path.join(root,"index.html"),"utf8");
 const css=fs.readFileSync(path.join(root,"styles.css"),"utf8");
 assert(html.includes('id="urgent-send"'),"Urgent pickup action must exist");
-assert(html.includes("ENVIAR SOLICITUD"),"Urgent CTA must be direct submission");
+assert(html.includes("SOLICITAR VIAJE"),"Urgent CTA must directly request a trip");
 assert(!html.includes("PROGRAMAR Y ENVIAR SOLICITUD"),"Must not pretend to send");
 assert(html.includes('id="booking-send-error"')&&html.includes('role="alert"'),"Submission errors must stay visible");
 assert(html.includes('id="booking-when-error"')&&html.includes('id="booking-fix-when"'));

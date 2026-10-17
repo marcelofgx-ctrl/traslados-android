@@ -87,7 +87,12 @@ jobs:
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/public-config.js
+          node --check web-pasajero/guest-history.js
+          node web-pasajero/tests/guest-history-v76-smoke.cjs
           node --check web-pasajero/app.js
+          node web-pasajero/tests/passenger-parity-v77-smoke.cjs
+          node web-pasajero/tests/premium-journey-v75-smoke.cjs
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/search-quality-v69-smoke.cjs
           node web-pasajero/tests/search-catalog-integrity-v69-smoke.cjs

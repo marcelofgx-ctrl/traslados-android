@@ -1,5 +1,17 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+## Paridad Cliente — integración A (17/10/2026, BORRADOR)
+
+- Rama `integration/paridad-cliente-20261017`, creada desde main `73c69e234590`. Integra selectivamente historial/cuenta/limpieza del PR #106 (`a3c486b`), frontend premium/precio fijo del PR #99 (`4b36ce2`) y herramientas mosaico del PR #101 (`79417d6`). PWA propuesta v77; NO publicada. El plan maestro sigue siendo PR #108.
+- Conserva el buscador v75 de main (incluidas sugerencias IDE y otros departamentos); no sustituirlo por el snapshot viejo del PR #99. Una sola interfaz `web-pasajero/`; shell Cliente mantiene URL oficial y modos de revisión aislados por flags.
+- P0 adicional: retorno explícito al paso premium después de login; reconstrucción del resumen programado con identidad autenticada, sin envío automático. Al confirmar respuesta válida se limpia también email del formulario, sin eliminar sesión, comprobantes, preferencias consentidas ni reservas.
+- P0 adicional: si un refresco del historial ya estaba en vuelo, se encola una consulta posterior. Evita que una lectura iniciada antes del envío oculte temporalmente el viaje nuevo. Cambios de cuenta descartan respuestas viejas y el refresco pendiente.
+- Un único reconciliador `guest-history.js`: resultados de cuenta prevalecen por ID; recibos antiguos solo con token del mismo contenedor. APIs v16/v5 y precio fijo comprobadas por firmas en Supabase, sin leer pasajeros ni modificar datos.
+- Se incorpora la dependencia mínima Conductor R9 (precio fijo: importe + aceptar/rechazar), ya existente en PR #99; no se publica APK ni se cambia Mapa. Una eventual publicación deberá coordinar Conductor compatible antes de habilitar el frontend de precio fijo.
+- QA local: 52 regresiones Node aprobadas, 2 pruebas de empaquetado Python, contrato mosaico (19 módulos/31 recursos offline), seguridad del shell Cliente y sintaxis. Nueva prueba conductual usa dos sesiones sintéticas, historial compartido, aislamiento de recibos, estados hasta finalizada, lectura en vuelo, cambio de cuenta, doble toque y reintento con el mismo UUID tras respuesta ambigua. No acredita ejecución Android física ni reservas reales.
+- Pendiente: comprobar CI/compilaciones y capturas 360/393/412 del nuevo commit; cotejo visual con las láminas aprobadas y E2E real controlado en Samsung. No afirmar ocho pantallas idénticas solo por reutilizar la web. Nada se publica automáticamente desde esta rama.
+
+
 ## PR99: primera APK de revisión aislada (15/10/2026)
 
 Hay una APK real del rediseño en la rama `feature/tu-viaje-premium-visual-20261015`: [Cliente PR99 v17 de prueba](https://raw.githubusercontent.com/marcelofgx-ctrl/traslados-android/feature/tu-viaje-premium-visual-20261015/preview-artifacts/traslados-cliente-premium-pr99-v17-prueba.apk). Compilación firmada [38770070213](https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/38770070213), 15/10/2026 13:34:58 UYT, versionCode205, mismo paquete y certificado que Cliente v16. Incluye recursos web del PR y catálogo local. **No es la versión operativa final:** sirve recursos empaquetados desde un origen separado y bloquea backend/externos para no enviar reservas reales. La web pública y el catálogo productivo no cambiaron.

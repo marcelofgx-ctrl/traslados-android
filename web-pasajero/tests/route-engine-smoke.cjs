@@ -13,6 +13,10 @@ const sandbox={
   window:root,Number,Map,encodeURIComponent,AbortController,setTimeout,clearTimeout,
   Date:{now:()=>now},
   fetch:async(url,init)=>{
+    if(String(url).includes("public_reference_quote_v1")){
+      assert.equal(init.method,"GET");assert.equal(init.credentials,"omit");
+      return {ok:true,json:async()=>({available:true,currency:"UYU",referenceFareUyu:124,rateUyuPerKm:40})};
+    }
     const cache=String(url).includes("public_cached_route_preview_v1");
     if(cache){
       cacheCalls++;

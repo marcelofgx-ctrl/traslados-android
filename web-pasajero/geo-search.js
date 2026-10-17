@@ -28,6 +28,11 @@
   }
   function words(s){return normalize(s).split(/\s+/).filter(Boolean);}
   function extract(row){
+    // OSM's airport polygon is centred inside the airfield, not at a
+    // passenger road entrance. Reuse the existing verified terminal access.
+    // Match this exact feature only: other airports and businesses keep
+    // their own coordinates. The shared ID/name also removes the duplicate.
+    if(row[0]==="w246748987")return {...namedKnown.find(p=>p.id==="uy-airport-carrasco")};
     return {id:"osm-"+row[0],name:row[1],lat:Number(row[2]),lng:Number(row[3]),
       department:row[4]||"",category:row[5]||"LUGAR",
       hint:row[6]||"",aliases:row[7]||""};

@@ -1,6 +1,8 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const items=[
+  ["w246748987","Aeropuerto Internacional de Carrasco",-34.831572,-56.026232,"CANELONES","TRANSPORTE",""],
+  ["other-airport","Aeropuerto de prueba",-34.8,-56.1,"Canelones","TRANSPORTE",""],
   ["m1","Calzados Madrid",-34.9,-56.1,"Montevideo","COMERCIO","",""],
   ["m2","Fernández Crespo y Madrid",-34.9,-56.1,"Montevideo","LUGAR","",""],
   ["c1","Costa Urbana Shopping",-34.8,-56.0,"Canelones","COMERCIO","",""],
@@ -32,6 +34,15 @@ vm.runInNewContext(src,ctx);const g=ctx.window.TrasladosGeo;
     ["Punta Carretas","Canelones"],["Playa Grande","Montevideo"]
   ])assert.equal((await g.find(q,dept)).length,0,q+" nunca debe mostrarse en "+dept);
   assert.equal(ctx.count,1,"Índice cacheado");
+  for(const query of ["Aeropuerto Internacional de Carrasco","Aeropuerto Carrasco","terminal de pasajeros","mvd"]){
+    const airports=await g.find(query,"Canelones");
+    assert.equal(airports.length,1,"No duplicar predio y terminal: "+query);
+    assert.equal(airports[0].id,"uy-airport-carrasco");
+    assert.equal(airports[0].lat,-34.83696);
+    assert.equal(airports[0].lng,-56.01638);
+    assert.match(airports[0].name,/Terminal de pasajeros/);
+  }
+  assert.equal((await g.find("Aeropuerto de prueba","Canelones"))[0].lng,-56.1,"No mover otros aeropuertos");
   assert.equal(g.catalogState,"ready");
   const bad={window:{},fetch:async()=>{throw new Error("offline")}};
   vm.runInNewContext(src,bad);
