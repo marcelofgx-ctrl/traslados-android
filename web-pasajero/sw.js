@@ -1,12 +1,13 @@
 const CACHE="traslados-cliente-pwa-v77-paridad-20261017";
+const CACHE_PREFIX="traslados-cliente-pwa-";
 const files=["./","./offline.html","./styles.css","./app.js","./premium-journey.js","./premium-journey.css","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./public-config.js","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-observability.js","./trip-board.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(files)).then(()=>self.skipWaiting()));});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith(CACHE_PREFIX)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener("fetch",e=>{
   const r=e.request;if(r.method!=="GET")return;
   const u=new URL(r.url);if(u.origin!==self.location.origin)return;
   if(r.mode==="navigate"){
-    e.respondWith(fetch(r).catch(()=>caches.match("./offline.html")));return;
+    e.respondWith(fetch(r).catch(()=>caches.open(CACHE).then(c=>c.match("./offline.html"))));return;
   }
   if(files.some(path=>new URL(path,self.registration.scope).pathname===u.pathname)){
     // Network first for code and styles. New deployments must not stay stuck
@@ -17,7 +18,7 @@ self.addEventListener("fetch",e=>{
         e.waitUntil(caches.open(CACHE).then(c=>c.put(r,copy)));
       }
       return response;
-    }).catch(()=>caches.match(r)));return;
+    }).catch(()=>caches.open(CACHE).then(c=>c.match(r).then(hit=>hit||c.match(r,{ignoreSearch:true})))));return;
   }
 });
 // A passenger must never receive fabricated push or create bookings offline.
