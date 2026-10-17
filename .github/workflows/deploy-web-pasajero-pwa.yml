@@ -138,6 +138,7 @@ jobs:
           node web-pasajero/tests/public-config-v72-smoke.cjs
           node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node --check web-pasajero/sw.js
+          node web-pasajero/tests/sw-cache-paridad-v77-smoke.cjs
           python3 - <<'PYCHECK'
           import json,pathlib
           r=pathlib.Path('web-pasajero')
