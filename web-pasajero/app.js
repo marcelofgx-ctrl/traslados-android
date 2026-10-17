@@ -358,7 +358,7 @@ async function refreshPickupPresence(force=false){
     forgetPickupEta();
     // Backend confirms only a combined public yes/no. Its cause is private and
     // may be agenda, activity, GPS or a request temporarily holding a slot.
-    paintPickupCard({presence:"busy",title:"Sin disponibilidad inmediata",
+    paintPickupCard({presence:"busy",title:"Recogida por confirmar",
       subtitle:PREVIEW_READ_ONLY?"Consultá nuevamente en unos momentos.":"No podemos asegurar una recogida ahora. Podés enviar una solicitud para que el conductor la revise; no confirma el viaje.",
       checked:checkedLabel,phase:"blocked"});
     return;
@@ -460,7 +460,7 @@ async function refreshPickupPresence(force=false){
         // La consulta ETA puede perder la frescura del GPS entre la lectura
         // de disponibilidad y la petición de ruta. No atribuirlo a desconexión.
         publicPresenceCache=null;publicPresenceAt=0;
-        paintPickupCard({presence:"busy",title:"Sin disponibilidad inmediata",
+        paintPickupCard({presence:"busy",title:"Recogida por confirmar",
           subtitle:"No podemos confirmar la recogida en este momento. Podés enviar una solicitud para revisión.",
           checked:checkedLabel,phase:"blocked"});
         return;
@@ -1374,7 +1374,7 @@ function verifiedFixedFareForBooking(p){
 }
 function renderBookingSuccess(result,mode="schedule"){
   resetNewTripDraft();
-  // A successful submission is now only visible as a server-owned reservation.
+  // The server owns the reservation. Nothing in this receipt marks it accepted.
   tripLoaded=false;
   void loadTrips({background:true});
   const box=$("booking-success");clear(box);box.hidden=false;
@@ -1383,18 +1383,21 @@ function renderBookingSuccess(result,mode="schedule"){
   const urgent=mode!=="schedule";
   text(box,"p",urgent
     ?"Recibimos tu pedido de recogida. El conductor debe responder; todavía no es un viaje confirmado."
-    :"Recibimos tu solicitud. El conductor revisará el horario y podrá ofrecerte un presupuesto; el viaje se confirma únicamente cuando lo aceptes.");
-  text(box,"div",result.code,"code");
+    :"Recibimos tu solicitud. El conductor revisará el horario y podrá ofrecerte un presupuesto; el viaje se confirma únicamente cuando lo aceptes.","success-lead");
+
+  const receipt=text(box,"div","","success-receipt");
+  text(receipt,"span","NÚMERO DE SOLICITUD","success-label");
+  text(receipt,"strong",String(result.code||"En proceso"),"code");
   if(urgent&&result.fare_mode==="fixed"&&Number(result.quote_final_total)>0){
-    text(box,"strong","Precio del viaje: "+tripMoney(Number(result.quote_final_total)));
-    text(box,"p","Precio establecido al solicitar. El conductor solo debe aceptar o rechazar; no tenés que aprobar un segundo presupuesto.");
+    text(receipt,"span","PRECIO ACORDADO","success-label");
+    text(receipt,"strong",tripMoney(Number(result.quote_final_total)),"success-price");
+    text(box,"p","El precio ya está fijado. El conductor solo debe aceptar o rechazar.","success-hint");
   }
   if(urgent&&result.pickup_date&&result.pickup_time){
-    text(box,"p",mode==="now"
-      ?"Recogida solicitada ahora, "+result.pickup_time+" h del "+result.pickup_date+"."
-      :"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+".");
+    const dateLabel=reviewDate(result.pickup_date,result.pickup_time);
+    text(box,"p",(mode==="now"?"Recogida pedida para ahora · ":"Recogida solicitada · ")+dateLabel,"success-time");
   }
-  text(box,"p","Podés seguir el estado en Mis traslados. No se realiza ningún cobro al enviar.");
+  text(box,"p","Seguí la respuesta en Mis traslados. No se realiza ningún cobro al enviar.","success-footer");
   button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
   for(const id of ["booking-preview","booking-final","review-booking","submit-actions","urgent-actions"])
     $(id).hidden=true;

@@ -7,7 +7,7 @@ const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const html=read("index.html"),css=read("premium-journey.css"),code=read("premium-journey.js"),
       app=read("app.js"),sw=read("sw.js");
 assert(html.includes('premium-journey.css?v=1')&&html.includes('premium-journey.js?v=1'));
-assert(html.indexOf('premium-journey.js?v=1')<html.indexOf('app.js?v=80'),"Presentación disponible antes de la lógica");
+assert(html.indexOf('premium-journey.js?v=1')<html.indexOf('app.js?v=81'),"Presentación disponible antes de la lógica");
 for(const name of ["premium-journey.js","premium-journey.css","premium-skyline.svg"]){
   assert(sw.includes('"./'+name+'"'),"Recurso offline faltante: "+name);
 }

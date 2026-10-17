@@ -15,7 +15,7 @@ assert(!js.slice(start,end).includes("apkLink"));
 assert(!js.slice(start,end).includes("clientApkUrl"));
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 const v=Number(html.match(/\.\/app\.js\?v=(\d+)/)?.[1]);
-assert.equal(v,80);
+assert.equal(v,81);
 assert(sw.includes("traslados-pwa-v"+v),"PWA cache matches frontend version");
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140"}={}){
   const events={},el={},steps=[];

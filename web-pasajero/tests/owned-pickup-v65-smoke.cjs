@@ -27,14 +27,14 @@ assert.equal(owned.match([{...recent,stops:[{text:"Parada"}]}],origin,destinatio
 assert.equal(owned.match([],origin,destination,[],now),null);
 assert.equal(owned.match([{...recent,pickup_mode:"schedule"}],origin,destination,[],now),null);
 const html=read("index.html"),app=read("app.js"),sw=read("sw.js"),css=read("styles.css");
-assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")<html.indexOf("app.js?v=80"));
-assert(sw.includes("traslados-pwa-v80")&&sw.includes("./owned-pickup.js"));
-assert(html.includes('styles.css?v=80')&&html.includes('app.js?v=80'));
+assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")<html.indexOf("app.js?v=81"));
+assert(sw.includes("traslados-pwa-v81")&&sw.includes("./owned-pickup.js"));
+assert(html.includes('styles.css?v=81')&&html.includes('app.js?v=81'));
 assert(html.includes('id="pickup-existing-open"'));
 assert(app.includes("window.TrasladosOwnedPickup?.match?.(tripRows"));
 assert(app.includes('if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=true'));
 assert(app.includes("if(same){"),"Direct submit must guard against duplicate own request");
-assert(app.includes('phase:"owned"')&&app.includes('title:"Sin disponibilidad inmediata"'));
+assert(app.includes('phase:"owned"')&&app.includes('title:"Recogida por confirmar"'));
 assert(css.includes('#pickup-presence[data-presence="owned"]'));
 assert(!read("owned-pickup.js").includes("fetch(")&&!read("owned-pickup.js").includes("rpc("));
 console.log("PASS v65: owned receipt, immutable server status, no duplicate, safe general availability and WebView parity");
