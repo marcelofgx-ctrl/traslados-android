@@ -20,7 +20,7 @@ assert(map.includes('drawMarker(start,"O"')&&map.includes('drawMarker(end,option
 assert(map.includes('"#489b80"'),"Non-fluorescent route stroke");
 assert(css.includes(".premium-position-metrics{display:none!important}"),"No double pickup km/ETA");
 assert(css.includes(".premium-route-summary"),"Price-first layout under map");
-assert(app.includes("premiumRouteComposer?.sync();\n  roadEngine.estimate"),"Stale fare/map cleared while new route loads");
+assert(app.includes("if(typeof premiumRouteComposer!==\"undefined\")premiumRouteComposer?.sync();\n  roadEngine.estimate"),"Stale fare cleared without breaking standalone booking renderer");
 assert(app.includes("roadEngine.verified(data)"),"Only verified route can pass to summary");
 assert(app.includes("referenceFareUyu"),"No local invented pricing");
 console.log("PASS UX-RECORRIDO-001: no duplicated pickup, verified map O/P/D, price/km/min summary, stale reset");
