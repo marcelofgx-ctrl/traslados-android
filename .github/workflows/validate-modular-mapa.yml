@@ -32,8 +32,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/mapa-quote-label
-          javac -d /tmp/mapa-quote-label \\
-            conductor/src/main/java/uy/com/traslados/conductor/ReservationQuoteLabel.java \\
+          javac -d /tmp/mapa-quote-label \
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationQuoteLabel.java \
             mapatrayectos/tests/ReservationQuoteLabelTest.java
           java -cp /tmp/mapa-quote-label ReservationQuoteLabelTest
           grep -q 'ReservationQuoteLabel.title' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
