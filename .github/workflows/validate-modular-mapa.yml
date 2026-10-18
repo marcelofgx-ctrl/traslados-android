@@ -44,6 +44,18 @@ jobs:
       - name: Verify R25.31 QA integration contract
         shell: bash
         run: python3 scripts/test_mapa_r2531_integration.py
+      - name: PRESENCE-001 startup commercial-consent contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-startup-consent
+          javac -d /tmp/mapa-startup-consent \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PickupConsentOnboardingPolicy.java \
+            mapatrayectos/tests/PickupConsentOnboardingPolicyTest.java
+          java -cp /tmp/mapa-startup-consent PickupConsentOnboardingPolicyTest
+          grep -q 'PickupConsentOnboardingPolicy.shouldOffer' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'onboarding.edit().putBoolean("shown",true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'promptPickupConsent();' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
       - name: PRESENCE-001 safe GPS publication status regression
         shell: bash
         run: |
