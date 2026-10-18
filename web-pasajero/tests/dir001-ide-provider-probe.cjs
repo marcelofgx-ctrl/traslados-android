@@ -50,12 +50,12 @@ const normalize=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
    // Still not a browser/Samsung QA: CORS header checked separately above.
    try{
      const window={TrasladosGeo:{normalize:s=>String(s||"").normalize("NFD")
-       .replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}};
+       .replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}};
      const context={window,fetch,Map,Set,Date,Number,String,Array,AbortController,
        setTimeout,clearTimeout,encodeURIComponent};
      vm.runInNewContext(fs.readFileSync("web-pasajero/address-engine.js","utf8"),context);
      const found=await window.TrasladosAddress.findAcross("Liniers 1280","Montevideo");
-     const exact=found.local.filter(item=>/\\b1280\\b/.test(String(item.address)) &&
+     const exact=found.local.filter(item=>/\b1280\b/.test(String(item.address)) &&
        /liniers/i.test(String(item.address)) && Number(item.lat)<-30 &&
        !/aproxim/i.test(String(item.stateMsg||"")));
      console.log("IDE_ENGINE_LIVE "+JSON.stringify({
