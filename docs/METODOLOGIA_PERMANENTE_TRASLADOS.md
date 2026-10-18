@@ -50,6 +50,18 @@ Además de GitHub y los documentos de esta metodología, existe una memoria brev
 
 **Puerta de bloqueo:** si una etapa falla, la tarea queda pendiente con causa, prueba y próxima acción. No avanzar a G6 por presión de versión.
 
+### Compilación escalonada y propiedad modular (ampliación del 18/10/2026)
+
+La [matriz de módulos y contratos](MATRIZ_MODULOS_CONTRATOS_TRASLADOS.md) asigna propietarios lógicos e invariantes por dominio. **No introducir nuevos módulos Gradle ni tocar la integración de Conductor durante una corrección funcional P0.**
+
+- **G1 / alcance:** declarar propietario, rutas a cambiar, contratos afectados y verificaciones previas; cotejar luego los archivos reales en el PR. El control automático estricto de cambios fuera de alcance es **pendiente**, no un gate ya implementado.
+- **Nivel A / G3 rápido:** `bash scripts/ci_fast_contracts.sh all` o grupo `reservations|navigation|trip|system`. Tests JVM puros **sin SDK Android, Gradle ni APK**; CI `fast-modular-contracts.yml`.
+- **Nivel B / G4 integración:** conservar y exigir el workflow modular Android existente `validate-modular-mapa.yml` con `assembleDebug` sobre el SHA integrado, sin retirar ninguna regresión previa. El nuevo nivel A da feedback temprano: **por ahora B sigue ejecutándose y no se ha reducido su costo total**.
+- **Nivel C / G5–G6:** una APK Release firmada de la **única** aplicación Mapa, solo tras integrar y superar CI; comprobar firma, `versionCode`, QA Samsung e historial conservado. CI firmado no es QA física ni producción.
+- **Web/PWA:** tests JS y revisión de Service Worker; jamás ejecutar Android por cambios solo web. Eliminar gradualmente transformaciones textuales de `prepareEmbeddedConductor` **solo con tests de equivalencia y migración independiente**.
+
+**Los niveles A/B/C son puertas complementarias, no alternativas intercambiables.** Mantener la trazabilidad por SHA y el registro de regresiones. Medir duración/caché antes de afirmar mejoras globales de rendimiento.
+
 ## 3. Contratos únicos y cobertura mínima
 
 | Dominio | Fuente canónica (o destino a consolidar) | Regresión indispensable |
