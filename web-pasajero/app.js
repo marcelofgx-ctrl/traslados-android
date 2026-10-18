@@ -746,7 +746,10 @@ function picker(name,mount,position){
         }finally{btn.disabled=false;}
       });
       text(btn,"span",item.name,"result-title");
-      const typeName=item.type==="place"?"◉ Lugar":"⌖ "+(String(item.point.type||"").toUpperCase()==="CALLE"?"Calle · ubicación aproximada":"Dirección");
+      const approximateAddress=String(item.point.type||"").toUpperCase()==="CALLE"||
+        /aproxim/i.test(String(item.point.stateMsg||""));
+      const typeName=item.type==="place"?"◉ Lugar":"⌖ "+
+        (approximateAddress?"Dirección · punto aproximado":"Dirección verificada");
       text(btn,"small",typeName+" · "+item.secondary,"result-subtitle");
       used++;
     };
@@ -762,6 +765,10 @@ function picker(name,mount,position){
         "Confirmá la ubicación exacta para la recogida.";
     }
     if(used){
+      if(issues.includes("directions-precision")){
+        const note=text(results,"p","La ubicación sugerida puede ser aproximada. No pudimos comprobar una posición más precisa: revisá el punto de recogida.","location-result-warning");
+        note.setAttribute("role","status");
+      }
       feedback.hidden=true;
       return;
     }
@@ -798,6 +805,7 @@ function picker(name,mount,position){
       try{
         const found=await window.TrasladosAddress.findAcross(q,dept);
         addresses=found.local;otherAddresses=found.other.slice(0,5);
+        if(found.warning)issues.push("directions-precision");
       }catch{issues.push("directions");}
       finally{done++;update();}
     })();
