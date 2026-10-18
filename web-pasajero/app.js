@@ -218,6 +218,8 @@ let lastVerifiedEtaResult=null;
 let etaRetryNotBefore=0,etaRetryIdentity="";
 let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
+// A chosen pickup point is fixed; a passive GPS fix may only OFFER an update.
+let pickupOriginMonitor=null;
 function pickupIdentityKey(){
   if(selectedPickupMode==="schedule"||!record.origin)return "";
   const {lat,lng}=record.origin;
@@ -572,6 +574,7 @@ function shiftView(name){
   if(name==="seguimiento")renderPremiumTracking();
   if(name==="cuenta")renderAccount();
   window.scrollTo({top:0,behavior:"smooth"});
+  pickupOriginMonitor?.sync();
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
 // El navegador solo puede SOLICITAR el permiso al tocar el botón.
@@ -664,6 +667,7 @@ function picker(name,mount,position){
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;box.classList.remove("is-selected");selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      if(name==="origin")pickupOriginMonitor?.onOriginSelected();
       renderRouteSummary();input.focus();
       clear(results);feedback.hidden=true;
     });
@@ -676,6 +680,7 @@ function picker(name,mount,position){
     if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
     else record.stops[position]=selected;
     clear(results);repaint();renderRouteSummary();
+    if(name==="origin")pickupOriginMonitor?.onOriginSelected();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
        !record.origin.approximate&&!record.destination.approximate&&
        !routeStepAutoAdvanced&&!document.body.classList.contains("journey-mode-quick")&&bookingSteps?.active()==="route"){
@@ -687,7 +692,8 @@ function picker(name,mount,position){
   function chooseDept(d){
     ++sequence;clearTimeout(debounce);loading(search,false);
     dept=d;depts[key]=d;highlight();
-    if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;}
+    if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      if(name==="origin")pickupOriginMonitor?.onOriginSelected();}
     clear(results);feedback.hidden=true;renderRouteSummary();
     if(input.value.trim().length>=2)void lookup();
   }
@@ -1362,6 +1368,7 @@ function newClientRequestId(){
 function resetNewTripDraft(){
   accountJourneyReturn=null;
   record.origin=null;record.destination=null;record.stops.length=0;
+  pickupOriginMonitor?.onOriginSelected();
   originPicker?.resetSelection?.();destPicker?.resetSelection?.();
   renderStops();
   for(const key of ["comments","person-name","person-phone"]){const field=$(key);if(field)field.value="";}
@@ -1440,7 +1447,7 @@ async function submitUrgentPickup(){
   const signature=JSON.stringify([p,road.distanceKm,road.durationMin,road.referenceRateUyuPerKm,road.referenceFareUyu]);
   if(!urgentAttempt||urgentAttempt.signature!==signature)
     urgentAttempt={signature,id:newClientRequestId()};
-  const btn=$("urgent-send");busy=true;loading(btn,true);
+  const btn=$("urgent-send");busy=true;pickupOriginMonitor?.sync();loading(btn,true);
   try{
     guardConnection();
     const result=await rpc("customer_request_pickup_fixed_v1",
@@ -1457,7 +1464,7 @@ async function submitUrgentPickup(){
         ?"El precio o la ruta cambiaron. Volvé a calcular el recorrido antes de pedirlo."
         :"No pudimos confirmar si se envió tu solicitud. Revisá Mis traslados antes de volver a intentar.";
     notice.hidden=false;
-  }finally{busy=false;loading(btn,false);}
+  }finally{busy=false;loading(btn,false);pickupOriginMonitor?.sync();}
 }
 
 async function submitBooking(){
@@ -1484,7 +1491,7 @@ async function submitBooking(){
     $("booking-final").hidden=false;
     suggestBookingStep(e);showError(e);return;
   }
-  const btn=$("confirm-booking");busy=true;loading(btn,true);
+  const btn=$("confirm-booking");busy=true;pickupOriginMonitor?.sync();loading(btn,true);
   try{
     guardConnection();const p=pendingReview;
     let result;
@@ -1505,7 +1512,7 @@ async function submitBooking(){
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
     renderBookingSuccess(result,"schedule");
-  }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
+  }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);pickupOriginMonitor?.sync();}
 }
 
 const tripBoard=window.TrasladosTripBoard;
@@ -2341,6 +2348,13 @@ function init(){
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
+  pickupOriginMonitor=window.TrasladosOriginDrift.mount(document,{
+    getOrigin:()=>record.origin,
+    isActive:()=>!busy&&Boolean(document.querySelector("#view-viaje.active,#view-reservar.active"))
+      &&$("booking-success").hidden
+      &&!window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops),
+    onRefresh:()=>originPicker.useCurrent()
+  });
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
   destPicker=picker("destination",$("destination-picker"),0);
