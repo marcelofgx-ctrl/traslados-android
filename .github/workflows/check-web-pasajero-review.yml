@@ -88,6 +88,10 @@ jobs:
           node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node --check web-pasajero/sw.js
+      - name: Live IDE official read-only probe (informational; no bookings)
+        continue-on-error: true
+        timeout-minutes: 1
+        run: node web-pasajero/tests/dir001-ide-provider-probe.cjs
       - name: Verify review flow and offline safety
         run: |
           python3 - <<'PY'
