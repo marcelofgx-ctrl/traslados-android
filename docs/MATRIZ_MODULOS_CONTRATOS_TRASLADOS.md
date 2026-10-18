@@ -30,7 +30,11 @@ Cada responsabilidad tiene un **propietario lógico** (reglas verificables) y ad
 
 Antes de modificar, dejar en el PR: propietario, archivos previstos, contratos/invariantes afectados, pruebas de nivel A y B, y superficie/QA. Comprobar los paths reales con `git diff --name-only <base>...HEAD`. Si aparecen archivos fuera del alcance, detener la promoción para justificar el cambio.
 
-**Futura automatización pendiente:** gate de alcance por rutas y contratos declarados, checks obligatorios, reglas de protección y comparación de métricas. **NO afirmar que hoy bloquea merges**: esta versión solo añade un runner rápido reproducible, una matriz y documentación. No retirar tests para parecer más rápido.
+**Control G1 ya incorporado:** el [PR #131](https://github.com/marcelofgx-ctrl/traslados-android/pull/131) introdujo `.github/workflows/pr-scope-guard.yml`, que compara paths exactos contra la declaración del PR y verifica responsable. **No equivale por sí solo a protección obligatoria de rama**: revisar branch rulesets antes de llamarlo bloqueo definitivo.
+
+**G4 selectivo (propuesta en revisión):** `scripts/ci_mapa_build_impact.py` clasifica el diff completo con política cerrada por defecto. **Solo** si todos los cambios corresponden a pruebas Java/Python **ya ejecutadas** por `validate-modular-mapa.yml` (y eventualmente documentos), las pruebas se ejecutan sin Gradle ni empaquetado. Cambiar Java real, recursos, Gradle, workflows, tests desconocidos o borrar/renombrar tests **siempre conserva** `:mapatrayectos:assembleDebug`; ejecuciones manuales siempre compilan. Pruebas: `python3 scripts/test_ci_mapa_build_impact.py`.
+
+**Importante:** la optimización no elimina tests existentes, no reduce cobertura de código Android y no sustituye QA Samsung. Hasta verificar CI del PR selector y un PR de prueba puramente test-only, no afirmar ahorros operativos medidos. Los checks requeridos de main, reglas de protección y perfiles de compilación siguen siendo trabajo independiente.
 
 ## Precaución con ramas
 
