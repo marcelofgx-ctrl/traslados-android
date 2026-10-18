@@ -544,8 +544,7 @@ public class TrackingService extends Service implements LocationListener {
         // Without PIN the monitor does not run; with PIN leave the reservation
         // monitor untouched and ask it to remain available while Mapa disappears.
         TransferAlerts.ensureMonitor(this);
-        boolean watching=!getSharedPreferences("driver_session",MODE_PRIVATE)
-            .getString("pin","").isEmpty();
+        boolean watching=!DriverIdentity.pin(this).isEmpty();
         android.widget.Toast.makeText(this,
             watching?"Mapa cerrado · avisos mientras siga activo el monitor":"Mapa Trayectos cerrado",
             android.widget.Toast.LENGTH_SHORT).show();
