@@ -38,6 +38,12 @@ jobs:
           java -cp /tmp/mapa-quote-label ReservationQuoteLabelTest
           grep -q 'ReservationQuoteLabel.title' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
           ! grep -q 'PRECIO FIJO ACORDADO' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+      - name: MON-001 linked-session cache privacy regression
+        shell: bash
+        run: python3 scripts/test_mapa_session_privacy.py
+      - name: Verify R25.31 QA integration contract
+        shell: bash
+        run: python3 scripts/test_mapa_r2531_integration.py
       - name: Standalone reservation rules regression
         shell: bash
         run: |

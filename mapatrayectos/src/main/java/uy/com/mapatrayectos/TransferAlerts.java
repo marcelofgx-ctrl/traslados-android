@@ -63,15 +63,36 @@ public final class TransferAlerts {
 
     /** Last authenticated server snapshot. All quick-panel views consume this same cache. */
     public static JSONArray snapshot(Context c){
+        if(DriverIdentity.pin(c).isEmpty())return new JSONArray();
         String text=c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getString("snapshot","[]");
         try{return new JSONArray(text);}catch(Exception e){return new JSONArray();}
     }
     public static long lastSync(Context c){
+        if(DriverIdentity.pin(c).isEmpty())return 0L;
         return c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getLong("synced_at",0L);
     }
     public static String syncError(Context c){
         return c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getString("sync_error","");
     }
+    /** Removes *only* temporary private UI state when linking/unlinking a driver.
+     * No stored journeys, GPS coordinates, reservations or remote rows are touched.
+     * Called after successful Keystore binding and on explicit logout.
+     */
+    public static void invalidateLocalSession(Context c){
+        c.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit()
+            .remove("snapshot").remove("synced_at").remove("pending")
+            .remove("last_text").remove("last_id").remove("last_at")
+            .remove("unseen").remove("sync_error").commit();
+        c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE).edit()
+            .remove("last_attempt_at").remove("last_success_at")
+            .remove("last_failure_at").remove("last_row_count")
+            .remove("last_error_type").commit();
+        // Chat notification cursor belongs to the previous linked session.
+        c.getSharedPreferences("driver_chat_monitor",Context.MODE_PRIVATE).edit()
+            .remove("initialized").remove("last_id").commit();
+        announce(c,ACTION_COUNT);
+    }
+
     public static void recordSyncError(Context c,Exception e){
         String message=e==null?"Error de conexión":e.getClass().getSimpleName();
         c.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit().putString("sync_error",message).apply();
@@ -96,14 +117,17 @@ public final class TransferAlerts {
         },"mapa-quick-reservations").start();
     }
     public static int pendingCount(Context c){
+        if(DriverIdentity.pin(c).isEmpty())return 0;
         return c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getInt("pending",0);
     }
 
     public static String lastText(Context c){
+        if(DriverIdentity.pin(c).isEmpty())return "Nueva solicitud de traslado";
         return c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getString("last_text","Nueva solicitud de traslado");
     }
 
     public static boolean hasUnseen(Context c){
+        if(DriverIdentity.pin(c).isEmpty())return false;
         return c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getBoolean("unseen",false);
     }
 
@@ -113,7 +137,7 @@ public final class TransferAlerts {
     }
 
     public static void updatePending(Context c,JSONArray rows){
-        if(rows==null)return;
+        if(rows==null||DriverIdentity.pin(c).isEmpty())return;
         SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
         // Handle status changes from the SAME authenticated reservation RPC.
         JSONArray prior=snapshot(c);
@@ -202,7 +226,7 @@ public final class TransferAlerts {
     }
 
     public static void reportNew(Context c,JSONObject r){
-        if(r==null)return;
+        if(r==null||DriverIdentity.pin(c).isEmpty())return;
         // The monitor and foreground fallback can receive the same request.
         // Deduplicate the IN-APP cue without suppressing the Android notification.
         String id=r.optString("id","");
