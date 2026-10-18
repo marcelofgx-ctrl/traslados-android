@@ -155,7 +155,7 @@ jobs:
           import re,zipfile
           from pathlib import Path
           info=Path('artifacts/APK_INFO.txt').read_text()
-          assert "package: name='uy.com.mapatrayectos' versionCode='84' versionName='0.1-R25.32-PRESENCE-QA'" in info,info[:260]
+          assert "package: name='uy.com.mapatrayectos' versionCode='85' versionName='0.1-R25.33-CONSENT-QA'" in info,info[:260]
           def digest(p):
             m=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',Path(p).read_text())
             assert m,'Missing signer'
