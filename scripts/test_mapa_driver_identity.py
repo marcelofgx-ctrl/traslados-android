@@ -27,7 +27,8 @@ for token in ('AndroidKeyStore','AES/GCM/NoPadding',
               'setRandomizedEncryptionRequired(true)','clear(Context context)',
               'getSharedPreferences(LEGACY','getSharedPreferences(PREF'):
     assert token in identity,token
-assert 'return legacy;' not in identity
+assert identity.count('return legacy;')==1  # only after a successful migration
+assert 'catch(Exception error){' in identity and 'return "";' in identity
 assert 'remove("pin")' in identity
 assert 'validate' not in identity.lower() or 'server' in identity.lower()
 assert "PIN" not in identity.split('return Base64.encodeToString')[1]
