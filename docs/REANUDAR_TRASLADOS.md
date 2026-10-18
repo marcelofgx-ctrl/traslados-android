@@ -1,5 +1,7 @@
 # REANUDAR TRASLADOS — contexto vivo del ecosistema
 
+> **ÚLTIMO TRASPASO DE SESIÓN 18/10/2026:** [Auditoría, arquitectura, PR #119/#122 y mapa completo de 12 capturas](CONTINUIDAD_METODOLOGIA_Y_CAPTURAS_20261018.md). Leerlo después de la metodología permanente y el registro de regresiones. Consultar status vivo de PR, builds, Pages y QA Samsung antes de programar. Las fotos están en ZIP privado entregado al usuario.
+
 > **LECTURA OBLIGATORIA 18/10/2026 · MÉTODO TRANSVERSAL ENTRE SESIONES:** [METODOLOGIA_PERMANENTE_TRASLADOS.md](METODOLOGIA_PERMANENTE_TRASLADOS.md) + [REGISTRO_DE_REGRESIONES_TRASLADOS.md](REGISTRO_DE_REGRESIONES_TRASLADOS.md). Este contexto contiene antecedentes históricos; su contenido anterior NO prevalece sobre estas reglas de arquitectura, verificación y publicación. Antes de programar, revisar estado de GitHub, PR, releases y desplegados. El producto oficial tiene TRES superficies: web pública, web/PWA pasajeros y una sola APK Mapa con Conductor integrado; NO generar APK Cliente ni APK Conductor independientes. Las compilaciones REVIEW no se confunden con producción. P0 vigente de auditoría: buscador de direcciones `findAcross` omitió fallback de `find`, estados/etiquetas de precio fijo, seguimiento GPS, recepción de peticiones y desactualización de PWA instalada. No borrar datos históricos.\n\n
 ## PR99: primera APK de revisión aislada (15/10/2026)
 
