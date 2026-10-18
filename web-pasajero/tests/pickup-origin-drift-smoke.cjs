@@ -11,7 +11,7 @@ const doc={visibilityState:"visible",getElementById:()=>createNode(),createEleme
 const win={addEventListener(name,fn){listeners[name]=fn;},
  navigator:{geolocation:{watchPosition(ok,fail,options){watches.push({ok,fail,options});return watches.length;},
  clearWatch(id){cleared.push(id);}}}};
-const ctx={window:win};vm.runInNewContext(read("pickup-origin-drift.js"),ctx);
+const ctx={window:win,Date};vm.runInNewContext(read("pickup-origin-drift.js"),ctx);
 const api=ctx.window.TrasladosOriginDrift;
 const now=Date.now();
 const fix=(lat,accuracy=7,ts=now)=>({coords:{latitude:lat,longitude:origin.lng,accuracy},timestamp:ts});
