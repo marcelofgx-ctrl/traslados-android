@@ -7,6 +7,8 @@ public class QuickReservationLogicTest {
         verify(QuickReservationLogic.active("EN_VIAJE"),"trip active");
         verify(!QuickReservationLogic.active("FINALIZADA"),"finished hidden");
         verify(!QuickReservationLogic.active("CANCELADA"),"cancelled hidden");
+        verify(!QuickReservationLogic.active("RECHAZADA_CLIENTE"),"customer rejected request hidden");
+        verify(!QuickReservationLogic.active("RECHAZADA"),"driver rejected request hidden");
         verify(QuickReservationLogic.confirmed("ACEPTADA"),"accepted upcoming");
         verify(!QuickReservationLogic.confirmed("PENDIENTE"),"pending not confirmed");
         long at=QuickReservationLogic.atMillis("2026-10-15","09:30");
