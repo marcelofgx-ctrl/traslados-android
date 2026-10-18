@@ -638,7 +638,7 @@ public class MainActivity extends Activity {
             sheetMetaText.setText(TripPlatformChoice.shouldPrompt(selectedTripPlatform)
                 ?"Elegí plataforma en el círculo superior"
                 :"Próximo: "+TripPlatformChoice.display(selectedTripPlatform)+" · GPS y recorridos");
-            modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR · INICIAR JORNADA");
+            modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR ▶ PLAY · JORNADA Y RECOGIDAS");
         }else if(shiftPaused){
             sheetMetaText.setText(zone+" · en pausa · total "+formatDuration(shiftPauseMs));
             modeText.setText("JORNADA EN PAUSA");
