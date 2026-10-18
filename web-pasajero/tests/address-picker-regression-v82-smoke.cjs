@@ -77,5 +77,9 @@ const sleep=()=>new Promise(ok=>setTimeout(ok,70));
   const across=await engine.findAcross("Arenal Grande 2274","Montevideo");
   assert(across.local.some(x=>x.address===exact.address));
   assert(across.other.some(x=>x.departamento==="Canelones"));
+  // Different house numbers must never be accepted just because the street matches.
+  const missing=await engine.findAcross("Arenal Grande 2273","Montevideo");
+  assert.equal(missing.local.length,0,"Do not invent a nearby street number");
+  assert(missing.other.length===0,"Do not invent an exact address in another department");
   console.log("PASS DIR-001: real picker retries exact address and both wrappers share a safe pipeline");
 })().catch(e=>{console.error(e);process.exitCode=1;});
