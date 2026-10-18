@@ -381,7 +381,7 @@ public class MainActivity extends Activity {
         FrameLayout closeWrap=new FrameLayout(this);closeWrap.setTag("sheet_shift_close_slider");endShiftSliderWrap=closeWrap;
         endShiftSlider=new SlideActionView(this);
         endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);
-        endShiftSlider.setLabel("DESLIZAR ← FINALIZAR JORNADA");
+        endShiftSlider.setLabel("DESLIZAR ← STOP · JORNADA Y RECOGIDAS");
         endShiftSlider.setOnCompleted(this::showEndShiftConfirmation);
         FrameLayout.LayoutParams closeLp=new FrameLayout.LayoutParams(-1,dp(61));
         closeLp.setMargins(dp(1),0,dp(1),0);closeWrap.addView(endShiftSlider,closeLp);
