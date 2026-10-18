@@ -15,6 +15,9 @@
   const terms=q=>norm(q).split(" ").filter(w=>w&&!/^\d+$/.test(w)&&!ignored.has(w));
   const isStreet=item=>String(item?.type||"").toUpperCase()==="CALLE";
   const coords=item=>({lat:Number(item?.lat),lng:Number(item?.lng)});
+  const isApproximate=item=>isStreet(item)||
+    /aproxim/i.test(String(item?.stateMsg||""));
+  const isPrecise=item=>uy(coords(item).lat,coords(item).lng)&&!isApproximate(item);
   function score(item,q,department){
     if(!item?.address)return -1;
     const address=norm(item.address),requestedDept=norm(department);
@@ -66,28 +69,34 @@
     const trimmed=String(q||"").trim();
     if(trimmed.length<3)return {local:[],other:[]};
     const preferred=norm(preferredDepartment);
-    let candidates=[],candidatesError=null;
+    let candidates=[],candidatesError=null,warning=null;
     try{
       candidates=verified(await query("candidates",trimmed,40),trimmed,null);
     }catch(error){candidatesError=error;}
     const local=candidates.filter(item=>!preferred||norm(item.departamento)===preferred);
     const other=candidates.filter(item=>preferred&&norm(item.departamento)!==preferred);
-    // A result in Florida/Canelones (or a CALLE without an exact door number)
-    // must NOT prevent checking the exact Montevideo street address.
-    if(preferred&&local.length===0&&/\b\d{1,5}\b/.test(trimmed)){
+    // Exact address priority: a same-department approximate candidate is
+    // NOT proof that the requested door is geocoded precisely.
+    if(preferred&&!local.some(isPrecise)&&/\b\d{1,5}\b/.test(trimmed)){
       const suffix=norm(trimmed).includes(preferred)?"":", "+preferredDepartment;
       try{
         const exact=verified(
           await query("direcUnica",trimmed+suffix,12),trimmed,preferredDepartment);
-        const seen=new Set(local.map(item=>norm(item.address)+"|"+norm(item.departamento)));
         for(const item of exact){
-          const id=norm(item.address)+"|"+norm(item.departamento);
-          if(!seen.has(id)){local.push(item);seen.add(id);}
+          const id=norm(item.address)+"|"+norm(item.departamento)+"|"+norm(item.localidad);
+          const index=local.findIndex(x=>norm(x.address)+"|"+norm(x.departamento)+
+            "|"+norm(x.localidad)===id);
+          if(index<0)local.push(item);
+          else if(isPrecise(item)&&!isPrecise(local[index]))local[index]=item;
         }
+        // If an approximate candidate is still necessary, mark it honestly;
+        // always prefer a verified precise location when present.
+        local.sort((a,b)=>Number(isPrecise(b))-Number(isPrecise(a)));
       }catch(error){
-        // Distinguish unavailable IDE service from a genuinely absent address.
-        // A failed exact lookup is not proof that the address does not exist.
-        throw error;
+        if(!local.length)throw error;
+        // Preserve verified approximate suggestions when IDE's second request
+        // fails, but never present them as precise.
+        warning="No pudimos comprobar una ubicación más precisa. Revisá el punto antes de solicitar.";
       }
     }else if(candidatesError){
       throw candidatesError;
@@ -95,7 +104,7 @@
     // A candidate failure can still be recovered by a successful direct
     // lookup; otherwise do not silently present a false "not found".
     if(candidatesError&&!local.length)throw candidatesError;
-    return {local:local.slice(0,12),other:other.slice(0,8)};
+    return {local:local.slice(0,12),other:other.slice(0,8),warning};
   }
   async function find(q,department){
     const found=await searchVerified(q,department);
@@ -110,7 +119,7 @@
       throw new Error("La dirección seleccionada ya no coincide con la búsqueda.");
     let p=coords(item);
     if(uy(p.lat,p.lng))
-      return {...p,approximate:isStreet(item)||String(item.stateMsg||"").toLowerCase().includes("aproxim")};
+      return {...p,approximate:isApproximate(item)};
     // No utilizar nunca coordenadas 0,0 ni asignar las del centro del departamento.
     // /direcUnica consulta la geometría oficial para la calle elegida.
     const rows=verified(await query("direcUnica",item.address,15),asked,realDepartment);
@@ -119,8 +128,7 @@
       rows.find(x=>uy(coords(x).lat,coords(x).lng));
     if(!matched)throw new Error("Encontramos la calle, pero no su punto exacto. Agregá número o esquina para ubicarla.");
     p=coords(matched);
-    return {...p,approximate:isStreet(item)||isStreet(matched)||
-      String(matched.stateMsg||"").toLowerCase().includes("aproxim")};
+    return {...p,approximate:isApproximate(item)||isApproximate(matched)};
   }
   async function reverse(lat,lng){
     if(!uy(Number(lat),Number(lng)))throw new Error("Punto fuera de Uruguay");
