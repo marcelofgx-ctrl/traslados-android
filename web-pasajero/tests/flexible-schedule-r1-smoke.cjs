@@ -3,7 +3,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,".."),read=x=>fs.readFileSync(path.join(root,x),"utf8");
 const html=read("index.html"),sw=read("sw.js"),app=read("app.js");
 assert(html.includes('app.js?v=81')&&html.includes('styles.css?v=81'));
-assert(sw.includes('traslados-pwa-v81'));
+assert(sw.includes('traslados-pwa-v82'));
 assert(app.includes('if(!availability?.requestable)'),"Pending request must not be confused with free confirmed slot");
 assert(app.includes("customer_check_availability_v11_4"));
 assert(app.includes("customer_create_reservation_v12"));
