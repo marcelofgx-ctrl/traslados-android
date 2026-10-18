@@ -46,4 +46,12 @@ for key in ('"snapshot"','"pending"','"last_text"','"last_id"','"unseen"','"sync
     assert key in clearer,f"Cache field not invalidated: {key}"
 assert "TripDb" not in clearer and "TrackDb" not in clearer
 assert "DELETE FROM" not in clearer and "truncate" not in clearer.lower()
+monitor=Path("conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java").read_text()
+assert 'notifyNew(r,pin)' in monitor
+assert 'private void notifyNew(JSONObject r,String linkedPin)' in monitor
+assert 'linkedPin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this))' in monitor
+assert 'if(!pin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this)))' in monitor
+# The old request must not deliver passenger-chat notification after logout.
+chat=method(monitor,"private void checkDriverMessages(String pin)")
+assert "pin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this))" in chat
 print("PASS MON-001: linked-identity read guards and display-only cache invalidation")
