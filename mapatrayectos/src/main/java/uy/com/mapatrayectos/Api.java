@@ -63,7 +63,7 @@ public final class Api {
             .putBoolean("service_play_requested",false)
             .putBoolean("enabled",false).apply();
         PLAY_STOP_QUEUE.execute(()->{
-            try{setPickupConsent("",false);}
+            try{setPickupConsentInternal("",false,false);}
             catch(Exception error){recordPresence(PickupPresenceDiagnostic.failure(error),false,false);}
         });
     }
@@ -106,11 +106,16 @@ public final class Api {
 
     /** Explicit OFF wins over retries. PIN is not stored in plaintext. */
     public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
+        return setPickupConsentInternal(pin,enabled,true);
+    }
+    private static boolean setPickupConsentInternal(String pin,boolean enabled,
+            boolean updateRequestedState)throws Exception{
         // Privacy first: OFF must stop future GPS uploads even if offline.
         // Remote presence will expire after 90 s if the revocation request fails.
         if(!enabled)pickupDemandExpiresAt=0L;
-        if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
-            .edit().putBoolean("service_play_requested",false).apply();
+        if(!enabled&&updateRequestedState&&APP!=null)
+            APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+                .edit().putBoolean("service_play_requested",false).apply();
         if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .edit().putBoolean("enabled",false).apply();
         registerDevice();
