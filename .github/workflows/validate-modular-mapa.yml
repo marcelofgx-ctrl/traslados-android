@@ -37,6 +37,7 @@ jobs:
             mapatrayectos/tests/ReservationQuoteLabelTest.java
           java -cp /tmp/mapa-quote-label ReservationQuoteLabelTest
           grep -q 'ReservationQuoteLabel.title' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          ! grep -q 'PRECIO FIJO ACORDADO' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
       - name: Standalone reservation rules regression
         shell: bash
         run: |
