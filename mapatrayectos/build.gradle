@@ -17,8 +17,8 @@ android {
         minSdk 26
         targetSdk 35
         // QA branch only: new installable Mapa review, not a stable release.
-        versionCode 84
-        versionName '0.1-R25.32-PRESENCE-QA'
+        versionCode 85
+        versionName '0.1-R25.33-CONSENT-QA'
     }
 
     signingConfigs {

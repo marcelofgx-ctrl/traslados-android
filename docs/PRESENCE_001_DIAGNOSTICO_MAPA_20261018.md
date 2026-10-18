@@ -25,3 +25,7 @@ Se prepara una compilación firmada R25.32-PRESENCE-QA, versionCode 84, con mism
 ## Invitación al comienzo (siguiente revisión Android)
 
 Al abrir Mapa, tras los permisos Android y la vinculación del conductor, si falta la autorización comercial se ofrece **una sola vez** el cuadro original «Autorizar GPS para recogidas». No se comparte nada por el mero hecho de abrir la app: se requiere pulsar **AUTORIZAR** y obtener respuesta del servidor. No mostrar mientras el conductor esté en viaje, el vehículo se mueva o haya una pantalla de permisos pendiente. Cancelar o desactivar expresamente evita avisos repetidos; el ajuste manual sigue en el menú. Los cambios están protegidos por `PickupConsentOnboardingPolicyTest` y la compilación nativa integrada; requieren nueva APK firmada para probarlos en Samsung.
+
+## Candidata firmada R25.33 para consentimiento al inicio
+
+`versionCode 85`, `versionName 0.1-R25.33-CONSENT-QA`, mismo `applicationId` y certificado de la R25.30/R25.32. Se emite únicamente un artefacto de GitHub Actions, **no una publicación estable**. Debe verificarse el aviso de primer inicio, rechazo respetado, conductor vinculado, ausencia durante viaje y confirmación de presencia desde el servidor antes de promocionar.
