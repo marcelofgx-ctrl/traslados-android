@@ -9,7 +9,8 @@ on:
       - 'settings.gradle'
       - 'conductor/build.gradle'
       - 'scripts/test_mapa_datos.py'
-      - 'scripts/test_mapa_reception.py'\n      - 'scripts/test_mapa_driver_identity.py'
+      - 'scripts/test_mapa_reception.py'
+      - 'scripts/test_mapa_driver_identity.py'
       - 'core-reservations/**'
       - 'conductor/src/**'
   workflow_dispatch:
@@ -73,7 +74,7 @@ jobs:
           assert s.count("applicationId 'uy.com.mapatrayectos'")==1
           assert s.count('versionCode 82')==1
           assert s.count("versionName '0.1-R25.30'")==1
-          print('PASS: Mapa original code81 > R25.28 code80')
+          print('PASS: Mapa original code82 > R25.29 code81')
           PY
       - name: Decode exact historical icons/fonts/alerts (no changes)
         shell: bash
@@ -124,13 +125,13 @@ jobs:
           mkdir -p artifacts /tmp/mapa-base
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > artifacts/APK_INFO.txt
-          gh release download mapa-r25.30-identidad-review-20261018 -p 'Mapa_Trayectos_R25_30_Identidad_REVIEW.apk' -D /tmp/mapa-base
+          gh release download mapa-r25.29-recepcion-review-20261017 -p 'Mapa_Trayectos_R25_29_Recepcion_REVIEW.apk' -D /tmp/mapa-base
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs /tmp/mapa-base/*.apk > /tmp/mapa-old-cert.txt
           python3 - <<'PY'
           import re,zipfile
           from pathlib import Path
           info=Path('artifacts/APK_INFO.txt').read_text()
-          assert "package: name='uy.com.mapatrayectos' versionCode='81' versionName='0.1-R25.30'" in info,info[:260]
+          assert "package: name='uy.com.mapatrayectos' versionCode='82' versionName='0.1-R25.30'" in info,info[:260]
           def digest(p):
             m=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',Path(p).read_text())
             assert m,'Missing signer'
