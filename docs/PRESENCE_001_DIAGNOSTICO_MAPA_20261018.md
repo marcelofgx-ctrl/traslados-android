@@ -17,3 +17,7 @@ Incidencia: captura Samsung con jornada activa, GPS ±4 m y 45,1 km; al mismo ti
 - En Samsung, instalar encima solo una APK de revisión con misma firma y versionCode mayor cuando exista. No desinstalar y no borrar históricos.
 - Revisar último envío local, reautorizar si corresponde, esperar ~60 segundos y confirmar en Supabase sin consultar ni mostrar GPS privado. Después comprobar desde PWA disponibilidad y ETA, siempre sujetas a ruta verificada y agenda.
 - No marcar solucionado hasta CI integrado, firma del APK QA, prueba Samsung real y comprobación del servidor. No publicar estable.
+
+## APK de revisión candidata
+
+Se prepara una compilación firmada R25.32-PRESENCE-QA, versionCode 84, con mismo applicationId y verificación contra el certificado R25.30 (también usado por R25.31). GitHub Actions genera un artefacto temporal; **no publica releases ni modifica la web**. La descarga no estará disponible hasta verificar SUCCESS, SHA exacto y checksum.
