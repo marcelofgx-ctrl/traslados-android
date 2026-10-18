@@ -1,0 +1,30 @@
+name: G1 PR scope guard (no build)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source for the PR diff
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch PR head ref (works also for fork PRs)
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "refs/pull/$PR_NUMBER/head"
+      - name: Python-only scope regression
+        shell: bash
+        run: python3 scripts/test_ci_pr_scope.py
+      - name: Compare G1 declaration with all changed paths
+        shell: bash
+        run: python3 scripts/ci_pr_scope.py
