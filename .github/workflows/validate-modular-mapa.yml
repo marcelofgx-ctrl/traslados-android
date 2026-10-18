@@ -27,6 +27,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Native fixed-price vs legacy-budget label contract (STATUS-001)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-quote-label
+          javac -d /tmp/mapa-quote-label \\
+            conductor/src/main/java/uy/com/traslados/conductor/ReservationQuoteLabel.java \\
+            mapatrayectos/tests/ReservationQuoteLabelTest.java
+          java -cp /tmp/mapa-quote-label ReservationQuoteLabelTest
+          grep -q 'ReservationQuoteLabel.title' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
       - name: Standalone reservation rules regression
         shell: bash
         run: |
