@@ -9,6 +9,8 @@ on:
       - 'build.gradle'
       - 'gradle.properties'
       - '.github/workflows/validate-modular-mapa.yml'
+      - 'scripts/ci_mapa_build_impact.py'
+      - 'scripts/test_ci_mapa_build_impact.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,12 +20,29 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Make PR head available for complete change assessment
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head" || echo "::warning::PR head fetch unavailable; classifier will require full build"
+      - name: Verify conservative G4 classifier and plan integration
+        id: impact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_ci_mapa_build_impact.py
+          python3 scripts/ci_mapa_build_impact.py
       - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - name: Gradle 8.9 reusable cache
+        if: steps.impact.outputs.build_required == 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
@@ -115,6 +134,7 @@ jobs:
         run: |
           python3 mapatrayectos/tests/chat-flow-contract-smoke.py
       - name: Prepare existing Mapa offline assets
+        if: steps.impact.outputs.build_required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -124,6 +144,7 @@ jobs:
           base64 --decode mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 \
             > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
       - name: Verify Android 35 SDK
+        if: steps.impact.outputs.build_required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -136,6 +157,7 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Validate core build and native Mapa integration
+        if: steps.impact.outputs.build_required == 'true'
         shell: bash
         run: |
           # Un único binario Android de verificación: Mapa Trayectos.
@@ -152,8 +174,15 @@ jobs:
       - name: Summarize Gradle build duration and cache reuse
         if: always()
         shell: bash
+        env:
+          FULL_BUILD: ${{ steps.impact.outputs.build_required }}
         run: |
           set -euo pipefail
+          if [ "$FULL_BUILD" = 'false' ]; then
+            echo "### Mapa G4 · tests-only PR: no Android package compiled" >> "$GITHUB_STEP_SUMMARY"
+            echo "All existing standalone rules and Python regressions ran. No Android sources were changed." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           log="$RUNNER_TEMP/mapa-gradle-build.log"
           {
             echo "### Mapa modular — compilación de validación"
@@ -175,7 +204,7 @@ jobs:
             echo "La duración total de GitHub Actions incluye preparación del SDK y checkout; no debe confundirse con Gradle ni con una compilación incremental local."
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Retain short-lived Gradle performance profile
-        if: always()
+        if: always() && steps.impact.outputs.build_required == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: mapa-modular-gradle-profile
