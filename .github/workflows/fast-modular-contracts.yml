@@ -1,0 +1,44 @@
+name: Fast modular contracts (without Gradle or APK)
+
+on:
+  pull_request:
+    paths:
+      - 'core-reservations/src/**'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/NavigationHeadingPolicy.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/TripPlatformChoice.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/TripClosePolicy.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusPolicy.java'
+      - 'mapatrayectos/tests/QuickReservationLogicTest.java'
+      - 'mapatrayectos/tests/NavigationHeadingPolicyTest.java'
+      - 'mapatrayectos/tests/TripPlatformChoiceTest.java'
+      - 'mapatrayectos/tests/TripClosePolicyTest.java'
+      - 'mapatrayectos/tests/SystemStatusPolicyTest.java'
+      - 'scripts/ci_fast_contracts.sh'
+      - '.github/workflows/fast-modular-contracts.yml'
+  workflow_dispatch:
+    inputs:
+      group:
+        description: Target one contract owner for a quick diagnosis
+        required: true
+        default: all
+        type: choice
+        options: [all, reservations, navigation, trip, system]
+
+permissions:
+  contents: read
+
+jobs:
+  pure-java:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout exact PR SHA
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Run fast contracts without Gradle or Android SDK
+        shell: bash
+        run: bash scripts/ci_fast_contracts.sh "${{ inputs.group || 'all' }}"
