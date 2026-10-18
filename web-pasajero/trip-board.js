@@ -47,17 +47,18 @@
     // Unknown legacy booking: the original conservative behavior remains.
     return pickup!==null&&at-pickup>=QUOTE_WINDOW_MS;
   }
+  function isFixedFare(r){return r?.fare_mode==="fixed"||r?.quote_status==="PRECIO_FIJO";}
   function metadata(r){
     const status=String(r?.status||"PENDIENTE");
     const q=String(r?.quote_status||"SIN_PRESUPUESTO");
     const total=Number(r?.quote_final_total||0);
-    const quotePending=q==="ENVIADO"&&total>0&&status==="PENDIENTE";
+    const fixed=isFixedFare(r);
+    const quotePending=!fixed&&q==="ENVIADO"&&total>0&&status==="PENDIENTE";
     const quoteExpired=quotePending&&expiredQuote(r);
     const urgentExpired=expiredImmediate(r);
-    const fixed=r?.fare_mode==="fixed";
     if(terminal.has(status)){
       if(status==="FINALIZADA")return {label:"Finalizada",tone:"complete",icon:"check-circle",rank:5,action:"Ver detalle"};
-      if(status==="RECHAZADA_CLIENTE")return {label:"Presupuesto rechazado",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
+      if(status==="RECHAZADA_CLIENTE")return {label:fixed?"Rechazada":"Presupuesto rechazado",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
       return {label:status==="CANCELADA"?"Cancelada":"Rechazada",tone:"muted",icon:"x-circle",rank:5,action:"Ver detalle"};
     }
     if(quoteExpired)return {label:"Horario vencido",tone:"expired",icon:"clock-alert",rank:1,action:"Ver detalle"};
@@ -70,8 +71,8 @@
       return {label:"Conductor llegó",tone:"moving",icon:"map-pin-check",rank:3,action:"Ver detalle"};
     if(status==="EN_CAMINO")return {label:"Conductor en camino",tone:"moving",icon:"car-front",rank:3,action:"Ver llegada"};
     if(status==="EN_PUNTO")return {label:"Conductor llegó",tone:"moving",icon:"map-pin-check",rank:3,action:"Ver detalle"};
-    if(accepted.has(status)||q==="ACEPTADO")return {label:"Confirmada",tone:"confirmed",icon:"check-circle-2",rank:2,action:"Ver detalle"};
-    if(fixed&&q==="PRECIO_FIJO"&&status==="PENDIENTE")
+    if(accepted.has(status)||(!fixed&&q==="ACEPTADO"))return {label:"Confirmada",tone:"confirmed",icon:"check-circle-2",rank:2,action:"Ver detalle"};
+    if(fixed&&status==="PENDIENTE")
       return {label:"Esperando al conductor",tone:"pending",icon:"clock-3",rank:0,action:"Seguir solicitud"};
     if(quotePending)return {label:"Presupuesto para responder",tone:"attention",icon:"wallet",rank:1,action:"Aceptar o rechazar"};
     if(q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
@@ -83,10 +84,10 @@
     const meta=metadata(r);
     if(meta.tone==="expired")return "La hora prevista ya pasó sin confirmación. Podés solicitar otro traslado; esta reserva no se cancela automáticamente.";
     if(meta.tone==="attention")return "Tenés un presupuesto para responder. Revisá el importe y elegí si lo aceptás.";
-    if(meta.tone==="pending")return r?.fare_mode==="fixed"
+    if(meta.tone==="pending")return isFixedFare(r)
       ?"Recibimos tu viaje con precio cerrado. El conductor puede aceptarlo o rechazarlo; no necesitás aprobar otro presupuesto."
       :"Recibimos tu solicitud. El conductor la revisará.";
-    if(meta.tone==="confirmed")return r?.fare_mode==="fixed"
+    if(meta.tone==="confirmed")return isFixedFare(r)
       ?"El conductor aceptó tu viaje y el precio acordado. Podés escribirle mientras prepara la recogida."
       :"Tu traslado está confirmado. Podés escribirle al conductor.";
     if(meta.tone==="moving"){
@@ -100,6 +101,32 @@
     if(meta.tone==="complete")return "El viaje terminó. Podés consultar sus detalles y mensajes.";
     if(meta.tone==="muted")return "Esta solicitud está cerrada. Sus datos y mensajes siguen disponibles.";
     return meta.label;
+  }
+  // Shared display projection: fixed price is an acceptance of the trip,
+  // NOT a quote. Legacy quotes keep their documented timeline.
+  // Events carry only real timestamps from the backend; no implied dates.
+  function timeline(r){
+    const events=[],fixed=isFixedFare(r),status=String(r?.status||"PENDIENTE");
+    const add=(label,at)=>{
+      if(!at||!Number.isFinite(Date.parse(String(at))))return;
+      events.push({label,at:String(at)});
+    };
+    add("Solicitud registrada",r?.created_at);
+    if(fixed){
+      if(accepted.has(status)||moving.has(status)||status==="FINALIZADA")
+        add("Conductor aceptó tu viaje",r?.confirmed_at||r?.quote_accepted_at);
+    }else{
+      add("Presupuesto enviado",r?.quote_sent_at);
+      add("Presupuesto aceptado",r?.quote_accepted_at);
+      if(r?.confirmed_at&&r.confirmed_at!==r.quote_accepted_at)
+        add("Traslado confirmado",r.confirmed_at);
+    }
+    if(r?.pickup_phase==="EN_CAMINO"||r?.pickup_phase==="EN_PUNTO")
+      add(r.pickup_phase==="EN_PUNTO"?"Conductor llegó a recoger":"Conductor en camino",
+        r.pickup_phase_updated_at);
+    events.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
+    const currentLabel=(terminal.has(status)||status==="EN_VIAJE")?metadata(r).label:null;
+    return {events,currentLabel};
   }
   function isHistory(r){return terminal.has(r?.status)||expiredQuote(r)||expiredImmediate(r);}
   function dateLabel(day,groupBy){
@@ -176,6 +203,6 @@
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
-    metadata,guidance,isHistory,expiredQuote,expiredImmediate,isImmediateRequest,compactDay,groupReservations,notifications,snapshot,signature
+    metadata,guidance,timeline,isFixedFare,isHistory,expiredQuote,expiredImmediate,isImmediateRequest,compactDay,groupReservations,notifications,snapshot,signature
   });
 })(window);
