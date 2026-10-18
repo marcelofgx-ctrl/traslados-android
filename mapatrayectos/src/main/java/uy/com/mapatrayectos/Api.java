@@ -22,6 +22,14 @@ public final class Api {
     }
     private static final java.util.concurrent.atomic.AtomicBoolean PRESENCE_BUSY=
         new java.util.concurrent.atomic.AtomicBoolean(false);
+    // Consent operations have FIFO ordering: a slow Play can never override Stop.
+    private static final java.util.concurrent.ExecutorService PLAY_STOP_QUEUE=
+        java.util.concurrent.Executors.newSingleThreadExecutor();
+    private static final java.util.concurrent.atomic.AtomicBoolean PLAY_AUTH_PENDING=
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    private static volatile long LAST_PLAY_ATTEMPT_MS=0L;
+    private static final long PLAY_RETRY_MS=60000L;
+
     public static boolean pickupPresenceEnabled(){
         return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .getBoolean("enabled",false);
@@ -30,11 +38,74 @@ public final class Api {
         return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .getBoolean("manually_busy",false);
     }
-    /** User PIN is used only for one-time device linking, never persisted. */
+    /** The secure driver binding already in this phone authorizes Play.
+     * There is no PIN field or second confirmation during daily Play/Stop.
+     * If never paired, no commercial position is published.
+     */
+    public static void commercialPlay(){
+        if(APP==null)return;
+        APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
+            .putBoolean("service_play_requested",true)
+            .putBoolean("manually_busy",false).apply();
+        tryCommercialPlay();
+    }
+
+    /** Stop immediately blocks local publication, even without network.
+     * Remote location clears on successful revocation, otherwise expires.
+     */
+    public static void commercialStop(){
+        if(APP==null)return;
+        pickupDemandExpiresAt=0L;
+        APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
+            .putBoolean("service_play_requested",false)
+            .putBoolean("enabled",false).apply();
+        PLAY_STOP_QUEUE.execute(()->{
+            try{setPickupConsent("",false);}
+            catch(Exception error){recordPresence(PickupPresenceDiagnostic.failure(error),false,false);}
+        });
+    }
+
+    public static void retryCommercialPlay(boolean shiftActive){
+        if(APP==null)return;
+        SharedPreferences prefs=APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE);
+        if(!PlayStopPresencePolicy.shouldRetry(
+            shiftActive,prefs.getBoolean("service_play_requested",false),
+            pickupPresenceEnabled(),!DriverIdentity.pin(APP).isEmpty()))return;
+        tryCommercialPlay();
+    }
+
+    private static void tryCommercialPlay(){
+        if(APP==null||pickupPresenceEnabled())return;
+        long now=System.currentTimeMillis();
+        if(now-LAST_PLAY_ATTEMPT_MS<PLAY_RETRY_MS||
+            !PLAY_AUTH_PENDING.compareAndSet(false,true))return;
+        LAST_PLAY_ATTEMPT_MS=now;
+        PLAY_STOP_QUEUE.execute(()->{
+            try{
+                if(APP==null)return;
+                SharedPreferences pref=APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE);
+                if(!pref.getBoolean("service_play_requested",false))return;
+                String linked=DriverIdentity.pin(APP); // Android Keystore, never logged.
+                if(linked.isEmpty()){
+                    recordPresence("driver_not_linked",false,false);
+                    return;
+                }
+                boolean ok=setPickupConsent(linked,true);
+                if(!ok)recordPresence("consent_failed",false,false);
+                else recordPresence("consent_ready",false,false);
+            }catch(Exception error){
+                recordPresence(PickupPresenceDiagnostic.failure(error),false,false);
+            }finally{PLAY_AUTH_PENDING.set(false);}
+        });
+    }
+
+    /** Explicit OFF wins over retries. PIN is not stored in plaintext. */
     public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
         // Privacy first: OFF must stop future GPS uploads even if offline.
         // Remote presence will expire after 90 s if the revocation request fails.
         if(!enabled)pickupDemandExpiresAt=0L;
+        if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+            .edit().putBoolean("service_play_requested",false).apply();
         if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .edit().putBoolean("enabled",false).apply();
         registerDevice();
