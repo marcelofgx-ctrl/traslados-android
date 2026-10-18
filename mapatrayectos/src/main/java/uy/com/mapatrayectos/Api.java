@@ -37,6 +37,9 @@ public final class Api {
         if(!enabled)pickupDemandExpiresAt=0L;
         if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .edit().putBoolean("enabled",false).apply();
+        // Respect explicit driver opt-out: never nag at the next startup.
+        if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence_onboarding_v1",Context.MODE_PRIVATE)
+            .edit().putBoolean("shown",true).apply();
         registerDevice();
         String[] ids=credentials();JSONObject body=new JSONObject();
         body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
