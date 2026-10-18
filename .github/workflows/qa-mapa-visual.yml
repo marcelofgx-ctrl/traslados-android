@@ -4,7 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
+      # This job builds an APK AND launches an emulator. Java-only tests do
+      # not change the UI under test; preserve full Visual QA for all source,
+      # resources, Gradle and workflow modifications.
+      # Ordering matters: the negative pattern MUST follow the positive one.
       - 'mapatrayectos/**'
+      - '!mapatrayectos/tests/**'
       - '.github/workflows/qa-mapa-visual.yml'
   workflow_dispatch:
 
