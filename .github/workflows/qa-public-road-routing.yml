@@ -1,3 +1,5 @@
+# PICKUP-ETA: diagnóstico bajo petición (18/10/2026).
+# Solo coordenadas públicas fijas de QA; NUNCA GPS del conductor.
 name: QA motor vial para recogidas
 on:
   workflow_dispatch:
