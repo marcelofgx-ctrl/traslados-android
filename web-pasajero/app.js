@@ -1531,7 +1531,7 @@ function tripLine(parent,icon,label){
   text(el,"span",icon).setAttribute("aria-hidden","true");text(el,"span",label);
 }
 function tripProgress(parent,meta,r){
-  const stages=r.fare_mode==="fixed"?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
+  const stages=tripBoard.isFixedFare(r)?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
   const rail=text(parent,"div","","trip-steps");
   rail.setAttribute("aria-label","Etapa actual: "+meta.label);
   stages.forEach((stage,i)=>{
@@ -1544,21 +1544,16 @@ function tripProgress(parent,meta,r){
 }
 function tripTimeline(parent,r){
   const events=text(parent,"div","","trip-events");
-  function event(name,time){
-    if(!time)return;
+  const projected=tripBoard.timeline(r);
+  projected.events.forEach(({label,at})=>{
     const line=text(events,"div","","trip-event");
     text(line,"span","","trip-event-dot");
-    const info=text(line,"div",name);text(info,"time"," · "+tripDateTime(time));
-  }
-  event("Solicitud registrada",r.created_at);
-  event("Presupuesto enviado",r.quote_sent_at);
-  event("Presupuesto aceptado",r.quote_accepted_at);
-  if(r.pickup_phase==="EN_CAMINO")event("Conductor en camino",r.pickup_phase_updated_at);
-  if(r.pickup_phase==="EN_PUNTO")event("Conductor llegó",r.pickup_phase_updated_at);
-  if(r.confirmed_at&&r.confirmed_at!==r.quote_accepted_at)event("Traslado confirmado",r.confirmed_at);
-  // No atribuir un horario a EN_VIAJE o FINALIZADA si la API no lo proporciona.
-  if(["EN_VIAJE","FINALIZADA","CANCELADA","RECHAZADA"].includes(r.status))
-    text(events,"div","Estado actual: "+statusName(r.status),"trip-event");
+    const info=text(line,"div",label);
+    text(info,"time"," · "+tripDateTime(at));
+  });
+  // The current terminal status may be shown without fabricating a timestamp.
+  if(projected.currentLabel)
+    text(events,"div","Estado actual: "+projected.currentLabel,"trip-event");
 }
 
 function tripChatAuth(r,guestToken){
