@@ -1123,6 +1123,7 @@ public class MainActivity extends Activity {
             return;
         }
         String[] opts={busy?"Activar disponibilidad (verde)":"Marcar ocupado (rojo · Uber / Cabify)",
+            "Reautorizar este teléfono para recogidas",
             "Desactivar y borrar ubicación"};
         new AlertDialog.Builder(this).setTitle(busy?"● ROJO · Recogidas en pausa":"● VERDE · Recogidas activadas")
             .setMessage("El estado automático usa jornada, GPS y conducción reciente. "+
@@ -1133,6 +1134,9 @@ public class MainActivity extends Activity {
                         .putBoolean("manually_busy",!busy).apply();
                     requestPickupPresenceSync();
                     Toast.makeText(this,!busy?"Marcado ocupado":"Disponibilidad automática activada",Toast.LENGTH_SHORT).show();
+                }else if(which==1){
+                    // Ask for explicit confirmation again. Never rebind silently.
+                    promptPickupConsent();
                 }else{
                     new AlertDialog.Builder(this).setTitle("Desactivar ubicación")
                         .setMessage("Se borrará tu posición comercial del servidor. "+
