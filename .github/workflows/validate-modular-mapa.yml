@@ -27,6 +27,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: MON-001 linked-session cache privacy regression
+        shell: bash
+        run: python3 scripts/test_mapa_session_privacy.py
       - name: Standalone reservation rules regression
         shell: bash
         run: |
