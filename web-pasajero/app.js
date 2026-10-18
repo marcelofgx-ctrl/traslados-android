@@ -1512,7 +1512,8 @@ async function submitBooking(){
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
     renderBookingSuccess(result,"schedule");
-  }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);pickupOriginMonitor?.sync();}
+   }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
+  pickupOriginMonitor?.sync();
 }
 
 const tripBoard=window.TrasladosTripBoard;
