@@ -76,6 +76,6 @@ function scenario({data=snapshot(16,2),initial={},broken=false}={}){
  assert(!html.includes('install-apk-link'),"Only PWA install controls are offered");
  assert(!app.includes('applyPublishedApk')&&!app.includes('checkVerifiedApk'),
    "Legacy Cliente APK installation removed from application");
- assert(sw.includes('traslados-pwa-v81')&&!sw.includes('"./public-config.js"'));
+ assert(sw.includes('traslados-pwa-v82')&&!sw.includes('"./public-config.js"'));
  console.log("PASS v72: public config cache/TTL/rollback/offline/security + dynamic APK install UI contract");
 })().catch(error=>{console.error(error);process.exitCode=1;});
