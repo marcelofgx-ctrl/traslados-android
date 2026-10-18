@@ -28,7 +28,7 @@ const scheduled={...r,pickup_time:"14:18:37",quote_status:"SIN_PRESUPUESTO"};
 assert.equal(b.isImmediateRequest(scheduled),false);
 assert.equal(b.expiredImmediate(scheduled,t("2026-10-12T19:00:00Z")),false);
 const html=read("index.html"),app=read("app.js"),sw=read("sw.js");
-assert(html.includes("app.js?v=81")&&html.includes("styles.css?v=81"));
+assert(html.includes("app.js?v=82")&&html.includes("styles.css?v=82"));
 assert(html.includes("trip-board.js?v=7")&&sw.includes("traslados-pwa-v82"));
 assert(app.includes("const immediateExpired=tripBoard.expiredImmediate(r);"));
 assert(app.includes("const expired=quoteExpired||immediateExpired;"));
