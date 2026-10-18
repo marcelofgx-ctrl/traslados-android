@@ -1,5 +1,6 @@
 # Traslados / APK Mapa — repositorio principal
 
+> **NORMA PERMANENTE DESDE EL 18/10/2026:** antes de comenzar otra sesión o modificar código, leer [METODOLOGÍA PERMANENTE](docs/METODOLOGIA_PERMANENTE_TRASLADOS.md) y [REGISTRO DE REGRESIONES](docs/REGISTRO_DE_REGRESIONES_TRASLADOS.md). Ninguna compilación/PR equivale automáticamente a publicación o QA física. Producto oficial: página pública, web/PWA pasajeros y **única APK Mapa Trayectos con Conductor integrado**. Los enlaces antiguos a APK Cliente y Conductor en esta página son **históricos**, NO productos oficiales nuevos.\n\n
 **Entrada única para retomar el proyecto en cualquier sesión:**
 
 1. [ESTADO AUTOMÁTICO — versiones, APK y GitHub Actions](docs/ESTADO_AUTOMATICO_TRASLADOS.md) · generado sin recompilar ni publicar nada.
