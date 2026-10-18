@@ -47,6 +47,8 @@ public final class Api {
         APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
             .putBoolean("service_play_requested",true)
             .putBoolean("manually_busy",false).apply();
+        // A new explicit Play after STOP must never wait on the retry timer.
+        LAST_PLAY_ATTEMPT_MS=0L;
         tryCommercialPlay();
     }
 
@@ -56,6 +58,7 @@ public final class Api {
     public static void commercialStop(){
         if(APP==null)return;
         pickupDemandExpiresAt=0L;
+        LAST_PLAY_ATTEMPT_MS=0L;
         APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
             .putBoolean("service_play_requested",false)
             .putBoolean("enabled",false).apply();
@@ -67,6 +70,7 @@ public final class Api {
 
     public static void retryCommercialPlay(boolean shiftActive){
         if(APP==null)return;
+        if(System.currentTimeMillis()-LAST_PLAY_ATTEMPT_MS<PLAY_RETRY_MS)return;
         SharedPreferences prefs=APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE);
         if(!PlayStopPresencePolicy.shouldRetry(
             shiftActive,prefs.getBoolean("service_play_requested",false),
@@ -93,6 +97,7 @@ public final class Api {
                 boolean ok=setPickupConsent(linked,true);
                 if(!ok)recordPresence("consent_failed",false,false);
                 else recordPresence("consent_ready",false,false);
+                // Operations are serialized: a queued Stop wins over a slow Play.
             }catch(Exception error){
                 recordPresence(PickupPresenceDiagnostic.failure(error),false,false);
             }finally{PLAY_AUTH_PENDING.set(false);}
