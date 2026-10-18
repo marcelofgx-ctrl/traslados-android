@@ -109,6 +109,7 @@ jobs:
           node web-pasajero/tests/trip-board-v50-smoke.cjs
           node web-pasajero/tests/expired-quotes-v55-smoke.cjs
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
+          node web-pasajero/tests/status001-fixed-legacy-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
           node web-pasajero/tests/pickup-health-v54-smoke.cjs
