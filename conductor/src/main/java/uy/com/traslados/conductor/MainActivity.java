@@ -567,7 +567,6 @@ public class MainActivity extends Activity {
                     reject=dangerButton("RECHAZAR");
                 acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
                 if(fixed) {
-                    addDetail(bodyBox,"ticket","PRECIO FIJO ACORDADO",formatMoney(r.optDouble("quote_final_total",0)));
                     quote.setOnClickListener(v->showDriverConfirm("Aceptar traslado",
                         "¿Confirmás "+formatMoney(r.optDouble("quote_final_total",0))+
                         " por el viaje "+r.optString("code","")+"?","VOLVER","ACEPTAR",
