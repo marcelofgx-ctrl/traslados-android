@@ -46,7 +46,7 @@ actions[0].events.click();assert.equal(refreshes,1,"only click refreshes picker"
 const app=read("app.js"),html=read("index.html"),sw=read("sw.js");
 assert(html.indexOf("pickup-origin-drift.js")<html.indexOf("app.js?v="));
 assert(sw.includes('"./pickup-origin-drift.js"'));
-assert(app.includes("pickupOriginMonitor.onOriginSelected()"));
+assert(app.includes("pickupOriginMonitor?.onOriginSelected()"));
 assert(app.includes("pickupOriginMonitor?.sync()"));
 assert(app.includes('source:"gps"'),"must preserve GPS-origin contract");
 console.log("PASS: movement warning, manual confirmation, retain origin, precision, privacy and visibility");
