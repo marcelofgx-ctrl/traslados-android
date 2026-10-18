@@ -24,3 +24,7 @@ No volver a ingresar PIN por jornada. El **mismo teléfono previamente vinculado
 - Contrato Java puro `PlayStopPresencePolicyTest` + comprobaciones de cableado en workflow modular, sin nueva API ni migración de Supabase.
 - Esta propuesta **sustituye la oferta automática de consentimiento al abrir** planteada en PR #137, que no debe integrarse junto con el flujo Play/Stop. Se basa en el diagnóstico de PR #136.
 - PR en revisión, no producción. Android Debug/Release y firma/same-app/versionCode/QA Samsung pendientes. No aprobar por pruebas estáticas exclusivamente.
+
+## APK de revisión
+
+R25.34-PLAYSTOP-QA / versionCode 86, mismo package y certificado R25.30+. Se verifica contra firmado anterior, pruebas de datos/GPS/historial, tests de Play/Stop, Android Build. Solo artefacto temporal de Actions. No release pública.
