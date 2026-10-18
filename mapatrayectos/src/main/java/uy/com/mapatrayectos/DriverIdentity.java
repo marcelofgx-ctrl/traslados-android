@@ -7,7 +7,6 @@ import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
-import java.security.SecureRandom;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -49,9 +48,10 @@ public final class DriverIdentity {
             bind(app,legacy);
             return legacy;
         }catch(Exception error){
-            // Keep the old credential if Android Keystore is unavailable.
-            // Do not silently lose an authenticated session during migration.
-            return legacy;
+            // Fail closed if the secure store is unavailable. The legacy PIN
+            // remains untouched until a successful migration; never use it
+            // as a long-term plaintext fallback.
+            return "";
         }
     }
 
