@@ -11,7 +11,21 @@
     const caption=doc.createElement("p");caption.className="premium-route-map-note";
     const retry=doc.createElement("button");retry.type="button";retry.className="premium-route-retry";retry.textContent="Reintentar cálculo";retry.hidden=true;
     retry.addEventListener("click",()=>doc.querySelector("#route-overview .route-retry")?.click());
-    map.append(mapHost,caption,retry);card.append(map);
+    const summary=doc.createElement("section");summary.className="premium-route-summary";
+    summary.setAttribute("aria-label","Resumen del viaje");
+    const fare=doc.createElement("div");fare.className="premium-route-fare";
+    const fareLabel=doc.createElement("small");fareLabel.textContent="PRECIO ORIENTATIVO DEL VIAJE";
+    const fareValue=doc.createElement("strong");fareValue.textContent="A confirmar";
+    fare.append(fareLabel,fareValue);
+    const tripMetrics=doc.createElement("div");tripMetrics.className="premium-route-trip-metrics";
+    const km=doc.createElement("div"),duration=doc.createElement("div");
+    const kmLabel=doc.createElement("small");kmLabel.textContent="DISTANCIA DEL VIAJE";
+    const kmValue=doc.createElement("strong");kmValue.textContent="—";
+    const durationLabel=doc.createElement("small");durationLabel.textContent="DURACIÓN ESTIMADA";
+    const durationValue=doc.createElement("strong");durationValue.textContent="—";
+    km.append(kmLabel,kmValue);duration.append(durationLabel,durationValue);
+    tripMetrics.append(km,duration);summary.append(fare,tripMetrics);
+    map.append(mapHost,caption,summary,retry);card.append(map);
     const stops=doc.createElement("button");stops.type="button";stops.className="premium-route-stops";
     stops.textContent="Agregar paradas (opcional)";
     const stopBody=doc.getElementById("stop-wrap"),login=doc.getElementById("login-for-stops");
@@ -62,20 +76,41 @@
       stops.setAttribute("aria-expanded",String(showStops));
       if(!quick)return;
       const points=[state.origin,state.destination].filter(Boolean).map(p=>[p.lat,p.lng]);
-      const geometry=state.geometry;
-      const key=JSON.stringify(geometry||points)+":"+Math.round(mapHost.clientWidth||355);
+      // Geometry is only supplied after the existing roadEngine.verified check.
+      // Intermediate stops are real selected coordinates, never vehicle GPS.
+      const geometry=Array.isArray(state.geometry)&&state.geometry.length>1?state.geometry:null;
+      const stopMarkers=state.stops.filter(Boolean).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng))
+        .map(p=>({lat:p.lat,lng:p.lng,label:"P"}));
+      const key=JSON.stringify({geometry,points,stopMarkers,width:Math.round(mapHost.clientWidth||355)});
       if(key!==lastMap){
         lastMap=key;
-        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:240});
+        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:240,extraMarkers:stopMarkers});
         else root.TrasladosPremiumMap.overview(mapHost,points,{height:240});
       }
-      caption.textContent=geometry?"Tu recorrido por calles · sin tráfico en vivo":points.length===2?"Origen y destino elegidos · ruta pendiente de verificar":points.length?"Ubicación elegida · agregá el destino para ver la ruta":"Montevideo y Ciudad de la Costa · elegí tu recorrido";
-      if(state.metrics){
-        const m=state.metrics;
-        caption.textContent=m.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km · "+m.durationMin+" min · "+(Number.isFinite(m.referenceFareUyu)&&m.referenceFareUyu>0?"$ "+m.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2})+" orientativos":"Precio a confirmar");
-      }
       const originalRetry=doc.querySelector("#route-overview .route-retry");
-      retry.hidden=points.length!==2||!originalRetry||originalRetry.hidden;
+      const failed=points.length===2&&Boolean(originalRetry&&!originalRetry.hidden);
+      retry.hidden=!failed;
+      caption.textContent=geometry?"Ruta estimada del viaje por calles · sin tráfico en vivo":
+        state.metrics?"Ruta vial verificada, pero sin trazado para dibujar":
+        failed?"No pudimos verificar la ruta. Podés reintentar el cálculo.":
+        points.length===2?"Calculando recorrido…":
+        points.length?"Ubicación elegida · agregá el destino para ver la ruta":
+        "Mapa de referencia · elegí tu recorrido";
+      // All price/km/min figures belong to the trip, never to driver pickup.
+      const verified=Boolean(state.metrics&&Number.isFinite(state.metrics.distanceKm)&&state.metrics.distanceKm>0
+        &&Number.isFinite(state.metrics.durationMin)&&state.metrics.durationMin>=0);
+      summary.dataset.verified=String(verified);
+      if(verified){
+        const m=state.metrics;
+        fareValue.textContent=Number.isFinite(m.referenceFareUyu)&&m.referenceFareUyu>0
+          ?"$ "+m.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2}):"A confirmar";
+        kmValue.textContent=m.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+        durationValue.textContent=Math.round(m.durationMin)+" min";
+      }else{
+        fareValue.textContent=failed?"A confirmar":points.length===2?"Calculando…":"A confirmar";
+        kmValue.textContent=failed?"Sin estimación":points.length===2?"Calculando…":"—";
+        durationValue.textContent=failed?"Sin estimación":points.length===2?"Calculando…":"—";
+      }
     }
     doc.addEventListener("traslados:route-updated",sync);
     const size=new ResizeObserver(()=>{lastMap="";sync();});size.observe(mapHost);
