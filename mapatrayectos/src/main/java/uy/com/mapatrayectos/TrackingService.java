@@ -137,6 +137,9 @@ public class TrackingService extends Service implements LocationListener {
             boolean movingNow=PickupPresenceCadence.recentlyMoving(
                 vehicleMoving,lastAcceptedTs,now);
             long interval=PickupPresenceCadence.intervalMs(movingNow,Api.pickupDemandActive());
+            // Reconnect commercial availability after temporary network errors.
+            // Never retry after STOP or a voluntary manual opt-out.
+            Api.retryCommercialPlay(shiftActive);
             if(now-lastPresenceHeartbeatMs>=interval)publishPickupPresence(now);
             if(clockPersistTick>=5){clockPersistTick=0;persist();persistLiveStats(now);updateNotification();if(bubbleView!=null)saveFloatingBubbleState(true);}
             clockHandler.postDelayed(this,CLOCK_TICK_MS);
@@ -232,12 +235,12 @@ public class TrackingService extends Service implements LocationListener {
     private void startShift(Intent source){
         if(shiftActive){broadcastState();return;}
         appVisible=source!=null&&source.getBooleanExtra("ui_visible",false);
-        long now=System.currentTimeMillis();shiftActive=true;tripActive=false;stopActive=false;shiftPaused=false;pausedAt=totalPauseMs=0;pauseCount=0;shiftCompletedTrips=0;shiftId=UUID.randomUUID().toString();tripId="";stopId="";shiftStarted=now;tripStarted=pickupAt=stopStarted=0;shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;tripMax=tripAmountUyu=0;tripType="other";tripStatus="completed";tripStage="none";prevMaxSample=-1f;prevMaxSampleTs=0;movingEvidence=stoppedEvidence=0;lastClockAccountedAt=now;vehicleMoving=false;lastMovingAtMs=0L;filteredSpeed=0f;zone=lastAccepted==null?"Buscando zona…":ZoneResolver.resolve(lastAccepted.getLatitude(),lastAccepted.getLongitude());db.beginShift(shiftId,now,zone);persist();promoteActiveTracking();startLocation();startClock();publishPickupPresence(now);broadcastState();showBubbleIfAllowed();Api.syncPendingAsync();
+        long now=System.currentTimeMillis();shiftActive=true;tripActive=false;stopActive=false;shiftPaused=false;pausedAt=totalPauseMs=0;pauseCount=0;shiftCompletedTrips=0;shiftId=UUID.randomUUID().toString();tripId="";stopId="";shiftStarted=now;tripStarted=pickupAt=stopStarted=0;shiftDistance=tripDistance=0;shiftMoving=shiftStopped=shiftTripMs=tripMoving=tripStopped=0;tripMax=tripAmountUyu=0;tripType="other";tripStatus="completed";tripStage="none";prevMaxSample=-1f;prevMaxSampleTs=0;movingEvidence=stoppedEvidence=0;lastClockAccountedAt=now;vehicleMoving=false;lastMovingAtMs=0L;filteredSpeed=0f;zone=lastAccepted==null?"Buscando zona…":ZoneResolver.resolve(lastAccepted.getLatitude(),lastAccepted.getLongitude());db.beginShift(shiftId,now,zone);persist();promoteActiveTracking();startLocation();startClock();Api.commercialPlay();publishPickupPresence(now);broadcastState();showBubbleIfAllowed();Api.syncPendingAsync();
     }
 
     private void stopShift(){
         if(!ShiftEndPolicy.canEndShift(shiftActive,tripActive)){broadcastState();return;}
-        long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);if(shiftPaused){totalPauseMs+=Math.max(0,now-pausedAt);shiftPaused=false;pausedAt=0;}db.updateShiftPaused(shiftId,totalPauseMs,pauseCount);db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();broadcastState();Api.syncShiftAsync(endedShift);publishPickupPresence(now);stopClock();stopLocation();
+        long now=System.currentTimeMillis();expireStaleMotion(now);accountClock(now);if(shiftPaused){totalPauseMs+=Math.max(0,now-pausedAt);shiftPaused=false;pausedAt=0;}db.updateShiftPaused(shiftId,totalPauseMs,pauseCount);db.updateShift(shiftId,now,shiftDistance,shiftMoving,shiftStopped,shiftTripMs,zone);String endedShift=shiftId;shiftActive=false;tripActive=false;persist();Api.commercialStop();broadcastState();Api.syncShiftAsync(endedShift);publishPickupPresence(now);stopClock();stopLocation();
         if(!appVisible&&Settings.canDrawOverlays(this)){
             // End the GPS journey but keep the already visible shortcut alive.
             promoteIdleBubble();showBubbleIfAllowed();
