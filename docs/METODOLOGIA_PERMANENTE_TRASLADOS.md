@@ -8,7 +8,7 @@
 
 Además de GitHub y los documentos de esta metodología, existe una memoria breve de trabajo en **Supabase Traslados** (`project_ops.work_memory` y `project_ops.work_memory_events`). **Se consulta explícitamente mediante herramienta administrativa al empezar cada sesión**, y se actualiza tras verificar hechos contra GitHub/CI/servicios. No es memoria automática del modelo ni fuente de verdad de qué está publicado.
 
-- **Leer solo 30 registros prioritarios** (`active/open/in_qa/blocked/implemented`) para identificar dependencias, decisiones y defectos; el documento técnico y consulta están en [Memoria operativa privada — traslados-web](https://github.com/marcelofgx-ctrl/traslados-web/blob/feature/project-ops-memory-index-20261018/docs/MEMORIA_OPERATIVA_TRASLADOS_20261018.md) (pendiente de promoción PR #20).
+- **Leer solo 30 registros prioritarios** (`active/open/in_qa/blocked/implemented`) para identificar dependencias, decisiones y defectos; el documento técnico y consulta están en [Memoria operativa privada — traslados-web](https://github.com/marcelofgx-ctrl/traslados-web/blob/main/docs/MEMORIA_OPERATIVA_TRASLADOS_20261018.md) (fusionada desde PR #20).
 - Verificar primero el **HEAD de main y los PR vivos**. Los registros pueden estar desactualizados y no certifican QA Samsung.
 - Actualizar una entrada con `revision` esperada; el diario `work_memory_events` conserva historial. **Jamás borrar**, no guardar secretos, ubicaciones privadas ni imágenes del paquete.
 - Esquema fuera de la Data API; **no conectar PWA ni APK** a esta tabla. Si Supabase no está accesible, continuar desde GitHub, sin declarar sincronización automática.
