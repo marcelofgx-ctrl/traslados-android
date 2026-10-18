@@ -21,7 +21,7 @@ assert(receipt.includes("todavía no es un viaje confirmado"),
 assert(receipt.includes('shiftView("viajes")'),"Link to My Trips is mandatory");
 assert(css.includes("#booking-success.success .success-receipt"),"Compact mobile card must be styled");
 assert(html.includes("./app.js?v=81")&&html.includes("./styles.css?v=81"));
-assert(sw.includes('traslados-pwa-v81-unificada-20261017'),"SW version must invalidate old cache");
+assert(sw.includes('traslados-pwa-v81-dir001-fallback-20261018'),"SW must invalidate the cached address engine when DIR-001 changes");
 assert(!publicIndex.includes("APK Cliente")&&!publicIndex.includes("la PWA"),"No technical passenger copy");
 assert(publicIndex.includes('href="./web-pasajero/"')&&publicIndex.includes('href="./web-pasajero/#instalar"'),"Both public CTAs must work");
 console.log("PASS receipt v81: fixed price, human date, request pending, compact UI, cache and public links");
