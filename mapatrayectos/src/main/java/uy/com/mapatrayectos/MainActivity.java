@@ -1049,7 +1049,7 @@ public class MainActivity extends Activity {
             +"\nViajes completados: "+shiftCompletedTrips;
         new AlertDialog.Builder(this)
             .setTitle("Finalizar jornada")
-            .setMessage(summary+"\n\n¿Querés cerrar la jornada y detener su seguimiento GPS? El historial se conserva.")
+            .setMessage(summary+"\n\nSTOP cierra la jornada y detiene la ubicación comercial para pasajeros. El historial se conserva.")
             .setNegativeButton("CANCELAR",null)
             .setPositiveButton("FINALIZAR",(dialog,which)->{
                 SharedPreferences fresh=getSharedPreferences("tracking_state",MODE_PRIVATE);
