@@ -46,8 +46,8 @@ assert 'Api.setPickupConsent(linked,true)' in main
 
 # Preserve the original APK package, signer and monotonic version.
 assert "applicationId 'uy.com.mapatrayectos'" in gradle
-assert 'versionCode 82' in gradle
-assert "versionName '0.1-R25.30'" in gradle
+assert 'versionCode 83' in gradle
+assert "versionName '0.1-R25.31-QA'" in gradle
 assert "project(':core-reservations')" in gradle
 print("PASS: one-time secure driver binding, migration and automatic reservation monitoring")
 print("PASS: R25.30 code82 same package; no data deletion or second driver APK")

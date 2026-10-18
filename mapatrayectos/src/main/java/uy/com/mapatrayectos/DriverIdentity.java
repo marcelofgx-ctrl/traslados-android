@@ -66,12 +66,16 @@ public final class DriverIdentity {
         if(!saved)throw new IllegalStateException("No se pudo vincular este dispositivo");
         app.getSharedPreferences(LEGACY,Context.MODE_PRIVATE).edit()
             .remove("pin").apply();
+        // Never carry a previous driver's ephemeral reservation cards into a binding.
+        TransferAlerts.invalidateLocalSession(app);
     }
 
     public static synchronized void clear(Context context){
         Context app=context.getApplicationContext();
         app.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit().remove(FIELD).commit();
         app.getSharedPreferences(LEGACY,Context.MODE_PRIVATE).edit().remove("pin").apply();
+        // Signing out hides cached passenger details without touching trip history.
+        TransferAlerts.invalidateLocalSession(app);
     }
 
     private static SecretKey key() throws Exception{

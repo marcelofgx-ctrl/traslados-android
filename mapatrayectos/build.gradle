@@ -16,8 +16,9 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 82
-        versionName '0.1-R25.30'
+        // QA branch only: new installable Mapa review, not a stable release.
+        versionCode 83
+        versionName '0.1-R25.31-QA'
     }
 
     signingConfigs {

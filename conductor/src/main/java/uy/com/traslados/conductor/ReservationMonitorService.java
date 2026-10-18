@@ -91,14 +91,20 @@ public class ReservationMonitorService extends Service {
                 health.edit().putLong("last_attempt_at",System.currentTimeMillis()).apply();
                 String pin=uy.com.mapatrayectos.DriverIdentity.pin(this);
                 if(!pin.isEmpty()){
-                    JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();
+                    JSONArray a=Api.listActive(pin);
+                    // A server request may finish after the phone was unlinked.
+                    // Never notify or reuse rows from a superseded identity.
+                    if(!pin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this))){
+                        known.clear();continue;
+                    }
+                    Set<String> now=new HashSet<>();
                     for(int i=0;i<a.length();i++){
                         JSONObject r=a.getJSONObject(i);
                         if(!"PENDIENTE".equals(r.optString("status")))continue;
                         String id=r.optString("id");
                         if(id.isEmpty())continue;
                         now.add(id);
-                        if(!known.contains(id)&&claimPendingNotification(r))notifyNew(r);
+                        if(!known.contains(id)&&claimPendingNotification(r))notifyNew(r,pin);
                     }
                     known.clear();known.addAll(now);
                     health.edit().putLong("last_success_at",System.currentTimeMillis())
@@ -122,6 +128,7 @@ public class ReservationMonitorService extends Service {
         android.content.SharedPreferences prefs=getSharedPreferences("driver_chat_monitor",MODE_PRIVATE);
         long cursor=prefs.getLong("last_id",0);
         JSONArray changes=Api.newCustomerMessages(pin,cursor);
+        if(!pin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this)))return;
         long max=cursor;
         for(int i=0;i<changes.length();i++){
             JSONObject m=changes.optJSONObject(i);
@@ -134,6 +141,7 @@ public class ReservationMonitorService extends Service {
         for(int i=0;i<changes.length();i++){
             JSONObject m=changes.optJSONObject(i);
             if(m==null||m.optLong("id",0)<=cursor)continue;
+            if(!pin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this)))return;
             Intent open=new Intent(this,MainActivity.class);
             open.putExtra("open_requests",true);
             open.putExtra("reservation_id",m.optString("reservation_id",""));
@@ -153,7 +161,8 @@ public class ReservationMonitorService extends Service {
         if(max>cursor)prefs.edit().putLong("last_id",max).apply();
     }
 
-    private void notifyNew(JSONObject r){
+    private void notifyNew(JSONObject r,String linkedPin){
+        if(!linkedPin.equals(uy.com.mapatrayectos.DriverIdentity.pin(this)))return;
         driverBubbleMarkNew(r);
         driverNewReservationCueOnce(r);
 
