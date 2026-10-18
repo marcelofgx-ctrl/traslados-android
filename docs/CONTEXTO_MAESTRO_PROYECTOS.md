@@ -1,5 +1,6 @@
 # CONTEXTO MAESTRO — ECOSISTEMA TRASLADOS / MAPA TRAYECTOS
 
+> **METODOLOGÍA OBLIGATORIA DESDE 18/10/2026:** [Norma permanente](METODOLOGIA_PERMANENTE_TRASLADOS.md) y [registro de regresiones](REGISTRO_DE_REGRESIONES_TRASLADOS.md). Este archivo es histórico; no reemplaza la verificación del estado real en GitHub/Pages/Android/Supabase.\n\n
 > **ESTADO TÉCNICO AUTOMÁTICO:** [ESTADO_AUTOMATICO_TRASLADOS.md](ESTADO_AUTOMATICO_TRASLADOS.md). **DECISIONES Y PENDIENTES:** [REANUDAR_TRASLADOS.md](REANUDAR_TRASLADOS.md). Este documento es un archivo cronológico que contiene etiquetas históricas «actual» y NO se debe releer íntegro para retomar un chat.
 
 
