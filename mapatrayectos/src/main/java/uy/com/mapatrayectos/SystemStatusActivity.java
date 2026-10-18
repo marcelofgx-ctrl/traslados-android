@@ -150,10 +150,11 @@ public final class SystemStatusActivity extends Activity {
         LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(52));
         rp.topMargin=dp(2);content.addView(reload,rp);
         reload.setOnClickListener(v->{
-            if(sessionPin==null||sessionPin.isEmpty())promptPin();
-            else refresh();
+            if(sessionPin==null||sessionPin.isEmpty())
+                sessionPin=DriverIdentity.pin(this);
+            if(sessionPin.isEmpty())promptPin();else refresh();
         });
-        TextView privacy=text("Información privada · el PIN se verifica en Supabase. El panel no publica tu ubicación ni muestra datos personales de clientes.",10.4f,MUTED,false);
+        TextView privacy=text("Información privada · la identidad vinculada se verifica en Supabase. Este panel no publica tu ubicación ni muestra datos personales de clientes.",10.4f,MUTED,false);
         privacy.setGravity(Gravity.CENTER);privacy.setPadding(dp(3),dp(15),dp(3),0);
         content.addView(privacy);
     }
@@ -210,8 +211,8 @@ public final class SystemStatusActivity extends Activity {
                     cloudUpdated.setText("Datos de nube no disponibles · no se muestran cifras antiguas");
                     cloudState.setText("●  Consulta pendiente");cloudState.setTextColor(AMBER);
                     capacityBar.setProgress(0);
-                    sessionPin="";
-                    reload.setText("INGRESAR PIN / REINTENTAR");
+                    sessionPin=DriverIdentity.pin(this);
+                    reload.setText(sessionPin.isEmpty()?"VINCULAR / REINTENTAR":"REINTENTAR CONEXIÓN");
                 }
                 loading=false;reload.setEnabled(true);
                 if(answer!=null)reload.setText("↻  ACTUALIZAR DIAGNÓSTICO");
