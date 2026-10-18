@@ -48,7 +48,7 @@ public final class SystemStatusActivity extends Activity {
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
         Api.init(getApplicationContext());
-        sessionPin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+        sessionPin=DriverIdentity.pin(this);
         buildPage();
         refresh();
     }
