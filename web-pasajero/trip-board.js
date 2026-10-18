@@ -39,7 +39,7 @@
     return Number.isFinite(created)&&at-created>=QUOTE_WINDOW_MS;
   }
   function expiredQuote(r,at=Date.now()){
-    if(r?.status!=="PENDIENTE"||r?.quote_status!=="ENVIADO")return false;
+    if(r?.status!=="PENDIENTE"||r?.quote_status!=="ENVIADO"||isFixedFare(r))return false;
     const pickup=pickupTimeMs(r),mode=String(r.pickup_mode||"");
     if(expiredImmediate(r,at))return true; // v13 backend's strict 90-min deadline
     if(isImmediateRequest(r))return false;
@@ -75,7 +75,7 @@
     if(fixed&&status==="PENDIENTE")
       return {label:"Esperando al conductor",tone:"pending",icon:"clock-3",rank:0,action:"Seguir solicitud"};
     if(quotePending)return {label:"Presupuesto para responder",tone:"attention",icon:"wallet",rank:1,action:"Aceptar o rechazar"};
-    if(q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
+    if(!fixed&&q==="ENVIADO")return {label:"Presupuesto enviado",tone:"quote",icon:"receipt",rank:1,action:"Ver presupuesto"};
     return {label:"Pendiente",tone:"pending",icon:"clock-3",rank:0,action:"Ver detalle"};
   }
   // Mensaje único y contextual según la fase confirmada por el servidor.
