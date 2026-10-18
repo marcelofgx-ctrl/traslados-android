@@ -1152,34 +1152,41 @@ public class MainActivity extends Activity {
             }).setNegativeButton("Cerrar",null).show();
     }
     private void promptPickupConsent(){
-        EditText pinInput=new EditText(this);
-        pinInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
-            android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        pinInput.setHint("PIN del conductor");
-        pinInput.setSingleLine(true);
-        int padding=(int)(22*getResources().getDisplayMetrics().density);
-        pinInput.setPadding(padding,padding/2,padding,padding/2);
-        new AlertDialog.Builder(this).setTitle("Autorizar GPS para recogidas")
-            .setView(pinInput)
-            .setNegativeButton("Cancelar",null)
-            .setPositiveButton("Autorizar",(d,w)->{
-                final String pin=pinInput.getText().toString();
-                pinInput.setText("");
-                if(pin.length()<4){
-                    Toast.makeText(this,"Ingresá tu PIN válido",Toast.LENGTH_LONG).show();return;
-                }
+        final String linked=DriverIdentity.pin(this);
+        if(linked.isEmpty()){
+            new AlertDialog.Builder(this)
+                .setTitle("Vinculá tu conductor primero")
+                .setMessage("Para compartir disponibilidad GPS, vinculá este teléfono "+
+                    "una vez. Después no necesitarás volver a ingresar tu PIN.")
+                .setNegativeButton("MÁS TARDE",null)
+                .setPositiveButton("VINCULAR",(d,w)->promptDriverBinding()).show();
+            return;
+        }
+        // Device identity does NOT silently grant GPS access. Require a separate
+        // explicit consent even though the driver is already linked.
+        new AlertDialog.Builder(this)
+            .setTitle("Autorizar GPS para recogidas")
+            .setMessage("Mapa usará la identidad ya vinculada del conductor principal. "+
+                "La ubicación comercial se compartirá únicamente con tu consentimiento, "+
+                "jornada activa y GPS válido. Podés desactivarla cuando quieras.")
+            .setNegativeButton("CANCELAR",null)
+            .setPositiveButton("AUTORIZAR",(d,w)->{
                 new Thread(()->{
                     try{
-                        boolean ok=Api.setPickupConsent(pin,true);
+                        boolean ok=Api.setPickupConsent(linked,true);
                         runOnUiThread(()->{
+                            if(isFinishing()||isDestroyed())return;
                             Toast.makeText(this,ok?
-                                "Disponibilidad activada. Se publicará solo con jornada y GPS válidos.":
+                                "Disponibilidad activada. Solo se publicará con jornada y GPS válidos.":
                                 "No se pudo autorizar el dispositivo",Toast.LENGTH_LONG).show();
                             if(ok)requestPickupPresenceSync();
                         });
-                    }catch(Exception e){
-                        runOnUiThread(()->Toast.makeText(this,
-                            "No se pudo autorizar. Revisá el PIN y conexión.",Toast.LENGTH_LONG).show());
+                    }catch(Exception error){
+                        runOnUiThread(()->{
+                            if(!isFinishing()&&!isDestroyed())
+                                Toast.makeText(this,"No se pudo autorizar. Revisá la conexión.",
+                                    Toast.LENGTH_LONG).show();
+                        });
                     }
                 },"pickup-presence-enable").start();
             }).show();
