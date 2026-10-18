@@ -57,6 +57,9 @@ jobs:
           grep -q 'Api.commercialStop();' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'Api.retryCommercialPlay(shiftActive);' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
           grep -q 'Executors.newSingleThreadExecutor()' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          # A queued STOP cannot clear a subsequent PLAY's requested state.
+          grep -q 'setPickupConsentInternal("",false,false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'boolean updateRequestedState' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
           grep -q 'putBoolean("service_play_requested",false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
           grep -q 'DriverIdentity.pin(APP)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
       - name: PRESENCE-001 safe GPS publication status regression
