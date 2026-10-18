@@ -1,3 +1,5 @@
+# PICKUP-ETA: diagnóstico bajo petición (18/10/2026).
+# Solo coordenadas públicas fijas de QA; NUNCA GPS del conductor.
 name: QA motor vial para recogidas
 on:
   workflow_dispatch:
@@ -27,6 +29,7 @@ jobs:
             ("Centro-PuntaCarretas","-56.165,-34.902;-56.159,-34.926"),
             ("Centro-Aeropuerto","-56.180,-34.900;-56.01638,-34.83696"),
           ]
+          failures=[]
           for name,points in cases:
             url=base+"?"+urllib.parse.urlencode({"points":points})
             req=urllib.request.Request(url,headers={"Accept":"application/json","Origin":"https://marcelofgx-ctrl.github.io","User-Agent":"Mozilla/5.0 Traslados-Passenger-QA/1.0"})
@@ -34,14 +37,18 @@ jobs:
             try:
               with urllib.request.urlopen(req,timeout=18) as r:
                 body=json.load(r);print(name,"HTTP",r.status,"elapsed_s",round(time.monotonic()-started,2), {k:body.get(k) for k in ("available","source","reason","distanceKm","durationMin")})
+                if not (r.status==200 and body.get("available") is True and body.get("source") in ("openrouteservice","supabase_route_cache") and isinstance(body.get("distanceKm"),(int,float)) and body["distanceKm"]>0 and isinstance(body.get("durationMin"),(int,float)) and body["durationMin"]>=0):
+                  failures.append(name+": not a verified road route")
             except urllib.error.HTTPError as e:
               raw=e.read().decode("utf-8","replace")
               try: body=json.loads(raw)
               except: body={}
               print(name,"HTTP",e.code,"elapsed_s",round(time.monotonic()-started,2), "server",e.headers.get("server"),"ct",e.headers.get("Content-Type"),"body",raw[:480],
                     {k:body.get(k) for k in ("available","source","reason","distanceKm","durationMin")})
+              failures.append(name+": HTTP "+str(e.code)+" "+str(body.get("reason") or "error"))
             except Exception as ex:
               print(name,"NETWORK_ERROR",str(ex)[:160])
+              failures.append(name+": network_error")
           print("HEADER DIAGNOSTIC for route URL, without driver GPS")
           for label,headers in [
             ("origin_only",{"Accept":"application/json","Origin":"https://marcelofgx-ctrl.github.io"}),
@@ -58,4 +65,9 @@ jobs:
               print(label,"HTTP",e.code,"ct",e.headers.get("Content-Type"))
             except Exception as e:
               print(label,"NETWORK_ERROR",str(e)[:130])
+          if failures:
+            print("FAIL VERIFIED ROAD HEALTH:",len(failures),"of",len(cases),"reference routes unavailable")
+            for failure in failures: print("ROUTE HEALTH FAILURE:",failure)
+            raise SystemExit(1)
+          print("PASS: all public fixed-route probes have verified road geometry or verified road distance")
           PY
