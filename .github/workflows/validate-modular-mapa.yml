@@ -44,6 +44,19 @@ jobs:
       - name: Verify R25.31 QA integration contract
         shell: bash
         run: python3 scripts/test_mapa_r2531_integration.py
+      - name: PRESENCE-001 safe GPS publication status regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/presence-001
+          javac -d /tmp/presence-001 \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PickupPresenceDiagnostic.java \
+            mapatrayectos/tests/PickupPresenceDiagnosticTest.java
+          java -cp /tmp/presence-001 PickupPresenceDiagnosticTest
+          grep -q 'PickupPresenceDiagnostic.response' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'PickupPresenceDiagnostic.failure' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'Api.pickupPresenceDiagnosticReport()' mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusActivity.java
+          grep -q 'Reautorizar este teléfono para recogidas' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
       - name: Standalone reservation rules regression
         shell: bash
         run: |

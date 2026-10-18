@@ -45,13 +45,42 @@ public final class Api {
         if(!result.optBoolean("ok",false))return false;
         APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
             .putBoolean("enabled",enabled).apply();
+        APP.getSharedPreferences("pickup_presence_diag",Context.MODE_PRIVATE).edit().clear().apply();
         return true;
     }
+    // Diagnostic stays in private preferences. No GPS/PIN/device IDs, credentials
+    // or raw server bodies are recorded.
+    private static void recordPresence(String status,boolean serverOk,boolean eligible){
+        if(APP==null)return;
+        long now=System.currentTimeMillis();
+        SharedPreferences.Editor edit=APP.getSharedPreferences("pickup_presence_diag",Context.MODE_PRIVATE)
+            .edit().putLong("attempt_at",now).putString("outcome",status);
+        if(serverOk)edit.putLong("server_reply_at",now);
+        if(eligible)edit.putLong("verified_gps_at",now);
+        edit.apply();
+    }
+    public static String pickupPresenceDiagnosticReport(){
+        if(APP==null)return "Servicio sin inicializar";
+        SharedPreferences s=APP.getSharedPreferences("pickup_presence_diag",Context.MODE_PRIVATE);
+        return "Consentimiento local: "+(pickupPresenceEnabled()?"Activado":"Desactivado")
+            +"\nÚltimo intento: "+presenceDate(s.getLong("attempt_at",0))
+            +"\nÚltima respuesta del servidor: "+presenceDate(s.getLong("server_reply_at",0))
+            +"\nÚltimo GPS comercial validado: "+presenceDate(s.getLong("verified_gps_at",0))
+            +"\nResultado: "+PickupPresenceDiagnostic.display(s.getString("outcome",null))
+            +"\nLa confirmación de GPS no equivale a conductor libre: también rige la agenda.";
+    }
+    private static String presenceDate(long millis){
+        if(millis<=0)return "sin registro";
+        return new java.text.SimpleDateFormat("dd/MM HH:mm:ss",new java.util.Locale("es","UY"))
+            .format(new java.util.Date(millis));
+    }
+
     /** Asynchronous, bounded heartbeat; never blocks GPS or writes secret/PIN to logs. */
     public static void publishPickupPresenceAsync(boolean active,boolean paused,
         boolean inTrip,double lat,double lng,float accuracy,long gpsTimeMs,long lastMovingAtMs){
         if(APP==null||!pickupPresenceEnabled()||!PRESENCE_BUSY.compareAndSet(false,true))return;
         final boolean busy=pickupManuallyBusy();
+        recordPresence("sending",false,false);
         new Thread(()->{
             try{
                 String[] ids=credentials();
@@ -63,6 +92,13 @@ public final class Api {
                 body.put("p_accuracy_m",accuracy);body.put("p_gps_at_ms",gpsTimeMs);
                 body.put("p_last_move_at_ms",lastMovingAtMs);
                 JSONObject result=new JSONObject(postRpc("mapa_presence_ping_v1",body));
+                boolean serverOk=result.optBoolean("ok",false);
+                boolean gpsUsable=gpsTimeMs>0&&accuracy>=0&&accuracy<=45
+                    &&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;
+                boolean eligible=serverOk&&result.optBoolean("eligible",false);
+                recordPresence(PickupPresenceDiagnostic.response(
+                    serverOk,result.optString("reason",""),eligible,
+                    active,paused,inTrip,busy,gpsUsable),serverOk,eligible);
                 // A second, private endpoint stores only the latest location for
                 // one uniquely active, authorized reservation. It NEVER alters
                 // public availability semantics, local GPS history or shift data.
@@ -98,7 +134,9 @@ public final class Api {
                     APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
                         .edit().putBoolean("enabled",false).apply();
                 }
-            }catch(Exception ignored){
+            }catch(Exception error){
+                // Persist only a finite error category; never persist HTTP details.
+                recordPresence(PickupPresenceDiagnostic.failure(error),false,false);
                 // Server expires location after 90 s; stale position is never published.
             }finally{PRESENCE_BUSY.set(false);}
         },"mapa-pickup-presence").start();

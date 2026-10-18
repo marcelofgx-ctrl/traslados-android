@@ -287,6 +287,7 @@ public final class SystemStatusActivity extends Activity {
         boolean paused=s.getBoolean("shift_paused",false);
         String shift=active?(paused?"Pausada":"En curso"):"Sin jornada iniciada";
         return network+
+            "\n\nPUBLICACIÓN GPS PARA RECOGIDAS\n"+Api.pickupPresenceDiagnosticReport()+
             "\nJornada: "+shift+"   ·   Viaje: "+(trip?"Activo":"Sin viaje")+
             "\nRecogida pública: "+(Api.pickupPresenceEnabled()?
                 (Api.pickupManuallyBusy()?"Pausada manualmente":"Habilitada (sujeta a GPS y agenda)"):"Desactivada");
