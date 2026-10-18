@@ -1,4 +1,4 @@
-const CACHE="traslados-pwa-v81-dir001-fallback-20261018-origin-drift-review";
+const CACHE="traslados-pwa-v82-consolidado-20261018";
 const CACHE_PREFIX="traslados-cliente-pwa-";
 const CURRENT_PREFIX="traslados-pwa-";
 const files=["./","./offline.html","./styles.css","./app.js","./premium-journey.js","./premium-journey.css","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-origin-drift.js","./pickup-observability.js","./trip-board.js","./reservation-live.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js"];

@@ -20,8 +20,8 @@ assert(receipt.includes("todavía no es un viaje confirmado"),
  "Request cannot pretend to be accepted");
 assert(receipt.includes('shiftView("viajes")'),"Link to My Trips is mandatory");
 assert(css.includes("#booking-success.success .success-receipt"),"Compact mobile card must be styled");
-assert(html.includes("./app.js?v=81")&&html.includes("./styles.css?v=81"));
-assert(sw.includes('traslados-pwa-v81-dir001-fallback-20261018'),"SW must invalidate the cached address engine when DIR-001 changes");
+assert(html.includes("./app.js?v=82")&&html.includes("./styles.css?v=82"));
+assert(sw.includes('traslados-pwa-v82-consolidado-20261018'),"SW must invalidate the cached address engine when DIR-001 changes");
 assert(!publicIndex.includes("APK Cliente")&&!publicIndex.includes("la PWA"),"No technical passenger copy");
 assert(publicIndex.includes('href="./web-pasajero/"')&&publicIndex.includes('href="./web-pasajero/#instalar"'),"Both public CTAs must work");
-console.log("PASS receipt v81: fixed price, human date, request pending, compact UI, cache and public links");
+console.log("PASS receipt regression on v82: fixed price, human date, request pending, compact UI, cache and public links");
