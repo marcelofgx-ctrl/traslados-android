@@ -220,6 +220,26 @@ let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
 // A chosen pickup point is fixed; a passive GPS fix may only OFFER an update.
 let pickupOriginMonitor=null;
+let lastPickupOriginCoordinates="";
+/** The pickup ETA is origin-specific, NOT destination-specific. Whenever the
+ * chosen pickup coordinates change, clear the old result before rendering.
+ * Server route failures remain honest and all quotas stay enforced. */
+function recognizePickupOriginChange(){
+  const o=record.origin;
+  const current=o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng)
+    ?o.lat.toFixed(5)+","+o.lng.toFixed(5):"";
+  if(current===lastPickupOriginCoordinates)return false;
+  lastPickupOriginCoordinates=current;
+  pickupEtaRequestSeq++; // discard an older availability response
+  forgetPickupEta();    // discard old km/ETA/error for a different origin
+  if(selectedPickupMode!=="schedule"){
+    paintPickupCard({presence:"checking",
+      title:current?"Nuevo origen · calculando llegada":"Elegí tu origen",
+      subtitle:current?"Consultando la ruta del conductor hasta el nuevo punto de recogida.":
+        "Seleccioná el lugar donde querés que te busquen.",phase:"checking"});
+  }
+  return true;
+}
 function pickupIdentityKey(){
   if(selectedPickupMode==="schedule"||!record.origin)return "";
   const {lat,lng}=record.origin;
@@ -264,6 +284,7 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   const note=$("pickup-estimate-note");
   const meta=$("pickup-presence-meta");
   const status=$("pickup-presence-status");
+  const retry=$("pickup-eta-retry");
   if(main)main.textContent=title;
   if(sub)sub.textContent=subtitle;
   const hasEstimate=Number.isFinite(km)&&km>=0&&Number.isFinite(minutes)&&minutes>=0;
@@ -272,6 +293,16 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   if(eta)eta.textContent=hasEstimate?window.TrasladosPickupCadence.arrivalLabel(minutes):"";
   if(note){note.textContent=estimateNote;note.hidden=!estimateNote;}
   if(meta)meta.textContent=checked;
+  if(retry){
+    const key=pickupIdentityKey();
+    const isFailed=phase==="issue"&&lastEtaFailureKey===key&&Boolean(key);
+    const interval=window.TrasladosPickupCadence.intervalMs(publicPresenceCache?.motionHint);
+    const waiting=isFailed&&(pickupEtaPendingKey===key||
+      Date.now()-lastPickupEtaAt<interval||Date.now()<etaRetryNotBefore);
+    retry.hidden=!isFailed;
+    retry.disabled=!isFailed||waiting;
+    retry.textContent=waiting?"Reintento automático pendiente":"↻ Reintentar llegada";
+  }
   if(status){
     const announcement=[title,subtitle,hasEstimate?km.toLocaleString("es-UY",{maximumFractionDigits:1})+
       " km · "+window.TrasladosPickupCadence.arrivalLabel(minutes)+" aproximados":"",estimateNote,checked].filter(Boolean).join(" · ");
@@ -971,6 +1002,9 @@ function addRoadDiagram(parent,geometry){
   text(parent,"p","Esquema de ruta por calles (no a escala). Abrí Maps para ver el mapa completo.","route-map-caption");
 }
 function renderRouteSummary(){
+  // A changed destination recalculates the trip only; only a changed origin
+  // invalidates the separate driver→pickup ETA and its previous failure.
+  recognizePickupOriginChange();
   if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   const host=$("route-overview");
   if(!host)return;
@@ -2358,6 +2392,13 @@ function init(){
   });
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
+  $("pickup-eta-retry").addEventListener("click",()=>{
+    const action=$("pickup-eta-retry");
+    if(action.disabled||!pickupIdentityKey())return;
+    // This button does not bypass the existing cadence, in-flight lock
+    // or service-side quotas.
+    void refreshPickupPresence(true);
+  });
   destPicker=picker("destination",$("destination-picker"),0);
   premiumRouteComposer=window.TrasladosPremiumRoute.mount(document,()=>({
     origin:record.origin,destination:record.destination,stops:record.stops,
