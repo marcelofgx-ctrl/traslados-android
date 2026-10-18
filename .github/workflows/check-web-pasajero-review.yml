@@ -32,12 +32,18 @@ jobs:
           node --check web-pasajero/service-home.js
           node --check web-pasajero/owned-pickup.js
           node --check web-pasajero/pickup-cadence.js
+          node --check web-pasajero/pickup-origin-drift.js
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+          node web-pasajero/tests/pickup-origin-recalc-smoke.cjs
           node --check web-pasajero/pickup-observability.js
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/public-config.js
+          node --check web-pasajero/reservation-live.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/address-picker-regression-v82-smoke.cjs
+          node web-pasajero/tests/dir001-precision-fallback-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
@@ -53,6 +59,7 @@ jobs:
           node web-pasajero/tests/trip-board-v50-smoke.cjs
           node web-pasajero/tests/expired-quotes-v55-smoke.cjs
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
+          node web-pasajero/tests/status001-fixed-legacy-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
           node web-pasajero/tests/pickup-health-v54-smoke.cjs
@@ -63,6 +70,7 @@ jobs:
           node web-pasajero/tests/premium-map-smoke.cjs
           node web-pasajero/tests/reservation-live-v79-smoke.cjs
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
@@ -83,6 +91,10 @@ jobs:
           node web-pasajero/tests/trip-chat-live-v73-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node --check web-pasajero/sw.js
+      - name: Live IDE official read-only probe (informational; no bookings)
+        continue-on-error: true
+        timeout-minutes: 1
+        run: node web-pasajero/tests/dir001-ide-provider-probe.cjs
       - name: Verify review flow and offline safety
         run: |
           python3 - <<'PY'

@@ -218,6 +218,28 @@ let lastVerifiedEtaResult=null;
 let etaRetryNotBefore=0,etaRetryIdentity="";
 let pickupEtaPendingKey="",lastEtaFailureKey="",lastEtaFailureMessage="";
 let publicPresenceCache=null,publicPresenceAt=0,publicPresencePending=null;
+// A chosen pickup point is fixed; a passive GPS fix may only OFFER an update.
+let pickupOriginMonitor=null;
+let lastPickupOriginCoordinates="";
+/** The pickup ETA is origin-specific, NOT destination-specific. Whenever the
+ * chosen pickup coordinates change, clear the old result before rendering.
+ * Server route failures remain honest and all quotas stay enforced. */
+function recognizePickupOriginChange(){
+  const o=record.origin;
+  const current=o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng)
+    ?o.lat.toFixed(5)+","+o.lng.toFixed(5):"";
+  if(current===lastPickupOriginCoordinates)return false;
+  lastPickupOriginCoordinates=current;
+  pickupEtaRequestSeq++; // discard an older availability response
+  forgetPickupEta();    // discard old km/ETA/error for a different origin
+  if(selectedPickupMode!=="schedule"){
+    paintPickupCard({presence:"checking",
+      title:current?"Nuevo origen · calculando llegada":"Elegí tu origen",
+      subtitle:current?"Consultando la ruta del conductor hasta el nuevo punto de recogida.":
+        "Seleccioná el lugar donde querés que te busquen.",phase:"checking"});
+  }
+  return true;
+}
 function pickupIdentityKey(){
   if(selectedPickupMode==="schedule"||!record.origin)return "";
   const {lat,lng}=record.origin;
@@ -262,6 +284,7 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   const note=$("pickup-estimate-note");
   const meta=$("pickup-presence-meta");
   const status=$("pickup-presence-status");
+  const retry=$("pickup-eta-retry");
   if(main)main.textContent=title;
   if(sub)sub.textContent=subtitle;
   const hasEstimate=Number.isFinite(km)&&km>=0&&Number.isFinite(minutes)&&minutes>=0;
@@ -270,6 +293,16 @@ function paintPickupCard({presence,title,subtitle="",km=null,minutes=null,estima
   if(eta)eta.textContent=hasEstimate?window.TrasladosPickupCadence.arrivalLabel(minutes):"";
   if(note){note.textContent=estimateNote;note.hidden=!estimateNote;}
   if(meta)meta.textContent=checked;
+  if(retry){
+    const key=pickupIdentityKey();
+    const isFailed=phase==="issue"&&lastEtaFailureKey===key&&Boolean(key);
+    const interval=window.TrasladosPickupCadence.intervalMs(publicPresenceCache?.motionHint);
+    const waiting=isFailed&&(pickupEtaPendingKey===key||
+      Date.now()-lastPickupEtaAt<interval||Date.now()<etaRetryNotBefore);
+    retry.hidden=!isFailed;
+    retry.disabled=!isFailed||waiting;
+    retry.textContent=waiting?"Reintento automático pendiente":"↻ Reintentar llegada";
+  }
   if(status){
     const announcement=[title,subtitle,hasEstimate?km.toLocaleString("es-UY",{maximumFractionDigits:1})+
       " km · "+window.TrasladosPickupCadence.arrivalLabel(minutes)+" aproximados":"",estimateNote,checked].filter(Boolean).join(" · ");
@@ -572,6 +605,7 @@ function shiftView(name){
   if(name==="seguimiento")renderPremiumTracking();
   if(name==="cuenta")renderAccount();
   window.scrollTo({top:0,behavior:"smooth"});
+  pickupOriginMonitor?.sync();
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
 // El navegador solo puede SOLICITAR el permiso al tocar el botón.
@@ -664,6 +698,7 @@ function picker(name,mount,position){
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;box.classList.remove("is-selected");selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      if(name==="origin"){recognizePickupOriginChange();pickupOriginMonitor?.onOriginSelected();}
       renderRouteSummary();input.focus();
       clear(results);feedback.hidden=true;
     });
@@ -675,7 +710,9 @@ function picker(name,mount,position){
     if(selected.department&&selected.department!==dept){dept=selected.department;highlight();}
     if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
     else record.stops[position]=selected;
+    if(name==="origin")recognizePickupOriginChange();
     clear(results);repaint();renderRouteSummary();
+    if(name==="origin")pickupOriginMonitor?.onOriginSelected();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
        !record.origin.approximate&&!record.destination.approximate&&
        !routeStepAutoAdvanced&&!document.body.classList.contains("journey-mode-quick")&&bookingSteps?.active()==="route"){
@@ -687,7 +724,8 @@ function picker(name,mount,position){
   function chooseDept(d){
     ++sequence;clearTimeout(debounce);loading(search,false);
     dept=d;depts[key]=d;highlight();
-    if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;}
+    if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
+      if(name==="origin"){recognizePickupOriginChange();pickupOriginMonitor?.onOriginSelected();}}
     clear(results);feedback.hidden=true;renderRouteSummary();
     if(input.value.trim().length>=2)void lookup();
   }
@@ -746,7 +784,10 @@ function picker(name,mount,position){
         }finally{btn.disabled=false;}
       });
       text(btn,"span",item.name,"result-title");
-      const typeName=item.type==="place"?"◉ Lugar":"⌖ "+(String(item.point.type||"").toUpperCase()==="CALLE"?"Calle · ubicación aproximada":"Dirección");
+      const approximateAddress=String(item.point.type||"").toUpperCase()==="CALLE"||
+        /aproxim/i.test(String(item.point.stateMsg||""));
+      const typeName=item.type==="place"?"◉ Lugar":"⌖ "+
+        (approximateAddress?"Dirección · punto aproximado":"Dirección verificada");
       text(btn,"small",typeName+" · "+item.secondary,"result-subtitle");
       used++;
     };
@@ -762,6 +803,10 @@ function picker(name,mount,position){
         "Confirmá la ubicación exacta para la recogida.";
     }
     if(used){
+      if(issues.includes("directions-precision")){
+        const note=text(results,"p","La ubicación sugerida puede ser aproximada. No pudimos comprobar una posición más precisa: revisá el punto de recogida.","location-result-warning");
+        note.setAttribute("role","status");
+      }
       feedback.hidden=true;
       return;
     }
@@ -798,6 +843,7 @@ function picker(name,mount,position){
       try{
         const found=await window.TrasladosAddress.findAcross(q,dept);
         addresses=found.local;otherAddresses=found.other.slice(0,5);
+        if(found.warning)issues.push("directions-precision");
       }catch{issues.push("directions");}
       finally{done++;update();}
     })();
@@ -1354,6 +1400,8 @@ function newClientRequestId(){
 function resetNewTripDraft(){
   accountJourneyReturn=null;
   record.origin=null;record.destination=null;record.stops.length=0;
+  recognizePickupOriginChange();
+  pickupOriginMonitor?.onOriginSelected();
   originPicker?.resetSelection?.();destPicker?.resetSelection?.();
   renderStops();
   for(const key of ["comments","person-name","person-phone"]){const field=$(key);if(field)field.value="";}
@@ -1432,7 +1480,7 @@ async function submitUrgentPickup(){
   const signature=JSON.stringify([p,road.distanceKm,road.durationMin,road.referenceRateUyuPerKm,road.referenceFareUyu]);
   if(!urgentAttempt||urgentAttempt.signature!==signature)
     urgentAttempt={signature,id:newClientRequestId()};
-  const btn=$("urgent-send");busy=true;loading(btn,true);
+  const btn=$("urgent-send");busy=true;pickupOriginMonitor?.sync();loading(btn,true);
   try{
     guardConnection();
     const result=await rpc("customer_request_pickup_fixed_v1",
@@ -1449,7 +1497,7 @@ async function submitUrgentPickup(){
         ?"El precio o la ruta cambiaron. Volvé a calcular el recorrido antes de pedirlo."
         :"No pudimos confirmar si se envió tu solicitud. Revisá Mis traslados antes de volver a intentar.";
     notice.hidden=false;
-  }finally{busy=false;loading(btn,false);}
+  }finally{busy=false;loading(btn,false);pickupOriginMonitor?.sync();}
 }
 
 async function submitBooking(){
@@ -1476,7 +1524,7 @@ async function submitBooking(){
     $("booking-final").hidden=false;
     suggestBookingStep(e);showError(e);return;
   }
-  const btn=$("confirm-booking");busy=true;loading(btn,true);
+  const btn=$("confirm-booking");busy=true;pickupOriginMonitor?.sync();loading(btn,true);
   try{
     guardConnection();const p=pendingReview;
     let result;
@@ -1497,7 +1545,8 @@ async function submitBooking(){
     }
     if(!result?.code)throw new Error("El servidor no devolvió el código de la reserva. Revisá Mis traslados antes de repetir.");
     renderBookingSuccess(result,"schedule");
-  }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
+   }catch(e){bookingSendFailure(e);}finally{busy=false;loading(btn,false);}
+  pickupOriginMonitor?.sync();
 }
 
 const tripBoard=window.TrasladosTripBoard;
@@ -1531,7 +1580,7 @@ function tripLine(parent,icon,label){
   text(el,"span",icon).setAttribute("aria-hidden","true");text(el,"span",label);
 }
 function tripProgress(parent,meta,r){
-  const stages=r.fare_mode==="fixed"?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
+  const stages=tripBoard.isFixedFare(r)?["Solicitud","Conductor","Confirmación","En viaje","Finalizada"]:["Solicitud","Presupuesto","Confirmación","En viaje","Finalizada"],ranks=[0,1,2,4,5];
   const rail=text(parent,"div","","trip-steps");
   rail.setAttribute("aria-label","Etapa actual: "+meta.label);
   stages.forEach((stage,i)=>{
@@ -1544,21 +1593,16 @@ function tripProgress(parent,meta,r){
 }
 function tripTimeline(parent,r){
   const events=text(parent,"div","","trip-events");
-  function event(name,time){
-    if(!time)return;
+  const projected=tripBoard.timeline(r);
+  projected.events.forEach(({label,at})=>{
     const line=text(events,"div","","trip-event");
     text(line,"span","","trip-event-dot");
-    const info=text(line,"div",name);text(info,"time"," · "+tripDateTime(time));
-  }
-  event("Solicitud registrada",r.created_at);
-  event("Presupuesto enviado",r.quote_sent_at);
-  event("Presupuesto aceptado",r.quote_accepted_at);
-  if(r.pickup_phase==="EN_CAMINO")event("Conductor en camino",r.pickup_phase_updated_at);
-  if(r.pickup_phase==="EN_PUNTO")event("Conductor llegó",r.pickup_phase_updated_at);
-  if(r.confirmed_at&&r.confirmed_at!==r.quote_accepted_at)event("Traslado confirmado",r.confirmed_at);
-  // No atribuir un horario a EN_VIAJE o FINALIZADA si la API no lo proporciona.
-  if(["EN_VIAJE","FINALIZADA","CANCELADA","RECHAZADA"].includes(r.status))
-    text(events,"div","Estado actual: "+statusName(r.status),"trip-event");
+    const info=text(line,"div",label);
+    text(info,"time"," · "+tripDateTime(at));
+  });
+  // The current terminal status may be shown without fabricating a timestamp.
+  if(projected.currentLabel)
+    text(events,"div","Estado actual: "+projected.currentLabel,"trip-event");
 }
 
 function tripChatAuth(r,guestToken){
@@ -1964,28 +2008,18 @@ function renderPremiumTracking(){
   text(pill,"strong",meta.label);
   text(hero,"h2",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Conductor en camino");
   text(hero,"p",tripBoard.guidance(r));
+  // The expanded detail shares the EXACT authorized GPS/road component used
+  // in Mis traslados. No second static map that contradicts the live car route.
   const mapHost=text(content,"section","","premium-tracking-map");
-  const from=[Number(r.origin_lat),Number(r.origin_lng)];
-  const to=[Number(r.destination_lat),Number(r.destination_lng)];
-  const coordinatesReal=from.every(Number.isFinite)&&to.every(Number.isFinite)&&
-    isUruguayCoords(from[0],from[1])&&isUruguayCoords(to[0],to[1])&&
-    (from[0]!==to[0]||from[1]!==to[1]);
-  if(coordinatesReal){
-    const loader=text(mapHost,"p","Cargando mapa de tu recorrido…","premium-tracking-map-message");
-    void roadEngine.estimate([{lat:from[0],lng:from[1]},{lat:to[0],lng:to[1]}],
-      {api:API,publishableKey:KEY}).then(route=>{
-        if(!mapHost.isConnected||premiumTrackingKey!==String(r.id||r.code||""))return;
-        if(!roadEngine.verified(route)||!Array.isArray(route.geometry)||
-          !window.TrasladosPremiumMap?.render(mapHost,route.geometry,{height:178})){
-          loader.textContent="No pudimos mostrar el mapa verificado en este momento.";
-        }
-      }).catch(()=>{
-        if(loader.isConnected)loader.textContent="El mapa está temporalmente no disponible.";
-      });
-  }else{
-    text(mapHost,"div","El recorrido se mostrará cuando estén disponibles sus coordenadas verificadas.","premium-tracking-map-message");
-  }
-  text(content,"p","Mapa del recorrido contratado. No muestra la posición en tiempo real del conductor.","premium-tracking-disclaimer");
+  mapHost.setAttribute("aria-label",onBoard
+    ?"Seguimiento del automóvil hasta el destino"
+    :"Seguimiento del automóvil hasta la recogida");
+  window.TrasladosReservationLive?.mount(mapHost,{
+    reservation:r,guestToken:r.__guestToken||null,
+    sessionToken:authReady()?session?.token:null,
+    rpc,engine:roadEngine,api:API,key:KEY,renderer:window.TrasladosPremiumMap
+  });
+  text(content,"p","La ubicación y el tiempo solo aparecen con GPS reciente y una ruta vial verificada. Si no hay señal, verás el trayecto contratado.","premium-tracking-disclaimer");
   const card=text(content,"section","","premium-tracking-card");
   const stepHead=text(card,"div","","premium-tracking-stephead");
   text(stepHead,"strong","Estado del viaje");
@@ -2348,8 +2382,22 @@ function init(){
   setWhen("schedule");const tomorrow=currentUY(60);
   $("pickup-date").value=tomorrow.day;$("pickup-date").min=currentUY().day;$("pickup-time").value=tomorrow.time;
   originPicker=picker("origin",$("origin-picker"),0);
+  pickupOriginMonitor=window.TrasladosOriginDrift.mount(document,{
+    getOrigin:()=>record.origin,
+    isActive:()=>!busy&&Boolean(document.querySelector("#view-viaje.active,#view-reservar.active"))
+      &&$("booking-success").hidden
+      &&!window.TrasladosOwnedPickup?.match?.(tripRows,record.origin,record.destination,record.stops),
+    onRefresh:()=>originPicker.useCurrent()
+  });
   // La ubicación del pasajero se solicita solo al pulsar el botón (permiso explícito).
   $("pickup-use-location").addEventListener("click",()=>void originPicker.useCurrent());
+  $("pickup-eta-retry").addEventListener("click",()=>{
+    const action=$("pickup-eta-retry");
+    if(action.disabled||!pickupIdentityKey())return;
+    // This button does not bypass the existing cadence, in-flight lock
+    // or service-side quotas.
+    void refreshPickupPresence(true);
+  });
   destPicker=picker("destination",$("destination-picker"),0);
   premiumRouteComposer=window.TrasladosPremiumRoute.mount(document,()=>({
     origin:record.origin,destination:record.destination,stops:record.stops,

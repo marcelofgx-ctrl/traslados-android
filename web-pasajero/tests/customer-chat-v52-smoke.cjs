@@ -14,8 +14,8 @@ assert.equal(model.notifications(ss,[base]).length,0,"Unchanged refresh must be 
 assert.equal(model.notifications(null,[next]).length,0,"Fresh load must be baseline");
 assert.equal(model.notifications(model.snapshot([next]),[next]).length,0,"Do not re-notify same message");
 assert(html.includes('id="trips-alert-sound"')&&html.includes('id="trips-alert-vibrate"'));
-assert(html.includes('trip-board.js?v=6')&&html.includes('app.js?v=81')&&html.includes('styles.css?v=81'));
-assert(sw.includes("traslados-pwa-v81"));
+assert(html.includes('trip-board.js?v=7')&&html.includes('app.js?v=82')&&html.includes('styles.css?v=82'));
+assert(sw.includes("traslados-pwa-v82"));
 assert(app.includes('rpc("customer_list_reservations_v16"'));
 assert(app.includes('rpc("get_reservation_by_token_v5"'));
 assert(app.includes('rpc("customer_trip_chat_v1"'));

@@ -68,7 +68,7 @@ jobs:
         run: |
           test -f index.html && test -f web-pasajero/index.html
           grep -q 'href="./web-pasajero/"' index.html
-          test -f web-pasajero/public-config.js && test -f web-pasajero/app.js && test -f web-pasajero/owned-pickup.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/service-home.js && test -f web-pasajero/pickup-cadence.js
+          test -f web-pasajero/public-config.js && test -f web-pasajero/app.js && test -f web-pasajero/owned-pickup.js && test -f web-pasajero/pickup-observability.js && test -f web-pasajero/trip-board.js && test -f web-pasajero/styles.css && test -f web-pasajero/geo-search.js && test -f web-pasajero/address-engine.js && test -f web-pasajero/route-engine.js && test -f web-pasajero/eta-engine.js && test -f web-pasajero/booking-contracts.js && test -f web-pasajero/rpc-client.js && test -f web-pasajero/booking-steps.js && test -f web-pasajero/service-home.js && test -f web-pasajero/pickup-cadence.js && test -f web-pasajero/pickup-origin-drift.js
       - name: Validate client scripts, PWA manifest and real backend
         shell: bash
         run: |
@@ -83,12 +83,18 @@ jobs:
           node --check web-pasajero/service-home.js
           node --check web-pasajero/owned-pickup.js
           node --check web-pasajero/pickup-cadence.js
+          node --check web-pasajero/pickup-origin-drift.js
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+          node web-pasajero/tests/pickup-origin-recalc-smoke.cjs
           node --check web-pasajero/pickup-observability.js
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
           node --check web-pasajero/public-config.js
+          node --check web-pasajero/reservation-live.js
           node --check web-pasajero/app.js
           node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/address-picker-regression-v82-smoke.cjs
+          node web-pasajero/tests/dir001-precision-fallback-smoke.cjs
           node web-pasajero/tests/search-quality-v69-smoke.cjs
           node web-pasajero/tests/search-catalog-integrity-v69-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
@@ -107,6 +113,7 @@ jobs:
           node web-pasajero/tests/trip-board-v50-smoke.cjs
           node web-pasajero/tests/expired-quotes-v55-smoke.cjs
           node web-pasajero/tests/trip-phase-v51-smoke.cjs
+          node web-pasajero/tests/status001-fixed-legacy-smoke.cjs
           node web-pasajero/tests/customer-chat-v52-smoke.cjs
           node web-pasajero/tests/mobile-overflow-v53-smoke.cjs
           node web-pasajero/tests/pickup-health-v54-smoke.cjs
@@ -117,6 +124,7 @@ jobs:
           node web-pasajero/tests/premium-map-smoke.cjs
           node web-pasajero/tests/reservation-live-v79-smoke.cjs
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
           node web-pasajero/tests/journey-composition-v57-smoke.cjs
           node web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs
           node web-pasajero/tests/stable-refresh-v58-smoke.cjs
@@ -165,6 +173,7 @@ jobs:
           assert 'rpc-client.js' in (r/'index.html').read_text() and 'rpc-client.js' in (r/'sw.js').read_text()
           assert 'booking-steps.js' in (r/'index.html').read_text() and 'booking-steps.js' in (r/'sw.js').read_text()
           assert 'pickup-cadence.js' in (r/'index.html').read_text() and 'pickup-cadence.js' in (r/'sw.js').read_text()
+          assert 'pickup-origin-drift.js' in (r/'index.html').read_text() and 'pickup-origin-drift.js' in (r/'sw.js').read_text()
           assert 'window.TrasladosBookingSteps.mount(document)' in js
           assert 'beforeinstallprompt' in js and 'serviceWorker.register' in js
           assert not any(t in js for t in ['service_role','sb_secret_'])
@@ -173,7 +182,7 @@ jobs:
           PYCHECK
           mkdir -p artifacts
           (cd web-pasajero && zip -qr ../artifacts/Traslados_Web_PWA_Instalable.zip .)
-          (cd web-pasajero && sha256sum index.html app.js public-config.js pickup-observability.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js styles.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
+          (cd web-pasajero && sha256sum index.html app.js public-config.js pickup-observability.js trip-board.js geo-search.js address-engine.js route-engine.js eta-engine.js booking-contracts.js rpc-client.js booking-steps.js pickup-cadence.js pickup-origin-drift.js styles.css premium-route.css manifest.webmanifest sw.js > ../artifacts/SHA256SUMS.txt)
       - name: Export entire PWA even without GitHub Pages activated
         uses: actions/upload-artifact@v4
         with:
