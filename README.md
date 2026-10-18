@@ -1,5 +1,7 @@
 # Traslados / APK Mapa — repositorio principal
 
+> **TRASPASO DEL 18/10/2026:** [Metodología aplicada, PR pendientes y diagnóstico de las 12 capturas](docs/CONTINUIDAD_METODOLOGIA_Y_CAPTURAS_20261018.md). Es el contexto reciente para retomar la sesión; las imágenes originales quedaron en paquete privado del usuario, no en GitHub.
+
 > **NORMA PERMANENTE DESDE EL 18/10/2026:** antes de comenzar otra sesión o modificar código, leer [METODOLOGÍA PERMANENTE](docs/METODOLOGIA_PERMANENTE_TRASLADOS.md) y [REGISTRO DE REGRESIONES](docs/REGISTRO_DE_REGRESIONES_TRASLADOS.md). Ninguna compilación/PR equivale automáticamente a publicación o QA física. Producto oficial: página pública, web/PWA pasajeros y **única APK Mapa Trayectos con Conductor integrado**. Los enlaces antiguos a APK Cliente y Conductor en esta página son **históricos**, NO productos oficiales nuevos.\n\n
 **Entrada única para retomar el proyecto en cualquier sesión:**
 
