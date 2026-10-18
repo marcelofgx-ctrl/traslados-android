@@ -24,7 +24,7 @@ assert(css.includes("grid-template-columns:repeat(3,minmax(0,1fr))"),
     "Three metrics must fit on a narrow screen");
 assert(css.includes(".request-hero")&&css.includes(".request-recap-metrics"),
     "Premium final action card must preserve full quote context");
-assert(html.includes('styles.css?v=81')&&html.includes('app.js?v=81'));
+assert(html.includes('styles.css?v=82')&&html.includes('app.js?v=82'));
 assert(sw.includes('traslados-pwa-v82'),"Service worker must refresh v57 assets");
 const begin=app.indexOf("function refreshJourneyComposition(");
 const end=app.indexOf("\nfunction suggestBookingStep(",begin);
