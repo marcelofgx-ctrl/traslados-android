@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static non-destructive regression for single-APK reservation reception R25.29.
+"""Static non-destructive regression for single-APK reservation reception R25.30.
 No credentials, network calls, mock bookings or Supabase writes.
 """
 from pathlib import Path
@@ -19,7 +19,9 @@ assert "project(':core-reservations')" in gradle
 
 # Only authenticated driver data, never public pending trip listing.
 assert 'driver_list_reservations_v4' in api
-assert 'driver_session' in alerts and 'getString("pin","")' in alerts
+assert 'DriverIdentity.pin(' in alerts
+assert 'mapa-quick-reservations' in alerts
+assert 'driver_identity_secure_v1' in (root / "DriverIdentity.java").read_text()
 assert 'driver_pin_required' in alerts
 assert "new Thread(" in alerts and 'mapa-quick-reservations' in alerts
 
@@ -55,5 +57,5 @@ assert 'Api.decideFixedPickup(pin,id,accept)' in alerts
 for path in (alerts, service, main):
     assert "TRUNCATE TABLE" not in path and "DELETE FROM public." not in path
 
-print("PASS R25.29: current-session polling, foreground fallback and monitored restart")
-print("PASS R25.29: no second Android APK, no unauthorized bookings or data purges")
+print("PASS R25.30: current-session polling, foreground fallback and monitored restart")
+print("PASS R25.30: no second Android APK, no unauthorized bookings or data purges")
