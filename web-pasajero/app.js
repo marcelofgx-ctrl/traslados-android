@@ -698,7 +698,7 @@ function picker(name,mount,position){
     button(selectedBox,"Editar","tiny-btn location-edit",()=>{
       selected=null;box.classList.remove("is-selected");selectedBox.hidden=true;controls.hidden=false;
       if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
-      if(name==="origin")pickupOriginMonitor?.onOriginSelected();
+      if(name==="origin"){recognizePickupOriginChange();pickupOriginMonitor?.onOriginSelected();}
       renderRouteSummary();input.focus();
       clear(results);feedback.hidden=true;
     });
@@ -710,6 +710,7 @@ function picker(name,mount,position){
     if(selected.department&&selected.department!==dept){dept=selected.department;highlight();}
     if(name==="origin"||name==="destination"){record[name]=selected;depts[name]=selected.department||dept;}
     else record.stops[position]=selected;
+    if(name==="origin")recognizePickupOriginChange();
     clear(results);repaint();renderRouteSummary();
     if(name==="origin")pickupOriginMonitor?.onOriginSelected();
     if((name==="origin"||name==="destination")&&record.origin&&record.destination&&
@@ -724,7 +725,7 @@ function picker(name,mount,position){
     ++sequence;clearTimeout(debounce);loading(search,false);
     dept=d;depts[key]=d;highlight();
     if(selected){selected=null;repaint();if(name==="origin"||name==="destination")record[name]=null;else record.stops[position]=null;
-      if(name==="origin")pickupOriginMonitor?.onOriginSelected();}
+      if(name==="origin"){recognizePickupOriginChange();pickupOriginMonitor?.onOriginSelected();}}
     clear(results);feedback.hidden=true;renderRouteSummary();
     if(input.value.trim().length>=2)void lookup();
   }
@@ -1002,9 +1003,6 @@ function addRoadDiagram(parent,geometry){
   text(parent,"p","Esquema de ruta por calles (no a escala). Abrí Maps para ver el mapa completo.","route-map-caption");
 }
 function renderRouteSummary(){
-  // A changed destination recalculates the trip only; only a changed origin
-  // invalidates the separate driver→pickup ETA and its previous failure.
-  recognizePickupOriginChange();
   if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   const host=$("route-overview");
   if(!host)return;
@@ -1402,6 +1400,7 @@ function newClientRequestId(){
 function resetNewTripDraft(){
   accountJourneyReturn=null;
   record.origin=null;record.destination=null;record.stops.length=0;
+  recognizePickupOriginChange();
   pickupOriginMonitor?.onOriginSelected();
   originPicker?.resetSelection?.();destPicker?.resetSelection?.();
   renderStops();
