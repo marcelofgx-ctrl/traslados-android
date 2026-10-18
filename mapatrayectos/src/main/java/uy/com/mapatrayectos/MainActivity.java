@@ -110,6 +110,28 @@ public class MainActivity extends Activity {
             .setNegativeButton("MÁS TARDE",null)
             .setPositiveButton("VINCULAR",(d,w)->promptDriverBinding()).show();
     };
+    /** Offer the existing consent dialog once, only with linked identity and no
+     * competing permission sheet, moving vehicle or active trip.
+     * This is an invitation: nothing publishes until the user taps AUTORIZAR.
+     */
+    private final Runnable offerPickupConsentOnce=()->{
+        if(isFinishing()||isDestroyed()||!hasWindowFocus())return;
+        boolean blocked=runtimePermissionInProgress||returningFromOverlaySettings
+            ||bubbleIntroShownThisActivity||driverLinkInFlight.get();
+        SharedPreferences onboarding=getSharedPreferences("pickup_presence_onboarding_v1",MODE_PRIVATE);
+        if(!PickupConsentOnboardingPolicy.shouldOffer(
+            !DriverIdentity.pin(this).isEmpty(),Api.pickupPresenceEnabled(),
+            onboarding.getBoolean("shown",false),blocked,tripActive,currentSpeedKmh>3f))
+            return;
+        // Mark as offered before showing so CANCEL does not nag on every launch.
+        onboarding.edit().putBoolean("shown",true).apply();
+        promptPickupConsent();
+    };
+    private void schedulePickupConsentOffer(){
+        uiHandler.removeCallbacks(offerPickupConsentOnce);
+        uiHandler.postDelayed(offerPickupConsentOnce,3500L);
+    }
+
     // The map's visible window independently reconciles reservations even if
     // Samsung stopped the notification service while it was in the background.
     private final Runnable transferReceptionTick=new Runnable(){
@@ -199,6 +221,7 @@ public class MainActivity extends Activity {
                             TransferAlerts.ensureMonitor(this);
                             TransferAlerts.refreshAsync(this);
                             updateTransferBadge();
+                            schedulePickupConsentOffer();
                             Toast.makeText(this,"Conductor principal vinculado. "+
                                 "Las solicitudes llegarán automáticamente.",Toast.LENGTH_LONG).show();
                         }else{
@@ -1876,6 +1899,7 @@ public class MainActivity extends Activity {
         }else{
             runtimePermissionInProgress=false;
             scheduleBubblePermissionCheck();
+            schedulePickupConsentOffer();
         }
     }
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
@@ -1886,6 +1910,7 @@ public class MainActivity extends Activity {
         }else if(requestCode==REQ_NOTIF){
             runtimePermissionInProgress=false;
             scheduleBubblePermissionCheck();
+            schedulePickupConsentOffer();
         }
     }
     private void startPreview(){if(shiftActive||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;if(previewLm==null)previewLm=(LocationManager)getSystemService(LOCATION_SERVICE);if(previewLm==null)return;try{boolean gps=previewLm.isProviderEnabled(LocationManager.GPS_PROVIDER);Location l=previewLm.getLastKnownLocation(gps?LocationManager.GPS_PROVIDER:LocationManager.NETWORK_PROVIDER);if(l!=null&&Math.abs(System.currentTimeMillis()-l.getTime())<120000L)previewListener.onLocationChanged(l);if(gps)previewLm.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500L,1f,previewListener,Looper.getMainLooper());else if(previewLm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))previewLm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,5000L,12f,previewListener,Looper.getMainLooper());}catch(Exception ignored){}}
@@ -2057,6 +2082,7 @@ public class MainActivity extends Activity {
         uiHandler.post(transferReceptionTick);
         uiHandler.removeCallbacks(offerDriverLinkOnce);
         uiHandler.postDelayed(offerDriverLinkOnce,1550L);
+        schedulePickupConsentOffer();
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
@@ -2064,7 +2090,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();}
-    @Override protected void onPause(){uiHandler.removeCallbacks(offerDriverLinkOnce);uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+    @Override protected void onPause(){uiHandler.removeCallbacks(offerDriverLinkOnce);uiHandler.removeCallbacks(offerPickupConsentOnce);uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);
