@@ -1120,9 +1120,9 @@ function renderRouteSummary(){
   const hit=roadEngine.peek(key);
   if(hit){finish(hit);return;}
   latestRoad=null;
-  // Do not leave the previous route's price or polyline visible while the
-  // next origin/destination/stops combination is awaiting verification.
-  premiumRouteComposer?.sync();
+  // Do not leave a former price or polyline while another verified route loads.
+  // The shared booking-summary test uses this function without Premium mounted.
+  if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   roadEngine.estimate(points,{api:API,publishableKey:KEY})
     .then(finish).catch(()=>finish(null));
 }
