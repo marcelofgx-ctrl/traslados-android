@@ -21,3 +21,7 @@ Incidencia: captura Samsung con jornada activa, GPS ±4 m y 45,1 km; al mismo ti
 ## APK de revisión candidata
 
 Se prepara una compilación firmada R25.32-PRESENCE-QA, versionCode 84, con mismo applicationId y verificación contra el certificado R25.30 (también usado por R25.31). GitHub Actions genera un artefacto temporal; **no publica releases ni modifica la web**. La descarga no estará disponible hasta verificar SUCCESS, SHA exacto y checksum.
+
+## Invitación al comienzo (siguiente revisión Android)
+
+Al abrir Mapa, tras los permisos Android y la vinculación del conductor, si falta la autorización comercial se ofrece **una sola vez** el cuadro original «Autorizar GPS para recogidas». No se comparte nada por el mero hecho de abrir la app: se requiere pulsar **AUTORIZAR** y obtener respuesta del servidor. No mostrar mientras el conductor esté en viaje, el vehículo se mueva o haya una pantalla de permisos pendiente. Cancelar o desactivar expresamente evita avisos repetidos; el ajuste manual sigue en el menú. Los cambios están protegidos por `PickupConsentOnboardingPolicyTest` y la compilación nativa integrada; requieren nueva APK firmada para probarlos en Samsung.
