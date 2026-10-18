@@ -89,7 +89,7 @@ public class ReservationMonitorService extends Service {
             try{
                 android.content.SharedPreferences health=getSharedPreferences("driver_monitor_health",MODE_PRIVATE);
                 health.edit().putLong("last_attempt_at",System.currentTimeMillis()).apply();
-                String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+                String pin=uy.com.mapatrayectos.DriverIdentity.pin(this);
                 if(!pin.isEmpty()){
                     JSONArray a=Api.listActive(pin);Set<String> now=new HashSet<>();
                     for(int i=0;i<a.length();i++){
@@ -248,7 +248,7 @@ running=false;if(worker!=null)worker.interrupt();super.onDestroy();}
 
     private void driverBubblePollStatusChanges(){
         if(driverBubblePollInFlight)return;
-        String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+        String pin=uy.com.mapatrayectos.DriverIdentity.pin(this);
         if(pin==null||pin.isEmpty())return;
         driverBubblePollInFlight=true;
         driverBubbleWorker.execute(()->{

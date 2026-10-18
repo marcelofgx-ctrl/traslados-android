@@ -129,7 +129,7 @@ public class MainActivity extends Activity {
             try{
                 JSONObject s=Api.setupState();
                 boolean configured=s.optBoolean("configured",false);
-                String saved=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+                String saved=uy.com.mapatrayectos.DriverIdentity.pin(this);
                 if(configured&&!saved.isEmpty()){
                     try{
                         if(Api.pinValid(saved)){
@@ -137,7 +137,12 @@ public class MainActivity extends Activity {
                             runOnUiThread(this::enterDashboard);
                             return;
                         }
-                    }catch(Exception ignored){}
+                    }catch(Exception error){
+                        // A network failure must not be presented as a new device or
+                        // force the conductor to enter the PIN again.
+                        runOnUiThread(()->renderConnectionError(error));
+                        return;
+                    }
                 }
                 runOnUiThread(()->renderAccess(configured));
             }catch(Exception e){
@@ -178,13 +183,13 @@ public class MainActivity extends Activity {
             box.addView(card,lpMatch(-2,10,14));
             addNote(box,"El PIN queda asociado al conductor. Guardalo en un lugar seguro.");
         }else{
-            addIntro(box,"Acceso conductor","Ingresá tu PIN para ver y gestionar las reservas.");
+            addIntro(box,"Vincular este teléfono","Solo se verifica una vez. Después Mapa te reconoce automáticamente como conductor principal.");
             LinearLayout card=panelCard();
             EditText p=addField(card,"ticket","PIN PRIVADO","••••••");
             p.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_VARIATION_PASSWORD);
             Button access=primaryButton("INGRESAR");access.setOnClickListener(v->login(p,access));card.addView(access,lpMatch(dp(66),12,4));
             box.addView(card,lpMatch(-2,10,14));
-            addNote(box,"Cuando entre una solicitud, aparecerá automáticamente acá y recibirás un aviso sonoro.");
+            addNote(box,"El PIN no volverá a pedirse en este teléfono mientras mantengas la vinculación.");
         }
         setContentView(sc);
     }
@@ -215,7 +220,9 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void savePin(){getSharedPreferences("driver_session",MODE_PRIVATE).edit().putString("pin",pin).apply();}
+    private void savePin() throws Exception{
+        uy.com.mapatrayectos.DriverIdentity.bind(this,pin);
+    }
 
     private void enterDashboard(){
         maybeAskDriverBubblePermission();
@@ -1219,7 +1226,7 @@ public class MainActivity extends Activity {
 
     private void logout(){
         stopService(new Intent(this,ReservationMonitorService.class));
-        getSharedPreferences("driver_session",MODE_PRIVATE).edit().clear().apply();pin="";expandedId="";dashboardVisible=false;currentRows.clear();
+        uy.com.mapatrayectos.DriverIdentity.clear(this);pin="";expandedId="";dashboardVisible=false;currentRows.clear();
         toast("Sesión cerrada");renderAccess(true);
     }
 

@@ -19,7 +19,7 @@ public final class TransferAlerts {
     private TransferAlerts(){}
 
     public static void ensureMonitor(Context c){
-        String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+        String pin=DriverIdentity.pin(c);
         if(pin==null||pin.trim().isEmpty()){
             c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE).edit()
                 .putString("last_error_type","driver_pin_required").apply();
@@ -34,7 +34,7 @@ public final class TransferAlerts {
 
     /** Only restart a stalled monitor; do not repeatedly start it every polling tick. */
     public static boolean monitorNeedsRestart(Context c){
-        String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+        String pin=DriverIdentity.pin(c);
         if(pin==null||pin.trim().isEmpty())return false;
         long last=c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE)
             .getLong("last_attempt_at",0L);
@@ -42,9 +42,9 @@ public final class TransferAlerts {
         return last<=0L||age<0L||age>MONITOR_STALE_MS;
     }
     public static String receptionStatus(Context c){
-        String pin=c.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+        String pin=DriverIdentity.pin(c);
         if(pin==null||pin.trim().isEmpty())
-            return "Sin acceso del conductor. Abrí TRASLADOS CONDUCTOR e ingresá con tu PIN.";
+            return "Este teléfono todavía no está vinculado al conductor. Abrí Vincular conductor en Mapa.";
         SharedPreferences health=c.getSharedPreferences("driver_monitor_health",Context.MODE_PRIVATE);
         long now=System.currentTimeMillis();
         long last=health.getLong("last_success_at",0L);
@@ -79,8 +79,7 @@ public final class TransferAlerts {
     }
     public static void refreshAsync(Context c){
         final Context app=c.getApplicationContext();
-        final String pin=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
-            .getString("pin","");
+        final String pin=DriverIdentity.pin(app);
         if(pin==null||pin.isEmpty()){
             app.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit()
                 .putString("sync_error","Se requiere iniciar sesión como conductor").apply();
@@ -91,8 +90,7 @@ public final class TransferAlerts {
         new Thread(()->{
             try{
                 JSONArray rows=uy.com.traslados.conductor.Api.listActive(pin);
-                if(pin.equals(app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
-                        .getString("pin","")))updatePending(app,rows);
+                if(pin.equals(DriverIdentity.pin(app)))updatePending(app,rows);
             }catch(Exception e){recordSyncError(app,e);}
             finally{QUICK_REFRESH.set(false);}
         },"mapa-quick-reservations").start();
@@ -288,7 +286,7 @@ public final class TransferAlerts {
             boolean ok=false;
             String message="No se pudo confirmar la operación. Revisá la conexión.";
             try{
-                String pin=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE).getString("pin","");
+                String pin=DriverIdentity.pin(app);
                 if(pin.isEmpty())throw new IllegalStateException("Sesión de conductor no disponible");
                 JSONArray current=uy.com.traslados.conductor.Api.listActive(pin);
                 JSONObject live=null;

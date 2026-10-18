@@ -91,6 +91,25 @@ public class MainActivity extends Activity {
     private boolean reopenConfigurationAfterOverlay=false;
     private boolean navigatingWithinMapa=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
+    private final java.util.concurrent.atomic.AtomicBoolean driverLinkInFlight=
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    private final Runnable offerDriverLinkOnce=()->{
+        if(isFinishing()||isDestroyed()||!DriverIdentity.pin(this).isEmpty())return;
+        // Never stack the driver onboarding dialog over Android's overlay
+        // permission prompt. The menu keeps manual linking accessible.
+        if(runtimePermissionInProgress||returningFromOverlaySettings||
+            bubbleIntroShownThisActivity)return;
+        SharedPreferences intro=getSharedPreferences("driver_identity_onboarding",MODE_PRIVATE);
+        if(intro.getBoolean("shown",false))return;
+        intro.edit().putBoolean("shown",true).apply();
+        new AlertDialog.Builder(this)
+            .setTitle("Conductor principal")
+            .setMessage("Mapa Trayectos es tu aplicación de conductor. Vinculá este teléfono "+
+                "una sola vez para recibir reservas automáticamente, sin ingresar el PIN "+
+                "en cada apertura. La jornada y el GPS siguen bajo tu control.")
+            .setNegativeButton("MÁS TARDE",null)
+            .setPositiveButton("VINCULAR",(d,w)->promptDriverBinding()).show();
+    };
     // The map's visible window independently reconciles reservations even if
     // Samsung stopped the notification service while it was in the background.
     private final Runnable transferReceptionTick=new Runnable(){
@@ -128,8 +147,68 @@ public class MainActivity extends Activity {
     };
     private void openIntegratedConductor(){
         hideInAppTransfer(false);
+        if(DriverIdentity.pin(this).isEmpty()){promptDriverBinding();return;}
         TransferAlerts.markViewed(this);
         startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class));
+    }
+    private void promptDriverBinding(){
+        if(!DriverIdentity.pin(this).isEmpty()){
+            TransferAlerts.ensureMonitor(this);
+            TransferAlerts.refreshAsync(this);
+            Toast.makeText(this,"Conductor principal ya vinculado",Toast.LENGTH_SHORT).show();
+            return;
+        }
+        EditText field=new EditText(this);
+        field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
+            android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        field.setSingleLine(true);
+        field.setSaveEnabled(false);
+        field.setHint("PIN de vinculación");
+        field.setPadding(dp(18),dp(10),dp(18),dp(10));
+        new AlertDialog.Builder(this)
+            .setTitle("Vincular conductor principal")
+            .setMessage("Este es el único paso de identificación en este teléfono. "+
+                "Después Mapa reconocerá tu autorización automáticamente. "+
+                "No modifica las reservas ni habilita el GPS sin tu consentimiento.")
+            .setView(field)
+            .setNegativeButton("CANCELAR",null)
+            .setPositiveButton("VINCULAR",(d,w)->{
+                final String candidate=field.getText().toString().trim();
+                field.setText("");
+                if(!candidate.matches("[0-9]{4,10}")){
+                    Toast.makeText(this,"PIN de 4 a 10 dígitos",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if(!driverLinkInFlight.compareAndSet(false,true))return;
+                new Thread(()->{
+                    boolean success=false;
+                    try{
+                        if(uy.com.traslados.conductor.Api.pinValid(candidate)){
+                            DriverIdentity.bind(getApplicationContext(),candidate);
+                            success=true;
+                        }
+                    }catch(Exception error){
+                        android.util.Log.w("MapaTransfers","Driver binding failed: "+
+                            error.getClass().getSimpleName());
+                    }
+                    final boolean linked=success;
+                    runOnUiThread(()->{
+                        driverLinkInFlight.set(false);
+                        if(isFinishing()||isDestroyed())return;
+                        if(linked){
+                            TransferAlerts.ensureMonitor(this);
+                            TransferAlerts.refreshAsync(this);
+                            updateTransferBadge();
+                            Toast.makeText(this,"Conductor principal vinculado. "+
+                                "Las solicitudes llegarán automáticamente.",Toast.LENGTH_LONG).show();
+                        }else{
+                            Toast.makeText(this,
+                                "No se pudo vincular. Revisá el PIN y la conexión.",
+                                Toast.LENGTH_LONG).show();
+                        }
+                    });
+                },"mapa-one-time-driver-link").start();
+            }).show();
     }
     private void updateTransferBadge(){
         if(transferBadge==null)return;
@@ -906,14 +985,14 @@ public class MainActivity extends Activity {
                 popup,this::showEndShiftConfirmation);
         }
         int pending=TransferAlerts.pendingCount(this);
-        String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
-        addMainMenuRow(menu,"🚘","TRASLADOS CONDUCTOR",
-            (pin==null||pin.isEmpty())?"Iniciar sesión para recibir solicitudes":
-            pending>0?pending+" solicitud(es) pendiente(s)":"Solicitudes · Agenda · Presupuestos",
+        boolean linked=!DriverIdentity.pin(this).isEmpty();
+        addMainMenuRow(menu,"🚘","Solicitudes y agenda",
+            !linked?"Vincular conductor principal · una sola vez":
+            pending>0?pending+" solicitud(es) pendiente(s)":"Conductor principal · vinculado",
             popup,this::openIntegratedConductor);
         addMainMenuRow(menu,"↻","Recepción de peticiones",
-            (pin==null||pin.isEmpty())?"Sin sesión · avisos desactivados":
-            "Consultar estado · reconectar monitor",
+            linked?"Conductor principal · consultar y reconectar":
+            "Teléfono sin vincular · tocar para configurar",
             popup,this::showTransferReception);
         addMainMenuRow(menu,"◷","Recordatorios","Avisos y tareas programadas",popup,
             ()->startActivity(new Intent(this,ReminderActivity.class)));
@@ -930,8 +1009,7 @@ public class MainActivity extends Activity {
         catch(Exception e){Toast.makeText(this,"No se pudo abrir el menú principal",Toast.LENGTH_SHORT).show();}
     }
     private void showTransferReception(){
-        boolean loggedIn=!getSharedPreferences("driver_session",MODE_PRIVATE)
-            .getString("pin","").trim().isEmpty();
+        boolean loggedIn=!DriverIdentity.pin(this).isEmpty();
         String state=TransferAlerts.receptionStatus(this);
         new AlertDialog.Builder(this)
             .setTitle("Recepción de peticiones")
@@ -940,8 +1018,8 @@ public class MainActivity extends Activity {
                 "Revisar no borra datos ni modifica ninguna solicitud.")
             .setNegativeButton("CERRAR",null)
             .setNeutralButton("VER SOLICITUDES",(dialog,which)->openIntegratedConductor())
-            .setPositiveButton(loggedIn?"REVISAR AHORA":"INICIAR SESIÓN",(dialog,which)->{
-                if(!loggedIn){openIntegratedConductor();return;}
+            .setPositiveButton(loggedIn?"REVISAR AHORA":"VINCULAR TELÉFONO",(dialog,which)->{
+                if(!loggedIn){promptDriverBinding();return;}
                 TransferAlerts.ensureMonitor(this);
                 TransferAlerts.refreshAsync(this);
                 Toast.makeText(this,"Consultando reservas en Supabase…",
@@ -1078,34 +1156,41 @@ public class MainActivity extends Activity {
             }).setNegativeButton("Cerrar",null).show();
     }
     private void promptPickupConsent(){
-        EditText pinInput=new EditText(this);
-        pinInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|
-            android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        pinInput.setHint("PIN del conductor");
-        pinInput.setSingleLine(true);
-        int padding=(int)(22*getResources().getDisplayMetrics().density);
-        pinInput.setPadding(padding,padding/2,padding,padding/2);
-        new AlertDialog.Builder(this).setTitle("Autorizar GPS para recogidas")
-            .setView(pinInput)
-            .setNegativeButton("Cancelar",null)
-            .setPositiveButton("Autorizar",(d,w)->{
-                final String pin=pinInput.getText().toString();
-                pinInput.setText("");
-                if(pin.length()<4){
-                    Toast.makeText(this,"Ingresá tu PIN válido",Toast.LENGTH_LONG).show();return;
-                }
+        final String linked=DriverIdentity.pin(this);
+        if(linked.isEmpty()){
+            new AlertDialog.Builder(this)
+                .setTitle("Vinculá tu conductor primero")
+                .setMessage("Para compartir disponibilidad GPS, vinculá este teléfono "+
+                    "una vez. Después no necesitarás volver a ingresar tu PIN.")
+                .setNegativeButton("MÁS TARDE",null)
+                .setPositiveButton("VINCULAR",(d,w)->promptDriverBinding()).show();
+            return;
+        }
+        // Device identity does NOT silently grant GPS access. Require a separate
+        // explicit consent even though the driver is already linked.
+        new AlertDialog.Builder(this)
+            .setTitle("Autorizar GPS para recogidas")
+            .setMessage("Mapa usará la identidad ya vinculada del conductor principal. "+
+                "La ubicación comercial se compartirá únicamente con tu consentimiento, "+
+                "jornada activa y GPS válido. Podés desactivarla cuando quieras.")
+            .setNegativeButton("CANCELAR",null)
+            .setPositiveButton("AUTORIZAR",(d,w)->{
                 new Thread(()->{
                     try{
-                        boolean ok=Api.setPickupConsent(pin,true);
+                        boolean ok=Api.setPickupConsent(linked,true);
                         runOnUiThread(()->{
+                            if(isFinishing()||isDestroyed())return;
                             Toast.makeText(this,ok?
-                                "Disponibilidad activada. Se publicará solo con jornada y GPS válidos.":
+                                "Disponibilidad activada. Solo se publicará con jornada y GPS válidos.":
                                 "No se pudo autorizar el dispositivo",Toast.LENGTH_LONG).show();
                             if(ok)requestPickupPresenceSync();
                         });
-                    }catch(Exception e){
-                        runOnUiThread(()->Toast.makeText(this,
-                            "No se pudo autorizar. Revisá el PIN y conexión.",Toast.LENGTH_LONG).show());
+                    }catch(Exception error){
+                        runOnUiThread(()->{
+                            if(!isFinishing()&&!isDestroyed())
+                                Toast.makeText(this,"No se pudo autorizar. Revisá la conexión.",
+                                    Toast.LENGTH_LONG).show();
+                        });
                     }
                 },"pickup-presence-enable").start();
             }).show();
@@ -1966,6 +2051,8 @@ public class MainActivity extends Activity {
         TransferAlerts.ensureMonitor(this);
         uiHandler.removeCallbacks(transferReceptionTick);
         uiHandler.post(transferReceptionTick);
+        uiHandler.removeCallbacks(offerDriverLinkOnce);
+        uiHandler.postDelayed(offerDriverLinkOnce,1550L);
         if(Build.VERSION.SDK_INT>=33)registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP),Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(reminderReceiver,new IntentFilter(ACTION_REMINDER_POPUP));
         if(quickActionsAnchor!=null)quickActionsAnchor.post(this::storeReminderAnchor);SharedPreferences s=getSharedPreferences("tracking_state",MODE_PRIVATE);shiftActive=s.getBoolean("shift_active",false);shiftPaused=s.getBoolean("shift_paused",false);shiftPauseMs=s.getLong("total_pause_ms",0);tripActive=s.getBoolean("trip_active",false);stopActive=s.getBoolean("stop_active",false);tripType=s.getString("trip_type","other");tripStage=s.getString("trip_stage",tripActive?"onboard":"none");pickupAt=s.getLong("pickup_at",0);stopStarted=s.getLong("stop_started",0);if(shiftActive){sendUiSignal(TrackingService.ACTION_UI_VISIBLE);requestServiceState();uiHandler.postDelayed(this::requestServiceState,350);uiHandler.postDelayed(this::requestServiceState,1100);}else{if(FloatingShortcutPolicy.prearmBeforeLeaving(false,Settings.canDrawOverlays(this)))
@@ -1973,7 +2060,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();}
-    @Override protected void onPause(){uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+    @Override protected void onPause(){uiHandler.removeCallbacks(offerDriverLinkOnce);uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);
