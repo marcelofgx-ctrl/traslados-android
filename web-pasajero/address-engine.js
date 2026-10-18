@@ -60,27 +60,49 @@
       return rows;
     }finally{if(timer!==null)clearTimeout(timer);}
   }
-  async function find(q,department){
-    const trimmed=String(q||"").trim();
-    if(trimmed.length<3)return [];
-    const rows=await query("candidates",trimmed,40);
-    let result=verified(rows,trimmed,department);
-    // La altura exacta puede no salir en /candidates; se intenta dirección
-    // única, sin aceptar automáticamente otro número.
-    if(!result.length&&/\b\d{1,5}\b/.test(trimmed)){
-      result=verified(await query("direcUnica",trimmed+", "+department,12),trimmed,department);
-    }
-    return result.slice(0,12);
-  }
-  async function findAcross(q,preferredDepartment){
+  // One canonical pipeline. The UI can ask for national alternatives, but
+  // neither public wrapper may skip the exact-address fallback or validation.
+  async function searchVerified(q,preferredDepartment){
     const trimmed=String(q||"").trim();
     if(trimmed.length<3)return {local:[],other:[]};
-    const rows=await query("candidates",trimmed,40);
-    const valid=verified(rows,trimmed,null);
     const preferred=norm(preferredDepartment);
-    const local=valid.filter(item=>norm(item.departamento)===preferred);
-    const other=valid.filter(item=>norm(item.departamento)!==preferred);
+    let candidates=[],candidatesError=null;
+    try{
+      candidates=verified(await query("candidates",trimmed,40),trimmed,null);
+    }catch(error){candidatesError=error;}
+    const local=candidates.filter(item=>!preferred||norm(item.departamento)===preferred);
+    const other=candidates.filter(item=>preferred&&norm(item.departamento)!==preferred);
+    // A result in Florida/Canelones (or a CALLE without an exact door number)
+    // must NOT prevent checking the exact Montevideo street address.
+    if(preferred&&local.length===0&&/\b\d{1,5}\b/.test(trimmed)){
+      const suffix=norm(trimmed).includes(preferred)?"":", "+preferredDepartment;
+      try{
+        const exact=verified(
+          await query("direcUnica",trimmed+suffix,12),trimmed,preferredDepartment);
+        const seen=new Set(local.map(item=>norm(item.address)+"|"+norm(item.departamento)));
+        for(const item of exact){
+          const id=norm(item.address)+"|"+norm(item.departamento);
+          if(!seen.has(id)){local.push(item);seen.add(id);}
+        }
+      }catch(error){
+        // Distinguish unavailable IDE service from a genuinely absent address.
+        // A failed exact lookup is not proof that the address does not exist.
+        throw error;
+      }
+    }else if(candidatesError){
+      throw candidatesError;
+    }
+    // A candidate failure can still be recovered by a successful direct
+    // lookup; otherwise do not silently present a false "not found".
+    if(candidatesError&&!local.length)throw candidatesError;
     return {local:local.slice(0,12),other:other.slice(0,8)};
+  }
+  async function find(q,department){
+    const found=await searchVerified(q,department);
+    return found.local;
+  }
+  async function findAcross(q,preferredDepartment){
+    return searchVerified(q,preferredDepartment);
   }
   async function resolve(item,asked,department){
     const realDepartment=item?.departamento||department;
