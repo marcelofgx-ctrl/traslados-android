@@ -1116,7 +1116,7 @@ public class MainActivity extends Activity {
                 .setTitle("Compartir disponibilidad de recogida")
                 .setMessage("Solo durante tu jornada activa y con conducción y GPS recientes. "+
                     "Los clientes verán km y minutos aproximados, nunca tu ubicación exacta. "+
-                    "Podés desactivarlo en cualquier momento. Requiere tu PIN del conductor.")
+                    "Podés desactivarlo en cualquier momento. En este teléfono ya vinculado no tenés que escribir el PIN otra vez.")
                 .setNegativeButton("Cancelar",null)
                 .setPositiveButton("Continuar",(dialog,which)->promptPickupConsent())
                 .show();
