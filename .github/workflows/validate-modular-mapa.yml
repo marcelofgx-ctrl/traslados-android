@@ -44,6 +44,24 @@ jobs:
       - name: Verify R25.31 QA integration contract
         shell: bash
         run: python3 scripts/test_mapa_r2531_integration.py
+      - name: PRESENCE-001 Play/Stop linked commercial GPS contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/play-stop-presence
+          javac -d /tmp/play-stop-presence \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PlayStopPresencePolicy.java \
+            mapatrayectos/tests/PlayStopPresencePolicyTest.java
+          java -cp /tmp/play-stop-presence PlayStopPresencePolicyTest
+          grep -q 'Api.commercialPlay();' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'Api.commercialStop();' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'Api.retryCommercialPlay(shiftActive);' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'Executors.newSingleThreadExecutor()' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          # A queued STOP cannot clear a subsequent PLAY's requested state.
+          grep -q 'setPickupConsentInternal("",false,false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'boolean updateRequestedState' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'putBoolean("service_play_requested",false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'DriverIdentity.pin(APP)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
       - name: PRESENCE-001 safe GPS publication status regression
         shell: bash
         run: |

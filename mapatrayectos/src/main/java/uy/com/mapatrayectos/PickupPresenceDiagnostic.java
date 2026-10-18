@@ -27,6 +27,9 @@ public final class PickupPresenceDiagnostic {
     public static String display(String code){
         if(code==null)return "Sin intentos registrados";
         switch(code){
+            case "driver_not_linked":return "Play iniciado: falta vincular este teléfono una sola vez";
+            case "consent_failed":return "Play iniciado: el servidor rechazó activar recogidas";
+            case "consent_ready":return "Play: ubicación comercial autorizada; esperando GPS válido";
             case "sending":return "Enviando…";
             case "published":return "Servidor confirmó GPS válido para recogidas";
             case "shift_inactive":return "Envío recibido, pero sin jornada activa";

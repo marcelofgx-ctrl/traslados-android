@@ -1,0 +1,180 @@
+name: Mapa R25.34 · Play/Stop sin PIN repetido · QA firmada sin publicar
+on:
+  push:
+    branches: [fix/mapa-play-stop-commercial-presence-20261018]
+    paths:
+      - '.github/workflows/build-mapa-r25-34-playstop-qa.yml'
+      - 'mapatrayectos/tests/PlayStopPresencePolicyTest.java'
+      - 'mapatrayectos/src/**'
+      - 'mapatrayectos/build.gradle'
+      - 'settings.gradle'
+      - 'conductor/build.gradle'
+      - 'scripts/test_mapa_datos.py'
+      - 'scripts/test_mapa_reception.py'
+      - 'scripts/test_mapa_driver_identity.py'
+      - 'scripts/test_mapa_session_privacy.py'
+      - 'scripts/test_mapa_r2531_integration.py'
+      - 'mapatrayectos/tests/PickupPresenceDiagnosticTest.java'
+      - 'mapatrayectos/tests/ReservationQuoteLabelTest.java'
+      - 'conductor/src/main/java/uy/com/traslados/conductor/ReservationQuoteLabel.java'
+      - 'core-reservations/**'
+      - 'conductor/src/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: mapa-r25-34-playstop-qa
+  cancel-in-progress: false
+jobs:
+  signed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify no GPS purges, secure private tracking and local backups
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_mapa_datos.py
+          python3 scripts/test_mapa_reception.py
+          python3 scripts/test_mapa_driver_identity.py
+          python3 scripts/test_mapa_session_privacy.py
+          python3 scripts/test_mapa_r2531_integration.py
+          mkdir -p /tmp/mapa-presence
+          javac -d /tmp/mapa-presence \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PickupPresenceDiagnostic.java \
+            mapatrayectos/tests/PickupPresenceDiagnosticTest.java
+          java -cp /tmp/mapa-presence PickupPresenceDiagnosticTest
+          javac -d /tmp/mapa-presence \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PlayStopPresencePolicy.java \
+            mapatrayectos/tests/PlayStopPresencePolicyTest.java
+          java -cp /tmp/mapa-presence PlayStopPresencePolicyTest
+          grep -q 'Api.commercialPlay();' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'Api.commercialStop();' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'setPickupConsentInternal("",false,false)' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'PickupPresenceDiagnostic.response' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'Reautorizar este teléfono para recogidas' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'mapa_reservation_position_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+          grep -q 'publishPickupPresence' mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java
+          grep -q 'reservation_live_position enable row level security' supabase/migrations/20261017190000_private_reservation_live_tracking_v1.sql
+          grep -q 'customer_reservation_position_v1' supabase/migrations/20261017190000_private_reservation_live_tracking_v1.sql
+          ! grep -Ei 'delete from|truncate table|drop table' supabase/migrations/20261017190000_private_reservation_live_tracking_v1.sql
+      - name: Verify direct fixed-fare decision contracts and notification-policy tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=conductor/src/main/java/uy/com/traslados/conductor
+          M=mapatrayectos/src/main/java/uy/com/mapatrayectos
+          mkdir -p /tmp/decision-policy
+          javac -d /tmp/decision-policy "$P/ReservationAlertPolicy.java" conductor/tests/ReservationAlertPolicyTest.java
+          java -cp /tmp/decision-policy uy.com.traslados.conductor.ReservationAlertPolicyTest
+          javac -d /tmp/decision-policy "$P/ReservationQuoteLabel.java" mapatrayectos/tests/ReservationQuoteLabelTest.java
+          java -cp /tmp/decision-policy ReservationQuoteLabelTest
+          grep -q 'ReservationQuoteLabel.title' "$P/MainActivity.java"
+          grep -q 'driver_list_reservations_v4' "$P/Api.java"
+          grep -q 'driver_decide_fixed_pickup_v1' "$P/Api.java"
+          grep -q 'Api.decideFixedPickup' "$P/MainActivity.java"
+          grep -q 'decideFixed(this,id,accept' "$M/MainActivity.java"
+          grep -q 'decideFixed(this,id,accept' "$M/TrackingService.java"
+          grep -q 'Api.decideFixedPickup(pin,id,accept)' "$M/TransferAlerts.java"
+          grep -q 'fixed==null?"DESPUÉS":"RECHAZAR"' "$M/MainActivity.java"
+          grep -q 'fixed==null?"VER PEDIDO":"ACEPTAR"' "$M/TrackingService.java"
+          grep -q 'setProcessing(true' "$M/TrackingService.java"
+          grep -q 'setProcessing(true' "$M/MainActivity.java"
+      - name: Verify source APK identity and monotonic version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('mapatrayectos/build.gradle').read_text()
+          assert s.count("applicationId 'uy.com.mapatrayectos'")==1
+          assert s.count('versionCode 86')==1
+          assert s.count("versionName '0.1-R25.34-PLAYSTOP-QA'")==1
+          print('PASS: Mapa code86 > R25.33 code85 > R25.32 code84; one original package')
+          PY
+      - name: Decode exact historical icons/fonts/alerts (no changes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          echo 'a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg' | sha256sum -c
+          echo '5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3' | sha256sum -c
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+      - name: Recover same permanent release signing key
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          test -s "$RUNNER_TEMP/release.jks"
+      - name: Compile signed RELEASE for original Mapa Android ID
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :mapatrayectos:assembleRelease --no-daemon --console=plain --stacktrace
+      - name: Verify same signature vs signed R25.30 and embedded Conductor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APK=mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk
+          mkdir -p artifacts /tmp/mapa-base
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" > artifacts/APK_INFO.txt
+          gh release download mapa-r25.30-identidad-review-20261018 -p 'Mapa_Trayectos_R25_30_Identidad_REVIEW.apk' -D /tmp/mapa-base
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --print-certs /tmp/mapa-base/*.apk > /tmp/mapa-old-cert.txt
+          python3 - <<'PY'
+          import re,zipfile
+          from pathlib import Path
+          info=Path('artifacts/APK_INFO.txt').read_text()
+          assert "package: name='uy.com.mapatrayectos' versionCode='86' versionName='0.1-R25.34-PLAYSTOP-QA'" in info,info[:260]
+          def digest(p):
+            m=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',Path(p).read_text())
+            assert m,'Missing signer'
+            return m.group(1).lower()
+          assert digest('artifacts/SIGNING.txt')==digest('/tmp/mapa-old-cert.txt'),'CRITICAL signing mismatch'
+          a='mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk'
+          with zipfile.ZipFile(a) as apk:
+            assert any(name.endswith('classes.dex') for name in apk.namelist())
+            assert apk.testzip() is None
+          print('PASS: valid signed one-Mapa APK, same package/signature, 86 > 85 > 84 > 83 > 82')
+          PY
+          cp "$APK" artifacts/Mapa_Trayectos_R25_34_PlayStop_QA.apk
+          (cd artifacts && sha256sum Mapa_Trayectos_R25_34_PlayStop_QA.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > artifacts/BUILT_AT_UTC.txt
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-R25-34-PlayStop-SIGNED-QA
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 60

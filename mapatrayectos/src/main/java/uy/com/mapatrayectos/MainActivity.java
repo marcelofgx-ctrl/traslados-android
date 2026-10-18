@@ -381,7 +381,7 @@ public class MainActivity extends Activity {
         FrameLayout closeWrap=new FrameLayout(this);closeWrap.setTag("sheet_shift_close_slider");endShiftSliderWrap=closeWrap;
         endShiftSlider=new SlideActionView(this);
         endShiftSlider.setMode(SlideActionView.MODE_SHIFT_CLOSE);
-        endShiftSlider.setLabel("DESLIZAR ← FINALIZAR JORNADA");
+        endShiftSlider.setLabel("DESLIZAR ← STOP · JORNADA Y RECOGIDAS");
         endShiftSlider.setOnCompleted(this::showEndShiftConfirmation);
         FrameLayout.LayoutParams closeLp=new FrameLayout.LayoutParams(-1,dp(61));
         closeLp.setMargins(dp(1),0,dp(1),0);closeWrap.addView(endShiftSlider,closeLp);
@@ -638,7 +638,7 @@ public class MainActivity extends Activity {
             sheetMetaText.setText(TripPlatformChoice.shouldPrompt(selectedTripPlatform)
                 ?"Elegí plataforma en el círculo superior"
                 :"Próximo: "+TripPlatformChoice.display(selectedTripPlatform)+" · GPS y recorridos");
-            modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR · INICIAR JORNADA");
+            modeText.setText("LISTO PARA JORNADA");slider.setMode(SlideActionView.MODE_SHIFT_START);slider.setLabel("DESLIZAR ▶ PLAY · JORNADA Y RECOGIDAS");
         }else if(shiftPaused){
             sheetMetaText.setText(zone+" · en pausa · total "+formatDuration(shiftPauseMs));
             modeText.setText("JORNADA EN PAUSA");
@@ -1049,7 +1049,7 @@ public class MainActivity extends Activity {
             +"\nViajes completados: "+shiftCompletedTrips;
         new AlertDialog.Builder(this)
             .setTitle("Finalizar jornada")
-            .setMessage(summary+"\n\n¿Querés cerrar la jornada y detener su seguimiento GPS? El historial se conserva.")
+            .setMessage(summary+"\n\nSTOP cierra la jornada y detiene la ubicación comercial para pasajeros. El historial se conserva.")
             .setNegativeButton("CANCELAR",null)
             .setPositiveButton("FINALIZAR",(dialog,which)->{
                 SharedPreferences fresh=getSharedPreferences("tracking_state",MODE_PRIVATE);
@@ -1116,7 +1116,7 @@ public class MainActivity extends Activity {
                 .setTitle("Compartir disponibilidad de recogida")
                 .setMessage("Solo durante tu jornada activa y con conducción y GPS recientes. "+
                     "Los clientes verán km y minutos aproximados, nunca tu ubicación exacta. "+
-                    "Podés desactivarlo en cualquier momento. Requiere tu PIN del conductor.")
+                    "Podés desactivarlo en cualquier momento. En este teléfono ya vinculado no tenés que escribir el PIN otra vez.")
                 .setNegativeButton("Cancelar",null)
                 .setPositiveButton("Continuar",(dialog,which)->promptPickupConsent())
                 .show();
