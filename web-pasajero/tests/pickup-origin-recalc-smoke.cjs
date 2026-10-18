@@ -4,6 +4,10 @@ const root=path.resolve(__dirname,".."),read=n=>fs.readFileSync(path.join(root,n
 const app=read("app.js"),html=read("index.html"),css=read("premium-route.css"),sw=read("sw.js");
 const start=app.indexOf('let selectedPickupMode="schedule";'),end=app.indexOf("\nfunction setWhen(kind){",start);
 assert(start>=0&&end>start,"Pickup code must be isolated for contract testing");
+assert(app.includes('if(name==="origin")recognizePickupOriginChange();'),
+  "the real origin picker must trigger invalidation, not the destination or generic route renderer");
+assert(app.includes('if(name==="origin"){recognizePickupOriginChange();'),
+  "editing or clearing origin must invalidate any old ETA");
 assert(html.includes('id="pickup-eta-retry"'));
 assert(css.includes(".pickup-eta-retry"));
 assert(sw.includes("premium-route.css"));
