@@ -14,7 +14,7 @@ gradle = Path("mapatrayectos/build.gradle").read_text()
 
 # One Android APK: same package, and monotonically newer than R25.28/code80.
 assert "applicationId 'uy.com.mapatrayectos'" in gradle
-assert "versionCode 83" in gradle and "versionName '0.1-R25.31-QA'" in gradle
+assert "versionCode 84" in gradle and "versionName '0.1-R25.32-PRESENCE-QA'" in gradle
 assert "project(':core-reservations')" in gradle
 
 # Only authenticated driver data, never public pending trip listing.
