@@ -106,7 +106,7 @@ body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] 
 
 /* MAP-FIRST-V2-SCREEN-REORDER: real map within first viewport, ETA beneath, no fake GPS.
    This intentionally changes screen hierarchy rather than only card appearance. */
-body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"]{
+body.map-first-review.journey-mode-quick #view-viaje.active[data-premium-step="route"]{
   display:flex;flex-direction:column;position:relative;gap:0;
   padding:10px 11px calc(100px + env(safe-area-inset-bottom));
 }
