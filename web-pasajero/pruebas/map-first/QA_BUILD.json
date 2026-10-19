@@ -5,11 +5,11 @@
   "live_booking_disabled_by_meta": "traslados-preview",
   "android_apk_unchanged": true,
   "service_worker_disabled": false,
-  "design": "MAP-FIRST-V4.1-BACK-RESUME-20261019",
+  "design": "MAP-FIRST-V4.2-BACK-CONSISTENCY-20261019",
   "preview_only": true,
-  "visual_acceptance": "pending Samsung back and reentry confirmation",
+  "visual_acceptance": "pending Samsung mixed Back and route failure QA",
   "prototype_and_ride_tracking": "not deployed",
   "service_worker_scope": "/traslados-android/web-pasajero/pruebas/map-first/",
   "manifest": "manifest.webmanifest",
-  "install_name": "Traslados V4.1 · Pruebas"
+  "install_name": "Traslados V4.2 · Pruebas"
 }
