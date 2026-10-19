@@ -21,18 +21,18 @@ jobs:
       - name: Prepare isolated read-only passenger site in preview branch
         shell: bash
         env:
-          PREVIEW_BRANCH: preview/map-first-samsung-20261018
+          PREVIEW_BRANCH: preview/map-first-pwa-20261018
         run: |
           set -euo pipefail
           git fetch origin "refs/heads/$PREVIEW_BRANCH:refs/remotes/origin/$PREVIEW_BRANCH"
           dest="$RUNNER_TEMP/map-first-site"
           git worktree add --detach "$dest" "origin/$PREVIEW_BRANCH"
-          mkdir -p "$dest/pruebas/map-first"
+          mkdir -p "$dest/web-pasajero/pruebas/map-first"
           rsync -a --delete \
             --exclude=downloads/ --exclude=tests/ --exclude=README.md \
             --exclude=sw.js --exclude=.git \
-            web-pasajero/ "$dest/pruebas/map-first/"
-          python3 - "$dest/pruebas/map-first" "$GITHUB_SHA" <<'PY'
+            web-pasajero/ "$dest/web-pasajero/pruebas/map-first/"
+          python3 - "$dest/web-pasajero/pruebas/map-first" "$GITHUB_SHA" <<'PY'
           import json,sys
           from pathlib import Path
           folder=Path(sys.argv[1]); head=sys.argv[2]
@@ -74,17 +74,17 @@ jobs:
           }
           (folder/"QA_BUILD.json").write_text(json.dumps(meta,indent=2)+"\n",encoding="utf-8")
           PY
-          test -f "$dest/pruebas/map-first/data/uy-pois.json"
-          test -f "$dest/pruebas/map-first/icons/icon-192.png"
-          test -f "$dest/pruebas/map-first/map-first-review.js"
-          test ! -e "$dest/pruebas/map-first/sw.js"
-          test ! -e "$dest/pruebas/map-first/downloads"
+          test -f "$dest/web-pasajero/pruebas/map-first/data/uy-pois.json"
+          test -f "$dest/web-pasajero/pruebas/map-first/icons/icon-192.png"
+          test -f "$dest/web-pasajero/pruebas/map-first/map-first-review.js"
+          test ! -e "$dest/web-pasajero/pruebas/map-first/sw.js"
+          test ! -e "$dest/web-pasajero/pruebas/map-first/downloads"
           test -f "$dest/web-pasajero/index.html"
           ! git -C "$dest" diff --name-only | grep '^web-pasajero/'
           git -C "$dest" config user.name "github-actions[bot]"
           git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C "$dest" switch -C "$PREVIEW_BRANCH"
-          git -C "$dest" add -- pruebas/map-first
+          git -C "$dest" add -- web-pasajero/pruebas/map-first
           git -C "$dest" commit -m "preview(map-first): isolated read-only mobile review from PR #147"
           git -C "$dest" push origin "HEAD:refs/heads/$PREVIEW_BRANCH"
           echo "PREVIEW_BRANCH_READY=$PREVIEW_BRANCH" >> "$GITHUB_STEP_SUMMARY"
