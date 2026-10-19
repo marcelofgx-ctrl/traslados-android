@@ -22,8 +22,8 @@ assert(app.includes("recoverRoadAfterReturn(\"enter-service\")"),"App re-entry m
 assert(app.includes("if(routeRequestInFlightKey===key)return;"),"Do not duplicate in-flight road calls");
 assert(app.includes("roadEngine.invalidate(key);")&&app.includes("renderRouteSummary();"));
 assert(journey.includes("TrasladosPreviewNavigationSession?.onStage(name)"));
-assert(manifest.start_url.endsWith("?mapfirst=1&qa=v5_2")||manifest.start_url.endsWith("?mapfirst=1&qa=v5_visual_p1"));
-assert(/traslados-map-first-preview-v5-(?:2|visual-p1)-20261019/.test(sw));
+assert(manifest.start_url.endsWith("?mapfirst=1&qa=v5_2")||manifest.start_url.endsWith("?mapfirst=1&qa=v5_visual_p1")||manifest.start_url.endsWith("?mapfirst=1&qa=v5_balanced"));
+assert(/traslados-map-first-preview-v5-(?:2|visual-p1|route-balanced)-20261019/.test(sw));
 assert(sw.includes("url.pathname.startsWith(scopePath)"));
 const events={};let selected="inicio",step="route",calls=[],recoveries=0, visible="visible";
 let historyIndex=-1, stack=[];
