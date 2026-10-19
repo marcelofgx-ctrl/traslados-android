@@ -2553,6 +2553,7 @@ function init(){
       restoreStage:stage=>premiumJourney?.open(stage),
       recover:reason=>recoverRoadAfterReturn(reason)
     });
+    window.TrasladosPreviewNavigationSession=previewNavigation;
     previewNavigation?.mount();
   }
   // Public homepage deep link opens the PWA installer view, not a separate app.
