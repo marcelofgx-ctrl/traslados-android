@@ -1,0 +1,91 @@
+name: "PREVIEW ONLY · prepare Map-First site branch"
+on:
+  push:
+    branches: [feat/pwa-map-first-real-review-20261018]
+    paths:
+      - ".github/workflows/prepare-map-first-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  copy-review-only:
+    if: github.repository == 'marcelofgx-ctrl/traslados-android'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Prepare isolated read-only passenger site in preview branch
+        shell: bash
+        env:
+          PREVIEW_BRANCH: preview/map-first-samsung-20261018
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$PREVIEW_BRANCH:refs/remotes/origin/$PREVIEW_BRANCH"
+          dest="$RUNNER_TEMP/map-first-site"
+          git worktree add --detach "$dest" "origin/$PREVIEW_BRANCH"
+          mkdir -p "$dest/pruebas/map-first"
+          rsync -a --delete \
+            --exclude=downloads/ --exclude=tests/ --exclude=README.md \
+            --exclude=sw.js --exclude=.git \
+            web-pasajero/ "$dest/pruebas/map-first/"
+          python3 - "$dest/pruebas/map-first" "$GITHUB_SHA" <<'PY'
+          import json,sys
+          from pathlib import Path
+          folder=Path(sys.argv[1]); head=sys.argv[2]
+          source=(folder/"index.html").read_text(encoding="utf-8")
+          assert '<body>' in source and '<head>' in source
+          assert 'map-first-review.css' in source and 'map-first-review.js' in source
+          assert "premium-route.js" in source and "app.js" in source
+          assert "route-engine.js" in source and "eta-engine.js" in source
+          assert 'meta name="traslados-preview"' not in source, "Live source unexpectedly already preview"
+          source=source.replace(
+            "<head>",
+            '<head>\n  <meta name="robots" content="noindex,nofollow,noarchive">\n'
+            '  <meta name="traslados-preview" content="map-first-readonly">\n',
+            1)
+          source=source.replace(
+            '<link rel="manifest" href="./manifest.webmanifest">',
+            '<!-- No installation from isolated QA preview -->')
+          source=source.replace(
+            '<body>',
+            '<body>\n'
+            '<div role="status" aria-live="polite" style="padding:9px 13px;'
+            'background:#4d341f;color:#ffe6a1;font:800 12px/1.45 Arial,sans-serif;'
+            'text-align:center;border-bottom:1px solid #cfac67">'
+            'PRUEBA MAP-FIRST · NO ENVÍA RESERVAS · SIN SEGUIMIENTO GPS SIMULADO'
+            '</div>',
+            1)
+          source=source.replace("<title>Traslados con Reserva · Uruguay</title>",
+            "<title>Traslados Map-First · Prueba sin reservas</title>")
+          (folder/"index.html").write_text(source,encoding="utf-8")
+          (folder/"robots.txt").write_text("User-agent: *\nDisallow: /\n",encoding="utf-8")
+          (folder/"manifest.webmanifest").unlink(missing_ok=True)
+          meta={
+            "purpose":"independent read-only map-first passenger review",
+            "based_on_commit":head,
+            "published_pwa_unchanged":True,
+            "live_booking_disabled_by_meta":"traslados-preview",
+            "android_apk_unchanged":True,
+            "service_worker_disabled":True
+          }
+          (folder/"QA_BUILD.json").write_text(json.dumps(meta,indent=2)+"\n",encoding="utf-8")
+          PY
+          test -f "$dest/pruebas/map-first/data/uy-pois.json"
+          test -f "$dest/pruebas/map-first/icons/icon-192.png"
+          test -f "$dest/pruebas/map-first/map-first-review.js"
+          test ! -e "$dest/pruebas/map-first/sw.js"
+          test ! -e "$dest/pruebas/map-first/downloads"
+          test -f "$dest/web-pasajero/index.html"
+          ! git -C "$dest" diff --name-only | grep '^web-pasajero/'
+          git -C "$dest" config user.name "github-actions[bot]"
+          git -C "$dest" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$dest" switch -C "$PREVIEW_BRANCH"
+          git -C "$dest" add -- pruebas/map-first
+          git -C "$dest" commit -m "preview(map-first): isolated read-only mobile review from PR #147"
+          git -C "$dest" push origin "HEAD:refs/heads/$PREVIEW_BRANCH"
+          echo "PREVIEW_BRANCH_READY=$PREVIEW_BRANCH" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ready for separate PR into main. No deployment or production edits made." >> "$GITHUB_STEP_SUMMARY"
