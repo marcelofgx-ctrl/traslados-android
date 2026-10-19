@@ -8,12 +8,12 @@ const root={};vm.runInNewContext(file,{window:root});
 const {state,render,demoFixture}=root.TrasladosV6Model;
 const sample=demoFixture();
 const v=state(sample);
-assert.equal(v.price,"$ 660");
-assert.equal(v.distance,"16,5 km");
-assert.equal(v.duration,"25 min");
+assert.equal(v.price,"$ 124");
+assert.equal(v.distance,"3,1 km");
+assert.equal(v.duration,"7 min");
 assert.equal(v.pickupEta,"~ 5 min");
-assert.equal(v.origin,"Aeropuerto de Carrasco");
-assert.equal(v.destination,"World Trade Center");
+assert.equal(v.origin,"ROQUE SAENZ PEÑA 1711");
+assert.equal(v.destination,"Aeropuerto Internacional de Carrasco · Terminal de pasajeros");
 assert.equal(v.routeVerified,true);
 assert.equal(v.pickupVerified,true);
 function fixture(){return demoFixture();}
@@ -28,7 +28,7 @@ assert.equal(o.routeVerified,false,"null duration must never be coerced to zero"
 s=fixture();s.route.quote.distanceKm=NaN;o=state(s);assert.equal(o.routeVerified,false);
 s=fixture();s.route.quote.referenceFareUyu=NaN;o=state(s);
 assert.equal(o.price,"A confirmar","A verified route with unknown fare cannot fabricate a price");
-assert.equal(o.distance,"16,5 km");
+assert.equal(o.distance,"3,1 km");
 s=fixture();s.pickup.originKey="old-origin";o=state(s);
 assert.equal(o.pickupVerified,false,"Driver pickup key must match the selected origin");
 assert.equal(o.pickupEta,"Sin estimación");
@@ -52,8 +52,8 @@ const doc={
   getElementById:(id)=>id==="quote-status"?quote:null
 };
 render(fixture(),doc);
-assert.equal(nodes.get('[data-v6-field="trip-price"]')[0].textContent,"$ 660");
-assert.equal(nodes.get('[data-v6-field="trip-price"]')[1].textContent,"$ 660");
+assert.equal(nodes.get('[data-v6-field="trip-price"]')[0].textContent,"$ 124");
+assert.equal(nodes.get('[data-v6-field="trip-price"]')[1].textContent,"$ 124");
 assert.equal(priceState[0].dataset.v6QuoteState,"verified");
 s=fixture();s.route.quote.routeKey="stale";s.pickup.originKey="other";
 render(s,doc);
