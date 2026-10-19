@@ -1,9 +1,9 @@
 "use strict";
 /* Scope-local install support for Map-First V3 review. The stable PWA,
  * Supabase APIs, pickup GPS and reservation flow are never cached/intercepted. */
-const CACHE="traslados-map-first-preview-v3-20261019";
+const CACHE="traslados-map-first-preview-v4-20261019";
 const PREFIX="traslados-map-first-preview-";
-const SHELL=["./map-first-v3.js","./map-first-v3.css","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png"];
+const SHELL=["./map-first-v3.js","./map-first-v3.css","./map-first-v4-confirm.js","./map-first-v4-confirm.css","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png"];
 const scopePath=new URL(self.registration.scope).pathname;
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
