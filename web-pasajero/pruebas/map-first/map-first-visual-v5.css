@@ -129,6 +129,18 @@ body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step=
 body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .wayline{
   display:none!important;
 }
+/* Explicit flex ordering: hidden/expanded intermediate stops must not jump
+ * above the map and the fallback road error must remain after the inputs. */
+body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] #stop-wrap{
+  order:4!important;
+}
+body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] #login-for-stops{
+  order:4!important;
+}
+body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] #route-overview{
+  order:5!important;
+}
+
 body.mf-v5-phase1.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-stops{
   order:3!important;display:flex!important;align-items:center!important;
   margin:13px 0 0!important;padding:13px 14px!important;min-height:45px;
