@@ -20,7 +20,8 @@ assert(css.includes(".premium-route-fare")&&css.includes(".premium-route-trip-me
 assert(css.includes(".premium-live-presence")&&css.includes("#origin-picker"));
 assert(css.includes("order:2")&&css.includes(".premium-route-stops"));
 assert(route.includes('root.innerHeight')&&route.includes('mapFirstHeight'));
-assert(route.includes('root.TrasladosPremiumMap')===false, "Reuse existing map host, not a new renderer");
+assert(route.includes("root.TrasladosPremiumMap.render")&&route.includes("root.TrasladosPremiumMap.overview"),
+  "Retain existing verified-road renderer and reference overview");
 assert(route.includes("root.TrasladosPremiumMap.render")&&route.includes("roadEngine")===false,
   "Only existing verified road geometry is presented; no second road engine");
 assert(!css.includes("position:fixed"),"Do not overlay the live booking submit controls");
