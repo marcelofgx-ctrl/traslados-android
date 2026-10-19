@@ -236,7 +236,12 @@
       }
       const i=STAGES.indexOf(stage);if(i<3)open(STAGES[i+1]);
     }
-    back.addEventListener("click",()=>open(STAGES[Math.max(0,STAGES.indexOf(stage)-1)]));
+    back.addEventListener("click",()=>{
+      // Android hardware Back and this control must consume the SAME history
+      // entry; avoid pushing "when" after previously leaving "passenger".
+      if(root.TrasladosPreviewNavigationSession?.backWithinApp?.())return;
+      open(STAGES[Math.max(0,STAGES.indexOf(stage)-1)]);
+    });
     next.addEventListener("click",forward);select.addEventListener("change",updateTimes);
     doc.getElementById("journey-clock-input").addEventListener("change",updateTimes);
     if(doc.querySelector('meta[name="traslados-preview"]')){
