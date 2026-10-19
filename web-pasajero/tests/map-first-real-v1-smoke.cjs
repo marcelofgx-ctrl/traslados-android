@@ -26,3 +26,12 @@ assert(route.includes("root.TrasladosPremiumMap.render")&&!route.includes("roadE
   "Use the existing geometry renderer without invoking another route-estimate request");
 assert(!css.includes("position:fixed"),"Do not overlay the live booking submit controls");
 console.log("PASS MAP-FIRST-REAL-001: isolated opt-in; live existing map/fare/pickup; no booking or GPS changes");
+
+// V2 must change the page hierarchy, not merely recolor the existing form.
+assert(css.includes("MAP-FIRST-V2-SCREEN-REORDER"));
+assert(css.includes("#journey-field-host"));
+assert(css.includes('display:none!important;\n}'));
+assert(css.includes('.premium-live-presence{\n  order:2'));
+assert(css.includes('.premium-actions{\n  order:3'));
+assert(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+console.log("PASS MAP-FIRST-V2: map before availability, compact nav, two-column time choices");
