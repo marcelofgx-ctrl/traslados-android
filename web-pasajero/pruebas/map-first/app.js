@@ -1136,6 +1136,9 @@ function renderRouteSummary(){
  * A cooldown avoids spinning the public route provider on rapid visibility events. */
 function recoverRoadAfterReturn(reason){
   if(!PREVIEW_READ_ONLY||navigator.onLine===false)return;
+  // Preserve the driver→pickup throttling and rate-limit backoff in its own engine.
+  // Foreground re-entry is a chance to refresh availability, not bypass quotas.
+  if(selectedPickupMode!=="schedule")void refreshPickupPresence(false);
   if(record.stops.some(stop=>!stop))return;
   const points=selectedRoadPoints();
   if(points.length<2)return;
