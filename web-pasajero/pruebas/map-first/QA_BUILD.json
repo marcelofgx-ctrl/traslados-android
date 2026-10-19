@@ -1,0 +1,8 @@
+{
+  "purpose": "independent read-only map-first passenger review",
+  "based_on_commit": "109d7f6eb57918287b06b2bdb7915b2f215c3f31",
+  "published_pwa_unchanged": true,
+  "live_booking_disabled_by_meta": "traslados-preview",
+  "android_apk_unchanged": true,
+  "service_worker_disabled": true
+}
