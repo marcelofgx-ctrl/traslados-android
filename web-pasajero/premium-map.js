@@ -82,7 +82,7 @@
     }
     if(!options.overview){
     path("#042e46",9,"premium-map-route-shadow");
-    path(live?"#56cba0":"#6ce4ff",5,"premium-map-route");
+    path(live?"#56cba0":"#489b80",5,"premium-map-route");
     const start=view.points[0],end=view.points[view.points.length-1];
     function drawMarker(p,name,color,isCar=false){
       const circle=document.createElementNS(NS,"circle");
