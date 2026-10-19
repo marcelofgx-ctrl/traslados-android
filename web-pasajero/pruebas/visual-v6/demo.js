@@ -34,13 +34,19 @@
       :current===2?'Revisar viaje <span aria-hidden="true">→</span>'
       :'Continuar <span aria-hidden="true">→</span>';
     message.textContent="";
-    if(historyEntry&&location.hash!=="#paso-"+(current+1))history.pushState({v6step:current},"","#paso-"+(current+1));
+    if(historyEntry&&location.hash!=="#paso-"+(current+1))history.pushState({v6Demo:true,v6step:current},"","#paso-"+(current+1));
     if(current===3)document.getElementById("selected-time").textContent=
       document.querySelector(".time-choice.is-picked")?.dataset.time||"Ahora";
     window.scrollTo({top:0,behavior:"instant"});
   }
   next.addEventListener("click",()=>{if(current<3)show(current+1)});
-  back.addEventListener("click",()=>{if(current>0)show(current-1)});
+  back.addEventListener("click",()=>{
+    if(current<=0)return;
+    // Consume the actual browser history when the previous step was opened
+    // inside this prototype; do not push an artificial back entry.
+    if(history.state?.v6Demo===true)history.back();
+    else show(current-1);
+  });
   document.querySelector(".brand").addEventListener("click",event=>{event.preventDefault();show(0)});
   window.addEventListener("popstate",()=>show(indexFromHash(),{historyEntry:false}));
   window.addEventListener("hashchange",()=>show(indexFromHash(),{historyEntry:false}));
