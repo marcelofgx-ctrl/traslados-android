@@ -30,7 +30,7 @@ assert(html.includes("Tu Viaje")&&html.includes("Tu <em>Paquete</em>")&&html.inc
 assert(html.includes('id="qt-home-parcel-message"')&&html.includes("Todavía no se pueden solicitar envíos"),"Parcel cannot create a request");
 assert(html.includes('href="./home-v6.css?v=1"'),"Home style loaded");
 assert(homeCss.includes('../../premium-montevideo.webp')&&homeCss.includes('../../premium-skyline.svg'),"Historical local hero assets");
-assert(!/url\\(\\s*https?:/.test(homeCss),"Home must not load external assets");
+assert(!/url\(\s*https?:/i.test(homeCss),"Home must not load external assets");
 assert(js.includes('function showHome(')&&js.includes('show(0)')&&js.includes('programmed?"Otra hora":"Ahora"'),"Both travel services reuse one four-step flow");
 assert(js.includes('if(index<0){showHome({historyEntry});return;}'),"Browser back must return to home");
 
