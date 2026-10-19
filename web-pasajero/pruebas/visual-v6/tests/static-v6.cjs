@@ -8,6 +8,8 @@ const read=p=>fs.readFileSync(path.join(dir,p),"utf8");
 const html=read("index.html");
 const css=read("styles.css");
 const js=read("demo.js");
+const model=read("view-model.js");
+new vm.Script(model,{filename:"view-model.js"});
 new vm.Script(js,{filename:"demo.js"});
 assert.match(html,/<meta name="robots" content="noindex,nofollow">/);
 assert.match(html,/Prototipo visual · datos de ejemplo · no reserva/);
@@ -19,11 +21,16 @@ assert(html.includes('MAPA ILUSTRATIVO'));
 assert(html.includes('Valores ilustrativos para evaluar el diseño'));
 assert(js.includes('history.back()'),"Demo Back should use browser navigation");
 assert(js.includes('theme-dark'),"Both light and dark prototypes should exist");
+assert(html.includes('src="./view-model.js?v=1"'),"Model loaded before demo");
+assert(html.indexOf("view-model.js?v=1")<html.indexOf("demo.js?v=2"));
+assert(html.includes('data-v6-field="route-origin"')&&html.includes('data-v6-field="trip-price"'),"Same snapshot feeds both screens");
+assert(css.includes("position:fixed;bottom:0"),"Primary button must remain accessible on mobile");
+assert(css.includes("132px"),"Fixed CTA must have scroll clearance");
 assert(css.includes('@media(max-width:370px)')&&css.includes('max-width:480px'),"Mobile viewport contract");
 assert(css.includes('prefers-reduced-motion'),"Accessibility motion control");
 assert(!/body\.map-first-v3|body\.mf-v5|#urgent-send|\.premium-route-canvas/.test(css),
   "No legacy CSS or prior layout inheritance allowed");
-for(const source of [html,js]){
+for(const source of [html,js,model]){
   assert(!/\bfetch\s*\(|\bXMLHttpRequest\b|\.geolocation\b|\bsupabase\b|\brpc\s*\(/i.test(source),
     "Static layout must not query providers or send bookings");
   assert(!/localStorage|sessionStorage|document\.cookie|create_reservation|confirm-booking|serviceWorker\.register/.test(source),

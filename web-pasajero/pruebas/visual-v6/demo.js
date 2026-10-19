@@ -3,6 +3,11 @@
    account information or booking APIs. Static illustrative content only. */
 (()=>{
   const screens=[...document.querySelectorAll("[data-screen]")];
+  // One immutable-format presentation contract. Demo fixture stays illustrative;
+  // the future G4 adapter will supply a verified snapshot instead of hardcoding DOM.
+  const model=window.TrasladosV6Model;
+  const demoState=model.demoFixture();
+  model.render(demoState);
   const progress=document.getElementById("progress");
   const progressFill=document.getElementById("progress-fill");
   const counter=document.getElementById("step-counter");
@@ -35,8 +40,7 @@
       :'Continuar <span aria-hidden="true">→</span>';
     message.textContent="";
     if(historyEntry&&location.hash!=="#paso-"+(current+1))history.pushState({v6Demo:true,v6step:current},"","#paso-"+(current+1));
-    if(current===3)document.getElementById("selected-time").textContent=
-      document.querySelector(".time-choice.is-picked")?.dataset.time||"Ahora";
+    if(current===3)model.render(demoState);
     window.scrollTo({top:0,behavior:"instant"});
   }
   next.addEventListener("click",()=>{if(current<3)show(current+1)});
@@ -63,6 +67,8 @@
         target.classList.toggle("is-picked",selected);
         target.setAttribute("aria-pressed",String(selected));
       }
+      demoState.schedule.label=choice.dataset.time;
+      model.render(demoState);
       message.textContent=choice.dataset.time==="Otra hora"
         ?"Selección ilustrativa; el reloj real se conecta después del diseño.":"";
     });

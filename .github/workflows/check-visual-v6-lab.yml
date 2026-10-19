@@ -29,5 +29,8 @@ jobs:
         shell: bash
         run: |
           node --check web-pasajero/pruebas/visual-v6/demo.js
+          node --check web-pasajero/pruebas/visual-v6/view-model.js
           node --check web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
+          node --check web-pasajero/pruebas/visual-v6/tests/view-model-v6.cjs
           node web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
+          node web-pasajero/pruebas/visual-v6/tests/view-model-v6.cjs
