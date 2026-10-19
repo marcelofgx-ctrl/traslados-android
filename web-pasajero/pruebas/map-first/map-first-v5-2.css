@@ -1,0 +1,39 @@
+/* V5.2: useful states on narrow Android screens, no fake quote or ETA. */
+body.map-first-v3.journey-mode-quick #view-viaje .journey-back::before{
+  content:"←"!important;display:block!important;
+  font:800 22px/1 system-ui,sans-serif!important;color:#f1d397!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje .journey-back{
+  display:grid!important;place-items:center!important;
+  min-width:41px!important;width:41px!important;height:41px!important;
+  border:1px solid #6f8376!important;background:#103137!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"]{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:9px!important;
+  padding:12px 13px!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"] .premium-route-trip-metrics{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"] .premium-route-trip-metrics>div{
+  min-width:0;padding:9px 8px!important;min-height:68px;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"] .premium-route-trip-metrics strong{
+  font:800 13px/1.27 system-ui,sans-serif!important;
+  letter-spacing:-.025em;word-break:normal;overflow-wrap:normal;hyphens:none;
+  white-space:normal;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"] .premium-route-fare strong{
+  font:850 clamp(18px,5.6vw,25px)/1.15 system-ui,sans-serif!important;
+  overflow-wrap:break-word;word-break:normal;hyphens:none;
+}
+@media(max-width:359px){
+  body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary[data-verified="false"] .premium-route-trip-metrics{
+    grid-template-columns:1fr!important;
+  }
+}
+/* Status controls should signal disabled service, not resemble an actionable retry. */
+body.map-first-v3.journey-mode-quick #view-viaje .pickup-eta-retry:disabled{
+  min-height:37px;font-size:11px!important;
+  opacity:.8;border-style:dashed;
+}
