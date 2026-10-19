@@ -199,3 +199,6 @@ body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .m
     animation:none!important;transition:none!important;
   }
 }
+
+/* Hidden contract wins over the preview's presentation layer. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-actions.mf-v4-confirm[hidden]{display:none!important}
