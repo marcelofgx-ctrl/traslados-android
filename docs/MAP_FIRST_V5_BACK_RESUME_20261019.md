@@ -33,3 +33,5 @@
 6. En prueba, botón «Enviar» sigue bloqueado; no publicar en producción hasta QA física.
 
 **Estado:** corregido en rama de ensayo, pendiente de CI/despliegue y prueba Samsung.
+## Control de alcance final
+El PR declara explícitamente el test heredado de V4, actualizado para aceptar el identificador V4.1 de la PWA instalable. La prueba nueva de V5 ya cubre navegación por etapas y recuperación tras segundo plano; ambas deben permanecer activas en CI para impedir regresiones cruzadas.
