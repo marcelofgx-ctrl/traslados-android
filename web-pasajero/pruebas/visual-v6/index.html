@@ -8,7 +8,8 @@
 <meta name="description" content="Laboratorio visual V6 de Traslados. Prototipo ilustrativo sin reservas ni datos reales.">
 <title>Traslados · Laboratorio Visual V6</title>
 <link rel="stylesheet" href="./styles.css?v=1">
-<script src="./demo.js?v=1" defer></script>
+<script src="./view-model.js?v=1" defer></script>
+<script src="./demo.js?v=2" defer></script>
 </head>
 <body>
 <div class="lab-ribbon" role="note"><span class="lab-pulse" aria-hidden="true"></span><strong>V6 LAB</strong><span>Prototipo visual · datos de ejemplo · no reserva</span></div>
@@ -30,8 +31,8 @@
   <div class="section-title"><h1 id="title-route">¿A dónde vamos?</h1><p>El recorrido, claro desde el principio.</p></div>
   <div class="route-editor" aria-label="Direcciones del recorrido, datos ilustrativos">
     <div class="route-rail" aria-hidden="true"><span class="rail-dot origin"></span><span class="rail-line"></span><span class="rail-dot destination"></span></div>
-    <div class="route-row"><div class="route-text"><span class="field-kicker">ORIGEN</span><strong>Aeropuerto de Carrasco</strong></div><button class="edit-link" type="button" data-demo="Direcciones">Editar <span aria-hidden="true">↗</span></button></div>
-    <div class="route-row"><div class="route-text"><span class="field-kicker">DESTINO</span><strong>World Trade Center</strong></div><button class="edit-link" type="button" data-demo="Direcciones">Editar <span aria-hidden="true">↗</span></button></div>
+    <div class="route-row"><div class="route-text"><span class="field-kicker">ORIGEN</span><strong data-v6-field="route-origin">Aeropuerto de Carrasco</strong></div><button class="edit-link" type="button" data-demo="Direcciones">Editar <span aria-hidden="true">↗</span></button></div>
+    <div class="route-row"><div class="route-text"><span class="field-kicker">DESTINO</span><strong data-v6-field="route-destination">World Trade Center</strong></div><button class="edit-link" type="button" data-demo="Direcciones">Editar <span aria-hidden="true">↗</span></button></div>
   </div>
 
   <div class="map-figure" role="img" aria-label="Ilustración de un recorrido urbano entre origen y destino; no son coordenadas ni rutas reales">
@@ -52,19 +53,20 @@
     <span class="map-float">TRAZADO DEL VIAJE <span aria-hidden="true">↗</span></span>
   </div>
   <div class="trip-price" aria-label="Resumen de ejemplo">
-    <div class="trip-price-main"><span class="field-kicker">PRECIO ORIENTATIVO</span><strong>$ 660</strong></div>
+    <div class="trip-price-main"><span class="field-kicker">PRECIO ORIENTATIVO</span><strong data-v6-field="trip-price">$ 660</strong></div>
     <div class="trip-price-divider"></div>
-    <div class="trip-minor"><span class="field-kicker">DISTANCIA</span><strong>16,5 km</strong></div>
-    <div class="trip-minor"><span class="field-kicker">DURACIÓN</span><strong>25 min</strong></div>
+    <div class="trip-minor"><span class="field-kicker">DISTANCIA</span><strong data-v6-field="trip-distance">16,5 km</strong></div>
+    <div class="trip-minor"><span class="field-kicker">DURACIÓN</span><strong data-v6-field="trip-duration">25 min</strong></div>
   </div>
   <details class="quiet-details"><summary><span class="plus-sign">+</span> Agregar una parada <span class="detail-chevron" aria-hidden="true">⌄</span></summary><div class="details-body">En la versión funcional podrás buscar, añadir y reordenar paradas. Esta maqueta no modifica datos reales.</div></details>
-  <div class="pickup-inline"><span class="availability-led" aria-hidden="true"></span><span><strong>Conductor disponible</strong><small>Hasta tu origen · ejemplo ilustrativo</small></span><span class="pickup-eta">~ 5 min</span></div>
+  <div class="pickup-inline" data-v6-pickup-state="available"><span class="availability-led" aria-hidden="true"></span><span><strong data-v6-field="pickup-title">Conductor disponible</strong><small data-v6-field="pickup-detail">0,5 km al origen</small></span><span class="pickup-eta" data-v6-field="pickup-eta">~ 5 min</span></div>
+  <p class="sample-note" id="quote-status">Recorrido estimado · dato ilustrativo</p>
   <p class="sample-note">Importes, distancias, mapa y disponibilidad son ejemplos visuales. Sin tráfico en vivo.</p>
 </section>
 
 <section class="screen" data-screen="1" id="paso-2" aria-labelledby="title-when" hidden>
   <div class="section-title"><h1 id="title-when">¿Cuándo salimos?</h1><p>Elegí el momento que te sirva.</p></div>
-  <div class="pickup-status"><span class="availability-led" aria-hidden="true"></span><span><strong>Hay conductor disponible</strong><small>Recogida estimada · ejemplo</small></span><strong class="pickup-status-time">~ 5 min</strong></div>
+  <div class="pickup-status" data-v6-pickup-state="available"><span class="availability-led" aria-hidden="true"></span><span><strong data-v6-field="pickup-title">Conductor disponible</strong><small data-v6-field="pickup-detail">0,5 km al origen</small></span><strong class="pickup-status-time" data-v6-field="pickup-eta">~ 5 min</strong></div>
   <p class="eyebrow">HORARIO DE RECOGIDA</p>
   <div class="time-choices" role="group" aria-label="Elegir horario de ejemplo">
     <button type="button" class="time-choice is-picked" data-time="Ahora" aria-pressed="true"><span class="time-choice-title">Ahora</span><small>Lo antes posible</small><span class="time-tick">✓</span></button>
@@ -80,7 +82,7 @@
   <p class="eyebrow">DATOS DE CONTACTO · EJEMPLO</p>
   <div class="contact-summary">
     <span class="avatar" aria-hidden="true">P</span>
-    <div><strong>Pasajero de ejemplo</strong><small>09X XXX XXX · Datos ilustrativos</small></div>
+    <div><strong data-v6-field="customer-name">Pasajero de ejemplo</strong><small data-v6-field="customer-phone">09X XXX XXX · Datos ilustrativos</small></div>
     <span class="verified" aria-label="Demo de sesión">✓</span>
   </div>
   <button type="button" class="text-action" data-demo="Datos de cuenta">Revisar mis datos <span aria-hidden="true">↗</span></button>
@@ -92,14 +94,14 @@
   <div class="section-title"><h1 id="title-confirm">Revisá tu viaje.</h1><p>Todo en su lugar antes de solicitar.</p></div>
   <div class="final-total">
     <div class="total-topline"><span>IMPORTE ORIENTATIVO</span><span class="total-status"><span class="availability-led" aria-hidden="true"></span>Sin enviar</span></div>
-    <strong>$ 660</strong><div class="total-meta"><span>16,5 km</span><span class="total-separator">·</span><span>25 min de viaje</span></div>
+    <strong data-v6-field="trip-price">$ 660</strong><div class="total-meta"><span data-v6-field="trip-distance">16,5 km</span><span class="total-separator">·</span><span data-v6-field="trip-duration">25 min</span><span>de viaje</span></div>
   </div>
   <div class="review-route">
     <p class="eyebrow">TU RECORRIDO</p>
-    <div class="review-point"><span class="review-dot origin"></span><div><small>Origen</small><strong>Aeropuerto de Carrasco</strong></div></div>
-    <div class="review-point"><span class="review-dot destination"></span><div><small>Destino</small><strong>World Trade Center</strong></div></div>
+    <div class="review-point"><span class="review-dot origin"></span><div><small>Origen</small><strong data-v6-field="route-origin">Aeropuerto de Carrasco</strong></div></div>
+    <div class="review-point"><span class="review-dot destination"></span><div><small>Destino</small><strong data-v6-field="route-destination">World Trade Center</strong></div></div>
   </div>
-  <div class="review-facts"><span>◷ <strong id="selected-time">Ahora</strong></span><span>♙ <strong>1 pasajero</strong></span></div>
+  <div class="review-facts"><span>◷ <strong id="selected-time" data-v6-field="selected-time">Ahora</strong></span><span>♙ <strong>1 pasajero</strong></span></div>
   <p class="review-disclaimer">Sin pago anticipado. Importe sujeto a confirmación del conductor. Valores ilustrativos para evaluar el diseño.</p>
 </section>
 </main>
