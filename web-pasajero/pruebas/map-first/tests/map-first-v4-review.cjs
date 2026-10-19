@@ -7,7 +7,7 @@ const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const html=read("index.html");
 const js=read("map-first-v4-confirm.js");
 const css=read("map-first-v4-confirm.css");
-const manifesto=JSON.parse(read("manifest.webmanifest"));
+const manifest=JSON.parse(read("manifest.webmanifest"));
 const sw=read("sw.js");
 assert(html.includes('meta name="traslados-preview"'),"Review-only guard must be present");
 assert(html.includes('map-first-v4-confirm.js?v=1'));
