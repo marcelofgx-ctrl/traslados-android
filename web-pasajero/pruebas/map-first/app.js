@@ -967,7 +967,7 @@ function picker(name,mount,position){
 // El motor vial no depende de la UI ni del estado de reservas.
 const roadEngine=window.TrasladosRoutes;
 let latestRoad=null,activeRouteKey="",routeSequence=0;
-let lastRoadRecoveryAttemptAt=0;
+let lastRoadRecoveryAttemptAt=0,routeRequestInFlightKey="";
 function selectedRoadPoints(){
   return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
 }
@@ -1012,7 +1012,7 @@ function renderRouteSummary(){
   // Una parada todavía sin dirección invalidaría cualquier presupuesto vial:
   // jamás mostrar una cotización del trayecto anterior sin esa parada.
   if(record.stops.some(stop=>!stop)){
-    activeRouteKey="";latestRoad=null;routeSequence++;
+    activeRouteKey="";latestRoad=null;routeRequestInFlightKey="";routeSequence++;
     clear(host);host.hidden=false;
     text(host,"p","Elegí la dirección de todas las paradas para calcular el recorrido y su valor orientativo.","route-status");
     refreshBookingSteps();return;
@@ -1020,7 +1020,7 @@ function renderRouteSummary(){
   const points=selectedRoadPoints();
   clear(host);host.hidden=points.length<2;
   if(points.length<2){
-    activeRouteKey="";latestRoad=null;routeSequence++;
+    activeRouteKey="";latestRoad=null;routeRequestInFlightKey="";routeSequence++;
     refreshBookingSteps();refreshPickupPresence();return;
   }
   const key=routeKeyOf(points);activeRouteKey=key;refreshBookingSteps();refreshPickupPresence();
@@ -1073,6 +1073,7 @@ function renderRouteSummary(){
   const seq=++routeSequence;
   const finish=data=>{
     if(seq!==routeSequence||key!==activeRouteKey)return;
+    routeRequestInFlightKey="";
     const valid=roadEngine.verified(data);
     if(valid){
       latestRoad={key,data};
@@ -1126,6 +1127,7 @@ function renderRouteSummary(){
   // Do not leave a former price or polyline while another verified route loads.
   // The shared booking-summary test uses this function without Premium mounted.
   if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
+  routeRequestInFlightKey=key;
   roadEngine.estimate(points,{api:API,publishableKey:KEY})
     .then(finish).catch(()=>finish(null));
 }
@@ -1142,8 +1144,10 @@ function recoverRoadAfterReturn(reason){
     premiumRouteComposer?.sync();
     return;
   }
+  // Never cancel a valid road request just because the app was backgrounded.
+  if(routeRequestInFlightKey===key)return;
   const now=Date.now();
-  if(now-lastRoadRecoveryAttemptAt<6500)return;
+  if(now-lastRoadRecoveryAttemptAt<2200)return;
   lastRoadRecoveryAttemptAt=now;
   // Failure diagnostics can describe a stale page. Invalidate ONLY this route
   // and ask the existing verified-route engine again on actual app re-entry.
