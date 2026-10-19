@@ -13,7 +13,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
-  <!-- No installation from isolated QA preview -->
+  <link rel="manifest" href="./manifest.webmanifest?v=3">
+  <meta name="application-name" content="Traslados V3 · Pruebas">
   <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css?v=82">
@@ -24,7 +25,7 @@
   <title>Traslados Map-First · Prueba sin reservas</title>
 </head>
 <body>
-<div role="status" aria-live="polite" style="padding:9px 13px;background:#4d341f;color:#ffe6a1;font:800 12px/1.45 Arial,sans-serif;text-align:center;border-bottom:1px solid #cfac67">V3 · PRUEBA SIN ENVÍO DE RESERVAS</div>
+<div role="status" aria-live="polite" style="margin:5px 12px 8px;padding:7px 10px;background:#183936;color:#ffe4af;font:800 11px/1.35 system-ui,sans-serif;text-align:center;border:1px solid #72846a;border-radius:999px">MAP-FIRST V3 · PRUEBA SIN RESERVAS</div>
   <div id="offline-band" class="offline-band" hidden>Sin conexión. Ninguna reserva será enviada hasta recuperar Internet.</div>
   <header class="header">
     <div class="header-inner">
