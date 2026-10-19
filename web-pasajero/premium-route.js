@@ -81,11 +81,13 @@
       const geometry=Array.isArray(state.geometry)&&state.geometry.length>1?state.geometry:null;
       const stopMarkers=state.stops.filter(Boolean).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng))
         .map(p=>({lat:p.lat,lng:p.lng,label:"P"}));
-      const key=JSON.stringify({geometry,points,stopMarkers,width:Math.round(mapHost.clientWidth||355)});
+      const mapFirstHeight=doc.body.classList.contains("map-first-review")
+        ?Math.max(276,Math.min(348,Math.round((root.innerHeight||700)*.43))):240;
+      const key=JSON.stringify({geometry,points,stopMarkers,width:Math.round(mapHost.clientWidth||355),height:mapFirstHeight});
       if(key!==lastMap){
         lastMap=key;
-        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:240,extraMarkers:stopMarkers});
-        else root.TrasladosPremiumMap.overview(mapHost,points,{height:240});
+        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:mapFirstHeight,extraMarkers:stopMarkers});
+        else root.TrasladosPremiumMap.overview(mapHost,points,{height:mapFirstHeight});
       }
       const originalRetry=doc.querySelector("#route-overview .route-retry");
       const failed=points.length===2&&Boolean(originalRetry&&!originalRetry.hidden);
