@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const html=read("index.html"),css=read("map-first-visual-v5.css"),js=read("map-first-visual-v5.js");
 const manifest=JSON.parse(read("manifest.webmanifest")),sw=read("sw.js");
 assert(html.includes('meta name="traslados-preview"'),"Preview booking guard cannot be removed");
-for(const p of ["map-first-visual-v5.css?v=1","map-first-visual-v5.js?v=1"])assert(html.includes(p),p+" must be loaded");
+for(const p of ["map-first-visual-v5.css?v=2","map-first-visual-v5.js?v=2"])assert(html.includes(p),p+" must be loaded");
 assert(html.indexOf("map-first-v4-confirm.js")<html.indexOf("map-first-visual-v5.js"),"V4 ticket must exist before the V5 composition");
 assert(!/\bfetch\s*\(|\bXMLHttpRequest\b|\bsupabase\b|\bgeolocation\b|create_reservation/i.test(js),"Presentation JS cannot use backends/GPS/booking");
 assert(js.includes("destination.after(map)"),"Original map must follow editable route points on Recorrido");
