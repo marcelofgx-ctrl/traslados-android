@@ -21,6 +21,19 @@ assert.equal((html.match(/class="screen(?: is-active)?"/g)||[]).length,4,
 for(const id of ["paso-1","paso-2","paso-3","paso-4","next-button","back-button"])
   assert(html.includes('id="'+id+'"'),"Missing accessible layout component: "+id);
 assert(html.includes('MAPA ILUSTRATIVO'));
+const homeCss=read("home-v6.css");
+assert(html.includes('id="qt-home"')&&html.includes('id="qt-home-title"'),"V6 home must exist");
+assert.equal((html.match(/data-v6-service="/g)||[]).length,3,"Exactly three historical services");
+for(const service of ['data-v6-service="now"','data-v6-service="schedule"','data-v6-service="delivery"'])
+  assert(html.includes(service),"Missing service entry: "+service);
+assert(html.includes("Tu Viaje")&&html.includes("Tu <em>Paquete</em>")&&html.includes("Programado"),"All three service labels");
+assert(html.includes('id="qt-home-parcel-message"')&&html.includes("Todavía no se pueden solicitar envíos"),"Parcel cannot create a request");
+assert(html.includes('href="./home-v6.css?v=1"'),"Home style loaded");
+assert(homeCss.includes('../../premium-montevideo.webp')&&homeCss.includes('../../premium-skyline.svg'),"Historical local hero assets");
+assert(!/url\(\s*https?:/i.test(homeCss),"Home must not load external assets");
+assert(js.includes('function showHome(')&&js.includes('show(0)')&&js.includes('programmed?"Otra hora":"Ahora"'),"Both travel services reuse one four-step flow");
+assert(js.includes('if(index<0){showHome({historyEntry});return;}'),"Browser back must return to home");
+
 assert(html.includes('Valores ilustrativos para evaluar el diseño'));
 assert(js.includes('history.back()'),"Demo Back should use browser navigation");
 assert(ui.includes('id="theme-switch"')&&ui.includes('id="progress"'),"New QuickTrip header and progress mounted");
