@@ -4,7 +4,7 @@ on:
     branches:
       - experiment/tu-viaje-map-first-v0-20261018
     paths:
-      - experiments/tu-viaje-map-first-v0/index.html
+      - web-pasajero/experiments/tu-viaje-map-first-v0/index.html
       - .github/workflows/preview-tu-viaje-map-first-v0.yml
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
           from pathlib import Path
           from html.parser import HTMLParser
           import re
-          f=Path("experiments/tu-viaje-map-first-v0/index.html")
+          f=Path("web-pasajero/experiments/tu-viaje-map-first-v0/index.html")
           raw=f.read_text(encoding="utf-8")
           assert raw.startswith("<!doctype html>")
           assert "Esquema ilustrativo" in raw
@@ -40,5 +40,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Tu-Viaje-Map-First-v0-HTML
-          path: experiments/tu-viaje-map-first-v0/index.html
+          path: web-pasajero/experiments/tu-viaje-map-first-v0/index.html
           retention-days: 30
