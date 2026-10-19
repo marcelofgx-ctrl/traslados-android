@@ -1,0 +1,33 @@
+name: Visual V6 prototype — no build
+
+on:
+  pull_request:
+    paths:
+      - "web-pasajero/pruebas/visual-v6/**"
+      - "docs/V6_PLAN_MAESTRO_VISUAL_DESDE_CERO_20261019.md"
+      - ".github/workflows/check-visual-v6-lab.yml"
+  push:
+    branches: [main]
+    paths:
+      - "web-pasajero/pruebas/visual-v6/**"
+      - "docs/V6_PLAN_MAESTRO_VISUAL_DESDE_CERO_20261019.md"
+      - ".github/workflows/check-visual-v6-lab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  static-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout lightweight V6 lab
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check only standalone V6 scripts and composition
+        shell: bash
+        run: |
+          node --check web-pasajero/pruebas/visual-v6/demo.js
+          node --check web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
+          node web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
