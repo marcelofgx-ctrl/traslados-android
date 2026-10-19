@@ -53,11 +53,11 @@
   };
   const demoFixture=()=>({
     route:{
-      key:"sample:airport-wtc",originKey:"sample:airport",
-      origin:{label:"Aeropuerto de Carrasco"},destination:{label:"World Trade Center"},
-      stops:[],quote:{status:"verified",routeKey:"sample:airport-wtc",distanceKm:16.5,durationMin:25,referenceFareUyu:660}
+      key:"sample:saenz-airport",originKey:"sample:saenz",
+      origin:{label:"ROQUE SAENZ PEÑA 1711"},destination:{label:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros"},
+      stops:[],quote:{status:"verified",routeKey:"sample:saenz-airport",distanceKm:3.1,durationMin:7,referenceFareUyu:124}
     },
-    pickup:{status:"verified",originKey:"sample:airport",distanceKm:0.5,etaMin:5},
+    pickup:{status:"verified",originKey:"sample:saenz",distanceKm:0.5,etaMin:5},
     customer:{displayName:"Pasajero de ejemplo",phoneLabel:"09X XXX XXX · Datos ilustrativos"},
     schedule:{label:"Ahora"}
   });
