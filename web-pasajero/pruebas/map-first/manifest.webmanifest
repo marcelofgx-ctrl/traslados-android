@@ -1,9 +1,9 @@
 {
-  "name": "Traslados · Map-First V3 (Prueba)",
-  "short_name": "Traslados V3",
+  "name": "Traslados · Map-First V4 (Prueba)",
+  "short_name": "Traslados V4",
   "description": "Prueba aislada de la interfaz Map-First; no permite enviar reservas.",
   "id": "/traslados-android/web-pasajero/pruebas/map-first/",
-  "start_url": "./?mapfirst=1&qa=v3",
+  "start_url": "./?mapfirst=1&qa=v4",
   "scope": "./",
   "display": "standalone",
   "background_color": "#061b21",
