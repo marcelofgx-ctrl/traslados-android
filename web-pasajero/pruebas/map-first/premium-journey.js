@@ -212,7 +212,9 @@
       }
       warning.hidden=true;back.hidden=name==="route";next.hidden=name==="confirm";
       next.textContent=name==="passenger"?"Revisar mi viaje →":"Continuar →";
-      updateTimes();header.scrollIntoView?.({block:"start",behavior:"smooth"});
+      updateTimes();
+      root.TrasladosPreviewNavigationSession?.onStage(name);
+      header.scrollIntoView?.({block:"start",behavior:"smooth"});
     }
     function complete(which){
       return doc.querySelector('[data-booking-step="'+which+'"]')?.classList.contains("is-complete")===true;
