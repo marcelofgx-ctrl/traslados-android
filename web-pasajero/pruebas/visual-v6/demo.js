@@ -39,6 +39,11 @@
       :current===2?'Revisar viaje <span aria-hidden="true">→</span>'
       :'Continuar <span aria-hidden="true">→</span>';
     message.textContent="";
+    document.querySelectorAll(".flow-steps li").forEach((node,i)=>{
+      node.classList.toggle("is-current",i===current);
+      node.classList.toggle("is-completed",i<current);
+      if(i===current)node.setAttribute("aria-current","step");else node.removeAttribute("aria-current");
+    });
     if(historyEntry&&location.hash!=="#paso-"+(current+1))history.pushState({v6Demo:true,v6step:current},"","#paso-"+(current+1));
     if(current===3)model.render(demoState);
     window.scrollTo({top:0,behavior:"instant"});
@@ -51,14 +56,29 @@
     if(history.state?.v6Demo===true)history.back();
     else show(current-1);
   });
-  document.querySelector(".brand").addEventListener("click",event=>{event.preventDefault();show(0)});
+  document.querySelector(".qt-brand").addEventListener("click",event=>{event.preventDefault();show(0)});
   window.addEventListener("popstate",()=>show(indexFromHash(),{historyEntry:false}));
   window.addEventListener("hashchange",()=>show(indexFromHash(),{historyEntry:false}));
-  theme.addEventListener("click",()=>{
-    const dark=document.body.classList.toggle("theme-dark");
+  const themeKey="quicktrip-v6-theme";
+  function applyTheme(mode){
+    const dark=mode==="dark";
+    document.body.classList.toggle("theme-dark",dark);
+    document.body.classList.toggle("theme-light",!dark);
+    document.documentElement.style.colorScheme=dark?"dark":"light";
     theme.setAttribute("aria-pressed",String(dark));
-    themeLabel.textContent=dark?"Marfil":"Nocturno";
-    message.textContent=dark?"Variante petróleo · prototipo":"Variante marfil · prototipo";
+    theme.setAttribute("aria-label",dark?"Cambiar a modo claro":"Cambiar a modo oscuro");
+    themeLabel.textContent=dark?"Oscuro":"Claro";
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.setAttribute("content",dark?"#041e22":"#f6faf5");
+  }
+  let saved="dark";
+  try{const last=localStorage.getItem(themeKey);if(last==="light"||last==="dark")saved=last;}catch(_){}
+  applyTheme(saved);
+  theme.addEventListener("click",()=>{
+    const mode=document.body.classList.contains("theme-dark")?"light":"dark";
+    applyTheme(mode);
+    try{localStorage.setItem(themeKey,mode);}catch(_){}
+    message.textContent=mode==="dark"?"Modo oscuro":"Modo claro";
   });
   for(const choice of document.querySelectorAll(".time-choice")){
     choice.addEventListener("click",()=>{
