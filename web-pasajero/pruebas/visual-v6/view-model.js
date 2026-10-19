@@ -27,11 +27,12 @@
       stops.every(s=>s?.ready===true&&safeLabel(s.label,""))
     );
     const verified=complete&&q.status==="verified"&&q.routeKey===route.key&&
-      number(q.distanceKm)>0&&number(q.durationMin)>=0;
+      number(q.distanceKm)>0&&number(q.durationMin)!==null&&number(q.durationMin)>=0;
     const fare=verified&&number(q.referenceFareUyu)>0;
     const pickup=snapshot?.pickup||{};
     const pickupValid=complete&&pickup.status==="verified"&&pickup.originKey===route.originKey&&
-      number(pickup.distanceKm)>=0&&number(pickup.etaMin)>=0;
+      number(pickup.distanceKm)!==null&&number(pickup.distanceKm)>=0&&
+      number(pickup.etaMin)!==null&&number(pickup.etaMin)>=0;
     const display={
       origin:safeLabel(route.origin?.label,"Elegí el origen"),
       destination:safeLabel(route.destination?.label,"Elegí el destino"),
