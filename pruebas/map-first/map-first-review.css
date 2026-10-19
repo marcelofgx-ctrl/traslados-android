@@ -1,0 +1,104 @@
+/* MAP-FIRST-REAL-001 · revisión opt-in (?mapfirst=1) sobre PR #145.
+   Solo composición visual: rutas, tarifa, GPS, reservas y navegación siguen siendo
+   propiedad de los módulos existentes. Sin cambios en Tu reserva ni Mis traslados. */
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"]{
+  padding:4px 12px calc(100px + env(safe-area-inset-bottom));color:#f5f3e9;
+  background:radial-gradient(ellipse at 80% 0%,#15383d 0,transparent 42%),#07191f
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-journey-header{padding:3px 0 7px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-brand{justify-content:flex-start;padding-left:47px;min-height:39px;margin:0 0 7px;gap:9px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-car{width:34px;height:34px;flex-basis:34px;border-width:1px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-brand small{font-size:9px;letter-spacing:.12em}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-brand strong{font-size:17px;font-weight:800}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .journey-back{top:9px;left:12px;width:36px;height:36px;min-height:36px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-progress{padding:6px 4px;border:1px solid #345458;border-radius:13px;background:#0b252c}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-step{display:flex;flex-direction:column;align-items:center;gap:3px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-step::after{display:none}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-number{width:22px;height:22px;min-height:22px;font-size:10px;margin:0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-step small{font-size:10px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-intro{margin:12px 0 10px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-intro h2{font:800 clamp(21px,5.5vw,26px)/1.2 system-ui,sans-serif;letter-spacing:-.04em;margin:0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-intro p{font-size:11px;margin-top:3px;color:#bacbc5}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence{margin:0 0 10px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-presence{
+  border:1px solid #3c6960;border-radius:15px;background:#0d2c31;padding:10px 12px;
+  box-shadow:none
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-card-heading strong{font-size:14px;font-weight:800}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-card-heading p{font-size:11px;line-height:1.4;margin:2px 0 0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-presence-metrics{gap:6px;margin-top:7px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-presence-metric{padding:7px;border:1px solid #36635c;border-radius:10px;min-height:0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-presence-metric strong{font-size:15px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-live-presence .pickup-metric-label{font-size:9px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-position-summary{display:none!important}
+/* Los campos originales, incluido el GPS y los buscadores alternativos, no se clonan. */
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #booking-step-route{
+  display:flex!important;flex-direction:column;padding:0!important;
+  background:transparent;border:0;border-radius:0;gap:0;min-width:0
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #origin-picker,
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #destination-picker{
+  order:1;min-width:0;background:#0c272e;border:1px solid #3f6260;border-radius:0;
+  padding:10px 12px 10px 28px
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #origin-picker{border-radius:15px 15px 0 0;border-bottom:0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #destination-picker{border-radius:0 0 15px 15px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #origin-picker::before,
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #destination-picker::before{top:28px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .wayline{display:none}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-canvas{
+  order:2;display:block!important;margin:10px 0 0;border:1px solid #577a6b;
+  border-radius:18px;overflow:hidden;background:#0d2b32;box-shadow:0 7px 20px #0004
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-cartography{min-height:276px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-real-map{width:100%}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-map-tiles{
+  filter:saturate(.75) brightness(1.05) contrast(.96)
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-map-note{
+  color:#b9cec5;font-size:11px;line-height:1.35;padding:7px 11px;background:#0d2b32
+}
+/* Un solo bloque compacto y legible; datos únicamente del motor verificado existente. */
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary{
+  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  align-items:center;gap:8px;margin:0;padding:13px 11px;
+  background:#102d34;border-top:1px solid #496e63
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-fare{min-width:0;gap:3px}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-fare small{
+  font:800 9px/1.35 system-ui,sans-serif;letter-spacing:.06em;color:#e4c789
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-fare strong{
+  font:850 clamp(21px,6.5vw,30px)/1.2 system-ui,sans-serif;letter-spacing:-.035em;color:#f1d18d
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-trip-metrics{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-trip-metrics>div{
+  padding:8px 5px;min-width:0;gap:5px;background:#193b40;border:1px solid #41685f;border-radius:10px;text-align:center
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-trip-metrics small{
+  color:#bfcdc8;font:700 9px/1.3 system-ui,sans-serif;letter-spacing:0
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-trip-metrics strong{
+  color:#fff6e9;font:800 clamp(13px,4.3vw,17px)/1.2 system-ui,sans-serif
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-stops{
+  order:3;margin:9px 0 0;background:#102b32;border:1px solid #41625a;border-radius:12px;
+  color:#e6d1a5;min-height:43px;padding:10px 12px
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #stop-wrap{order:4}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #login-for-stops{order:5}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] #route-overview{display:none!important}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-actions{margin:8px 0 0}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-next{
+  border:1px solid #e6c078;background:#eed08d;color:#092931;min-height:49px;font-weight:900
+}
+body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-retry{min-height:40px}
+@media(max-width:359px){
+  body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-summary{grid-template-columns:1fr;gap:8px}
+  body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-trip-metrics>div{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.map-first-review.journey-mode-quick #view-viaje[data-premium-step="route"] *{scroll-behavior:auto}
+}
