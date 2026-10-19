@@ -1,0 +1,27 @@
+"use strict";
+const assert=require("node:assert/strict");
+const fs=require("node:fs"),path=require("node:path"),root=path.resolve(__dirname,"..");
+const read=p=>fs.readFileSync(path.join(root,p),"utf8");
+const html=read("index.html"),css=read("map-first-visual-v5.css"),js=read("map-first-visual-v5.js");
+const manifest=JSON.parse(read("manifest.webmanifest")),sw=read("sw.js");
+assert(html.includes('meta name="traslados-preview"'),"Preview booking guard cannot be removed");
+for(const p of ["map-first-visual-v5.css?v=1","map-first-visual-v5.js?v=1"])assert(html.includes(p),p+" must be loaded");
+assert(html.indexOf("map-first-v4-confirm.js")<html.indexOf("map-first-visual-v5.js"),"V4 ticket must exist before the V5 composition");
+assert(!/\bfetch\s*\(|\bXMLHttpRequest\b|\bsupabase\b|\bgeolocation\b|create_reservation/i.test(js),"Presentation JS cannot use backends/GPS/booking");
+assert(js.includes("route.prepend(map)"),"The ORIGINAL verified map must lead Recorrido");
+assert(js.includes("spotlight.append(head,hero,recap)"),"Use original fare and hero in light spotlight");
+assert(js.includes("content.append(itinerary,meta)"),"Use original stop itinerary and passenger data");
+assert(js.includes("action.before(content)"),"Existing send action must remain last");
+assert(js.includes('meta[name="traslados-preview"]'),"Independent preview opt-in required");
+assert(!js.includes("innerHTML"),"Do not create a synthetic amount, map or itinerary");
+assert(css.includes('.premium-route-summary[data-verified="false"]'),"No fabricated quote on route failures");
+assert(css.includes(".mf-v5-spotlight"),"New confirmed design language must be distinct");
+assert(css.includes(".mf-v5-ticket-content"),"Confirm itinerary must be a separate visual zone");
+assert(css.includes("#urgent-route-recap .request-recap-metrics>span:last-child strong"),"Only authoritative fare is dominant");
+assert(css.includes(".premium-route-canvas"),"Actual geographic map must remain visible");
+for(const selector of ["#stop-wrap{","#login-for-stops{","#route-overview{"])
+  assert(css.includes(selector),"Stops / route error must keep safe order: "+selector);
+assert(manifest.scope==="./"&&manifest.start_url.includes("qa=v5_visual_p1"),"Separate PWA scope and version");
+assert(sw.includes("url.pathname.startsWith(scopePath)"),"Never intercept another route or production PWA");
+assert(sw.includes("map-first-visual-v5.js")&&sw.includes("map-first-visual-v5.css"),"New assets must be SW-versioned");
+console.log("PASS Map-First Visual V5 phase 1: real route, real price, progressive confirmation, no booking writes");

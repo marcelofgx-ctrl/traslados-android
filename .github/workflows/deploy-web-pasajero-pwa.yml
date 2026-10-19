@@ -94,6 +94,8 @@ jobs:
           node --check web-pasajero/app.js
           node --check web-pasajero/pruebas/map-first/map-first-v4-confirm.js
           node web-pasajero/pruebas/map-first/tests/map-first-v4-review.cjs
+          node --check web-pasajero/pruebas/map-first/map-first-visual-v5.js
+          node web-pasajero/pruebas/map-first/tests/map-first-v5-visual-phase1.cjs
           node --check web-pasajero/pruebas/map-first/map-first-v5-navigation.js
           node --check web-pasajero/pruebas/map-first/app.js
           node --check web-pasajero/pruebas/map-first/premium-journey.js
