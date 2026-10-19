@@ -19,6 +19,8 @@ assert(css.includes(".mf-v5-spotlight"),"New confirmed design language must be d
 assert(css.includes(".mf-v5-ticket-content"),"Confirm itinerary must be a separate visual zone");
 assert(css.includes("#urgent-route-recap .request-recap-metrics>span:last-child strong"),"Only authoritative fare is dominant");
 assert(css.includes(".premium-route-canvas"),"Actual geographic map must remain visible");
+for(const selector of ["#stop-wrap{","#login-for-stops{","#route-overview{"])
+  assert(css.includes(selector),"Stops / route error must keep safe order: "+selector);
 assert(manifest.scope==="./"&&manifest.start_url.includes("qa=v5_visual_p1"),"Separate PWA scope and version");
 assert(sw.includes("url.pathname.startsWith(scopePath)"),"Never intercept another route or production PWA");
 assert(sw.includes("map-first-visual-v5.js")&&sw.includes("map-first-visual-v5.css"),"New assets must be SW-versioned");
