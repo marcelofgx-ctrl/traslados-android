@@ -29,3 +29,17 @@ Fecha: 18/10/2026 (UYT). **Rama de revisión, no publicada**.
 - Actualizar SW/cache y versionado de assets en PR final de integración, **nunca publicar ni hacer merge solo por CI verde**.
 
 Estado: primera iteración visual de integración, a validar; no implica GPS comercial reparado ni mapa de seguimiento conductor en viaje activo.
+
+
+## V2 — Corrección tras pruebas físicas (capturas 23:47)
+El usuario confirmó que V1 prácticamente no se diferenciaba de la interfaz anterior: 
+la ETA, pasos, resumen y formularios seguían desplazando el mapa por debajo de la pantalla.
+La nueva iteración debe diferenciarse VISUALMENTE:
+- **Ruta**: cabecera reducida a una línea, indicador 1/4 sin franja de cuatro círculos, sin introducción repetida.
+- Origen/destino reales inmediatamente después; mapa verdadero y banda de tarifa/km/min visibles sin tener que atravesar la gran tarjeta de disponibilidad.
+- ETA de recogida genuina y mensajes de error debajo del mapa, nunca inventada; conserva mecanismos existentes.
+- Paradas opcionales y acción continuar al final, sin reconstruir el flujo.
+- **Cuándo**: opciones de tiempo en cuadrícula de dos columnas para reducir desplazamiento, conservando los eventos del selector existente.
+- Importante: la interfaz compacta de Mis traslados, recogida activa y viaje en curso queda PENDIENTE, pues no es la misma página de preparación del viaje.
+- Exclusivo modo `?mapfirst=1`, sin cambios en tarifas, Supabase, API, APK ni reservas.
+Se agregó contrato de regresión CSS para detectar futuras vueltas al diseño vertical anterior.
