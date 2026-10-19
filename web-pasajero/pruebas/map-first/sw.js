@@ -1,7 +1,7 @@
 "use strict";
 /* Scope-local install support for Map-First V3 review. The stable PWA,
  * Supabase APIs, pickup GPS and reservation flow are never cached/intercepted. */
-const CACHE="traslados-map-first-preview-v5-visual-p1-20261019";
+const CACHE="traslados-map-first-preview-v5-route-balanced-20261019";
 const PREFIX="traslados-map-first-preview-";
 const SHELL=["./map-first-v3.js","./map-first-v3.css","./map-first-v4-confirm.js","./map-first-v4-confirm.css","./map-first-v5-navigation.js","./map-first-v5-2.css","./map-first-visual-v5.js","./map-first-visual-v5.css","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png"];
 const scopePath=new URL(self.registration.scope).pathname;

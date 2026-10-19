@@ -5,12 +5,12 @@
   "live_booking_disabled_by_meta": "traslados-preview",
   "android_apk_unchanged": true,
   "service_worker_disabled": false,
-  "design": "MAP-FIRST-V5-VISUAL-PHASE1-20261019",
+  "design": "MAP-FIRST-V5-3-BALANCED-ROUTE-20261019",
   "preview_only": true,
-  "visual_acceptance": "pending Samsung physical visual review",
+  "visual_acceptance": "pending Samsung check: origin/destination first, entire fitted route, compact fare and safe controls",
   "prototype_and_ride_tracking": "not deployed",
   "service_worker_scope": "/traslados-android/web-pasajero/pruebas/map-first/",
   "manifest": "manifest.webmanifest",
   "install_name": "Traslados Visual V5 · Pruebas",
-  "functional_engines": "unmodified; reuse existing map/fare/pickup"
+  "functional_engines": "all unchanged except map presentation height; no booking or fare changes"
 }
