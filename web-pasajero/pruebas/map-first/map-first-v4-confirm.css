@@ -1,0 +1,204 @@
+/* MAP-FIRST V4 — a distinct ticket composition for CONFIRM only.
+   Not another generic premium card: a travel-pass object with clear hierarchy,
+   itinerary and a single primary decision. No synthetic amounts or routes. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"]{
+  background:radial-gradient(ellipse at 50% 0%,#174a48 0%,#06191e 60%);
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-intro,
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-position-summary,
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-live-presence{
+  display:none!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-actions.mf-v4-confirm{
+  display:block!important;margin:14px 0 24px!important;
+  padding:0!important;border:0!important;border-radius:0!important;
+  box-shadow:none!important;background:none!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket{
+  --ticket-paper:#0f3237;--ticket-stroke:#758a75;
+  position:relative;isolation:isolate;overflow:hidden;
+  padding:0 0 7px;
+  background:
+    radial-gradient(ellipse at 90% 2%,#25645c71 0%,transparent 50%),
+    repeating-linear-gradient(140deg,#e9cd9912 0 1px,transparent 1px 15px),
+    linear-gradient(155deg,#19453d,#092a30 53%,#071f29);
+  border:1px solid var(--ticket-stroke);border-radius:24px;
+  box-shadow:0 22px 58px #000b,inset 0 1px 0 #e7d5a743;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket::before{
+  content:"";position:absolute;top:-86px;right:-87px;width:220px;height:220px;
+  border:1px solid #d9c18a31;border-radius:50%;pointer-events:none;z-index:0;
+  box-shadow:0 0 0 28px #d9c18a0c,0 0 0 57px #d9c18a09;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-head{
+  position:relative;display:flex;gap:9px;justify-content:space-between;align-items:start;
+  padding:19px 16px 7px;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-brand{
+  display:flex;gap:10px;align-items:center;min-width:0;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-emblem{
+  display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;
+  font:800 22px/1 system-ui,sans-serif;
+  color:#eed39c;background:linear-gradient(145deg,#245651,#10333a);
+  border:1px solid #cfb17a;border-radius:13px;box-shadow:inset 0 1px 0 #ffebbb66,0 5px 15px #0005;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-brand small{
+  display:block;color:#cbd5bd;font:850 9px/1.3 system-ui,sans-serif;letter-spacing:.12em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-brand strong{
+  display:block;margin-top:3px;color:#ffefcd;
+  font:800 clamp(15px,4vw,18px)/1.2 system-ui,sans-serif;letter-spacing:-.023em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-status{
+  flex:0 0 auto;font:850 9px/1 system-ui,sans-serif;letter-spacing:.07em;
+  border-radius:999px;padding:7px 8px;border:1px solid #c6af818c;
+  color:#f2cf8d;background:#4c3b294b;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .request-hero{
+  margin:0 16px 2px!important;display:flex!important;align-items:center;
+  padding:9px 0 0;gap:0!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .request-hero-icon,
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .request-hero .urgent-actions-eyebrow{display:none!important}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .request-hero-copy h3{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 10px!important;margin:0!important;
+  color:#b8f1d5;font:800 11px/1.4 system-ui,sans-serif!important;
+  border:1px solid #4d946e;background:#15504155;border-radius:999px;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .request-hero-copy h3::before{
+  content:"";width:7px;height:7px;background:#6be2a8;border-radius:50%;
+  box-shadow:0 0 0 3px #6be2a82b;flex:none;
+}
+/* Original SSR/state-managed amount, not a duplicate price widget. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap{
+  display:block;position:relative;margin:8px 14px 0!important;
+  background:linear-gradient(140deg,#17373a,#0d292c)!important;
+  padding:10px 15px 13px!important;
+  border:1px solid #607d70;border-radius:16px!important;box-shadow:inset 0 1px 0 #ffffff19;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap[hidden]{display:none!important}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-top{display:none!important}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 12px;
+  width:100%;margin:0;padding:0;border:0;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics>span{
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+  padding:8px 2px 0!important;border:0!important;
+  background:none!important;box-shadow:none!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics>span:last-child{
+  grid-column:1/-1;grid-row:1;
+  padding:3px 1px 12px!important;border-bottom:1px solid #8eaa9062!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics small{
+  color:#bbd0c5;font:800 10px/1.4 system-ui,sans-serif!important;letter-spacing:.07em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics>span:last-child small{
+  color:#e1d0aa;font-size:10px!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics strong{
+  color:#fff6e8;font:850 19px/1.15 system-ui,sans-serif!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-route-recap .request-recap-metrics>span:last-child strong{
+  color:#f8d993;font:900 clamp(41px,11vw,55px)/1.12 system-ui,sans-serif!important;
+  letter-spacing:-.055em;text-shadow:0 3px 17px #d4ae5645;
+}
+/* Ticket perforation: structural seam between amount and true itinerary. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-perforation{
+  position:relative;height:18px;margin:5px 0 0;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-perforation::before{
+  content:"";position:absolute;top:8px;left:14px;right:14px;
+  border-top:1px dashed #b7aa8460;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-perforation::after{
+  content:"";position:absolute;top:0;left:-8px;width:16px;height:16px;
+  background:#061b21;border-radius:50%;box-shadow:calc(100vw - 19px) 0 #061b21;
+}
+/* Itinerary is the ORIGINAL component. Visually read as route timeline. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-route{
+  display:block;margin:0 15px 8px!important;padding:7px 13px 6px!important;
+  background:#0c2b30dd;border:1px solid #486b61!important;border-radius:15px!important;
+  box-shadow:inset 0 1px 0 #ffffff09;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-route[hidden]{display:none!important}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;padding:2px 0 7px;
+  color:#decb9f;font-size:10px;font-weight:850;letter-spacing:.1em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-edit{
+  font-size:11px;color:#f0d298;border:0;background:none;padding:5px 0;text-decoration:underline;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-place{
+  display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:9px;
+  padding:7px 0 8px!important;border-top:1px solid #68827b23!important;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-dot{
+  display:grid;place-items:center;width:17px;height:17px;flex:none;margin-top:1px;
+  border:2px solid #65e1a5;border-radius:50%;background:#0a3333;color:transparent!important;
+  font-size:0;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-place[data-kind="stop"] .premium-confirm-dot{
+  width:9px;height:9px;margin:5px 4px;border:0;background:#eec883;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-place[data-kind="destination"] .premium-confirm-dot{
+  border-color:#eb9985;background:#492f30;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-copy small{
+  font:750 9px/1.4 system-ui,sans-serif;color:#a8c2b7;text-transform:uppercase;letter-spacing:.08em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket .premium-confirm-copy strong{
+  font:800 clamp(12px,3.6vw,14px)/1.35 system-ui,sans-serif;color:#fff3e2;
+  letter-spacing:-.005em;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-meta{
+  display:flex;flex-wrap:wrap;gap:7px;margin:9px 15px 13px;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-meta span{
+  border:1px solid #507b6e;background:#1a4141;border-radius:9px;
+  color:#dce8dc;padding:9px 11px;font:800 11px/1.2 system-ui,sans-serif;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-action{
+  margin:0 15px;padding:12px 0 6px;border-top:1px solid #8d9e8170;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-action-label{
+  margin:0 0 9px;color:#eedcc3;font-size:12px;font-weight:750;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-action #urgent-send{
+  width:100%;min-height:56px!important;margin:0;padding:12px;border:1px solid #fff1c2!important;
+  background:linear-gradient(112deg,#ebbe7a,#ffe4a7 52%,#cf9c61)!important;
+  color:#0b2830!important;font:900 14px/1.35 system-ui,sans-serif!important;
+  border-radius:14px!important;box-shadow:0 8px 18px #0007,inset 0 1px 0 #fff4c9;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-action .booking-final-note{
+  margin:10px 3px 0;color:#becdc0;font:600 10px/1.5 system-ui,sans-serif;text-align:center;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-info{
+  margin:8px 0 0;padding:0;color:#c8d1c2;border:0;background:transparent;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-info summary{
+  padding:9px 2px;color:#b7d5bc;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer;
+  text-align:center;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-info #urgent-actions-description{
+  margin:3px 6px 12px;color:#b1c0b9;font-size:11px;line-height:1.5;
+}
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-action #urgent-send-error:not([hidden]){
+  margin:8px 0;padding:9px;border:1px solid #fbad7b;border-radius:9px;
+}
+@media(max-width:365px){
+  body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-head{padding:15px 11px 6px}
+  body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-brand strong{font-size:14px}
+  body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] .mf-v4-ticket-status{font-size:8px;padding:6px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] *{
+    animation:none!important;transition:none!important;
+  }
+}
+
+/* Hidden contract wins over the preview's presentation layer. */
+body.map-first-v3.journey-mode-quick #view-viaje[data-premium-step="confirm"] #urgent-actions.mf-v4-confirm[hidden]{display:none!important}
