@@ -29,7 +29,7 @@ assert(css.includes('.mf-v4-ticket-action #urgent-send'),"Reuse original send ac
 assert(css.includes("#urgent-actions.mf-v4-confirm[hidden]{display:none!important}"));
 assert(manifest.start_url.includes("mapfirst=1&qa=v4")||/mapfirst=1&qa=v5/.test(manifest.start_url));
 assert(manifest.scope==="./");
-assert(/traslados-map-first-preview-v(?:[45]|5-2|5-visual-p1)-20261019/.test(sw));
+assert(/traslados-map-first-preview-v(?:[45]|5-2|5-visual-p1|5-route-balanced)-20261019/.test(sw));
 assert(sw.includes("url.pathname.startsWith(scopePath)"),"SW must stay in preview scope");
 assert(!/map-first-v4-confirm/.test(read("map-first-v3.js")),"Do not mix V3 and V4 implementations");
 console.log("PASS V4: ticket hierarchy, original price/route/action, independent app, read-only");
