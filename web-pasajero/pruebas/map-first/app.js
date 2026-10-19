@@ -11,6 +11,7 @@ const states={PENDIENTE:"Pendiente",PRESUPUESTO_ENVIADO:"Presupuesto enviado",AC
 const $=(id)=>document.getElementById(id);
 const record={origin:null,destination:null,stops:[]};
 let bookingSteps=null,premiumJourney=null,premiumRouteComposer=null,routeStepAutoAdvanced=false;
+let previewNavigation=null;
 // Las cabeceras del formulario son presentación, nunca estado de reserva.
 function stepSummaryName(place){
   const label=String(place?.text||"").trim().split(",")[0];
@@ -593,7 +594,7 @@ function enterService(kind){
   routeStepAutoAdvanced=false;
   bookingSteps.open("route");
   shiftView(quick?"viaje":"reservar");
-  if(quick)premiumJourney?.activate();
+  if(quick){premiumJourney?.activate();recoverRoadAfterReturn("enter-service");}
 }
 function shiftView(name){
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
@@ -606,6 +607,7 @@ function shiftView(name){
   if(name==="cuenta")renderAccount();
   window.scrollTo({top:0,behavior:"smooth"});
   pickupOriginMonitor?.sync();
+  previewNavigation?.onView(name);
 }
 function isUruguayCoords(lat,lng){return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9;}
 // El navegador solo puede SOLICITAR el permiso al tocar el botón.
@@ -965,6 +967,7 @@ function picker(name,mount,position){
 // El motor vial no depende de la UI ni del estado de reservas.
 const roadEngine=window.TrasladosRoutes;
 let latestRoad=null,activeRouteKey="",routeSequence=0;
+let lastRoadRecoveryAttemptAt=0;
 function selectedRoadPoints(){
   return record.origin&&record.destination ? [record.origin,...record.stops.filter(Boolean),record.destination] : [];
 }
@@ -1125,6 +1128,27 @@ function renderRouteSummary(){
   if(typeof premiumRouteComposer!=="undefined")premiumRouteComposer?.sync();
   roadEngine.estimate(points,{api:API,publishableKey:KEY})
     .then(finish).catch(()=>finish(null));
+}
+/** Recalculate after Android Back, BFCache restore, app foreground or re-entry.
+ * Keep selections and any verified quote. Never invent a fare or call booking RPC.
+ * A cooldown avoids spinning the public route provider on rapid visibility events. */
+function recoverRoadAfterReturn(reason){
+  if(!PREVIEW_READ_ONLY||navigator.onLine===false)return;
+  if(record.stops.some(stop=>!stop))return;
+  const points=selectedRoadPoints();
+  if(points.length<2)return;
+  const key=routeKeyOf(points);
+  if(latestRoad?.key===key&&roadEngine.verified(latestRoad.data)){
+    premiumRouteComposer?.sync();
+    return;
+  }
+  const now=Date.now();
+  if(now-lastRoadRecoveryAttemptAt<6500)return;
+  lastRoadRecoveryAttemptAt=now;
+  // Failure diagnostics can describe a stale page. Invalidate ONLY this route
+  // and ask the existing verified-route engine again on actual app re-entry.
+  roadEngine.invalidate(key);
+  renderRouteSummary();
 }
 
 let originPicker,destPicker,stopPickers=[];
@@ -2519,6 +2543,18 @@ function init(){
   $("account-submit").addEventListener("click",()=>void accountSubmit());
   window.addEventListener("online",updateConnectivity);window.addEventListener("offline",updateConnectivity);
   syncAuthUI();setAccountMode(false);updateConnectivity();refreshBookingSteps();installUI();
+  if(PREVIEW_READ_ONLY&&window.TrasladosPreviewNavigation?.create){
+    previewNavigation=window.TrasladosPreviewNavigation.create({
+      history:window.history,doc:document,
+      restoreView:name=>{
+        if(name==="viaje"&&!document.body.classList.contains("journey-mode-quick"))enterService("now");
+        else shiftView(name);
+      },
+      restoreStage:stage=>premiumJourney?.open(stage),
+      recover:reason=>recoverRoadAfterReturn(reason)
+    });
+    previewNavigation?.mount();
+  }
   // Public homepage deep link opens the PWA installer view, not a separate app.
   if(window.location.hash==="#instalar")shiftView("instalar");
   if(authReady()||jsonStorage(GUEST_KEY,[]).length)void loadTrips({background:true});
