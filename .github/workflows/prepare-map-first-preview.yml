@@ -4,6 +4,9 @@ on:
     branches: [feat/pwa-map-first-real-review-20261018]
     paths:
       - ".github/workflows/prepare-map-first-preview.yml"
+      - "web-pasajero/map-first-review.css"
+      - "web-pasajero/map-first-review.js"
+      - "web-pasajero/premium-route.js"
   workflow_dispatch:
 
 permissions:
