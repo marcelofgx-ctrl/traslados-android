@@ -74,6 +74,8 @@
     }
     // Pending quote / pickup are visually explicit; nothing here silently
     // copies previous trip values from any other screen.
+    for(const n of doc.querySelectorAll("[data-v6-quote-state]"))
+      n.dataset.v6QuoteState=value.routeVerified?"verified":"pending";
     const quote=doc.getElementById("quote-status");
     if(quote)quote.textContent=value.routeVerified?"Recorrido estimado · dato ilustrativo":"Importe pendiente de ruta verificada";
     const pickup=doc.querySelectorAll('[data-v6-pickup-state]');
