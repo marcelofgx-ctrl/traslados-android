@@ -14,10 +14,12 @@
     if(!view||!route||!map||!ticket)return false;
     if(doc.body.dataset.mfV5Phase1==="mounted")return true;
     doc.body.dataset.mfV5Phase1="mounted";
-    // Same actual map and input widgets, rearranged rather than duplicated.
+    // Compact first screen: editable origin/destination precede the SAME
+    // geographic canvas. Never clone route, fare, map, booking or selection.
+    const destination=route.querySelector("#destination-picker");
     function arrangeRoute(){
-      if(doc.body.classList.contains("journey-mode-quick") && map.parentElement===route && route.firstElementChild!==map){
-        route.prepend(map);
+      if(doc.body.classList.contains("journey-mode-quick") && destination?.parentElement===route && map.parentElement===route && destination.nextElementSibling!==map){
+        destination.after(map);
       }
     }
     // The V3 owner returns map to its original location in Tu reserva.
