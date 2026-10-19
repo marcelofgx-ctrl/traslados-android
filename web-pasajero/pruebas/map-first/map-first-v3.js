@@ -6,6 +6,15 @@
   if(new URL(root.location.href).searchParams.get("mapfirst")!=="1")return;
   if(!doc.querySelector('meta[name="traslados-preview"]'))return;
   doc.body.classList.add("map-first-v3");
+  // Independent safety belt: even if the original presentation fails to mount,
+  // prevent this QA surface from sending real booking requests by click.
+  doc.addEventListener("click",event=>{
+    const target=event.target;
+    const send=target?.closest?.("#urgent-send,#confirm-booking");
+    if(!send)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },true);
   function install(){
     const route=doc.querySelector('[data-booking-step="route"]');
     const routeBody=doc.getElementById("booking-step-route");
