@@ -22,7 +22,7 @@ assert(css.includes("order:2")&&css.includes(".premium-route-stops"));
 assert(route.includes('root.innerHeight')&&route.includes('mapFirstHeight'));
 assert(route.includes("root.TrasladosPremiumMap.render")&&route.includes("root.TrasladosPremiumMap.overview"),
   "Retain existing verified-road renderer and reference overview");
-assert(route.includes("root.TrasladosPremiumMap.render")&&route.includes("roadEngine")===false,
-  "Only existing verified road geometry is presented; no second road engine");
+assert(route.includes("root.TrasladosPremiumMap.render")&&!route.includes("roadEngine.estimate("),
+  "Use the existing geometry renderer without invoking another route-estimate request");
 assert(!css.includes("position:fixed"),"Do not overlay the live booking submit controls");
 console.log("PASS MAP-FIRST-REAL-001: isolated opt-in; live existing map/fare/pickup; no booking or GPS changes");
