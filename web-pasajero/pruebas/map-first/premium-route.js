@@ -81,8 +81,13 @@
       const geometry=Array.isArray(state.geometry)&&state.geometry.length>1?state.geometry:null;
       const stopMarkers=state.stops.filter(Boolean).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng))
         .map(p=>({lat:p.lat,lng:p.lng,label:"P"}));
-      const mapFirstHeight=doc.body.classList.contains("map-first-review")
-        ?Math.max(276,Math.min(348,Math.round((root.innerHeight||700)*.43))):240;
+      // Purely visual viewport sizing: show the whole actual route on mobile
+      // without letting the map hide origin/destination and the price section.
+      // Existing renderer still fits geometry and all stop markers to this size.
+      const mapFirstHeight=doc.body.classList.contains("mf-v5-phase1")
+        ?Math.max(204,Math.min(250,Math.round((root.innerHeight||700)*.31)))
+        :doc.body.classList.contains("map-first-review")
+          ?Math.max(276,Math.min(348,Math.round((root.innerHeight||700)*.43))):240;
       const key=JSON.stringify({geometry,points,stopMarkers,width:Math.round(mapHost.clientWidth||355),height:mapFirstHeight});
       if(key!==lastMap){
         lastMap=key;
