@@ -9,7 +9,7 @@
 - Conservación de trazas e histórico sin purga. GPS comercial y recogida son otro subsistema independiente.
 
 ## G1: Alcance de esta v0
-- **Artefacto único nuevo:** `experiments/tu-viaje-map-first-v0/index.html`.
+- **Artefacto único nuevo:** `web-pasajero/experiments/tu-viaje-map-first-v0/index.html`.
 - **Documentación:** este archivo.
 - Solo diseño interactivo OFFLINE, sin bibliotecas ni fuentes remotas. Tres estados simulados: solicitud enviada, conductor en camino y viaje en curso.
 - Componentes: origen/destino compacto editable (sin geocodificación), mapa esquemático explícitamente ilustrativo, banda precio/km/duración, estado principal, conductor demo, acciones de detalle/chat (sin envío real).
