@@ -1,0 +1,44 @@
+name: "EXPERIMENTAL · Tu viaje map-first v0 (no deploy)"
+on:
+  push:
+    branches:
+      - experiment/tu-viaje-map-first-v0-20261018
+    paths:
+      - web-pasajero/experiments/tu-viaje-map-first-v0/index.html
+      - .github/workflows/preview-tu-viaje-map-first-v0.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check standalone HTML and script
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          import re
+          f=Path("web-pasajero/experiments/tu-viaje-map-first-v0/index.html")
+          raw=f.read_text(encoding="utf-8")
+          assert raw.startswith("<!doctype html>")
+          assert "Esquema ilustrativo" in raw
+          for stage in ('solicitud','recogida','viaje'):
+              assert f'data-stage="{stage}"' in raw
+          assert '<script>' in raw and '</script>' in raw
+          assert 'fetch(' not in raw and 'XMLHttpRequest' not in raw
+          script=raw.split("<script>",1)[1].split("</script>",1)[0]
+          Path("/tmp/tu-viaje-demo.js").write_text(script)
+          HTMLParser().feed(raw)
+          PY
+          node --check /tmp/tu-viaje-demo.js
+      - name: Package only the demo (no APK, no Pages)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tu-Viaje-Map-First-v0-HTML
+          path: web-pasajero/experiments/tu-viaje-map-first-v0/index.html
+          retention-days: 30
