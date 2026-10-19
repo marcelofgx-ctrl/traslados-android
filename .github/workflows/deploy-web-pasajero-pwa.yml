@@ -87,6 +87,8 @@ jobs:
           node web-pasajero/tests/pickup-origin-drift-smoke.cjs
           node web-pasajero/tests/pickup-origin-recalc-smoke.cjs
           node web-pasajero/tests/ux-recorrido-001-smoke.cjs
+          node --check web-pasajero/map-first-review.js
+          node web-pasajero/tests/map-first-real-v1-smoke.cjs
           node --check web-pasajero/pickup-observability.js
           test -f web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs
           node --check web-pasajero/trip-board.js
