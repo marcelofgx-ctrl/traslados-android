@@ -1,9 +1,9 @@
 {
-  "name": "Traslados · Visual V5 Fase 1 (Prueba)",
-  "short_name": "Traslados V5",
-  "description": "Rediseño visual fase 1: Recorrido y Confirmar, solo pruebas sin reservas.",
+  "name": "Traslados · Visual V5 Recorrido (Prueba)",
+  "short_name": "Traslados V5.3",
+  "description": "Fase 1 corregida: ruta y extremos primero, mapa adaptativo, sin reservas reales.",
   "id": "/traslados-android/web-pasajero/pruebas/map-first/",
-  "start_url": "./?mapfirst=1&qa=v5_visual_p1",
+  "start_url": "./?mapfirst=1&qa=v5_balanced",
   "scope": "./",
   "display": "standalone",
   "background_color": "#061b21",
