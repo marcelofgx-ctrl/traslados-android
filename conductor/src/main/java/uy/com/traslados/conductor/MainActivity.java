@@ -96,10 +96,6 @@ public class MainActivity extends Activity {
         }else if(e.getActionMasked()==MotionEvent.ACTION_CANCEL)pageGestureReady=false;
         return super.dispatchTouchEvent(e);
     }
-    @Override public void onBackPressed(){
-        if(isEmbeddedMapa())returnToMapa();
-        else super.onBackPressed();
-    }
     private String expandedId="";
     private boolean firstLoad=true;
     private boolean historyMode=false;
@@ -1389,7 +1385,7 @@ public class MainActivity extends Activity {
     private String shortAddress(String s){if(s==null)return "";String a=s.trim();int comma=a.indexOf(',');if(comma>10)a=a.substring(0,comma);return a.length()>46?a.substring(0,43)+"…":a;}
     private int dp(int x){return (int)(x*getResources().getDisplayMetrics().density+0.5f);}
 
-    @Override public void onBackPressed(){if(historyMode){expandedId="";currentRows.clear();buildDashboard(false);loadActive(true);}else super.onBackPressed();}
+    @Override public void onBackPressed(){if(historyMode){expandedId="";currentRows.clear();buildDashboard(false);loadActive(true);}else if(isEmbeddedMapa())returnToMapa();else super.onBackPressed();}
 
     public static class IconView extends View {
         private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);private final String type;private final int color;
