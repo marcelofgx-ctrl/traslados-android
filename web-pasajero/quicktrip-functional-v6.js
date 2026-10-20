@@ -51,10 +51,76 @@
     if(primary)primary.textContent="Viajá ahora o en pocos minutos";
     const scheduleDesc=scheduling?.querySelector(".service-card-description");
     if(scheduleDesc)scheduleDesc.textContent="Elegí fecha y hora para tu viaje";
+    // V6 screens are built around the ORIGINAL mounted components, never a
+    // second mock screen or clone. Move only presentation nodes: live listeners
+    // and the Supabase/road-route state stay attached to their native elements.
+    const journey=doc.getElementById("view-viaje");
+    const progressHeader=journey?.querySelector(".premium-journey-header");
+    const introduction=journey?.querySelector(".premium-intro");
+    if(progressHeader&&introduction)
+      progressHeader.insertAdjacentElement("afterend",introduction);
     const steps=doc.querySelectorAll("#view-viaje .premium-progress .premium-number");
-    ["🚘","▦","♙","✓"].forEach((icon,index)=>{
-      if(steps[index])steps[index].textContent=icon;
-    });
+    const icons=[
+      '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 17l3-7h14l3 7v8H6zM10 10l2-4h8l2 4M9 19h5m4 0h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="10" cy="25" r="2" fill="currentColor"/><circle cx="22" cy="25" r="2" fill="currentColor"/></svg>',
+      '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="6" y="7" width="20" height="20" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M6 14h20M12 4v6m8-6v6M12 18v5m5-5v5m5-5v5" stroke="currentColor" stroke-width="1.5"/></svg>',
+      '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="10" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M7 27v-4a9 9 0 0 1 18 0v4H7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+      '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M7 16l6 6L25 9" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    ];
+    steps.forEach((node,index)=>{if(icons[index])node.innerHTML=icons[index];});
+    const titles={
+      route:["¿Dónde te buscamos?","Elegí origen, destino y paradas."],
+      when:["¿Cuándo querés viajar?","Ahora o en las próximas 2 horas."],
+      passenger:["Tus datos","Solo lo necesario para comunicarnos."],
+      confirm:["Revisá tu viaje","Comprobá el recorrido y la tarifa antes de solicitar."]
+    };
+    const nativeTitle=journey?.querySelector(".premium-intro h2");
+    const nativeNote=journey?.querySelector(".premium-intro p");
+    function syncStage(){
+      const stage=journey?.dataset.premiumStep;
+      const copy=titles[stage];
+      if(!copy)return;
+      if(nativeTitle)nativeTitle.textContent=copy[0];
+      if(nativeNote)nativeNote.textContent=copy[1];
+    }
+    if(journey){
+      new MutationObserver(syncStage).observe(journey,{attributes:true,attributeFilter:["data-premium-step"]});
+      syncStage();
+    }
+    // Exactly the original form inputs remain editable and authoritative.
+    const passengerBody=journey?.querySelector('[data-booking-step="passenger"] [data-step-body]');
+    const personName=doc.getElementById("person-name");
+    const personPhone=doc.getElementById("person-phone");
+    if(passengerBody&&personName&&personPhone){
+      const card=doc.createElement("section");
+      card.className="qt-v6-contact-card";
+      card.setAttribute("aria-label","Resumen de contacto actual");
+      const overline=doc.createElement("span");overline.className="qt-v6-overline";
+      overline.textContent="DATOS DE CONTACTO";
+      const row=doc.createElement("div");row.className="qt-v6-contact-row";
+      const avatar=doc.createElement("span");avatar.className="qt-v6-contact-avatar";avatar.setAttribute("aria-hidden","true");
+      const details=doc.createElement("div");details.className="qt-v6-contact-details";
+      const name=doc.createElement("strong"),phone=doc.createElement("small");
+      const done=doc.createElement("span");done.className="qt-v6-contact-check";done.setAttribute("aria-hidden","true");
+      details.append(name,phone);row.append(avatar,details,done);card.append(overline,row);
+      const edit=doc.createElement("button");edit.type="button";edit.className="qt-v6-contact-edit";
+      edit.textContent="Revisar mis datos ↗";edit.addEventListener("click",()=>personName.focus({preventScroll:false}));
+      card.append(edit);
+      passengerBody.prepend(card);
+      const syncContact=()=>{
+        const fullName=personName.value.trim(),number=personPhone.value.trim();
+        const complete=fullName.length>=2&&number.replace(/\\D/g,"").length>=8;
+        avatar.textContent=(fullName[0]||"•").toUpperCase();
+        name.textContent=fullName||"Completá tus datos";
+        phone.textContent=number||"Ingresá tu teléfono para coordinar";
+        done.textContent=complete?"✓":"";
+        card.dataset.complete=String(complete);
+      };
+      for(const input of [personName,personPhone]){
+        input.addEventListener("input",syncContact);
+        input.addEventListener("change",syncContact);
+      }
+      syncContact();
+    }
     const reserveTab=doc.querySelector('.tab[data-view="reservar"]');
     if(reserveTab)reserveTab.textContent="Programar";
     // The live selectors, forms and buttons are all original production nodes.
@@ -80,7 +146,7 @@
       doc.documentElement.style.colorScheme=light?"light":"dark";
       button.setAttribute("aria-pressed",String(light));
       button.setAttribute("aria-label",light?"Cambiar a modo oscuro":"Cambiar a modo claro");
-      button.textContent=light?"☀":"☾";
+      button.innerHTML='<span class="qt-theme-sun" aria-hidden="true">☼</span><span class="qt-theme-moon" aria-hidden="true">☾</span>';
       if(meta)meta.setAttribute("content",light?"#f6faf5":"#041e22");
     }
     let saved="dark";
@@ -99,6 +165,29 @@
       tools.appendChild(button);
       if(phone)tools.appendChild(phone); // Keep one working phone action.
       header.appendChild(tools);
+      const back=doc.createElement("button");
+      back.type="button";back.className="qt-v6-header-back";
+      back.textContent="‹";back.setAttribute("aria-label","Volver al inicio");
+      back.addEventListener("click",()=>doc.querySelector('.tab[data-view="inicio"]')?.click());
+      header.prepend(back);
+      const journeyView=doc.getElementById("view-viaje");
+      const scheduledView=doc.getElementById("view-reservar");
+      function updateBack(){
+        back.hidden=!(journeyView?.classList.contains("active")||
+                       scheduledView?.classList.contains("active"));
+      }
+      for(const view of [journeyView,scheduledView]){
+        if(view)new MutationObserver(updateBack).observe(view,{attributes:true,attributeFilter:["class"]});
+      }
+      updateBack();
+    }
+    const tabIcons={inicio:"⌂",viajes:"▤",cuenta:"☰"};
+    for(const tab of doc.querySelectorAll(".tabs .tab")){
+      const glyph=tabIcons[tab.dataset.view];
+      if(!glyph)continue;
+      const icon=doc.createElement("span");icon.className="qt-v6-tab-icon";
+      icon.textContent=glyph;icon.setAttribute("aria-hidden","true");
+      tab.prepend(icon);
     }
   }
   // app.js and premium-journey.js mount first; defer order preserves native handlers.
