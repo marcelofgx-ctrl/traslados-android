@@ -60,7 +60,7 @@ body.qt-clean .qtc-app .journey-back{
   font-size:0!important;overflow:hidden
 }
 body.qt-clean .qtc-app .journey-back:before{content:"‹";font:normal 28px/1 Arial;color:var(--qtc-gold)}
-body.qt-clean .qtc-app .qtc-logo{width:168px;max-width:calc(100% - 52px);height:46px;object-fit:contain;object-position:left center;filter:drop-shadow(0 1px 8px #0004)}
+body.qt-clean .qtc-app .qtc-logo{width:168px;max-width:calc(100% - 52px);height:46px;object-fit:contain;object-position:left center;filter:drop-shadow(0 2px 5px rgba(0,12,16,.74))}
 body.qt-clean .qtc-app .qtc-header-copy{position:relative;z-index:1;margin:2px 0 0 46px}
 body.qt-clean .qtc-app .qtc-header-copy small{display:block;color:#c9be9e;letter-spacing:.16em;font-size:9px;font-weight:750}
 body.qt-clean .qtc-app .qtc-header-copy h1{font-size:21px;letter-spacing:-.04em;color:#fff5e5;font-weight:780;line-height:1.15;margin:3px 0 0}
@@ -210,6 +210,26 @@ body.qt-clean .qtc-app .qtc-section-name{display:flex;align-items:center;gap:8px
 body.qt-clean .qtc-app .qtc-section-name strong{color:#f6e0b1;font-size:12px}
 body.qt-clean .qtc-app .qtc-section-name small{margin-left:auto;text-align:right;font-size:9px;color:#b7cac2}
 body.qt-clean .qtc-app .qtc-live-dot{width:9px;height:9px;border-radius:50%;background:#3fbd8c;box-shadow:0 0 0 4px #3fbd8c1a}
+/* Estado visual derivado del resultado real de disponibilidad.
+   Evita el ambiguo "Recogida por confirmar" cuando la consulta devuelve false.
+   No calcula ETA, no cambia respuestas del motor y no expone datos del conductor. */
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"] .qtc-live-dot{
+  background:#dab875;box-shadow:0 0 0 4px rgba(218,184,117,.12)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable:not([hidden]){
+  display:grid;gap:6px;margin:8px 0;padding:13px 12px;
+  border:1px solid rgba(225,190,121,.35);border-radius:12px;
+  background:linear-gradient(120deg,#214348,#17383d)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable strong{
+  color:#f0d39b;font-size:15px;font-weight:800;line-height:1.28
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable small{
+  color:#deebe2;font-size:11.5px;line-height:1.52
+}
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"]
+  #pickup-presence .pickup-card-header{display:none!important}
+
 
 /* Buscando conductor: estado derivado SOLO de data-phase del motor original. */
 body.qt-clean .qtc-app .qtc-driver-search:not([hidden]){
