@@ -8,6 +8,7 @@ on:
       - "mapatrayectos/src/main/AndroidManifest.xml"
       - "conductor/src/main/AndroidManifest.xml"
       - "scripts/android_qa_install_preflight.sh"
+      - "scripts/prepare_quicktrip_cliente_qa.py"
   workflow_dispatch:
 
 permissions:
@@ -15,9 +16,9 @@ permissions:
 
 jobs:
   build:
-    name: "Compilar Conductor y Mapa (QA, sin cambios de motor)"
+    name: "Compilar Quick Trip Pasajero, Conductor y Mapa (QA)"
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Restaurar recursos de Android desde assets codificados
@@ -58,6 +59,19 @@ jobs:
       - name: Compilar APK debug independiente y APK integrado
         shell: bash
         run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+      - name: Crear Quick Trip Pasajero QA fuera de la fuente RELEASE
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_quicktrip_cliente_qa.py \
+            --source cliente-premium \
+            --dest "$RUNNER_TEMP/quicktrip-pasajero-qa" \
+            --qa-id "r${GITHUB_RUN_ID}" \
+            --icon web-pasajero/icons/icon-512.png
+          git diff --exit-code -- cliente-premium
+      - name: Compilar APK Quick Trip Pasajero QA (WebView oficial con ui=clean)
+        shell: bash
+        run: gradle -p "$RUNNER_TEMP/quicktrip-pasajero-qa" :app:assembleDebug --stacktrace --no-daemon
       - name: Preparar APKs y sumas de control
         shell: bash
         run: |
@@ -67,7 +81,10 @@ jobs:
           find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
           cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
           cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          test -s "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk"
+          cp "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk" artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk
           echo "QA Android installation preflight (no uninstall, no data deletion)"
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk "uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}"
           bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk "uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
           bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
           sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
@@ -76,6 +93,9 @@ jobs:
             echo "QA build: $GITHUB_RUN_ID"
             echo "Conductor QA package: uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
             echo "Mapa QA package: uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
+            echo "Quick Trip Pasajero QA package: uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}"
+            echo "Quick Trip QA WebView: https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/?ui=clean"
+            echo "La APK oficial Cliente Premium sigue intacta."
             echo "NO desinstala originales. NO usa identificadores de producción."
             echo "Cada compilación QA tiene un ID diferente, evitando colisiones de firma con builds anteriores."
             echo "QA debug signing; not a production-signed release."
