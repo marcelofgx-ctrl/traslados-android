@@ -38,7 +38,7 @@ body.qt-clean .qtc-app button,body.qt-clean .qtc-app input,
 body.qt-clean .qtc-app select{font-family:inherit}
 body.qt-clean .qtc-app [hidden]{display:none!important}
 body.qt-clean .qtc-app .qtc-header{
-  position:relative;padding:15px 20px 15px;
+  position:relative;padding:10px 16px 9px;
   background:radial-gradient(ellipse at 83% 8%,#33656a 0,transparent 60%),
     linear-gradient(145deg,#103b40,#092930 83%);
   border-bottom:1px solid #3b6060;overflow:hidden
@@ -60,12 +60,12 @@ body.qt-clean .qtc-app .journey-back{
   font-size:0!important;overflow:hidden
 }
 body.qt-clean .qtc-app .journey-back:before{content:"‹";font:normal 28px/1 Arial;color:var(--qtc-gold)}
-body.qt-clean .qtc-app .qtc-logo{width:176px;max-width:calc(100% - 52px);height:53px;object-fit:contain;object-position:left center;filter:drop-shadow(0 1px 8px #0004)}
+body.qt-clean .qtc-app .qtc-logo{width:168px;max-width:calc(100% - 52px);height:46px;object-fit:contain;object-position:left center;filter:drop-shadow(0 1px 8px #0004)}
 body.qt-clean .qtc-app .qtc-header-copy{position:relative;z-index:1;margin:2px 0 0 46px}
 body.qt-clean .qtc-app .qtc-header-copy small{display:block;color:#c9be9e;letter-spacing:.16em;font-size:9px;font-weight:750}
-body.qt-clean .qtc-app .qtc-header-copy h1{font-size:23px;letter-spacing:-.04em;color:#fff5e5;font-weight:780;line-height:1.15;margin:3px 0 0}
+body.qt-clean .qtc-app .qtc-header-copy h1{font-size:21px;letter-spacing:-.04em;color:#fff5e5;font-weight:780;line-height:1.15;margin:3px 0 0}
 body.qt-clean .qtc-app .qtc-header-copy p{margin:3px 0 0;color:#d7c5a3;font-size:11px}
-body.qt-clean .qtc-app .qtc-content{padding:13px 14px 84px;display:grid;gap:11px}
+body.qt-clean .qtc-app .qtc-content{padding:10px 12px 78px;display:grid;gap:8px}
 body.qt-clean .qtc-app .qtc-places{margin:0;background:transparent}
 body.qt-clean .qtc-app .qtc-places>.booking-step-card{
   display:block!important;margin:0!important;padding:0!important;background:transparent!important;
@@ -83,8 +83,8 @@ body.qt-clean .qtc-app #booking-step-route[hidden]{
 }
 body.qt-clean .qtc-app #origin-picker,
 body.qt-clean .qtc-app #destination-picker{
-  position:relative;display:block;margin:0!important;min-height:84px!important;
-  padding:13px 12px 12px 43px!important;background:#15383e!important;
+  position:relative;display:block;margin:0!important;min-height:75px!important;
+  padding:10px 11px 7px 40px!important;background:#15383e!important;
   border:1px solid rgba(204,220,202,.19)!important;
   border-radius:0!important;box-shadow:none!important;
 }
@@ -92,19 +92,19 @@ body.qt-clean .qtc-app #origin-picker{border-radius:18px 18px 0 0!important;bord
 body.qt-clean .qtc-app #destination-picker{border-radius:0 0 18px 18px!important}
 body.qt-clean .qtc-app #origin-picker:before,
 body.qt-clean .qtc-app #destination-picker:before{
-  content:"";position:absolute;top:31px;left:16px;border:3px solid #4dcda2;
+  content:"";position:absolute;top:26px;left:16px;border:3px solid #4dcda2;
   background:#092c32;border-radius:50%;width:17px;height:17px
 }
 body.qt-clean .qtc-app #destination-picker:before{border-color:#e57f77}
 body.qt-clean .qtc-app #origin-picker:after{
-  content:"";position:absolute;top:52px;bottom:-10px;left:24px;width:1px;
+  content:"";position:absolute;top:47px;bottom:-10px;left:24px;width:1px;
   background:repeating-linear-gradient(to bottom,#d3b97f 0 4px,transparent 4px 9px);z-index:2
 }
 body.qt-clean .qtc-app .location-widget{
   background:none!important;border:0!important;box-shadow:none!important;
   min-height:0!important;max-height:none!important;padding:0!important;margin:0!important
 }
-body.qt-clean .qtc-app .location-title{font-size:10px!important;letter-spacing:.15em!important;color:#cfddcf!important;font-weight:800!important;margin:0 0 8px!important}
+body.qt-clean .qtc-app .location-title{font-size:10px!important;letter-spacing:.15em!important;color:#cfddcf!important;font-weight:800!important;margin:0 0 4px!important}
 body.qt-clean .qtc-app .location-controls,
 body.qt-clean .qtc-app .location-selected{margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 body.qt-clean .qtc-app .location-selected-label{
@@ -122,7 +122,7 @@ body.qt-clean .qtc-app .loc-search.loc-search-origin{
   gap:8px!important;align-items:center!important;padding:0!important;margin:0!important
 }
 body.qt-clean .qtc-app .loc-search input[type="search"]{
-  width:100%!important;min-height:36px!important;height:38px!important;
+  width:100%!important;min-height:34px!important;height:35px!important;
   background:transparent!important;border:0!important;box-shadow:none!important;
   color:#fff8ea!important;font-size:14px!important;font-weight:600!important;
   padding:5px 0!important
@@ -137,8 +137,8 @@ body.qt-clean .qtc-app .location-use-current{
   overflow:hidden!important;font-size:0!important;min-width:0!important
 }
 body.qt-clean .qtc-app .location-search-action:before{content:"⌕";font:normal 29px/1 Arial}
-body.qt-clean .qtc-app .location-use-current{font-size:10px!important;font-weight:750!important}
-body.qt-clean .qtc-app .location-use-current .premium-gps-short-label{display:block!important}
+body.qt-clean .qtc-app .location-use-current{font-size:0!important;font-weight:750!important}
+body.qt-clean .qtc-app .location-use-current .premium-gps-short-label{display:block!important;font-size:11px!important;line-height:1.1!important}
 body.qt-clean .qtc-app .premium-department-toggle{
   display:inline-block!important;margin:3px 0 6px!important;
   border:0!important;background:transparent!important;color:#bfcabf!important;
@@ -151,16 +151,16 @@ body.qt-clean .qtc-app .results{
   box-shadow:0 12px 24px #0006
 }
 body.qt-clean .qtc-app .results button.result{min-height:52px!important;font-size:12px!important}
-body.qt-clean .qtc-app .qtc-history{position:absolute;right:10px;top:9px;margin:0;z-index:11}
+body.qt-clean .qtc-app .qtc-history{position:relative;margin:0;z-index:11}
 body.qt-clean .qtc-app .qtc-history-button{
-  display:inline-flex;align-items:center;gap:5px;min-height:28px;margin:0;padding:3px 10px;
+  position:absolute;right:9px;top:7px;z-index:12;display:inline-flex;align-items:center;gap:5px;min-height:28px;margin:0;padding:3px 10px;
   background:transparent;color:var(--qtc-gold);border:1px solid #987d58;
   border-radius:20px;font-size:11px;font-weight:720;letter-spacing:.01em
 }
 body.qt-clean .qtc-app .qtc-history-panel{
-  position:absolute;right:0;top:35px;width:min(305px,calc(100vw - 50px));z-index:12;max-height:250px;overflow-y:auto;
+  position:relative;width:100%;z-index:12;max-height:250px;overflow-y:auto;
   background:#153b40;border:1px solid #aa946f;border-radius:14px;
-  padding:8px;margin:7px 0 0;box-shadow:0 15px 30px #0005;
+  padding:8px;margin:7px 0 9px;box-shadow:0 15px 30px #0005;
   animation:qtc-history-in .23s cubic-bezier(.2,.7,.3,1)
 }
 @keyframes qtc-history-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
@@ -173,7 +173,7 @@ body.qt-clean .qtc-app .qtc-history-item{
 }
 body.qt-clean .qtc-app .qtc-history-pin{font-size:17px;color:var(--qtc-gold);flex:0 0 18px}
 body.qt-clean .qtc-app .premium-route-stops{
-  display:block!important;width:100%;margin:0 0 7px;padding:12px 14px;
+  display:block!important;width:100%;min-height:38px!important;margin:0 0 5px;padding:9px 12px;
   background:#12343b;border:1px solid rgba(214,200,160,.18);
   border-radius:13px;text-align:left;color:#dceadf;font-size:12px;font-weight:650
 }
@@ -204,7 +204,7 @@ body.qt-clean .qtc-app .premium-route-map-note{
 }
 body.qt-clean .qtc-app .premium-route-retry:not([hidden]){color:#8a492f!important;background:#e9eee9!important}
 body.qt-clean .qtc-app .qtc-driver{
-  background:#14383e;border:1px solid var(--qtc-line);border-radius:16px;padding:12px 13px
+  background:#14383e;border:1px solid var(--qtc-line);border-radius:16px;padding:10px 12px
 }
 body.qt-clean .qtc-app .qtc-section-name{display:flex;align-items:center;gap:8px;margin:0 0 5px}
 body.qt-clean .qtc-app .qtc-section-name strong{color:#f6e0b1;font-size:12px}
@@ -350,6 +350,13 @@ body.qt-clean .qtc-app .qtc-bottom-nav button{
 body.qt-clean .qtc-app .qtc-bottom-nav button span{font-size:10px;font-weight:700}
 body.qt-clean .qtc-app .qtc-bottom-nav button.qtc-current{color:#edce94;background:#12373b}
 body.qt-clean .qtc-app .qtc-bottom-nav button:disabled{opacity:.48}
+/* Los controles de historial solo pertenecen al viaje inmediato. */
+body.qt-clean:not(.journey-mode-quick) #view-reservar .qtc-history,
+body.qt-clean:not(.journey-mode-quick) #view-reservar .qtc-history-button{display:none!important}
+body.qt-clean .qtc-app .qtc-bottom-nav svg{
+  display:block;width:21px;height:21px;flex:0 0 21px;
+  stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round
+}
 @media(min-width:480px){
  body.qt-clean .qtc-app .qtc-header{padding:20px 30px}
  body.qt-clean .qtc-app .qtc-content{padding:20px 24px 85px}
