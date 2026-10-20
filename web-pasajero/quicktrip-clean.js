@@ -124,7 +124,7 @@
     shell=node("div","qtc-app");shell.id="qtc-app";
     shell.innerHTML=
       '<header class="qtc-header"><div class="qtc-brand"><div class="qtc-back-slot"></div>'+
-      '<img class="qtc-logo" src="./pruebas/visual-v6/quicktrip-logo.svg" alt="QUICK TRIP">'+
+      '<img class="qtc-logo" src="./quicktrip-logo-contrast.svg?v=1" alt="QUICK TRIP">'+
       '</div><div class="qtc-header-copy"><small>TRASLADOS · URUGUAY</small>'+
       '<h1>Tu viaje</h1><p>Simple. Directo. A tu ritmo.</p></div></header>'+
       '<div class="qtc-content">'+
@@ -137,6 +137,9 @@
       '<span class="qtc-search-copy"><strong id="qtc-search-title">Buscando conductor…</strong>'+
       '<small id="qtc-search-subtitle">Consultando disponibilidad en tiempo real.</small></span>'+
       '<span class="qtc-search-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>'+
+      '<div class="qtc-driver-unavailable" role="status" hidden>'+ 
+      '<strong>Conductor no disponible ahora</strong>'+ 
+      '<small>La distancia y el tiempo de recogida aparecerán cuando el conductor esté disponible y tenga GPS actualizado. Podés enviar una solicitud para que la revise.</small></div>'+ 
       '<div class="qtc-driver-slot"></div></section>'+
       '<details class="qtc-schedule"><summary><span class="qtc-time-icon">◷</span>'+
       '<span class="qtc-time-copy"><strong id="qtc-when-title">Viajás ahora</strong>'+
@@ -180,9 +183,15 @@
     if(!driver||!presence||!banner)return;
     const phase=presence.dataset.phase||"";
     const mode=["checking","routing","waiting"].includes(phase)?phase:"";
-    const searching=Boolean(mode&&!presence.hidden&&doc.body.classList.contains("journey-mode-quick"));
+    const instant=doc.body.classList.contains("journey-mode-quick");
+    const searching=Boolean(mode&&!presence.hidden&&instant);
+    const noDriver=Boolean(!presence.hidden&&instant&&
+      presence.dataset.presence==="busy"&&phase==="blocked");
+    const unavailable=driver.querySelector(".qtc-driver-unavailable");
     driver.dataset.searchState=searching?mode:"settled";
+    driver.dataset.availability=noDriver?"unavailable":"normal";
     banner.hidden=!searching;
+    if(unavailable)unavailable.hidden=!noDriver;
     if(searching){
       byId("qtc-search-title").textContent=mode==="checking"?"Buscando conductor…":"Calculando la llegada…";
       byId("qtc-search-subtitle").textContent=mode==="checking"
