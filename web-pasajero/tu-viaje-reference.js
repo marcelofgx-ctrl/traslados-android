@@ -60,6 +60,7 @@
       const stage=view.dataset.premiumStep||"route";
       const active=view.classList.contains("active");
       doc.body.classList.toggle("qt-functional-v6",!active);
+      doc.body.classList.toggle("tu-viaje-immediate",active);
       if(!active)return;
       if(stage==="route"){
         // The real form is relocated after entering the service. Resolve its
