@@ -111,7 +111,7 @@ tasks.register('prepareEmbeddedConductor') {
         }
 
         def resRoot = file('../conductor/src/main/res')
-        ['drawable','raw'].each { type ->
+        ['drawable','raw','anim'].each { type ->
             copy {
                 from new File(resRoot,type)
                 include '**/*'
