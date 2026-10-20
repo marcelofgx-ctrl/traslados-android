@@ -140,11 +140,14 @@ async function main(){
   say("Scheduled restored: "+JSON.stringify(schedule));
   check(schedule.active&&schedule.pax&&schedule.route&&schedule.map,
    "Scheduled trip restored to original UI with native controls");
-  const again=await expression(function(){
+  await expression(function(){
    document.querySelector('[data-service="now"]').click();
+   return true;
+  });
+  const again=await poll(()=>expression(function(){
    return !!document.querySelector('#view-viaje.active .qtc-places [data-booking-step="route"]')&&
     document.querySelectorAll(".premium-route-canvas").length===1;
-  });
+  }),10000);
   check(again,"Returning to immediate ride retains one native route map");
   await expression(function(){window.scrollTo(0,document.body.scrollHeight);return true});
   await pause(400);await snap("03-quicktrip-abajo.png");
