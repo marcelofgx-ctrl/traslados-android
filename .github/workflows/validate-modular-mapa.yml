@@ -46,6 +46,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Navigation tabs and single-install pairing contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qt-unified-pages
+          javac -d /tmp/qt-unified-pages \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/UnifiedDriverSwipePolicy.java \
+            conductor/src/main/java/uy/com/traslados/conductor/DriverPanelSwipePolicy.java \
+            mapatrayectos/tests/UnifiedDriverSwipePolicyTest.java \
+            mapatrayectos/tests/DriverPanelSwipePolicyTest.java
+          java -cp /tmp/qt-unified-pages UnifiedDriverSwipePolicyTest
+          java -cp /tmp/qt-unified-pages DriverPanelSwipePolicyTest
+          grep -q 'Api.setPickupConsent(pin,true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'if(isEmbeddedMapa())' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
+          grep -q "['drawable','raw','anim']" mapatrayectos/build.gradle || test -s conductor/src/main/res/anim/qt_from_driver_in.xml
       - name: Standalone reservation rules regression
         shell: bash
         run: |
