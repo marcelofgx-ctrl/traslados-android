@@ -107,6 +107,68 @@ async function main(){
   check(s.scrollWidth<=s.width+6,"No horizontal overflow at Samsung phone width");
   check(s.manifest==="./manifest-quicktrip-clean.webmanifest","Separate PWA manifest selected");
   await snap("01-quicktrip-arriba.png");
+  const newTitle=await expression(function(){
+   return document.querySelector(".qtc-summary-title small")?.textContent.trim();
+  });
+  check(newTitle==="Precio del viaje","Fixed-price display has no orientativo label");
+  const nativePhase=await expression(function(){
+   const p=document.querySelector("#pickup-presence");
+   window.__qaNativePhase=p.dataset.phase||"";
+   p.dataset.phase="checking";
+   p.hidden=false;
+   return window.__qaNativePhase;
+  });
+  const searching=await poll(()=>expression(function(){
+   const card=document.querySelector(".qtc-driver");
+   const banner=document.querySelector(".qtc-driver-search");
+   return card?.dataset.searchState==="checking"&&!banner?.hidden&&
+    !!document.querySelector("#qtc-search-title")?.textContent.includes("Buscando");
+  }),4500);
+  check(searching,"Animated search starts only when native pickup phase is checking");
+  await snap("06-buscando-conductor.png");
+  await expression(function(){
+   document.querySelector("#pickup-presence").dataset.phase="ready";return true;
+  });
+  const stopped=await poll(()=>expression(function(){
+   const banner=document.querySelector(".qtc-driver-search");
+   return !!banner?.hidden&&document.querySelector(".qtc-driver").dataset.searchState==="settled";
+  }),3500);
+  check(stopped,"Search animation stops on native ready phase");
+  await expression(function(){
+   document.querySelector("#pickup-presence").dataset.phase=window.__qaNativePhase;
+   delete window.__qaNativePhase;
+   const label=document.querySelector(".premium-route-map-note");
+   window.__qaMapCaption=label.textContent;
+   label.textContent="15,7 km · 20 min · $ 628 orientativos";
+   return true;
+  });
+  const cleanFare=await poll(()=>expression(function(){
+   const text=document.querySelector(".premium-route-map-note").textContent;
+   return text.includes("$ 628")&&!text.includes("orientativo");
+  }),4000);
+  check(cleanFare,"Route map caption removes orientativos without changing route values");
+  await expression(function(){
+   document.querySelector(".premium-route-map-note").textContent=window.__qaMapCaption;
+   delete window.__qaMapCaption;return true;
+  });
+  const receiptStyle=await expression(function(){
+   const box=document.querySelector("#booking-success");
+   const old=box.innerHTML,hide=box.hidden;
+   box.hidden=false;
+   box.innerHTML='<span class="mark">✓</span><h2>Solicitud enviada</h2>'+
+    '<p class="success-lead">Tu pedido fue recibido.</p>'+
+    '<div class="success-receipt"><strong class="code">TR-PRUEBA</strong>'+
+    '<strong class="success-price">UYU 628</strong></div>'+
+    '<button class="primary full">VER MIS TRASLADOS</button>';
+   const title=parseFloat(getComputedStyle(box.querySelector("h2")).fontSize);
+   const price=parseFloat(getComputedStyle(box.querySelector(".success-price")).fontSize);
+   const button=parseFloat(getComputedStyle(box.querySelector("button")).minHeight);
+   box.innerHTML=old;box.hidden=hide;
+   return {title,price,button};
+  });
+  check(receiptStyle.title>=27&&receiptStyle.price>=32&&receiptStyle.button>=58,
+   "Receipt hierarchy enlarged without touching submission engine");
+
   const opened=await expression(function(){
    const button=document.querySelector(".qtc-history-button");button.click();
    return !document.querySelector("#qtc-history-panel").hidden&&button.getAttribute("aria-expanded")==="true";
