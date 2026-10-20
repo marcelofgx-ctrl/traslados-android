@@ -63,6 +63,43 @@ public class MainActivity extends Activity {
     private String lastActiveSnapshot="";
 
     private String pin="";
+    private boolean isEmbeddedMapa(){
+        return getPackageName().startsWith("uy.com.mapatrayectos");
+    }
+    private void returnToMapa(){
+        finish();
+        if(isEmbeddedMapa())overridePendingTransition(
+            R.anim.qt_from_driver_in,R.anim.qt_from_driver_out);
+    }
+    private float pageDownX,pageDownY;
+    private boolean pageGestureReady=false;
+    @Override public boolean dispatchTouchEvent(MotionEvent e){
+        if(!isEmbeddedMapa())return super.dispatchTouchEvent(e);
+        if(e.getActionMasked()==MotionEvent.ACTION_DOWN){
+            pageDownX=e.getX();pageDownY=e.getY();
+            pageGestureReady=e.getPointerCount()==1;
+        }else if(e.getActionMasked()==MotionEvent.ACTION_POINTER_DOWN){
+            pageGestureReady=false;
+        }else if(e.getActionMasked()==MotionEvent.ACTION_UP){
+            boolean back=pageGestureReady&&DriverPanelSwipePolicy.goBack(
+                pageDownX,pageDownY,e.getX(),e.getY(),
+                getWindow().getDecorView().getWidth(),
+                getWindow().getDecorView().getHeight(),
+                getResources().getDisplayMetrics().density);
+            pageGestureReady=false;
+            if(back){
+                MotionEvent cancel=MotionEvent.obtain(e);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                super.dispatchTouchEvent(cancel);cancel.recycle();
+                returnToMapa();return true;
+            }
+        }else if(e.getActionMasked()==MotionEvent.ACTION_CANCEL)pageGestureReady=false;
+        return super.dispatchTouchEvent(e);
+    }
+    @Override public void onBackPressed(){
+        if(isEmbeddedMapa())returnToMapa();
+        else super.onBackPressed();
+    }
     private String expandedId="";
     private boolean firstLoad=true;
     private boolean historyMode=false;
@@ -166,6 +203,18 @@ public class MainActivity extends Activity {
 
     private void renderAccess(boolean configured){
         dashboardVisible=false;
+        if(isEmbeddedMapa()){
+            // Only Mapa owns enrollment. Never present a second Conductor PIN.
+            ScrollView screen=baseScreen();
+            LinearLayout host=contentOf(screen);addBrand(host);
+            addIntro(host,"Vincular desde Mapa",
+                "Conductor es otra pantalla de Mapa Trayectos. Volvé a Mapa y abrí Configuración → Vincular conductor. Se hace una sola vez en esta instalación.");
+            Button back=primaryButton("← VOLVER A MAPA");
+            back.setOnClickListener(v->returnToMapa());
+            host.addView(back,lpMatch(dp(56),16,8));
+            setContentView(screen);
+            return;
+        }
         ScrollView sc=baseScreen(); LinearLayout box=contentOf(sc); addBrand(box);
         if(!configured){
             addIntro(box,"Configuración inicial","Definí el nombre y un PIN privado. Este paso se realiza una sola vez.");
@@ -233,6 +282,12 @@ public class MainActivity extends Activity {
     private void buildDashboard(boolean history){
         dashboardVisible=true;historyMode=history;
         ScrollView sc=baseScreen();LinearLayout box=contentOf(sc);addBrand(box);
+        if(isEmbeddedMapa()){
+            Button backToMap=secondaryButton("‹  MAPA     ·     CONDUCTOR  →");
+            backToMap.setContentDescription("Volver a Mapa. También podés deslizar a la derecha desde el borde izquierdo.");
+            backToMap.setOnClickListener(v->returnToMapa());
+            box.addView(backToMap,lpMatch(dp(45),3,7));
+        }
         screenTitle=heading(history?"HISTORIAL":"SOLICITUDES",24);box.addView(screenTitle,lpMatch(-2,3,0));
         screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Monitor activo · esperando solicitudes",12,GOLD);box.addView(screenSub,lpMatch(-2,0,7));
 
