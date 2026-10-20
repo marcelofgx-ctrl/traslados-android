@@ -18,7 +18,6 @@ android {
         targetSdk 35
         versionCode 130
         versionName '11.5-R8'
-        manifestPlaceholders = [appDisplayName: 'Traslados Conductor']
     }
 
     signingConfigs {
@@ -33,16 +32,6 @@ android {
     }
 
     buildTypes {
-        // The QA-only app is a separate package: Android will never try to
-        // overwrite the driver's live installation signed with another key.
-        // No change to release signing, existing app IDs or normal debug builds.
-        debug {
-            if (project.hasProperty('quicktripQaInstallable')) {
-                applicationIdSuffix '.qa'
-                versionNameSuffix '-QA'
-                manifestPlaceholders.appDisplayName = 'Conductor TEST'
-            }
-        }
         release {
             minifyEnabled false
             shrinkResources false
