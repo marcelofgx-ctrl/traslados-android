@@ -91,9 +91,9 @@ jobs:
           test -s "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk"
           cp "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk" artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk
           echo "QA Android installation preflight (no uninstall, no data deletion)"
-          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk "uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}"
-          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk "uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
-          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk "uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Pasajero-firma-paquete.txt
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk "uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Conductor-firma-paquete.txt
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Mapa-firma-paquete.txt
           sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
           {
             echo "COMMIT: $GITHUB_SHA"
@@ -103,7 +103,7 @@ jobs:
             echo "Quick Trip Pasajero QA package: uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}"
             echo "Quick Trip QA WebView: https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/?ui=clean"
             echo "La APK oficial Cliente Premium sigue intacta."
-            echo "NO desinstala originales. NO usa identificadores de producción."
+            echo "NO desinstala originales. NO usa identificadores de producción."\n            echo "Las QA usan la misma infraestructura real; realizar pruebas de reservas de manera controlada."
             echo "Cada compilación QA tiene un ID diferente, evitando colisiones de firma con builds anteriores."
             echo "QA debug signing; not a production-signed release."
           } > artifacts/test-apks/BUILD-INFO.txt
