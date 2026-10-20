@@ -46,9 +46,39 @@ jobs:
         with:
           gradle-version: "8.9"
           cache-read-only: true
+      - name: Aislar QA de las apps instaladas sin tocar Gradle ni fuentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A temporary init script applies suffixes ONLY inside this CI job.
+          # Never persist or modify build.gradle, product source or release IDs.
+          cat > "$RUNNER_TEMP/quicktrip-qa.init.gradle" <<'GRADLE'
+          gradle.beforeProject { p ->
+              p.plugins.withId('com.android.application') {
+                  if (p.path == ':mapatrayectos' || p.path == ':conductor') {
+                      def debug = p.extensions.getByName('android').buildTypes.getByName('debug')
+                      debug.applicationIdSuffix = '.qa'
+                      debug.versionNameSuffix = '-QA'
+                  }
+              }
+          }
+          GRADLE
+          mkdir -p mapatrayectos/src/debug conductor/src/debug
+          cat > mapatrayectos/src/debug/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools">
+              <application android:label="Mapa Trayectos TEST" tools:replace="android:label"/>
+          </manifest>
+          XML
+          cat > conductor/src/debug/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools">
+              <application android:label="Conductor TEST" tools:replace="android:label"/>
+          </manifest>
+          XML
       - name: Compilar APK debug independiente y APK integrado
         shell: bash
-        run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug -PquicktripQaInstallable=true --stacktrace --no-daemon
+        run: gradle -I "$RUNNER_TEMP/quicktrip-qa.init.gradle" :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
       - name: Preparar APKs y sumas de control
         shell: bash
         run: |
