@@ -30,10 +30,10 @@
 .qt-service-name em{font-style:normal;color:var(--gold)}
 .qt-service-subtitle{font-size:11px;line-height:1.3;color:var(--muted);font-weight:600}
 .qt-service-arrow{color:var(--gold);font-size:18px;line-height:1}
-.qt-service-featured .qt-service-orb{width:146px;height:146px}
+.qt-service-featured .qt-service-orb{width:124px;height:124px}
 .qt-secondary-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;margin-top:2px;align-items:start}
 .qt-secondary-services .qt-service{width:100%}
-.qt-secondary-services .qt-service-orb{width:clamp(108px,30vw,132px);height:clamp(108px,30vw,132px)}
+.qt-secondary-services .qt-service-orb{width:104px;height:104px}
 .qt-secondary-services .qt-service-name{font-size:clamp(14px,4.5vw,18px);max-width:160px;line-height:1.15}
 .qt-secondary-services .qt-service-subtitle{font-size:10px}
 .qt-parcel-notice{font-size:12px;line-height:1.5;margin:17px 18px 0;padding:12px 14px;background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:12px}
@@ -45,8 +45,8 @@ body.theme-light .qt-service-name em{color:#986c26}
 @media(max-width:375px){
 .qt-home-hero{min-height:224px;padding:26px 17px 67px}
 .qt-home-services{margin-top:-57px;gap:4px}
-.qt-service-featured .qt-service-orb{width:125px;height:125px}
-.qt-secondary-services .qt-service-orb{width:109px;height:109px}
+.qt-service-featured .qt-service-orb{width:120px;height:120px}
+.qt-secondary-services .qt-service-orb{width:100px;height:100px}
 .qt-service-name{font-size:18px}
 }
 @media(prefers-reduced-motion:reduce){.qt-home,.qt-service-orb{animation:none;transition:none}}
