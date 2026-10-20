@@ -89,8 +89,11 @@
     historyPanel.id="qtc-history-panel";
     historyPanel.setAttribute("aria-label","Elegir uno de mis destinos anteriores");
     historyPanel.hidden=true;
-    box.append(historyButton,historyPanel);
-    destination.querySelector(".location-title")?.after(box);
+    // Botón pequeño junto al título; el panel aparece DEBAJO del destino
+    // sin cubrir ni la caja de búsqueda ni el botón GPS.
+    box.append(historyPanel);
+    destination.querySelector(".location-title")?.after(historyButton);
+    destination.after(box);
     historyButton.addEventListener("click",()=>{
       const opening=historyPanel.hidden;
       historyPanel.hidden=!opening;
@@ -98,7 +101,7 @@
       if(opening)void fillHistory();
     });
     doc.addEventListener("pointerdown",event=>{
-      if(!box.contains(event.target))closeHistory();
+      if(!box.contains(event.target)&&!historyButton.contains(event.target))closeHistory();
     },{passive:true});
     doc.addEventListener("keydown",event=>{
       if(event.key==="Escape")closeHistory();
@@ -142,9 +145,9 @@
       '<div class="qtc-action-slot"></div></section>'+
       '<div class="qtc-success-slot"></div></div>'+
       '<nav class="qtc-bottom-nav" aria-label="Servicios">'+
-      '<button type="button" data-qtc-nav="now" class="qtc-current" aria-current="page">⌖<span>Tu viaje</span></button>'+
-      '<button type="button" data-qtc-nav="package" disabled title="Próximamente">▧<span>Tu paquete</span></button>'+
-      '<button type="button" data-qtc-nav="schedule">▦<span>Programar</span></button>'+
+      '<button type="button" data-qtc-nav="now" class="qtc-current" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 15l2-6h10l2 6v4H5zM8 9l2-3h4l2 3M7 16h2m6 0h2M7 19v2m10-2v2"/></svg><span>Tu viaje</span></button>'+
+      '<button type="button" data-qtc-nav="package" disabled title="Próximamente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8l8-4 8 4v9l-8 4-8-4zM4 8l8 5 8-5M12 13v8M8 6l8 4"/></svg><span>Tu paquete</span></button>'+
+      '<button type="button" data-qtc-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M4 11h16M8 3v6m8-6v6M9 15h2m2 0h2m-6 3h2"/></svg><span>Programar</span></button>'+
       '</nav>';
     host.prepend(shell);
     const back=screen.querySelector(".journey-back");
