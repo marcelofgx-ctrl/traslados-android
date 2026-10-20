@@ -32,8 +32,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SDK_ROOT="$ANDROID_SDK_ROOT"
-          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="$ANDROID_HOME"; fi
+          SDK_ROOT="$(printenv ANDROID_SDK_ROOT || true)"
+          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="$(printenv ANDROID_HOME || true)"; fi
           if [ -z "$SDK_ROOT" ]; then SDK_ROOT="/usr/local/lib/android/sdk"; fi
           SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -x "$SDKMANAGER" ]; then
