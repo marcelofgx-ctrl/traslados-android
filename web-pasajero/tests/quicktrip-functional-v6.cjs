@@ -9,8 +9,8 @@ const css=read("quicktrip-functional-v6.css");
 const app=read("app.js"),home=read("service-home.js"),journey=read("premium-journey.js");
 const demo=read("pruebas/visual-v6/home-v6.css");
 new vm.Script(skin);
-assert(html.includes('src="./quicktrip-functional-v6.js?v=2" defer'));
-assert(html.indexOf('app.js?v=82')<html.indexOf('quicktrip-functional-v6.js?v=2'),
+assert(html.includes('src="./quicktrip-functional-v6.js?v=3" defer'));
+assert(html.indexOf('app.js?v=82')<html.indexOf('quicktrip-functional-v6.js?v=3'),
  "Mount existing PWA BEFORE the optional skin");
 for(const engine of ["geo-search.js","address-engine.js","route-engine.js","eta-engine.js","booking-contracts.js","rpc-client.js","reservation-live.js","service-home.js","premium-journey.js","app.js"]){
  assert(html.includes('src="./'+engine),"Missing existing operational engine "+engine);
@@ -56,7 +56,7 @@ const preview={location:{search:"?ui=v6"},document:doc};
 vm.runInNewContext(skin,{window:preview,URLSearchParams});
 assert.equal(appended.length,1);
 assert.equal(appended[0].rel,"stylesheet");
-assert.equal(appended[0].href,"./quicktrip-functional-v6.css?v=2");
+assert.equal(appended[0].href,"./quicktrip-functional-v6.css?v=3");
 assert(events.has("DOMContentLoaded"),"Skin must mount after native app.js");
  // defer executes with readyState=interactive; it must also wait for app.js
 const interactiveEvents=new Map(),secondDoc={
