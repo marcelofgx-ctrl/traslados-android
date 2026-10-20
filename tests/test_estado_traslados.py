@@ -71,7 +71,7 @@ class EstadoAutomaticoTests(unittest.TestCase):
                  "commit", "-qm", "Add fake tracked path")
         value = status.render(self.root, offline=True)
         self.assertIn("downloads/mapa-trayectos-r25.0.apk", value)
-        self.assertIn("NO PUBLICADA EN REPOSITORIO", value, "Other APKs remain unverified")
+        self.assertNotIn("NO PUBLICADA EN REPOSITORIO", value, "Only Mapa APK is presented")
 
     def test_formats_build_and_change_times_in_uruguay(self):
         self.assertEqual(status.time_uy("2026-10-13T05:36:21Z"), "13/10/2026 02:36 UYT")
