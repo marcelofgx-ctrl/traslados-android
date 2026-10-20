@@ -12,7 +12,7 @@ jobs:
   build:
     name: "Compilar Conductor y Mapa (QA, sin cambios de motor)"
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Restaurar recursos de Android desde assets codificados
@@ -46,9 +46,39 @@ jobs:
         with:
           gradle-version: "8.9"
           cache-read-only: true
+      - name: Aislar QA de las apps instaladas sin tocar Gradle ni fuentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A temporary init script applies suffixes ONLY inside this CI job.
+          # Never persist or modify build.gradle, product source or release IDs.
+          cat > "$RUNNER_TEMP/quicktrip-qa.init.gradle" <<'GRADLE'
+          gradle.beforeProject { p ->
+              p.plugins.withId('com.android.application') {
+                  if (p.path == ':mapatrayectos' || p.path == ':conductor') {
+                      def debug = p.extensions.getByName('android').buildTypes.getByName('debug')
+                      debug.applicationIdSuffix = '.qa'
+                      debug.versionNameSuffix = '-QA'
+                  }
+              }
+          }
+          GRADLE
+          mkdir -p mapatrayectos/src/debug conductor/src/debug
+          cat > mapatrayectos/src/debug/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools">
+              <application android:label="Mapa Trayectos TEST" tools:replace="android:label"/>
+          </manifest>
+          XML
+          cat > conductor/src/debug/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools">
+              <application android:label="Conductor TEST" tools:replace="android:label"/>
+          </manifest>
+          XML
       - name: Compilar APK debug independiente y APK integrado
         shell: bash
-        run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+        run: gradle -I "$RUNNER_TEMP/quicktrip-qa.init.gradle" :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
       - name: Preparar APKs y sumas de control
         shell: bash
         run: |
@@ -58,9 +88,25 @@ jobs:
           find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
           cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
           cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          # Fail before delivery if package identity, version or signing is invalid.
+          APK_SIGNER="$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
+          test -x "$APK_SIGNER"
+          test -x "$AAPT"
+          "$AAPT" dump badging artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk > artifacts/test-apks/Mapa-package.txt
+          "$AAPT" dump badging artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk > artifacts/test-apks/Conductor-package.txt
+          grep -q "^package: name='uy.com.mapatrayectos.qa'" artifacts/test-apks/Mapa-package.txt
+          grep -q "^package: name='uy.com.traslados.conductor.qa'" artifacts/test-apks/Conductor-package.txt
+          "$APK_SIGNER" verify --verbose --print-certs artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk > artifacts/test-apks/Mapa-signature.txt
+          "$APK_SIGNER" verify --verbose --print-certs artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk > artifacts/test-apks/Conductor-signature.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' artifacts/test-apks/Mapa-signature.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' artifacts/test-apks/Conductor-signature.txt
           sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
           echo "COMMIT: $GITHUB_SHA" > artifacts/test-apks/BUILD-INFO.txt
-          echo "QA debug signing; not a production-signed release." >> artifacts/test-apks/BUILD-INFO.txt
+          echo "APP PACKAGE IDS: uy.com.mapatrayectos.qa and uy.com.traslados.conductor.qa" >> artifacts/test-apks/BUILD-INFO.txt
+          echo "Separate QA applications. Official apps and their local data are untouched." >> artifacts/test-apks/BUILD-INFO.txt
+          echo "QA debug signing uses a new certificate on each unconfigured runner." >> artifacts/test-apks/BUILD-INFO.txt
+          echo "If updating a previous QA install fails, request a stable QA signing key in GitHub Actions." >> artifacts/test-apks/BUILD-INFO.txt
       - name: Adjuntar APKs descargables
         uses: actions/upload-artifact@v4
         with:
