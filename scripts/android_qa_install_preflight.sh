@@ -40,7 +40,11 @@ if [[ "$LABEL" != *QA* ]]; then
   exit 6
 fi
 
-CERTS="$("$SIGNER" verify --print-certs "$APK")"
+CERTS="$("$SIGNER" verify --verbose --print-certs "$APK")"
+if ! printf '%s\n' "$CERTS" | grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true'; then
+  echo "ERROR: APK sin firma v2/v3 válida para Android." >&2
+  exit 7
+fi
 FINGERPRINT="$(printf '%s\n' "$CERTS" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)"
 if [[ -z "$FINGERPRINT" ]]; then
   echo "ERROR: firma Android no verificable." >&2
