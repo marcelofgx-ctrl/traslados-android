@@ -21,8 +21,14 @@
   function mount(){
     const view=doc.getElementById("view-viaje");
     const header=view?.querySelector(".premium-brand");
-    const liveMap=view?.querySelector(".premium-route-canvas");
-    if(!view||!header||!liveMap)return;
+    // On first page load the route editor/map are still under
+    // #reserve-field-host. app.js moves them into #view-viaje ONLY after
+    // choosing the service. Requiring the map inside the journey at startup
+    // aborted the skin entirely on Samsung (duplicate tabs, black map, old
+    // header, giant GPS card). Keep the same LIVE map; never clone it.
+    const liveMap=doc.querySelector(".premium-route-canvas");
+    if(!view||!header||!liveMap)return false;
+    if(doc.body.dataset.tuViajeReference==="approved-1-4")return true;
     doc.body.classList.add("tu-viaje-ref","map-first-review");
     doc.body.dataset.tuViajeReference="approved-1-4";
     header.innerHTML='<span class="premium-car" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M13 38l5-12c1-3 4-5 7-5h15c4 0 6 2 8 5l4 12" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path d="M11 38h42v10H11z" stroke="currentColor" stroke-width="2.7" stroke-linejoin="round"/><path d="M16 48v5m32-5v5M18 41h7m14 0h7M22 28h20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><span><small>TRASLADOS</small><strong>Tu viaje</strong></span>';
@@ -30,13 +36,15 @@
     for(const icon of doc.querySelectorAll(".qt-v6-tab-icon"))icon.remove();
     const presence=doc.querySelector("#view-viaje .premium-live-presence");
     const intro=view.querySelector(".premium-intro");
-    const routeCard=doc.querySelector('#view-viaje [data-booking-step="route"]');
     function arrangeStage(){
       const stage=view.dataset.premiumStep||"route";
       const active=view.classList.contains("active");
       doc.body.classList.toggle("qt-functional-v6",!active);
       if(!active)return;
       if(stage==="route"){
+        // The real form is relocated after entering the service. Resolve its
+        // current node each time instead of capturing an absent route card.
+        const routeCard=view.querySelector('[data-booking-step="route"]');
         if(routeCard&&presence&&routeCard.nextElementSibling!==presence)routeCard.after(presence);
       }else if(presence&&intro){
         view.querySelector(".premium-journey-header")?.after(presence);
@@ -55,9 +63,19 @@
     }
     new MutationObserver(arrangeStage).observe(view,{attributes:true,attributeFilter:["class","data-premium-step"]});
     arrangeStage();
+    return true;
   }
-  if(doc.readyState==="complete")mount();
-  else doc.addEventListener("DOMContentLoaded",mount,{once:true});
+  function start(){
+    if(mount())return;
+    // Resilient to a deferred initialisation after DOMContentLoaded: finish
+    // the ONE visual mount when the real route composer appears.
+    const observer=new MutationObserver(()=>{
+      if(mount())observer.disconnect();
+    });
+    observer.observe(doc.body,{childList:true,subtree:true});
+  }
+  if(doc.readyState==="complete")start();
+  else doc.addEventListener("DOMContentLoaded",start,{once:true});
 })(window);
 
 /* Frozen preview composition, promoted to LIVE PWA. */
