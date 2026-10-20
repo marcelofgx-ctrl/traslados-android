@@ -102,6 +102,8 @@
     }
   }
   // app.js and premium-journey.js mount first; defer order preserves native handlers.
-  if(doc.readyState==="loading")doc.addEventListener("DOMContentLoaded",start,{once:true});
-  else start();
+  // defer scripts run while readyState is often "interactive", BEFORE DOMContentLoaded.
+  // app.js registered its initializer first: wait for that native mount to finish.
+  if(doc.readyState==="complete")start();
+  else doc.addEventListener("DOMContentLoaded",start,{once:true});
 })(window);
