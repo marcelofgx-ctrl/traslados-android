@@ -31,7 +31,7 @@ if [[ "$PACKAGE" != "$EXPECTED" ]]; then
   echo "ERROR: paquete distinto. Esperado: $EXPECTED; Detectado: $PACKAGE" >&2
   exit 4
 fi
-if [[ ! "$PACKAGE" =~ ^uy\.com\.(mapatrayectos|traslados\.conductor)\.qa\.r[0-9]+$ ]]; then
+if [[ ! "$PACKAGE" =~ ^uy\.com\.(mapatrayectos|traslados\.(conductor|cliente))\.qa\.r[0-9]+$ ]]; then
   echo "ERROR: el APK no tiene identificador exclusivo para QA." >&2
   exit 5
 fi
@@ -61,6 +61,6 @@ if command -v adb >/dev/null 2>&1 && [[ "$(adb get-state 2>/dev/null || true)" =
   echo "OK: sin instalación previa con este paquete."
   echo "Instalaciones QA antiguas (no se borran):"
   adb shell pm list packages 2>/dev/null | tr -d '\r' | \
-    grep -E '^package:uy\.com\.(mapatrayectos|traslados\.conductor)\.qa\.r[0-9]+$' || true
+    grep -E '^package:uy\.com\.(mapatrayectos|traslados\.(conductor|cliente))\.qa\.r[0-9]+$' || true
 fi
 echo "LISTO: instalable sin reemplazar las aplicaciones originales."
