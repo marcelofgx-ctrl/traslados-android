@@ -213,7 +213,7 @@ body.qt-functional-v6 .qt-v6-header-back{
  border:1px solid #a1b6a1;border-radius:50%;background:#083036;
  color:#f8db99;font:300 32px/1 Arial,sans-serif;padding:0
 }
-body.qt-functional-v6 .qt-v6-header-back[hidden]{visibility:hidden!important;display:grid!important;pointer-events:none}
+body.qt-functional-v6 .qt-v6-header-back.qt-v6-back-inactive{visibility:hidden;pointer-events:none}
 body.qt-functional-v6 .header .identity{justify-content:center;overflow:hidden}
 body.qt-functional-v6 .header .identity img{
  max-width:100%;width:clamp(118px,37vw,196px);height:63px;
