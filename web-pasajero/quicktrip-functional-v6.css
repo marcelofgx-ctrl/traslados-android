@@ -510,3 +510,103 @@ body.qt-functional-v6.qt-theme-light #view-viaje .request-recap-metrics>span:las
 @media(prefers-reduced-motion:reduce){
  body.qt-functional-v6 #view-viaje .premium-step,body.qt-functional-v6 .qt-v6-contact-row{animation:none;transition:none}
 }
+
+
+/* Programmed journey — V6-approved four-stage presentation, LIVE booking controls. */
+body.qt-functional-v6 #view-reservar{
+ padding:10px 0 34px;
+ background:radial-gradient(ellipse at 65% 0,#073c3c,#041e22 75%);
+}
+body.qt-functional-v6 #view-reservar .booking-entry-nav{
+ margin:4px 0 12px;padding:0 2px;display:flex;align-items:center;justify-content:space-between
+}
+body.qt-functional-v6 #view-reservar .booking-service-caption{
+ color:#f5d79a;letter-spacing:.15em;font-size:10px
+}
+body.qt-functional-v6 #view-reservar .section-heading{margin:15px 2px 20px}
+body.qt-functional-v6 #view-reservar .section-heading h2{
+ font:850 clamp(27px,7.5vw,35px)/1.15 Manrope,sans-serif;
+ color:#f7f2e7;letter-spacing:-.045em;margin:0 0 9px
+}
+body.qt-functional-v6 #view-reservar .section-heading p{color:#b6cdc3;font-size:12px;line-height:1.5}
+body.qt-functional-v6 #view-reservar .booking-progress{display:none!important}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+ padding:0;margin:0 0 24px;position:relative;isolation:isolate;list-style:none
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress:before{
+ content:"";position:absolute;left:12%;right:12%;top:21px;height:2px;
+ background:#618176;z-index:-1
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress li{
+ display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;
+ color:#c3d3ca;text-align:center
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-number{
+ width:43px;height:43px;display:grid;place-items:center;border-radius:50%;
+ background:#05262a;color:#9fbbb1;border:1.5px solid #7aa196;
+ box-shadow:0 0 0 3px #04282b
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-number svg{width:26px;height:26px}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress li small{
+ font:750 clamp(9px,2.7vw,12px)/1.25 Manrope,sans-serif;color:inherit
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress .is-current .qt-v6-schedule-number{
+ color:#f6d78e;border:2px solid #f7d890;
+ box-shadow:0 0 0 3px #05262a,0 0 16px #f3c97999
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress .is-completed .qt-v6-schedule-number{
+ color:#f6d78e;border-color:#f6d78e
+}
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress .is-current,
+body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress .is-completed{color:#f6d78e}
+body.qt-functional-v6 #view-reservar .booking-step-card{
+ margin-bottom:13px;border:1.2px solid #759d9180;border-radius:18px;
+ background:linear-gradient(132deg,#11463f,#04292c)
+}
+body.qt-functional-v6 #view-reservar .booking-step-toggle{
+ background:transparent;color:#f6eee0;border-radius:18px
+}
+body.qt-functional-v6 #view-reservar .booking-step-heading strong{color:#f4e7ce}
+body.qt-functional-v6 #view-reservar .booking-step-number{
+ background:#0b3734;color:#e2cc95;border-color:#b2a97c
+}
+body.qt-functional-v6 #view-reservar .booking-step-content{padding:13px}
+body.qt-functional-v6 #view-reservar #pickup-datetime-block input{
+ min-height:55px;border-radius:14px
+}
+body.qt-functional-v6 #view-reservar #booking-preview,
+body.qt-functional-v6 #view-reservar #submit-actions,
+body.qt-functional-v6 #view-reservar .urgent-actions{
+ border:1px solid #7fa796;border-radius:20px;background:#0b3738;padding:16px
+}
+body.qt-functional-v6 #view-reservar #confirm-booking{
+ min-height:56px;border-radius:999px;
+ background:linear-gradient(130deg,#ffecb1,#e7b467);font-weight:850;
+ color:#092b2e;font-size:14px
+}
+body.qt-functional-v6.qt-theme-light #view-reservar{background:#f6faf5;color:#153f3c}
+body.qt-functional-v6.qt-theme-light #view-reservar .section-heading h2{color:#163b3e}
+body.qt-functional-v6.qt-theme-light #view-reservar .section-heading p{color:#4a6a64}
+body.qt-functional-v6.qt-theme-light #view-reservar .qt-v6-schedule-progress:before{background:#b4cdbd}
+body.qt-functional-v6.qt-theme-light #view-reservar .qt-v6-schedule-number{
+ background:#fffdf8;color:#567c6a;border-color:#acc6b2;box-shadow:0 0 0 3px #f6faf5
+}
+body.qt-functional-v6.qt-theme-light #view-reservar .qt-v6-schedule-progress .is-current .qt-v6-schedule-number{
+ color:#996d2f;background:#fff1c9;border-color:#d5ac60;
+ box-shadow:0 0 0 3px #f6faf5,0 0 15px #dfb76a88
+}
+body.qt-functional-v6.qt-theme-light #view-reservar .qt-v6-schedule-progress .is-current,
+body.qt-functional-v6.qt-theme-light #view-reservar .qt-v6-schedule-progress .is-completed{color:#956928}
+body.qt-functional-v6.qt-theme-light #view-reservar .booking-step-card,
+body.qt-functional-v6.qt-theme-light #view-reservar #booking-preview,
+body.qt-functional-v6.qt-theme-light #view-reservar #submit-actions{
+ background:#fffefa;color:#153c3d;border-color:#c1d6c9
+}
+body.qt-functional-v6.qt-theme-light #view-reservar .booking-step-toggle{color:#164441}
+body.qt-functional-v6.qt-theme-light #view-reservar .booking-step-heading strong{color:#164441}
+body.qt-functional-v6.qt-theme-light #view-reservar .booking-step-number{background:#eaf4e9;color:#906b30}
+@media(max-width:359px){
+ body.qt-functional-v6 #view-reservar .qt-v6-schedule-number{width:38px;height:38px}
+ body.qt-functional-v6 #view-reservar .qt-v6-schedule-progress:before{top:19px}
+}
