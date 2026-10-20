@@ -53,4 +53,49 @@ assert(original.includes('next.addEventListener("click",forward)')&&original.inc
 assert(original.includes('requestHost.querySelector("#urgent-route-recap')&&home.includes("onSelect"),
  "preserve native confirmation data and three service cards");
 assert(refer.includes("CONTRATO VISUAL BLOQUEADO")&&refer.includes("Checklist de aceptación"),"document is canonical source");
+
+// Runtime regression: at first load the REAL route/map is mounted in
+// #reserve-field-host, NOT under #view-viaje. Earlier code silently returned,
+// so no approved headers, no CSS overrides and duplicate footer icons.
+{
+ const boot=presentation.split("/* Frozen preview composition")[0];
+ const classes=new Set(["qt-functional-v6","journey-mode-quick"]);
+ const header={innerHTML:""};
+ const view={
+  dataset:{premiumStep:"route"},
+  classList:{contains:x=>x==="active"},
+  querySelector:q=>q===".premium-brand"?header:null
+ };
+ let removed=0,observers=0;
+ const doc={
+  readyState:"complete",
+  head:{links:[],appendChild(node){this.links.push(node)}},
+  body:{
+   dataset:{},
+   classList:{
+    add(...xs){xs.forEach(x=>classes.add(x))},
+    toggle(x,on){if(on)classes.add(x);else classes.delete(x)}
+   }
+  },
+  getElementById:x=>x==="view-viaje"?view:null,
+  // The route exists, but OUTSIDE the active journey at initial mount.
+  querySelector:q=>q===".premium-route-canvas"?{id:"real-shared-map"}:null,
+  querySelectorAll:q=>q===".qt-v6-tab-icon"?[{remove(){removed++}},{remove(){removed++}},{remove(){removed++}}]:[],
+  createElement:()=>({}),
+ };
+ const win={location:{search:"?ui=v6"}};
+ const context={window:win,doc,URLSearchParams,
+  MutationObserver:class{constructor(){observers++}observe(){}disconnect(){}}
+ };
+ win.document=doc;
+ vm.runInNewContext(boot,context);
+ assert(classes.has("tu-viaje-ref"),"approved skin must mount even when the real map is in the reserve host");
+ assert(!classes.has("qt-functional-v6"),"old experimental rail must deactivate while Tu viaje is active");
+ assert(header.innerHTML.includes("<strong>Tu viaje</strong>"),"compact approved header must replace Quick Trip logo");
+ assert.equal(doc.body.dataset.tuViajeReference,"approved-1-4","skin must set the authoritative acceptance flag");
+ assert.equal(removed,3,"V6-injected extra tab icons must be removed exactly once");
+ assert.equal(doc.head.links.length,6,"all archived reference styles must be loaded");
+ assert.equal(observers,1,"stage layout must continue to follow native step state");
+}
+
 console.log("PASS: approved exact Tu viaje reference 1/4–4/4, real price/maps/forms, original submit and no duplicate request");
