@@ -195,7 +195,7 @@
     const note=doc.querySelector(".qtc-places .premium-route-map-note");
     if(!note)return;
     const value=note.textContent||"";
-    const cleaned=value.replace(/\\s+orientativos?\\b/gi,"");
+    const cleaned=value.replace(/\s+orientativos?\b/gi,"");
     if(cleaned!==value)note.textContent=cleaned;
   }
   function installVisualObservers(){
