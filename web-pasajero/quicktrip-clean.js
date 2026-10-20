@@ -15,6 +15,7 @@
     return n;
   };
   let shell=null,historyPanel=null,historyButton=null,historyBusy=false;
+  let paxAnchor=null,mapAnchorOriginal=null,stopsAnchorOriginal=null;
   const navigate=view=>doc.querySelector('.tab[data-view="'+view+'"]')?.click();
 
   function historyPlace(row){
@@ -109,6 +110,14 @@
        !byId("destination-picker")?.querySelector(".location-widget")||
        !doc.querySelector(".premium-route-canvas")||!byId("urgent-send"))return false;
     if(shell)return true;
+    // Guardar las posiciones NATIVAS antes de reubicar. Al volver a Tu reserva
+    // los mismos nodos regresan a su lugar, sin tocar datos ni eventos.
+    const pax=byId("passengers")?.closest("label");
+    const originalMap=doc.querySelector(".premium-route-canvas");
+    const originalStops=doc.querySelector(".premium-route-stops");
+    if(pax&&!paxAnchor){paxAnchor=doc.createComment("qtc-pax-native");pax.before(paxAnchor);}
+    if(originalMap&&!mapAnchorOriginal){mapAnchorOriginal=doc.createComment("qtc-map-native");originalMap.before(mapAnchorOriginal);}
+    if(originalStops&&!stopsAnchorOriginal){stopsAnchorOriginal=doc.createComment("qtc-stops-native");originalStops.before(stopsAnchorOriginal);}
     shell=node("div","qtc-app");shell.id="qtc-app";
     shell.innerHTML=
       '<header class="qtc-header"><div class="qtc-brand"><div class="qtc-back-slot"></div>'+
@@ -164,18 +173,29 @@
     if(!build())return;
     const active=byId("view-viaje")?.classList.contains("active");
     doc.body.classList.toggle("qt-clean-active",Boolean(active));
-    if(!doc.body.classList.contains("journey-mode-quick"))return;
+    if(!doc.body.classList.contains("journey-mode-quick")){
+      // Retornar únicamente componentes visuales movidos, para preservar
+      // también la pantalla independiente de viajes programados.
+      const pax=byId("passengers")?.closest("label");
+      const map=doc.querySelector(".premium-route-canvas");
+      const stops=doc.querySelector(".premium-route-stops");
+      if(paxAnchor?.isConnected&&pax&&pax.previousSibling!==paxAnchor)paxAnchor.after(pax);
+      if(mapAnchorOriginal?.isConnected&&map&&map.previousSibling!==mapAnchorOriginal)mapAnchorOriginal.after(map);
+      if(stopsAnchorOriginal?.isConnected&&stops&&stops.previousSibling!==stopsAnchorOriginal)stopsAnchorOriginal.after(stops);
+      closeHistory();
+      return;
+    }
     const places=shell.querySelector(".qtc-places");
     const route=doc.querySelector('[data-booking-step="route"]');
     if(route&&route.parentElement!==places)places.append(route);
     const routeBody=byId("booking-step-route");
     const map=doc.querySelector(".premium-route-canvas");
-    const mapAnchor=routeBody?.querySelector("#destination-picker");
+    const destinationAnchor=routeBody?.querySelector("#destination-picker");
     if(map&&routeBody&&map.parentElement!==routeBody)routeBody.append(map);
     // Se conserva exactamente el mismo mapa; no hay un segundo renderizador.
     const stops=doc.querySelector(".premium-route-stops");
     if(stops&&routeBody&&stops.parentElement!==routeBody){
-      mapAnchor?.after(stops);
+      destinationAnchor?.after(stops);
     }
     const presence=byId("pickup-presence");
     const driver=shell.querySelector(".qtc-driver-slot");
