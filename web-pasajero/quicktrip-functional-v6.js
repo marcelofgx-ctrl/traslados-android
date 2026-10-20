@@ -121,6 +121,47 @@
       }
       syncContact();
     }
+    // Scheduled trips retain the original three native editing steps and the
+    // fourth real confirmation action; V6 adds the APPROVED visual four-stage
+    // progress without inserting new form or booking handlers.
+    const scheduledSurface=doc.getElementById("view-reservar");
+    const oldProgress=scheduledSurface?.querySelector(".booking-progress");
+    if(scheduledSurface&&oldProgress){
+      const title=scheduledSurface.querySelector(".section-heading h2");
+      if(title)title.textContent="Tu Viaje Programado";
+      const rail=doc.createElement("ol");
+      rail.className="qt-v6-schedule-progress";
+      rail.setAttribute("aria-label","Etapas de tu viaje programado");
+      const stages=["Recorrido","Cuándo","Tus datos","Confirmar"];
+      for(let i=0;i<stages.length;i++){
+        const item=doc.createElement("li");
+        const mark=doc.createElement("span");mark.className="qt-v6-schedule-number";
+        mark.innerHTML=icons[i];
+        const label=doc.createElement("small");label.textContent=stages[i];
+        item.append(mark,label);rail.appendChild(item);
+      }
+      oldProgress.insertAdjacentElement("beforebegin",rail);
+      const cards=[...scheduledSurface.querySelectorAll("[data-booking-step]")];
+      const preview=doc.getElementById("booking-preview");
+      const sendActions=doc.getElementById("submit-actions");
+      function syncScheduledStage(){
+        let active=Math.max(0,cards.findIndex(x=>x.classList.contains("is-open")));
+        if((preview&&!preview.hidden)||(sendActions&&!sendActions.hidden))active=3;
+        for(const [i,item] of [...rail.children].entries()){
+          item.classList.toggle("is-current",i===active);
+          item.classList.toggle("is-completed",i<active);
+          if(i===active)item.setAttribute("aria-current","step");
+          else item.removeAttribute("aria-current");
+        }
+      }
+      for(const card of cards)new MutationObserver(syncScheduledStage).observe(card,{
+        attributes:true,attributeFilter:["class"]
+      });
+      for(const node of [preview,sendActions]){
+        if(node)new MutationObserver(syncScheduledStage).observe(node,{attributes:true,attributeFilter:["hidden"]});
+      }
+      syncScheduledStage();
+    }
     const reserveTab=doc.querySelector('.tab[data-view="reservar"]');
     if(reserveTab)reserveTab.textContent="Programar";
     // The live selectors, forms and buttons are all original production nodes.
@@ -133,6 +174,8 @@
     if(home)home.insertAdjacentElement("beforebegin",notice.cloneNode(true));
     const final=doc.getElementById("urgent-actions");
     if(final)final.appendChild(notice);
+    const scheduledSend=doc.getElementById("submit-actions");
+    if(scheduledSend)scheduledSend.appendChild(notice.cloneNode(true));
     const button=doc.createElement("button");
     button.type="button";
     button.className="qt-functional-theme-switch";
