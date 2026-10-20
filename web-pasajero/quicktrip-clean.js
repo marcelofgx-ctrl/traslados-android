@@ -15,6 +15,7 @@
     return n;
   };
   let shell=null,historyPanel=null,historyButton=null,historyBusy=false;
+  let ownedRouteKey="",ownedCode="",mountedTrackingKey="";
   let paxAnchor=null,mapAnchorOriginal=null,stopsAnchorOriginal=null;
   const navigate=view=>doc.querySelector('.tab[data-view="'+view+'"]')?.click();
 
@@ -140,6 +141,10 @@
       '<div class="qtc-driver-unavailable" role="status" hidden>'+ 
       '<strong>Conductor no disponible ahora</strong>'+ 
       '<small>La distancia y el tiempo de recogida aparecerán cuando el conductor esté disponible y tenga GPS actualizado. Podés enviar una solicitud para que la revise.</small></div>'+ 
+      '<div class="qtc-owned-journey" role="status" aria-live="polite" hidden>'+ 
+      '<strong id="qtc-owned-title"></strong><small id="qtc-owned-description"></small>'+ 
+      '<button type="button" id="qtc-owned-details" hidden>Ver estado en Mis traslados →</button></div>'+ 
+      '<div class="qtc-owned-tracking" aria-label="Seguimiento autorizado del vehículo" hidden></div>'+ 
       '<div class="qtc-driver-slot"></div></section>'+
       '<details class="qtc-schedule"><summary><span class="qtc-time-icon">◷</span>'+
       '<span class="qtc-time-copy"><strong id="qtc-when-title">Viajás ahora</strong>'+
@@ -170,7 +175,91 @@
     installHistory();
     byId("journey-when-select")?.addEventListener("change",syncWhenLabel);
     syncWhenLabel();
+    byId("qtc-owned-details")?.addEventListener("click",()=>{
+      if(typeof shiftView==="function")shiftView("viajes");
+      else navigate("viajes");
+    });
     doc.body.classList.add("qt-clean");
+    return true;
+  }
+
+  // Visualizar la solicitud y su seguimiento en "Tu viaje", sin consultas
+  // nuevas, estados inferidos ni motores duplicados. La propiedad del viaje
+  // se comprueba con el mismo matcher y las mismas filas autorizadas de app.js.
+  function syncOwnedJourney(driver,instant){
+    const panel=driver.querySelector(".qtc-owned-journey");
+    const tracking=driver.querySelector(".qtc-owned-tracking");
+    if(!panel||!tracking)return false;
+    const routeKey=[record.origin?.text||"",record.destination?.text||"",
+      ...(Array.isArray(record.stops)?record.stops.map(stop=>stop?.text||""):[])].join("|");
+    if(routeKey!==ownedRouteKey){
+      ownedRouteKey=routeKey;ownedCode="";mountedTrackingKey="";
+      tracking.replaceChildren();
+    }
+    const rows=typeof tripRows!=="undefined"&&Array.isArray(tripRows)?tripRows:[];
+    const own=instant?win.TrasladosOwnedPickup?.match?.(
+      rows,record.origin,record.destination,record.stops):null;
+    if(own?.code)ownedCode=String(own.code);
+    // Si pasa de ACEPTADA a EN_VIAJE o RECHAZADA, el matcher de solicitudes
+    // abiertas ya no la devuelve. Seguir SOLAMENTE el código autorizado antes.
+    const row=own||(instant&&ownedCode?
+      rows.find(item=>String(item.code||"")===ownedCode):null);
+    if(!instant||!row){
+      panel.hidden=true;tracking.hidden=true;driver.dataset.rideStatus="none";
+      shell.dataset.rideStage="none";
+      if(mountedTrackingKey){tracking.replaceChildren();mountedTrackingKey="";}
+      return false;
+    }
+    const status=String(row.status||"");
+    const phase=String(row.pickup_phase||"");
+    const rejected=["RECHAZADA","RECHAZADA_CLIENTE","CANCELADA"].includes(status);
+    const accepted=["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_CAMINO",
+      "EN_PUNTO","EN_VIAJE"].includes(status);
+    const arrived=phase==="EN_PUNTO"||status==="EN_PUNTO";
+    const enRoute=phase==="EN_CAMINO"||status==="EN_CAMINO";
+    const onBoard=status==="EN_VIAJE";
+    const title=rejected?"Solicitud "+(status==="CANCELADA"?"cancelada":"rechazada"):
+      onBoard?"Viaje en curso":arrived?"El conductor llegó":
+      enRoute?"Conductor en camino":accepted?"Viaje aceptado":
+      "Esperando respuesta del conductor";
+    const description=rejected?"Revisá el resultado en Mis traslados. Podés solicitar un nuevo viaje.":
+      onBoard?"Seguí el recorrido real hasta tu destino.":
+      arrived?"Tu conductor informó que está en el punto de recogida.":
+      accepted?"Distancia y llegada a tu origen según GPS reciente y ruta verificada.":
+      "La solicitud fue recibida. El conductor todavía no la aceptó ni rechazó.";
+    panel.hidden=false;
+    panel.dataset.tone=rejected?"closed":accepted?"confirmed":"pending";
+    const headline=byId("qtc-owned-title"),subtitle=byId("qtc-owned-description");
+    if(headline&&headline.textContent!==title)headline.textContent=title;
+    if(subtitle&&subtitle.textContent!==description)subtitle.textContent=description;
+    const details=byId("qtc-owned-details");
+    if(details)details.hidden=!rejected;
+    driver.dataset.rideStatus=rejected?"closed":accepted?"accepted":"pending";
+
+    // La vista autorizada YA existente gestiona customer_reservation_position_v1,
+    // la edad del GPS, la ruta vial y su propia cadencia. Sin acceso anónimo a
+    // coordenadas privadas ni "kilómetros" inventados en esta presentación.
+    const token=typeof authReady==="function"&&authReady()?session?.token:null;
+    const guest=row.__guestToken||null;
+    const ready=accepted&&Boolean(token||guest)&&
+      typeof rpc==="function"&&typeof roadEngine!=="undefined"&&
+      typeof win.TrasladosReservationLive?.mount==="function";
+    shell.dataset.rideStage=ready?"tracking":"none";
+    if(!ready){
+      tracking.hidden=true;
+      if(mountedTrackingKey){tracking.replaceChildren();mountedTrackingKey="";}
+      return true;
+    }
+    tracking.hidden=false;
+    const identity=[String(row.id||row.code||""),status,phase,token||guest].join("|");
+    if(identity!==mountedTrackingKey){
+      tracking.replaceChildren();
+      mountedTrackingKey=identity;
+      win.TrasladosReservationLive.mount(tracking,{
+        reservation:row,guestToken:guest,sessionToken:token,
+        rpc,engine:roadEngine,api:API,key:KEY,renderer:win.TrasladosPremiumMap
+      });
+    }
     return true;
   }
   // Presentación únicamente: la comprobación del conductor y la ETA siguen
@@ -181,11 +270,12 @@
     const presence=byId("pickup-presence");
     const banner=driver?.querySelector(".qtc-driver-search");
     if(!driver||!presence||!banner)return;
+    const owned=syncOwnedJourney(driver,doc.body.classList.contains("journey-mode-quick"));
     const phase=presence.dataset.phase||"";
     const mode=["checking","routing","waiting"].includes(phase)?phase:"";
     const instant=doc.body.classList.contains("journey-mode-quick");
-    const searching=Boolean(mode&&!presence.hidden&&instant);
-    const noDriver=Boolean(!presence.hidden&&instant&&
+    const searching=Boolean(!owned&&mode&&!presence.hidden&&instant);
+    const noDriver=Boolean(!owned&&!presence.hidden&&instant&&
       presence.dataset.presence==="busy"&&phase==="blocked");
     const unavailable=driver.querySelector(".qtc-driver-unavailable");
     driver.dataset.searchState=searching?mode:"settled";
