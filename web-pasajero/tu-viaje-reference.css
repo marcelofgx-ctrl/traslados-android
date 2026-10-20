@@ -210,3 +210,15 @@ body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-stops{
   height:166px!important;max-height:166px!important
  }
 }
+
+/* Mobile screenshot fix: keep route map compact, including its actual host. */
+body.tu-viaje-ref.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-canvas .premium-route-cartography{
+ height:clamp(152px,24vh,195px)!important;min-height:0!important;max-height:195px!important;
+ aspect-ratio:auto!important;overflow:hidden!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje[data-premium-step="route"] .premium-route-canvas{
+ max-height:none!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-brand::after{
+ content:"AHORA"!important;min-width:0!important;padding:0 12px!important
+}
