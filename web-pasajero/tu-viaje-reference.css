@@ -180,3 +180,33 @@ body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-receipt{
 body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-lead{
  max-width:33ch!important
 }
+
+/* Single-screen composition: visual-only; the original real map, fare and
+   driver presence retain their DOM IDs and data sources. */
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-cartography{
+ max-height:194px!important;height:194px!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-canvas{
+ margin:10px 0!important;border-radius:17px!important;overflow:hidden!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-brand{
+ padding-left:45px!important;min-height:56px!important;max-width:100%!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-brand strong{
+ font-size:clamp(17px,4.4vw,22px)!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-summary{
+ border-radius:15px!important;overflow:hidden!important;margin-top:8px!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-live-presence{
+ border:1px solid #60857d!important;border-radius:16px!important;
+ padding:13px!important;margin:12px 0!important;background:#12383b!important
+}
+body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-stops{
+ margin-top:10px!important
+}
+@media(max-width:390px){
+ body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-route-cartography{
+  height:166px!important;max-height:166px!important
+ }
+}
