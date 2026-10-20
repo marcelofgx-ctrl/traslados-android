@@ -182,3 +182,331 @@ body.qt-functional-v6.qt-theme-light .result{background:#fffefa;color:#123b40;bo
 @media(prefers-reduced-motion:reduce){
  body.qt-functional-v6 .service-card-icon{transition:none!important}
 }
+
+
+/* Quick Trip V6 APPROVED SCREEN COMPOSITION, using LIVE PWA DOM nodes.
+   Source references: approved visual-v6 four-screen laboratory, not V5 cards.
+   Strictly scoped; no impact on ?ui absent, no mock UI and no engine changes. */
+body.qt-functional-v6{
+ --qt-outline:#d7ba82;--qt-surface:#0c3636;--qt-input:#052b2e;
+ --qt-ring:0 0 0 3px #08272a,0 0 14px #f8d28574;
+ --qt-soft:#b6cfc8;--qt-metal:#ffe2a4;
+ background:radial-gradient(ellipse 70% 33% at 55% 0,#0a4448,transparent 95%),#041e22;
+}
+body.qt-functional-v6 .shell{position:relative;min-height:100dvh}
+body.qt-functional-v6 #view-viaje{
+ padding-top:0;max-width:100%;min-height:calc(100dvh - 86px);
+ background:radial-gradient(ellipse at 70% 0,#063e40 0,#041e22 60%);
+}
+body.qt-functional-v6 #view-viaje::before{
+ content:"";pointer-events:none;position:absolute;inset:0 0 auto;
+ height:720px;opacity:.16;
+ background:repeating-linear-gradient(132deg,transparent 0 20px,#5dd9cb10 21px 22px,transparent 23px 43px);
+ mask-image:linear-gradient(#000,transparent)
+}
+body.qt-functional-v6 .header-inner{
+ display:grid;grid-template-columns:43px minmax(0,1fr) auto;
+ gap:5px;align-items:center;padding:7px 11px;
+}
+body.qt-functional-v6 .qt-v6-header-back{
+ display:grid;place-items:center;width:41px;height:41px;min-height:41px;
+ border:1px solid #a1b6a1;border-radius:50%;background:#083036;
+ color:#f8db99;font:300 32px/1 Arial,sans-serif;padding:0
+}
+body.qt-functional-v6 .qt-v6-header-back[hidden]{visibility:hidden!important;display:grid!important;pointer-events:none}
+body.qt-functional-v6 .header .identity{justify-content:center;overflow:hidden}
+body.qt-functional-v6 .header .identity img{
+ max-width:100%;width:clamp(118px,37vw,196px);height:63px;
+ max-height:63px;object-fit:contain;filter:drop-shadow(0 3px 8px #00171a99)
+}
+body.qt-functional-v6 .qt-functional-header-actions{gap:4px}
+body.qt-functional-v6 .qt-functional-theme-switch{
+ width:72px;height:37px;border-radius:999px;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;
+ padding:2px;border:1px solid #f0cf80;
+ background:#0b3539;box-shadow:0 0 12px #d8ac6749
+}
+body.qt-functional-v6 .qt-functional-theme-switch>span{
+ display:grid;place-items:center;font-size:22px;border-radius:50%;color:#a7c1b7;
+ width:32px;height:30px;line-height:1
+}
+body.qt-functional-v6.qt-theme-dark .qt-theme-moon,
+body.qt-functional-v6.qt-theme-light .qt-theme-sun{
+ color:#15353a;background:linear-gradient(130deg,#ffedb6,#d7a04d);
+ box-shadow:0 0 10px #ffe3a898
+}
+body.qt-functional-v6 .header .tel{
+ width:31px;height:35px;min-height:35px;font-size:18px;
+ background:#082d30;border-color:#d6b37490
+}
+body.qt-functional-v6 #view-viaje .journey-back{display:none!important}
+body.qt-functional-v6 #view-viaje .premium-journey-header{
+ position:relative;padding:8px 0 12px;margin:0;
+ scroll-margin-top:87px
+}
+body.qt-functional-v6 #view-viaje .premium-brand{display:none!important}
+body.qt-functional-v6 #view-viaje .premium-progress{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ margin:7px 0 11px;padding:0;list-style:none;
+ position:relative;isolation:isolate;gap:0
+}
+body.qt-functional-v6 #view-viaje .premium-progress::before{
+ content:"";position:absolute;left:12%;right:12%;top:21px;height:2px;
+ background:#518075;z-index:-1
+}
+body.qt-functional-v6 #view-viaje .premium-step{
+ display:flex;flex-direction:column;gap:6px;align-items:center;position:relative;
+ min-width:0;text-align:center;color:#aac6be
+}
+body.qt-functional-v6 #view-viaje .premium-step:not(:last-child)::after{display:none}
+body.qt-functional-v6 #view-viaje .premium-number{
+ width:43px;height:43px;display:grid;place-items:center;
+ border:1.6px solid #668e84;border-radius:50%;margin:0 auto 1px;
+ color:#a0b9ae;background:#04272a;
+ box-shadow:0 0 0 3px #04272a;font-size:18px;position:relative;z-index:1
+}
+body.qt-functional-v6 #view-viaje .premium-number svg{width:26px;height:26px}
+body.qt-functional-v6 #view-viaje .premium-step small{
+ font:750 clamp(9px,2.7vw,12px)/1.27 Manrope,Arial,sans-serif;
+ color:#b4cac2;letter-spacing:-.015em
+}
+body.qt-functional-v6 #view-viaje .premium-step.active .premium-number{
+ background:#04282b;border:2px solid #f9d98d;color:#ffe5ae;
+ box-shadow:0 0 0 3px #04282b,0 0 18px #efc7709e
+}
+body.qt-functional-v6 #view-viaje .premium-step.done .premium-number{
+ border-color:#f3d28d;color:#f5d597;box-shadow:0 0 0 3px #04282b
+}
+body.qt-functional-v6 #view-viaje .premium-step.active small,
+body.qt-functional-v6 #view-viaje .premium-step.done small{color:#f8d890}
+body.qt-functional-v6 #view-viaje .premium-intro{
+ position:relative;margin:21px 3px 21px;padding:0;
+ display:flex;flex-direction:column;gap:8px
+}
+body.qt-functional-v6 #view-viaje .premium-intro h2{
+ font:850 clamp(28px,7.6vw,36px)/1.12 Manrope,Arial,sans-serif;
+ letter-spacing:-.05em;margin:0;color:#f8f4eb
+}
+body.qt-functional-v6 #view-viaje .premium-intro p{
+ margin:0;color:#b7ccc4;font-size:13px;line-height:1.5
+}
+body.qt-functional-v6 #view-viaje .premium-live-presence{
+ position:relative;margin:0 0 20px
+}
+body.qt-functional-v6 #view-viaje .premium-live-presence .pickup-presence{
+ background:linear-gradient(130deg,#0d4742,#05272b)!important;
+ border:1.2px solid #7ba494!important;border-radius:22px!important;
+ padding:19px 16px!important;min-height:99px;
+ box-shadow:0 8px 25px #001c1f46
+}
+body.qt-functional-v6 #view-viaje .premium-live-presence .pickup-card-heading strong{
+ font-size:15px;color:#f2f5e9
+}
+body.qt-functional-v6 #view-viaje .premium-live-presence .pickup-card-heading p{
+ color:#a9c8bd;font-size:12px
+}
+body.qt-functional-v6 #view-viaje .pickup-live-indicator{
+ box-shadow:0 0 0 5px #38d59d22,0 0 12px #42dba7a6
+}
+body.qt-functional-v6 #view-viaje[data-premium-step="passenger"] .premium-live-presence,
+body.qt-functional-v6 #view-viaje[data-premium-step="passenger"] .premium-position-summary,
+body.qt-functional-v6 #view-viaje[data-premium-step="when"] .premium-position-summary{display:none!important}
+body.qt-functional-v6 #view-viaje .premium-position-summary{
+ margin:0 0 16px;border-radius:19px;border-color:#8bb0a178;
+ background:linear-gradient(140deg,#103f3d,#06252a)
+}
+body.qt-functional-v6 #view-viaje .premium-time-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ column-gap:10px;row-gap:9px;margin:0 0 14px
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice{
+ display:flex;align-items:center;gap:10px;min-height:68px;
+ border:1.2px solid #779f95;border-radius:19px;
+ background:linear-gradient(132deg,#0f4946,#052d30);
+ box-shadow:inset 0 1px #ffffff0b;padding:13px 12px;
+ color:#f1f2ea;min-width:0
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice.is-selected{
+ background:linear-gradient(112deg,#ffe7aa,#e4b45e);border-color:#ffe6a9;
+ color:#09292e;box-shadow:0 0 17px #deb86946
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice strong{
+ font:850 clamp(11px,3.3vw,14px)/1.4 Manrope,Arial,sans-serif;
+ letter-spacing:-.01em
+}
+body.qt-functional-v6 #view-viaje .premium-clock-symbol{flex:0 0 21px;font-size:21px}
+body.qt-functional-v6 #view-viaje .premium-check{margin-left:auto}
+body.qt-functional-v6 #view-viaje .premium-when-extras{
+ margin:12px 1px 15px;border-top:1px solid #729b8d68;padding-top:13px
+}
+body.qt-functional-v6 #view-viaje .journey-time-note{color:#b9cfc8;line-height:1.55;font-size:11px}
+body.qt-functional-v6 #view-viaje .booking-step-card{
+ margin:0 0 16px;border:1.2px solid #759b908b;border-radius:20px;
+ background:linear-gradient(135deg,#0b4240,#05262b)!important;
+ box-shadow:0 10px 26px #001b2055
+}
+body.qt-functional-v6 #view-viaje .booking-step-card [data-step-body]{padding:15px!important}
+body.qt-functional-v6 #view-viaje .location-selected{
+ background:#143b39;border-left-color:#f2cc83;border-radius:12px
+}
+body.qt-functional-v6 #view-viaje .route-overview{
+ background:#0e3635!important;border-radius:18px;border-color:#83a39187;
+ box-shadow:0 6px 20px #001b1d44
+}
+body.qt-functional-v6 #view-viaje .route-overview .route-fare,
+body.qt-functional-v6 #view-viaje .route-overview [data-route-fare]{
+ color:#ffe1a0;font-size:26px;font-weight:850
+}
+body.qt-functional-v6 #view-viaje .premium-confirm-route{
+ background:linear-gradient(140deg,#0e4441,#05262b);
+ border:1px solid #8aa596;border-radius:19px;padding:17px
+}
+body.qt-functional-v6 #view-viaje .request-route-recap{
+ border:1.2px solid #a6b8a080;background:linear-gradient(140deg,#10443f,#05292d);
+ border-radius:18px;padding:17px 14px
+}
+body.qt-functional-v6 #view-viaje .request-recap-metrics>span:last-child strong{
+ color:#ffe19c;font-size:26px;font-weight:900
+}
+body.qt-functional-v6 #view-viaje .urgent-actions{
+ border:1px solid #8ca89f;border-radius:20px;padding:17px;
+ background:linear-gradient(132deg,#10413e,#06282c)!important
+}
+body.qt-functional-v6 #view-viaje .premium-actions{
+ display:grid;grid-template-columns:56px minmax(0,1fr);
+ align-items:stretch;gap:8px;position:sticky;bottom:77px;z-index:22;
+ padding:8px 0 10px;margin-top:19px;border:0;border-radius:0;
+ background:#041e22f5;box-shadow:0 -12px 25px #041e22d9
+}
+body.qt-functional-v6 #view-viaje .premium-actions .premium-error{grid-column:1/-1}
+body.qt-functional-v6 #view-viaje .premium-actions .premium-previous{
+ width:56px;min-height:56px;border:1px solid #83aea1;
+ border-radius:16px;font-size:12px;background:#0a3435;color:#f5dea9
+}
+body.qt-functional-v6 #view-viaje .premium-actions .premium-next{
+ min-height:56px;border-radius:999px;border:1.2px solid #fff0b9;
+ background:linear-gradient(115deg,#ffebb3,#e9b76c);font-size:15px;
+ font-weight:850;color:#0b272b;box-shadow:0 0 22px #edc47566
+}
+body.qt-functional-v6 #view-viaje .premium-actions:has(.premium-previous[hidden]) .premium-next{
+ grid-column:1/-1
+}
+body.qt-functional-v6 #view-viaje[data-premium-step="confirm"] .premium-actions{display:none!important}
+body.qt-functional-v6 #view-viaje #urgent-send{
+ min-height:55px;border-radius:999px;background:linear-gradient(115deg,#ffebb3,#e8b467);
+ color:#082429;font-size:15px
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-card{
+ background:transparent;border:0;padding:4px 0 8px;margin-bottom:9px;
+ display:grid;gap:13px
+}
+body.qt-functional-v6 #view-viaje .qt-v6-overline{
+ font:800 10px/1.45 Manrope,Arial,sans-serif;
+ letter-spacing:.12em;color:#b3c9be
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-row{
+ display:flex;align-items:center;gap:13px;
+ border:1.2px solid #80a999;border-radius:20px;padding:17px 15px;
+ background:linear-gradient(130deg,#0f4942,#04282b)
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-avatar{
+ flex:0 0 52px;width:52px;height:52px;border-radius:17px;
+ display:grid;place-items:center;background:#125a4e;
+ color:#56dca7;font:900 25px/1 Manrope,Arial,sans-serif
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-details{min-width:0;display:grid;gap:3px;flex:1}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-details strong{
+ color:#f5f5ea;font:750 16px/1.35 Manrope,Arial,sans-serif;
+ overflow-wrap:anywhere
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-details small{
+ color:#b7ccc6;font-size:11px;overflow-wrap:anywhere
+}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-check{font-size:21px;color:#4bd6a0}
+body.qt-functional-v6 #view-viaje .qt-v6-contact-edit{
+ display:block;justify-self:start;border:0;background:none;
+ padding:7px 4px;font-weight:800;font-size:13px;color:#f8d795
+}
+body.qt-functional-v6 #view-viaje .premium-contact-extras{
+ margin-top:15px;border-top:1px solid #90a39159;padding-top:12px
+}
+body.qt-functional-v6 #view-viaje[data-premium-step="passenger"] .booking-step-card{
+ background:transparent!important;border:0;box-shadow:none
+}
+body.qt-functional-v6 #view-viaje[data-premium-step="passenger"] .booking-step-content{padding:0!important}
+body.qt-functional-v6 .tabs{
+ padding-top:10px;height:78px;border-color:#94b2a38c;
+ background:#041e22fa;border-radius:24px 24px 0 0
+}
+body.qt-functional-v6 .tabs .tab{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:1px;padding:3px;font-weight:750;font-size:11px;
+ color:#b8cfc6;min-height:55px
+}
+body.qt-functional-v6 .tabs .tab .qt-v6-tab-icon{
+ display:block;font-size:25px;line-height:1.15;font-weight:400
+}
+body.qt-functional-v6 .tabs .tab.active{color:#f7d58a;background:#ffffff0b}
+body.qt-functional-v6.qt-theme-light{
+ --qt-outline:#cba25c;--qt-surface:#fffefa;--qt-input:#f5faf4;
+ --qt-ring:0 0 0 3px #f6faf5,0 0 13px #cda65f99;
+ --qt-soft:#55756d;--qt-metal:#a7712d
+}
+body.qt-functional-v6.qt-theme-light #view-viaje{
+ background:radial-gradient(ellipse at 65% 0,#e4f3ec,#f6faf5 70%)
+}
+body.qt-functional-v6.qt-theme-light #view-viaje::before{opacity:.04}
+body.qt-functional-v6.qt-theme-light .qt-v6-header-back{
+ background:#fffaf0;color:#806026;border-color:#c8ba93
+}
+body.qt-functional-v6.qt-theme-light .header .tel{background:#fff9ef;color:#a47633}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-progress::before{background:#b8cbbc}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-number{
+ background:#fffcf3;color:#5b7f73;border-color:#adc4b6;box-shadow:0 0 0 3px #f6faf5
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step.active .premium-number{
+ background:#fff0cb;color:#976b24;border-color:#c49c55;box-shadow:0 0 0 3px #f6faf5,0 0 14px #e8bc7188
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step.done .premium-number{color:#9d792f;border-color:#c69f5a}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step small{color:#486c64}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step.active small,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step.done small{color:#976b26}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-intro h2{color:#143b3c}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-intro p{color:#4a6a62}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-live-presence .pickup-presence,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-time-choice:not(.is-selected),
+body.qt-functional-v6.qt-theme-light #view-viaje .booking-step-card,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-confirm-route,
+body.qt-functional-v6.qt-theme-light #view-viaje .request-route-recap,
+body.qt-functional-v6.qt-theme-light #view-viaje .urgent-actions,
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-contact-row{
+ background:linear-gradient(145deg,#fffef9,#f6fbf6)!important;
+ color:#163f3d!important;border-color:#c3d7ca!important
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-live-presence strong,
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-contact-details strong{color:#143f3d}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-live-presence p,
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-contact-details small{color:#4a6962}
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-contact-avatar{background:#e2f4e5;color:#137a52}
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-contact-edit{color:#946d2a}
+body.qt-functional-v6.qt-theme-light #view-viaje .qt-v6-overline{color:#4b6d63}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-actions{
+ background:#f6faf5f5;box-shadow:0 -12px 25px #f6faf5dd
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-actions .premium-previous{
+ background:#fffefa;color:#9b6d2e;border-color:#c1b995
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .request-recap-metrics>span:last-child strong{color:#986d25}
+@media(max-width:359px){
+ body.qt-functional-v6 .header-inner{gap:2px;padding:6px 6px}
+ body.qt-functional-v6 .header .tel{width:27px}
+ body.qt-functional-v6 .qt-functional-theme-switch{width:66px}
+ body.qt-functional-v6 .qt-functional-theme-switch>span{width:29px}
+ body.qt-functional-v6 #view-viaje .premium-number{width:38px;height:38px}
+ body.qt-functional-v6 #view-viaje .premium-progress::before{top:19px}
+ body.qt-functional-v6 #view-viaje .premium-step small{font-size:9px}
+ body.qt-functional-v6 #view-viaje .premium-time-choice{min-height:61px;padding:8px 7px}
+}
+@media(prefers-reduced-motion:reduce){
+ body.qt-functional-v6 #view-viaje .premium-step,body.qt-functional-v6 .qt-v6-contact-row{animation:none;transition:none}
+}
