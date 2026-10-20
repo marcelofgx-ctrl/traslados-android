@@ -1,0 +1,10 @@
+body.qt-single #view-viaje{background:#092a30;color:#f9f0de;padding:12px;border-radius:20px}
+body.qt-single #view-viaje .journey-hero{display:none}
+body.qt-single #qt-single-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;color:#e7c68e;font-size:19px;font-weight:800}
+body.qt-single #qt-single-heading img{width:46%;max-width:180px;height:58px;object-fit:contain}
+body.qt-single #view-viaje .journey-when-compact,body.qt-single #view-viaje .booking-step-card{background:#153a40;border:1px solid #31585c;border-radius:16px;margin-bottom:10px}
+body.qt-single #view-viaje .journey-when-compact{padding:12px}
+body.qt-single .qt-history-toggle{background:transparent;color:#e7c68e;border:1px solid #6e7970;border-radius:18px;padding:7px 11px}
+body.qt-single .qt-history-panel{margin-top:8px;padding:12px;background:#1c4449;border:1px solid #b59c70;border-radius:14px;animation:qtHistoryIn .22s ease-out}
+body.qt-single .qt-history-panel[hidden]{display:none}
+@keyframes qtHistoryIn{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
