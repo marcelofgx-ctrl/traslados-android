@@ -9,7 +9,7 @@
   const themeKey="quicktrip-v6-theme";
   const css=doc.createElement("link");
   css.rel="stylesheet";
-  css.href="./quicktrip-functional-v6.css?v=1";
+  css.href="./quicktrip-functional-v6.css?v=2";
   doc.head.appendChild(css);
   function start(){
     if(!doc.getElementById("view-inicio")||!doc.getElementById("view-viaje")||
