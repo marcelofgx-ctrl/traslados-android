@@ -98,4 +98,22 @@ assert(refer.includes("CONTRATO VISUAL BLOQUEADO")&&refer.includes("Checklist de
  assert.equal(observers,1,"stage layout must continue to follow native step state");
 }
 
+
+const immediateCss=css;
+assert(presentation.includes('doc.body.classList.toggle("tu-viaje-immediate",active)'),"minimal navigation must follow actual active ride only");
+assert(presentation.includes('historyTab.textContent="Mis viajes"'),"real history button reuses existing navigation listener");
+assert(presentation.includes('VER MIS VIAJES'),"success goes to live trips/history");
+assert(presentation.includes('El conductor recibe tu solicitud y la acepta o rechaza.'),"live acceptance or rejection must be explicit");
+assert(presentation.includes('Esperando respuesta del conductor:'),"sent is NOT driver accepted");
+assert(immediateCss.includes('grid-template-columns:repeat(2,minmax(0,1fr))!important'),"one-row minimal footer");
+for(const hiddenTab of ['data-view="reservar"','data-view="cuenta"']){
+ assert(immediateCss.includes(hiddenTab),"do not show programme or account menu in immediate trip");
+}
+assert(immediateCss.includes('#booking-success .success-receipt>.code')&&
+       immediateCss.includes('#booking-success .success-receipt>.success-label:first-child'),
+       "technical request identifiers must not be displayed in instant success");
+assert(immediateCss.includes('tu-viaje-ref.tu-viaje-immediate'),"classic UI remains untouched");
+assert(presentation.includes('file==="tu-viaje-reference.css"?"?v=2":"?v=1"'),
+ "Android must fetch fresh compact footer CSS");
+
 console.log("PASS: approved exact Tu viaje reference 1/4–4/4, real price/maps/forms, original submit and no duplicate request");
