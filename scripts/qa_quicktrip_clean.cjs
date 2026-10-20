@@ -149,6 +149,35 @@ async function main(){
     document.querySelectorAll(".premium-route-canvas").length===1;
   }),10000);
   check(again,"Returning to immediate ride retains one native route map");
+  // Browser-only authorized-history fixture. The real application has NO fake
+  // customer addresses or trips; this verifies native destination.persist.
+  const testOrigin=await expression(function(){
+   originPicker.persist({text:"Tres Cruces, Montevideo",lat:-34.9045,lng:-56.1683,
+    department:"Montevideo",source:"qa-test-only"});
+   window.__qaLoadTrips=loadTrips;
+   loadTrips=async function(){};
+   tripRows=[{id:"qa-only-history-row",destination_text:"Aeropuerto Internacional de Carrasco",
+    destination_lat:-34.83696,destination_lng:-56.01638}];
+   return document.querySelector('#origin-picker .location-selected-label')?.textContent;
+  });
+  check(testOrigin?.includes("Tres Cruces"),"Native origin picker preserved after navigation");
+  await expression(function(){document.querySelector('.qtc-history-button').click();return true});
+  await poll(()=>expression(function(){return !!document.querySelector('.qtc-history-list .qtc-history-item')}),5000);
+  const reused=await expression(function(){
+   document.querySelector('.qtc-history-list .qtc-history-item').click();
+   const result={
+    destination:document.querySelector('#destination-picker .location-selected-label')?.textContent,
+    recapVisible:!document.querySelector('#urgent-route-recap').hidden,
+    panelClosed:document.querySelector('#qtc-history-panel').hidden
+   };
+   loadTrips=window.__qaLoadTrips;delete window.__qaLoadTrips;
+   return result;
+  });
+  say("Authorized-history fixture: "+JSON.stringify(reused));
+  check(reused.destination?.includes("Carrasco")&&reused.recapVisible&&reused.panelClosed,
+   "Recent destination uses real picker and triggers quote state, without booking writes");
+  await pause(1600);
+  await snap("05-ruta-con-historial-qa.png");
   await expression(function(){window.scrollTo(0,document.body.scrollHeight);return true});
   await pause(400);await snap("03-quicktrip-abajo.png");
   const manifest=await cmd("Page.getAppManifest").catch(()=>null);
