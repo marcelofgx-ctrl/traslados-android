@@ -31,6 +31,8 @@ Cada compilación QA utiliza un identificador **único**, por lo que nunca
 intenta actualizar una aplicación que esté firmada con otra clave.
 Los nombres e identificadores de producción se mantienen intactos.
 
+**Los tres APK QA** se preparan exclusivamente en carpetas temporales del runner. Mapa y Conductor se copian con `scripts/prepare_quicktrip_native_qa.py`, y el Pasajero con `scripts/prepare_quicktrip_cliente_qa.py`. Ningún archivo fuente de producción se modifica.
+
 El Pasajero QA se prepara en una carpeta temporal mediante
 `scripts/prepare_quicktrip_cliente_qa.py`, sin tocar el proyecto `cliente-premium`
 de release ni disparar la automatización que publica la APK oficial. El único
@@ -38,7 +40,7 @@ cambio en el clon es el ID y nombre de instalación y que su WebView carga
 la página oficial en `?ui=clean` (la presentación Quick Trip V7).
 
 Antes de aceptar un artefacto, el workflow:
-1. Compila Conductor y Mapa con el mismo código de negocio de siempre, y Quick Trip Pasajero desde un clon temporal de su WebView oficial.
+1. Clona temporalmente Conductor, Mapa y Quick Trip Pasajero y los compila con el código de negocio y WebView oficiales; solo cambia las identidades de instalación y la URL inicial de QA.
 2. Revisa con `aapt dump badging` el identificador Android **exacto**,
    además de la etiqueta QA.
 3. Valida la firma APK con `apksigner verify --print-certs`.
