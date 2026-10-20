@@ -1,0 +1,37 @@
+name: Quick Trip clean UI - real mobile Chrome QA
+on:
+  pull_request:
+    paths:
+      - "web-pasajero/quicktrip-clean*"
+      - "web-pasajero/manifest-quicktrip-clean.webmanifest"
+      - "web-pasajero/index.html"
+      - "scripts/qa_quicktrip_clean.cjs"
+      - ".github/workflows/qa-quicktrip-clean.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: "Samsung-width mobile browser smoke, no booking writes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Chrome is available
+        shell: bash
+        run: |
+          command -v google-chrome || command -v chromium || command -v google-chrome-stable
+      - name: Run real browser verification
+        run: node scripts/qa_quicktrip_clean.cjs
+      - name: Attach mobile screenshots and diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quicktrip-clean-mobile-qa
+          path: artifacts/quicktrip-clean/
+          if-no-files-found: warn
