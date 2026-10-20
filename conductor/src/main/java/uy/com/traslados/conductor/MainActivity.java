@@ -551,10 +551,25 @@ public class MainActivity extends Activity {
 
         if(!hist){
             if("PENDIENTE".equals(status)){
-                LinearLayout acts=new LinearLayout(this);acts.setOrientation(LinearLayout.HORIZONTAL);
-                Button quote=primaryButton("ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"),reject=dangerButton("RECHAZAR");
-                acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
-                quote.setOnClickListener(v->showQuoteDialog(r));reject.setOnClickListener(v->confirmReject(r));
+                // Precio fijo del pasajero: decidir, sin abrir el antiguo presupuesto.
+                if(isDirectFixedRequest(r)){
+                    addDetail(bodyBox,"ticket","PRECIO DEL VIAJE",
+                        formatMoney(r.optDouble("quote_final_total",0))+" · Fijado al solicitar");
+                    LinearLayout acts=new LinearLayout(this);acts.setOrientation(LinearLayout.HORIZONTAL);
+                    Button reject=dangerButton("RECHAZAR"),accept=primaryButton("✓ ACEPTAR");
+                    acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));
+                    spacerH(acts,7);
+                    acts.addView(accept,new LinearLayout.LayoutParams(0,dp(58),1));
+                    bodyBox.addView(acts,lpMatch(dp(58),4,0));
+                    accept.setOnClickListener(v->confirmAcceptDirect(r));
+                    reject.setOnClickListener(v->confirmReject(r));
+                }else{
+                    // La reserva programada sigue usando el presupuesto original.
+                    LinearLayout acts=new LinearLayout(this);acts.setOrientation(LinearLayout.HORIZONTAL);
+                    Button quote=primaryButton("ENVIADO".equals(qs)?"EDITAR PRESUPUESTO":"PREPARAR PRESUPUESTO"),reject=dangerButton("RECHAZAR");
+                    acts.addView(quote,new LinearLayout.LayoutParams(0,dp(58),2));spacerH(acts,7);acts.addView(reject,new LinearLayout.LayoutParams(0,dp(58),1));bodyBox.addView(acts,lpMatch(dp(58),4,0));
+                    quote.setOnClickListener(v->showQuoteDialog(r));reject.setOnClickListener(v->confirmReject(r));
+                }
             }else if("ACEPTADA".equals(status)){
                 // Estado operativo explícito: no deducir «En camino» por el GPS.
                 String pickupPhase=r.optString("pickup_phase","SIN_INICIAR");
@@ -1065,6 +1080,26 @@ public class MainActivity extends Activity {
         });
     }
 
+
+    /** Presentation-only distinction: only server-priced immediate trips skip quote entry. */
+    private boolean isDirectFixedRequest(JSONObject r){
+        if(r==null||!"PENDIENTE".equals(r.optString("status","")))return false;
+        if(!"PRECIO_FIJO".equals(r.optString("quote_status","")))return false;
+        double amount=r.optDouble("quote_final_total",0);
+        if(!(amount>0)||Double.isNaN(amount)||Double.isInfinite(amount))return false;
+        String mode=r.optString("pickup_mode","");
+        return "now".equals(mode)||mode.matches("^([1-9]|[1-9][0-9]|1[01][0-9]|120)$");
+    }
+
+    /** Reuse existing driver_set_status_v2; never create a second booking workflow. */
+    private void confirmAcceptDirect(JSONObject r){
+        if(!isDirectFixedRequest(r)){toast("Este pedido ya cambió; actualizá la lista.");return;}
+        showDriverConfirm("Aceptar viaje directo",
+            "¿Confirmás el viaje "+r.optString("code","")+" por "+
+                formatMoney(r.optDouble("quote_final_total",0))+"?",
+            "VOLVER","ACEPTAR",()->changeStatus(r,"ACEPTADA"));
+    }
+
     private void confirmReject(JSONObject r){showDriverConfirm("Rechazar solicitud","¿Confirmás rechazar la reserva "+r.optString("code")+"?","VOLVER","RECHAZAR",()->changeStatus(r,"RECHAZADA"));}
 
     private void alertNew(JSONObject r){
@@ -1115,9 +1150,40 @@ public class MainActivity extends Activity {
             showReservationChat(r); // Do not cover this conversation with another alert.
         });
 
-        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));Button list=secondaryButton("VER LISTA");Button quote=primaryButton("PREPARAR PRESUPUESTO");for(Button b:new Button[]{list,quote}){b.setGravity(Gravity.CENTER);b.setPadding(dp(10),0,dp(10),0);b.setMinHeight(0);b.setMinimumHeight(0);b.setIncludeFontPadding(false);}list.setSingleLine(true);quote.setSingleLine(false);quote.setMaxLines(2);quote.setLineSpacing(0f,0.92f);quote.setTextSize(12);quote.setBackground(rounded(GOLD,GOLD,20));quote.setTextColor(Color.rgb(30,34,31));LinearLayout.LayoutParams actionLp1=new LinearLayout.LayoutParams(0,dp(60),1),actionLp2=new LinearLayout.LayoutParams(0,dp(60),1);actions.addView(list,actionLp1);spacerH(actions,8);actions.addView(quote,actionLp2);shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
+        final boolean fixedDirect=isDirectFixedRequest(r);
+        if(fixedDirect){
+            addDetail(content,"ticket","PRECIO FIJO DEL VIAJE",formatMoney(r.optDouble("quote_final_total",0)));
+        }
+        LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setPadding(0,dp(10),0,dp(4));
+        Button list=secondaryButton("VER LISTA");
+        Button primary=primaryButton(fixedDirect?"✓ ACEPTAR":"PREPARAR PRESUPUESTO");
+        Button reject=fixedDirect?dangerButton("RECHAZAR"):null;
+        for(Button b:new Button[]{list,primary,reject})if(b!=null){
+            b.setGravity(Gravity.CENTER);b.setPadding(dp(8),0,dp(8),0);b.setMinHeight(0);
+            b.setMinimumHeight(0);b.setIncludeFontPadding(false);b.setTextSize(12);
+        }
+        list.setSingleLine(true);primary.setSingleLine(false);primary.setMaxLines(2);primary.setLineSpacing(0f,.92f);
+        primary.setBackground(rounded(GOLD,GOLD,20));primary.setTextColor(Color.rgb(30,34,31));
+        if(fixedDirect){
+            // En una recogida directa las dos decisiones son las acciones principales.
+            actions.addView(reject,new LinearLayout.LayoutParams(0,dp(60),1));spacerH(actions,8);
+            actions.addView(primary,new LinearLayout.LayoutParams(0,dp(60),1));
+            content.addView(list,lpMatch(dp(44),5,0));
+        }else{
+            actions.addView(list,new LinearLayout.LayoutParams(0,dp(60),1));spacerH(actions,8);
+            actions.addView(primary,new LinearLayout.LayoutParams(0,dp(60),1));
+        }
+        shell.addView(actions,new LinearLayout.LayoutParams(-1,dp(76)));
         list.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");if(!historyMode)renderRows(false);showNextDriverAlertIfAny();});
-        quote.setOnClickListener(v->{ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");showQuoteDialog(r);showNextDriverAlertIfAny();});
+        primary.setOnClickListener(v->{
+            ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");
+            if(fixedDirect)confirmAcceptDirect(r);
+            else{showQuoteDialog(r);showNextDriverAlertIfAny();}
+        });
+        if(reject!=null)reject.setOnClickListener(v->{
+            ackDriverAlert(r);dialog.dismiss();expandedId=r.optString("id","");
+            confirmReject(r);
+        });
         dialog.setOnDismissListener(x->{if(driverAlertDialog==dialog)driverAlertDialog=null;});dialog.setContentView(shell);
         dialog.setOnShowListener(d->{Window dw=dialog.getWindow();if(dw!=null){dw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));dw.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);WindowManager.LayoutParams a=dw.getAttributes();a.dimAmount=.68f;dw.setAttributes(a);int width=(int)(getResources().getDisplayMetrics().widthPixels*.92f);dw.setLayout(width,WindowManager.LayoutParams.WRAP_CONTENT);dw.setGravity(Gravity.CENTER);}});dialog.show();
     }

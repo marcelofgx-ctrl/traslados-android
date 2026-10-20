@@ -1706,14 +1706,95 @@ public class MainActivity extends Activity {
         uiHandler.removeCallbacks(dismissReminderCallout);
         uiHandler.postDelayed(dismissReminderCallout,30000L);
     }
+
+    /** Only latest server-sourced fixed-price request can show direct actions. */
+    private JSONObject latestFixedTransferForCallout(){
+        String lastId=getSharedPreferences("integrated_transfer_alerts",MODE_PRIVATE)
+            .getString("last_id","");
+        if(lastId==null||lastId.isEmpty())return null;
+        JSONArray rows=TransferAlerts.snapshot(this);
+        for(int i=0;i<rows.length();i++){
+            JSONObject row=rows.optJSONObject(i);
+            if(row==null||!lastId.equals(row.optString("id","")))continue;
+            if(!"PENDIENTE".equals(row.optString("status",""))||
+               !"PRECIO_FIJO".equals(row.optString("quote_status","")))return null;
+            String mode=row.optString("pickup_mode","");
+            double amount=row.optDouble("quote_final_total",0);
+            if((!"now".equals(mode)&&!mode.matches("^([1-9]|[1-9][0-9]|1[01][0-9]|120)$"))||
+                !(amount>0)||Double.isNaN(amount)||Double.isInfinite(amount))return null;
+            return row;
+        }
+        return null;
+    }
+
+    /** The existing authenticated driver RPC is the only state writer. */
+    private void decideFixedTransferFromCallout(JSONObject snapshot,boolean accept){
+        if(snapshot==null){openIntegratedConductor();return;}
+        final String id=snapshot.optString("id","");
+        final double amount=snapshot.optDouble("quote_final_total",0);
+        final String code=snapshot.optString("code","");
+        if(id.isEmpty()||!(amount>0)){openIntegratedConductor();return;}
+        final String pin=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+        if(pin==null||pin.trim().isEmpty()){openIntegratedConductor();return;}
+        String value=String.format(new Locale("es","UY"),"UYU %,.0f",amount);
+        String verb=accept?"Aceptar":"Rechazar";
+        new AlertDialog.Builder(this)
+            .setTitle(verb+" viaje directo")
+            .setMessage((accept?"¿Confirmás aceptar":"¿Confirmás rechazar")+" la solicitud "+
+                code+" por "+value+"?")
+            .setNegativeButton("VOLVER",null)
+            .setPositiveButton(accept?"ACEPTAR":"RECHAZAR",(dialog,which)->{
+                new Thread(()->{
+                    try{
+                        // Revalidate freshness and amount after the user confirms.
+                        JSONArray current=uy.com.traslados.conductor.Api.listActive(pin);
+                        JSONObject fresh=null;
+                        for(int i=0;i<current.length();i++){
+                            JSONObject row=current.optJSONObject(i);
+                            if(row!=null&&id.equals(row.optString("id",""))){fresh=row;break;}
+                        }
+                        if(fresh==null||!"PENDIENTE".equals(fresh.optString("status",""))||
+                           !"PRECIO_FIJO".equals(fresh.optString("quote_status",""))||
+                           Math.abs(fresh.optDouble("quote_final_total",0)-amount)>.001){
+                            runOnUiThread(()->{
+                                Toast.makeText(this,"La solicitud cambió. Abrí el pedido para revisarlo.",Toast.LENGTH_LONG).show();
+                                TransferAlerts.refreshAsync(this);
+                                openIntegratedConductor();
+                            });
+                            return;
+                        }
+                        uy.com.traslados.conductor.Api.setStatus(pin,id,
+                            accept?"ACEPTADA":"RECHAZADA");
+                        runOnUiThread(()->{
+                            hideInAppTransfer(true);
+                            TransferAlerts.refreshAsync(this);
+                            Toast.makeText(this,accept?"Viaje aceptado":"Viaje rechazado",Toast.LENGTH_SHORT).show();
+                        });
+                    }catch(Exception error){
+                        runOnUiThread(()->{
+                            Toast.makeText(this,uy.com.traslados.conductor.Api.publicMessage(
+                                "Responder viaje directo",error),Toast.LENGTH_LONG).show();
+                            TransferAlerts.refreshAsync(this);
+                        });
+                    }
+                },"mapa-direct-decision").start();
+            }).show();
+    }
+
     private void showInAppTransfer(){
         if(rootFrame==null||quickActionsAnchor==null)return;
         hideInAppReminder(false);hideInAppTransfer(false);
+        final JSONObject fixed=latestFixedTransferForCallout();
+        final boolean direct=fixed!=null;
+        final String subtitle=direct
+            ?"DIRECTO · "+String.format(new Locale("es","UY"),"UYU %,.0f",fixed.optDouble("quote_final_total",0))
+            :"Mapa Trayectos · Solicitud";
         ReminderCallout card=new ReminderCallout(this,TransferAlerts.lastText(this),
-            this::openIntegratedConductor,
+            direct?()->decideFixedTransferFromCallout(fixed,true):this::openIntegratedConductor,
+            direct?()->decideFixedTransferFromCallout(fixed,false):()->hideInAppTransfer(true),
             ()->hideInAppTransfer(true),
-            ()->hideInAppTransfer(true),
-            "🚘  NUEVO TRASLADO","Mapa Trayectos · Solicitud","DESPUÉS","VER PEDIDO");
+            "🚘  NUEVO TRASLADO",subtitle,direct?"RECHAZAR":"DESPUÉS",direct?"ACEPTAR":"VER PEDIDO");
+        if(direct)card.emphasizeDirectRequest();
         ReminderAnchorGeometry.Placement p=inAppPlacement(card);
         if(p==null)return; // The regular Android notification remains.
         card.setAnchorPlacement(p.tailOnLeft,p.tailCenterY);
