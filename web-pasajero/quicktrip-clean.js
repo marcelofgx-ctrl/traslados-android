@@ -198,7 +198,9 @@
     // Se conserva exactamente el mismo mapa; no hay un segundo renderizador.
     const stops=doc.querySelector(".premium-route-stops");
     if(stops&&routeBody&&stops.parentElement!==routeBody){
-      destinationAnchor?.after(stops);
+      const history=byId("qtc-history");
+      if(history?.parentElement===routeBody)history.after(stops);
+      else destinationAnchor?.after(stops);
     }
     const presence=byId("pickup-presence");
     const driver=shell.querySelector(".qtc-driver-slot");
