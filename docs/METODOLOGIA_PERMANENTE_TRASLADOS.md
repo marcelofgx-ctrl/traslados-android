@@ -127,3 +127,16 @@ Una función solo está **TERMINADA** cuando cumple el contrato, no rompe regres
 - **La continuidad depende del repositorio, no de confiar únicamente en la memoria del chat**. La memoria ayuda, pero Git es la referencia persistente y auditable.
 
 > Aprobación de criterio: solicitud del responsable del proyecto, 18/10/2026. Este documento es un contrato de trabajo, NO una declaración de que los defectos vigentes estén resueltos.
+
+
+## 9. Higiene de Gmail después de cada despliegue (regla del 20/10/2026)
+
+Como **último paso** del cierre de un despliegue completo y verificado de Quick Trip / Mapa Trayectos, procesar en la cuenta `marcelof.gx@gmail.com` los correos de **GitHub relacionados con `marcelofgx-ctrl`**:
+
+1. Buscar por remitente/servicio GitHub y referencia exacta a `marcelofgx-ctrl` (evitar eliminar conversaciones de terceros por simple coincidencia del texto).
+2. Llevar **todos los mensajes que cumplan ese criterio a la Papelera** de Gmail. No realizar eliminación definitiva ni vaciar toda la Papelera.
+3. Mantener excluidos los mensajes no relacionados con GitHub y cualquier aviso de seguridad, acceso o facturación que no sea mera notificación del proyecto.
+4. Informar cuántos mensajes se enviaron a la Papelera y si hubo un error, sin afirmar limpieza si no se ejecutó.
+5. Si el despliegue no terminó, **no ejecutar** la limpieza como cierre. No mezclar este procedimiento de correo con borrados de datos de Supabase, APK o dispositivos.
+
+Esta tarea forma parte del **checklist posterior a G6** y no requiere tocar motores, firma, paquetes, datos de negocio ni interfaces.
