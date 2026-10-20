@@ -1,0 +1,70 @@
+name: Quick Trip V7 - APKs de testing
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/quicktrip-v7-apks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Compilar Conductor y Mapa (QA, sin cambios de motor)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restaurar recursos de Android desde assets codificados
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          test -s mapatrayectos/src/main/assets/manrope.ttf
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Usar SDK Android instalado en el runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$(printenv ANDROID_SDK_ROOT || true)"
+          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="$(printenv ANDROID_HOME || true)"; fi
+          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="/usr/local/lib/android/sdk"; fi
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+          cache-read-only: true
+      - name: Compilar APK debug independiente y APK integrado
+        shell: bash
+        run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+      - name: Preparar APKs y sumas de control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/test-apks
+          find conductor/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
+          cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
+          echo "COMMIT: $GITHUB_SHA" > artifacts/test-apks/BUILD-INFO.txt
+          echo "QA debug signing; not a production-signed release." >> artifacts/test-apks/BUILD-INFO.txt
+      - name: Adjuntar APKs descargables
+        uses: actions/upload-artifact@v4
+        with:
+          name: quicktrip-v7-apks-qa
+          path: artifacts/test-apks/
+          retention-days: 14
+          if-no-files-found: error
