@@ -151,14 +151,14 @@ body.qt-clean .qtc-app .results{
   box-shadow:0 12px 24px #0006
 }
 body.qt-clean .qtc-app .results button.result{min-height:52px!important;font-size:12px!important}
-body.qt-clean .qtc-app .qtc-history{margin:0 0 9px;position:relative}
+body.qt-clean .qtc-app .qtc-history{position:absolute;right:10px;top:9px;margin:0;z-index:11}
 body.qt-clean .qtc-app .qtc-history-button{
-  display:inline-flex;align-items:center;gap:5px;min-height:31px;margin:7px 0 0 6px;padding:4px 13px;
+  display:inline-flex;align-items:center;gap:5px;min-height:28px;margin:0;padding:3px 10px;
   background:transparent;color:var(--qtc-gold);border:1px solid #987d58;
   border-radius:20px;font-size:11px;font-weight:720;letter-spacing:.01em
 }
 body.qt-clean .qtc-app .qtc-history-panel{
-  position:relative;z-index:12;max-height:250px;overflow-y:auto;
+  position:absolute;right:0;top:35px;width:min(305px,calc(100vw - 50px));z-index:12;max-height:250px;overflow-y:auto;
   background:#153b40;border:1px solid #aa946f;border-radius:14px;
   padding:8px;margin:7px 0 0;box-shadow:0 15px 30px #0005;
   animation:qtc-history-in .23s cubic-bezier(.2,.7,.3,1)
