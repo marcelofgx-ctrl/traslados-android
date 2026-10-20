@@ -8,12 +8,6 @@ def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: 'traslados-conductor
 def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: releaseStorePassword
 def hasReleaseSigning = releaseKeystorePath && releaseStorePassword
 
-// Only CI packaging opts into a unique, side-by-side QA application ID.
-// NEVER rename production packages, change engines or remove phone data.
-def qaInstallId = (System.getenv('QUICKTRIP_QA_INSTALL_ID') ?: '').toLowerCase(java.util.Locale.ROOT)
-if (qaInstallId && !(qaInstallId ==~ /r[0-9]+/))
-    throw new GradleException('QUICKTRIP_QA_INSTALL_ID must be r + numeric GitHub run ID')
-
 android {
     namespace 'uy.com.traslados.conductor'
     compileSdk 35
@@ -24,7 +18,6 @@ android {
         targetSdk 35
         versionCode 130
         versionName '11.5-R8'
-        manifestPlaceholders = [quickTripAppLabel: 'Traslados Conductor']
     }
 
     signingConfigs {
@@ -39,15 +32,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            if (qaInstallId) {
-                // A new test APK can always install alongside a production build,
-                // regardless of old signing keys or app version codes.
-                applicationIdSuffix ".qa.${qaInstallId}"
-                versionNameSuffix "-QA-${qaInstallId}"
-                manifestPlaceholders = [quickTripAppLabel: 'Conductor QA']
-            }
-        }
         release {
             minifyEnabled false
             shrinkResources false
