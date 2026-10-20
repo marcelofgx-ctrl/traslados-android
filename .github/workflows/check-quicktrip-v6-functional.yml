@@ -5,6 +5,7 @@ on:
       - 'web-pasajero/quicktrip-functional-v6.*'
       - 'web-pasajero/index.html'
       - 'web-pasajero/tests/quicktrip-functional-v6.cjs'
+      - 'web-pasajero/tests/quicktrip-v6-approved-live-dom.cjs'
       - 'web-pasajero/pruebas/visual-v6/**'
       - '.github/workflows/check-quicktrip-v6-functional.yml'
   push:
@@ -28,6 +29,7 @@ jobs:
           node --check web-pasajero/quicktrip-functional-v6.js
           node --check web-pasajero/tests/quicktrip-functional-v6.cjs
           node web-pasajero/tests/quicktrip-functional-v6.cjs
+          node web-pasajero/tests/quicktrip-v6-approved-live-dom.cjs
           node web-pasajero/tests/service-home-v61-smoke.cjs
           node web-pasajero/tests/premium-journey-v75-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
