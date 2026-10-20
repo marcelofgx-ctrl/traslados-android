@@ -19,12 +19,13 @@ directorios sueltos o «restos» no cambia esta regla. No desinstalar ni limpiar
 almacenamiento de una app operativa para probar un APK.
 
 ## Solución inmediata: APK de QA paralelos
-La compilación de QA se activa con `-PquicktripQaInstallable=true`, que cambia
-*solo ese build debug* a:
+El workflow `.github/workflows/quicktrip-v7-apks.yml` genera temporalmente
+un script Gradle de QA y dos pequeños manifests de overlay **dentro del runner**,
+que cambian *solo esos builds debug de testing* a:
 - `uy.com.mapatrayectos.qa` (Mapa Trayectos TEST)
 - `uy.com.traslados.conductor.qa` (Conductor TEST)
 
-La compilación normal y las release continúan con los IDs originales. Mapa TEST
+Los archivos de código, Gradle y AndroidManifest de la aplicación **no se modifican**. Las compilaciones normales y release continúan con sus IDs originales. Mapa TEST
 y Conductor TEST se pueden instalar junto a las aplicaciones productivas.
 Al ser aplicaciones diferentes, tienen su propio espacio de datos, permisos,
 preferencias y notificaciones. **No heredan login, ajustes ni recorridos locales.**
