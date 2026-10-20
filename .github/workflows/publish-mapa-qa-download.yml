@@ -1,0 +1,53 @@
+name: Publicar descarga directa de Mapa QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-mapa-qa-download.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  public-qa-asset:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obtener APK YA compilada y verificada
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p qa
+          gh run download 39476812976 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name quicktrip-mapa-conductor-unificado-qa \
+            --dir qa
+          cd qa
+          sha256sum --check SHA256SUMS.txt
+          test -s QuickTrip-Mapa-Conductor-Unificado-QA.apk
+          echo "APK autentificada por SHA256"
+      - name: Publicar como pre-release QA sin fusionar código
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QA_TAG: qa-mapa-unificado-20261020-r39476812976
+          QA_SHA: 7f569505c14fd6f8ea45d8841f14c919622e79c2
+        run: |
+          set -euo pipefail
+          if ! gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$QA_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$QA_SHA" \
+              --title "Mapa + Conductor unificado - QA 20/10/2026" \
+              --notes "VERSION DE PRUEBA. No sustituye la APK oficial. APK unica Mapa + Conductor con navegación lateral y autorización desde Mapa. Probado en compilación; faltan pruebas en Samsung de instalación, GPS, distancia y ETA. No descargar APK Conductor independiente." \
+              --prerelease
+          fi
+          gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "### APK directa (sin login GitHub)" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-Conductor-Unificado-QA.apk" >> "$GITHUB_STEP_SUMMARY"
