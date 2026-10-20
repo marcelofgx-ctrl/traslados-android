@@ -995,9 +995,9 @@ public class MainActivity extends Activity {
         row.addView(symbol,new LinearLayout.LayoutParams(dp(33),dp(34)));
         LinearLayout labels=new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
-        TextView title=text("Disponibilidad de recogida",12.8f,TEXT,true);
+        TextView title=text("Conductor y recogidas",12.8f,TEXT,true);
         title.setSingleLine(true);
-        TextView desc=text(!enabled?"Apagada · no localizable":
+        TextView desc=text(!enabled?"Vincular una vez en Mapa":
             busy?"Ocupado · no localizable":
             (!shiftActive||shiftPaused||tripActive)?"Activada · esperando jornada libre":
             "Activada · GPS y agenda mandan",10.3f,MUTED,false);
@@ -1023,18 +1023,41 @@ public class MainActivity extends Activity {
         row.setOnClickListener(v->{popup.dismiss();showPickupPresenceDialog();});
     }
 
-    /** Opt-in privacy control. Driver PIN is never stored and network uses background thread. */
+    /** One-time Mapa enrollment: Conductor never presents a separate PIN.
+     * After pairing, Play / Stop and the existing GPS heartbeat govern pickup.
+     * The existing driver RPCs still require server authentication.
+     */
     private void showPickupPresenceDialog(){
         final boolean enabled=Api.pickupPresenceEnabled();
         final boolean busy=Api.pickupManuallyBusy();
         if(!enabled){
             new AlertDialog.Builder(this)
-                .setTitle("Compartir disponibilidad de recogida")
-                .setMessage("Solo durante tu jornada activa y con conducción y GPS recientes. "+
-                    "Los clientes verán km y minutos aproximados, nunca tu ubicación exacta. "+
-                    "Podés desactivarlo en cualquier momento. Requiere tu PIN del conductor.")
+                .setTitle("Vincular conductor y recogidas en Mapa")
+                .setMessage("Una sola vinculación para esta instalación. Después, " +
+                    "Play inicia la publicación automática de disponibilidad y Stop la detiene. " +
+                    "Los clientes reciben kilómetros y minutos aproximados, nunca tu posición exacta. " +
+                    "Solo se publica GPS reciente con jornada libre y sin conflictos de agenda. " +
+                    "El acceso se gestiona aquí en Mapa, no en la pantalla de Conductor.")
                 .setNegativeButton("Cancelar",null)
-                .setPositiveButton("Continuar",(dialog,which)->promptPickupConsent())
+                .setPositiveButton("Continuar",(dialog,which)->{
+                    String saved=getSharedPreferences("driver_session",MODE_PRIVATE)
+                        .getString("pin","");
+                    if(saved==null||saved.isEmpty()){promptPickupConsent();return;}
+                    new Thread(()->{
+                        try{
+                            uy.com.traslados.conductor.Api.init(getApplicationContext());
+                            if(!uy.com.traslados.conductor.Api.pinValid(saved))
+                                throw new IllegalStateException("Vinculación anterior vencida");
+                            boolean ok=Api.setPickupConsent(saved,true);
+                            runOnUiThread(()->{
+                                if(ok){
+                                    requestPickupPresenceSync();
+                                    Toast.makeText(this,"Mapa y Conductor vinculados. Usá Play/Stop.",Toast.LENGTH_LONG).show();
+                                }else promptPickupConsent();
+                            });
+                        }catch(Exception e){runOnUiThread(this::promptPickupConsent);}
+                    },"mapa-relink-driver").start();
+                })
                 .show();
             return;
         }
@@ -1079,10 +1102,10 @@ public class MainActivity extends Activity {
         pinInput.setSingleLine(true);
         int padding=(int)(22*getResources().getDisplayMetrics().density);
         pinInput.setPadding(padding,padding/2,padding,padding/2);
-        new AlertDialog.Builder(this).setTitle("Autorizar GPS para recogidas")
+        new AlertDialog.Builder(this).setTitle("Vincular conductor desde Mapa")
             .setView(pinInput)
             .setNegativeButton("Cancelar",null)
-            .setPositiveButton("Autorizar",(d,w)->{
+            .setPositiveButton("VINCULAR",(d,w)->{
                 final String pin=pinInput.getText().toString();
                 pinInput.setText("");
                 if(pin.length()<4){
@@ -1090,16 +1113,26 @@ public class MainActivity extends Activity {
                 }
                 new Thread(()->{
                     try{
+                        uy.com.traslados.conductor.Api.init(getApplicationContext());
+                        if(!uy.com.traslados.conductor.Api.pinValid(pin))
+                            throw new IllegalArgumentException("Acceso de conductor no válido");
                         boolean ok=Api.setPickupConsent(pin,true);
+                        if(ok){
+                            // Compatibility with authenticated conductor RPCs.
+                            // Stored once in this app's private data, never passed
+                            // in Intent extras or displayed in the Conductor view.
+                            getSharedPreferences("driver_session",MODE_PRIVATE).edit()
+                                .putString("pin",pin).apply();
+                        }
                         runOnUiThread(()->{
                             Toast.makeText(this,ok?
-                                "Disponibilidad activada. Se publicará solo con jornada y GPS válidos.":
+                                "Conductor vinculado en Mapa. Play/Stop controla recogidas.":
                                 "No se pudo autorizar el dispositivo",Toast.LENGTH_LONG).show();
                             if(ok)requestPickupPresenceSync();
                         });
                     }catch(Exception e){
                         runOnUiThread(()->Toast.makeText(this,
-                            "No se pudo autorizar. Revisá el PIN y conexión.",Toast.LENGTH_LONG).show());
+                            "No se pudo vincular. Revisá el acceso y conexión.",Toast.LENGTH_LONG).show());
                     }
                 },"pickup-presence-enable").start();
             }).show();
