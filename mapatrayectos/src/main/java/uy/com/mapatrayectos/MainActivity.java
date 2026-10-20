@@ -117,6 +117,33 @@ public class MainActivity extends Activity {
         hideInAppTransfer(false);
         TransferAlerts.markViewed(this);
         startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class));
+        overridePendingTransition(R.anim.qt_to_driver_in,R.anim.qt_to_driver_out);
+    }
+    // Mapa and Conductor are adjacent pages of the SAME installed application.
+    // Only side-edge gestures inside the map viewport count; ordinary pans
+    // and the jornada slider must remain owned by their existing widgets.
+    private float unifiedDownX,unifiedDownY;
+    private boolean unifiedGestureArmed=false;
+    @Override public boolean dispatchTouchEvent(MotionEvent event){
+        if(event.getActionMasked()==MotionEvent.ACTION_DOWN){
+            unifiedDownX=event.getX();unifiedDownY=event.getY();
+            unifiedGestureArmed=event.getPointerCount()==1;
+        }else if(event.getActionMasked()==MotionEvent.ACTION_POINTER_DOWN){
+            unifiedGestureArmed=false;
+        }else if(event.getActionMasked()==MotionEvent.ACTION_UP){
+            final boolean go=unifiedGestureArmed&&UnifiedDriverSwipePolicy.isPageSwipe(
+                unifiedDownX,unifiedDownY,event.getX(),event.getY(),
+                getWindow().getDecorView().getWidth(),getWindow().getDecorView().getHeight(),
+                getResources().getDisplayMetrics().density,true);
+            unifiedGestureArmed=false;
+            if(go){
+                MotionEvent cancel=MotionEvent.obtain(event);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                super.dispatchTouchEvent(cancel);cancel.recycle();
+                openIntegratedConductor();return true;
+            }
+        }else if(event.getActionMasked()==MotionEvent.ACTION_CANCEL)unifiedGestureArmed=false;
+        return super.dispatchTouchEvent(event);
     }
     private void updateTransferBadge(){
         if(transferBadge==null)return;
@@ -206,6 +233,19 @@ public class MainActivity extends Activity {
          root.addView(floatingAccessBanner,accessLp);
          updateFloatingAccessBanner();
 
+        // Visible, accessible invitation: swipe left from the inside-right
+        // edge or tap. This does not replace the map and never changes GPS.
+        TextView driverSideTab=text("‹\nCONDUCTOR",10.5f,CHAMPAGNE,true);
+        driverSideTab.setGravity(Gravity.CENTER);
+        driverSideTab.setContentDescription("Conductor. Tocá o deslizá a la izquierda desde el borde derecho para ver solicitudes");
+        driverSideTab.setBackground(premiumGradient(Color.rgb(6,44,52),Color.rgb(8,66,67),
+            Color.argb(238,234,193,99),18f,1.0f));
+        driverSideTab.setElevation(dp(9));
+        driverSideTab.setOnClickListener(v->openIntegratedConductor());
+        FrameLayout.LayoutParams driverTabLp=new FrameLayout.LayoutParams(
+            dp(65),dp(72),Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+        driverTabLp.rightMargin=dp(3);
+        root.addView(driverSideTab,driverTabLp);
         speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(116),dp(105),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(80),dp(12),0);root.addView(speedGauge,spdLp);
         gpsText=text("●  GPS buscando…",11.6f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GREEN));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(145),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(82),0,0);root.addView(gpsText,gpsLp);
         compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(57),dp(57),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(80),0,0);root.addView(compassView,compassLp);
