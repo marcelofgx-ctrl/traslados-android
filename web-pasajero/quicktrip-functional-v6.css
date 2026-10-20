@@ -1,0 +1,184 @@
+/* V6 opt-in functional surface. Original production PWA and engines are untouched.
+   All selectors are guarded by body.qt-functional-v6. */
+body.qt-functional-v6{
+ --bg:#041e22;--panel:#073337;--panel2:#0c4245;--teal:#166761;
+ --gold:#f3d28d;--gold2:#d1a258;--ivory:#f8f5ed;--muted:#b3c9c4;
+ --line:#a2bba266;--green:#43e0a2;
+ background:radial-gradient(ellipse at 64% 0,#0b4545 0,#041e22 50%,#03171c 100%);
+ color:var(--ivory);
+}
+body.qt-functional-v6 .shell{max-width:480px;padding:0 15px 108px}
+body.qt-functional-v6 .header{background:#04252bed;border-bottom:1px solid #bba16c61}
+body.qt-functional-v6 .header-inner{max-width:480px;padding:5px 13px;min-height:65px}
+body.qt-functional-v6 .header .identity{flex:1;min-width:0}
+body.qt-functional-v6 .header .identity img{width:clamp(140px,40vw,174px);height:56px;max-height:56px;object-fit:contain;box-shadow:none;border-radius:0}
+body.qt-functional-v6 .header .identity span[hidden]{display:none!important}
+body.qt-functional-v6 .qt-functional-header-actions{display:flex;align-items:center;gap:8px;flex:none}
+body.qt-functional-v6 .qt-functional-theme-switch{
+ width:43px;height:39px;border:1px solid #e7c780;border-radius:50%;
+ display:grid;place-items:center;font-size:25px;line-height:1;color:#f0d28c;
+ background:#0c3639;box-shadow:0 0 12px #dec0772f;
+}
+body.qt-functional-v6 .header .tel{display:grid;place-items:center;width:39px;height:39px;padding:0;font-size:20px}
+body.qt-functional-v6 .header .tel span{display:none}
+body.qt-functional-v6 .tabs{
+ position:fixed;top:auto;bottom:0;left:50%;transform:translateX(-50%);
+ width:min(100%,480px);height:76px;border-radius:20px 20px 0 0;
+ border:1px solid #9cb5aa64;border-bottom:0;z-index:80;
+ padding:8px max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom));
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;
+ background:#042126f5;box-shadow:0 -8px 25px #001d20b3
+}
+body.qt-functional-v6 .tab[data-view="reservar"]{display:none!important}
+body.qt-functional-v6 .tab{font-size:12px;min-height:49px;color:#c9d9d4;background:transparent}
+body.qt-functional-v6 .tab.active{color:#f8d897;background:#ffffff0d;box-shadow:none}
+body.qt-functional-v6 #view-inicio.home-screen{background:#041e22;padding-top:0}
+body.qt-functional-v6 #view-inicio .home-hero{
+ min-height:228px;padding:24px 18px 69px;
+ background-image:linear-gradient(180deg,#041c2080,#041c2036 37%,#041e22d6 80%,#041e22),
+ url("./premium-montevideo.webp"),url("./premium-skyline.svg");
+ background-position:center,center 54%,center;
+ background-size:cover; background-repeat:no-repeat
+}
+body.qt-functional-v6 #view-inicio .home-hero .eyebrow{color:#fff0be;font-size:10px;letter-spacing:.1em}
+body.qt-functional-v6 #view-inicio .home-hero h1{font-family:Manrope,sans-serif;font-size:clamp(27px,7.6vw,36px);line-height:1.17;color:#fff6e7;text-shadow:0 2px 9px #001a20;margin-top:15px}
+body.qt-functional-v6 #view-inicio .home-hero h1 em{color:#f9d58e}
+body.qt-functional-v6 #view-inicio .home-section-heading{display:none}
+body.qt-functional-v6 #view-inicio .service-list{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
+ margin:-50px auto 10px;max-width:410px;position:relative;z-index:2;
+}
+body.qt-functional-v6 #view-inicio .service-card{
+ display:flex!important;flex-direction:column;align-items:center;justify-content:start;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ min-width:0;min-height:0!important;width:100%;padding:3px 3px 10px;gap:5px;text-align:center
+}
+body.qt-functional-v6 #view-inicio .service-card-featured{
+ grid-column:1/-1;justify-self:center;max-width:220px;margin:0 auto 5px
+}
+body.qt-functional-v6 #view-inicio .service-card-icon{
+ width:104px!important;height:104px!important;flex:0 0 104px!important;
+ border:2px solid #e6be71;border-radius:50%;padding:8px;
+ background:radial-gradient(circle at 37% 26%,#27635b,#0b3c40 57%,#021a23 95%);
+ box-shadow:0 0 0 4px #09292bbb,0 0 0 6px #cda65f75,0 10px 22px #0009!important
+}
+body.qt-functional-v6 #view-inicio .service-card-featured .service-card-icon{
+ width:124px!important;height:124px!important;flex:0 0 124px!important
+}
+body.qt-functional-v6 #view-inicio .service-emblem{width:100%!important;height:100%!important}
+body.qt-functional-v6 #view-inicio .service-card-body{
+ display:flex!important;flex-direction:column;align-items:center;gap:2px;margin-top:4px
+}
+body.qt-functional-v6 #view-inicio .service-card-name{
+ font:800 clamp(15px,4.5vw,19px)/1.17 Manrope,sans-serif!important;
+ color:#fff1d4;text-align:center
+}
+body.qt-functional-v6 #view-inicio .service-card-featured .service-card-name{font-size:21px!important}
+body.qt-functional-v6 #view-inicio .service-card-description{font-size:10px;color:#cbd8d1;line-height:1.4;max-width:162px}
+body.qt-functional-v6 #view-inicio .service-card-kicker,
+body.qt-functional-v6 #view-inicio .service-card-arrow,
+body.qt-functional-v6 #view-inicio .service-card-action{display:none!important}
+body.qt-functional-v6 #view-inicio .service-card-soon{opacity:.84}
+body.qt-functional-v6 #view-inicio .home-quick-links{margin-top:14px}
+body.qt-functional-v6 .qt-functional-notice{
+ display:block;margin:13px 4px;padding:10px 13px;
+ background:#16373a;border:1px solid #c9ac6b70;border-radius:12px;
+ color:#e4d6b8;font-size:11px;line-height:1.5
+}
+body.qt-functional-v6 #view-viaje .premium-brand{margin:0 auto 8px;padding:0 40px;min-height:63px}
+body.qt-functional-v6 #view-viaje .premium-brand img{width:min(100%,208px);height:66px;object-fit:contain}
+body.qt-functional-v6 #view-viaje .premium-journey-header{padding-top:2px}
+body.qt-functional-v6 #view-viaje .premium-progress{margin-bottom:7px}
+body.qt-functional-v6 #view-viaje .premium-number{
+ width:38px;height:38px;font-size:19px;border:1.5px solid #9db1a7;
+ background:#072c30;color:#d2e5da
+}
+body.qt-functional-v6 #view-viaje .premium-step:not(:last-child):after{top:19px}
+body.qt-functional-v6 #view-viaje .premium-step.active .premium-number{
+ border:2px solid #f0d28c;color:#f6dda5;background:#072d2e;
+ box-shadow:0 0 13px #f0cc7e9a
+}
+body.qt-functional-v6 #view-viaje .premium-step.done .premium-number{border:2px solid #e3be74;color:#f6dda5}
+body.qt-functional-v6 #view-viaje .premium-step small{font-size:10px}
+body.qt-functional-v6 #view-viaje .premium-intro{margin:17px 2px 16px}
+body.qt-functional-v6 #view-viaje .premium-intro h2{
+ font:800 clamp(26px,7.6vw,34px)/1.14 Manrope,sans-serif;letter-spacing:-.045em
+}
+body.qt-functional-v6 #view-viaje .premium-time-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;border:0;background:transparent;box-shadow:none
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice{
+ min-height:65px;border-radius:16px;border:1px solid #779b92;
+ background:linear-gradient(140deg,#104e4c,#062b30);color:#f9f3e8;padding:10px 9px
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice.is-selected{
+ color:#092a30;background:linear-gradient(105deg,#ffe4a2,#e3b360);border-color:#ffe4a2
+}
+body.qt-functional-v6 #view-viaje .premium-time-choice strong{font-size:12px}
+body.qt-functional-v6 #view-viaje .premium-actions{bottom:81px;background:#05272cee}
+body.qt-functional-v6 #view-viaje .premium-next,
+body.qt-functional-v6 #view-viaje #urgent-send{
+ min-height:54px;border-radius:30px;border:1px solid #fbe4b0;
+ color:#092930;background:linear-gradient(110deg,#ffe6a6,#e4b263);
+ font-weight:850;box-shadow:0 0 14px #f3ce7e55
+}
+body.qt-functional-v6 #view-viaje .route-overview{max-width:100%;overflow:hidden}
+body.qt-functional-v6 #view-viaje .route-road-map{max-width:100%;overflow:hidden}
+body.qt-functional-v6 .card{border-color:#a9aa8466}
+body.qt-functional-v6 .footer{padding-bottom:35px}
+body.qt-functional-v6.qt-theme-light{
+ --bg:#f6faf5;--panel:#fffefa;--panel2:#eef7f0;--teal:#15635e;
+ --gold:#aa762d;--gold2:#d3a052;--ivory:#123b40;--muted:#426362;
+ --line:#c7d6c9;--green:#128f69;
+ background:linear-gradient(#e7f1e9,#f6faf5);color:#123b40
+}
+body.qt-functional-v6.qt-theme-light .header{background:#f9fbf6f5;border-color:#d8e1d3}
+body.qt-functional-v6.qt-theme-light .qt-functional-theme-switch{background:#fff3d9;color:#a16b22}
+body.qt-functional-v6.qt-theme-light .tabs{background:#fffefa;border-color:#d2dfd0;box-shadow:0 -7px 25px #1e3d3124}
+body.qt-functional-v6.qt-theme-light .tab{color:#476964}
+body.qt-functional-v6.qt-theme-light .tab.active{color:#145650;background:#e9f5e9}
+body.qt-functional-v6.qt-theme-light .view:not(#view-inicio){background:#f6faf5;color:#163e40}
+body.qt-functional-v6.qt-theme-light #view-inicio{background:#f6faf5}
+body.qt-functional-v6.qt-theme-light #view-inicio .home-hero{
+ background-image:linear-gradient(180deg,#041c2080,#041c2036 37%,#041e22b8 80%,#f6faf5),
+ url("./premium-montevideo.webp"),url("./premium-skyline.svg")
+}
+body.qt-functional-v6.qt-theme-light #view-inicio .service-card-name{color:#183f40}
+body.qt-functional-v6.qt-theme-light #view-inicio .service-card-description{color:#4a6564}
+body.qt-functional-v6.qt-theme-light #view-inicio .service-card-icon{box-shadow:0 0 0 4px #e5efe6,0 0 0 6px #c69d5880,0 7px 20px #123e414d!important}
+body.qt-functional-v6.qt-theme-light .card,
+body.qt-functional-v6.qt-theme-light #view-viaje .booking-step-card,
+body.qt-functional-v6.qt-theme-light #view-viaje .route-overview,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-position-summary,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-live-presence{
+ background:#fffefa!important;color:#163e40!important;border-color:#d1d9c7!important;box-shadow:0 9px 25px #1d41351c
+}
+body.qt-functional-v6.qt-theme-light .card h2,
+body.qt-functional-v6.qt-theme-light .card h3,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-intro h2,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-confirm-copy strong,
+body.qt-functional-v6.qt-theme-light #view-viaje .route-overview strong{color:#103b40}
+body.qt-functional-v6.qt-theme-light input,
+body.qt-functional-v6.qt-theme-light select,
+body.qt-functional-v6.qt-theme-light textarea{background:#fff;color:#153e41;border-color:#c0d4c6}
+body.qt-functional-v6.qt-theme-light label,
+body.qt-functional-v6.qt-theme-light .hint{color:#4a6863}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-time-choice:not(.is-selected){
+ background:#fffefa;color:#153e40;border-color:#bed3c4
+}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-actions{background:#f6faf5ee;border-color:#dfcf9a}
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-step small,
+body.qt-functional-v6.qt-theme-light #view-viaje .premium-intro p{color:#456763}
+body.qt-functional-v6.qt-theme-light .qt-functional-notice{background:#fff3d8;border-color:#e7c886;color:#66552e}
+body.qt-functional-v6.qt-theme-light .section-heading p:last-child{color:#456763}
+body.qt-functional-v6.qt-theme-light .result{background:#fffefa;color:#123b40;border-color:#c7d3c5}
+@media(max-width:375px){
+ body.qt-functional-v6 .shell{padding:0 11px 104px}
+ body.qt-functional-v6 #view-inicio .service-list{gap:2px;margin-top:-45px}
+ body.qt-functional-v6 #view-inicio .service-card-icon{width:100px!important;height:100px!important;flex-basis:100px!important}
+ body.qt-functional-v6 #view-inicio .service-card-featured .service-card-icon{width:120px!important;height:120px!important;flex-basis:120px!important}
+ body.qt-functional-v6 #view-viaje .premium-time-choice{min-height:58px}
+}
+@media(prefers-reduced-motion:reduce){
+ body.qt-functional-v6 .service-card-icon{transition:none!important}
+}
