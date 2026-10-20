@@ -3,12 +3,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/quicktrip-v7-apks.yml"
-      - "mapatrayectos/build.gradle"
-      - "conductor/build.gradle"
-      - "mapatrayectos/src/main/AndroidManifest.xml"
-      - "conductor/src/main/AndroidManifest.xml"
+
       - "scripts/android_qa_install_preflight.sh"
       - "scripts/prepare_quicktrip_cliente_qa.py"
+      - "scripts/prepare_quicktrip_native_qa.py"
   workflow_dispatch:
 
 permissions:
@@ -56,9 +54,18 @@ jobs:
         shell: bash
         run: |
           echo "QUICKTRIP_QA_INSTALL_ID=r${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
-      - name: Compilar APK debug independiente y APK integrado
+      - name: Crear copias temporales de Mapa y Conductor con ID aislados
         shell: bash
-        run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_quicktrip_native_qa.py \
+            --source . \
+            --dest "$RUNNER_TEMP/quicktrip-native-qa" \
+            --qa-id "r${GITHUB_RUN_ID}"
+          git diff --exit-code -- mapatrayectos conductor core-reservations
+      - name: Compilar APK debug independiente y APK integrado desde copia temporal
+        shell: bash
+        run: gradle -p "$RUNNER_TEMP/quicktrip-native-qa" :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
       - name: Crear Quick Trip Pasajero QA fuera de la fuente RELEASE
         shell: bash
         run: |
@@ -77,10 +84,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/test-apks
-          find conductor/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
-          find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
-          cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
-          cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          find "$RUNNER_TEMP/quicktrip-native-qa/conductor/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          find "$RUNNER_TEMP/quicktrip-native-qa/mapatrayectos/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          cp "$RUNNER_TEMP/quicktrip-native-qa/conductor/build/outputs/apk/debug/"*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
+          cp "$RUNNER_TEMP/quicktrip-native-qa/mapatrayectos/build/outputs/apk/debug/"*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
           test -s "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk"
           cp "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk" artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk
           echo "QA Android installation preflight (no uninstall, no data deletion)"
