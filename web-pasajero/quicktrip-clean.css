@@ -338,7 +338,7 @@ body.qt-clean .qtc-app .qtc-success-slot .success:not([hidden]){
   display:block;padding:16px;background:#12423f;color:#f4eddd;border:1px solid #80b39a;border-radius:16px
 }
 body.qt-clean .qtc-app .qtc-bottom-nav{
-  position:sticky;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);
+  position:fixed!important;bottom:0;left:50%;transform:translateX(-50%);max-width:620px;display:grid;grid-template-columns:repeat(3,1fr);
   width:100%;z-index:4;padding:9px 8px calc(9px + env(safe-area-inset-bottom,0px));
   background:#062126;border-top:1px solid #35555b
 }
