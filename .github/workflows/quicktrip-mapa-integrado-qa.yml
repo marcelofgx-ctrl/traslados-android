@@ -1,0 +1,77 @@
+name: Quick Trip Mapa integrado - APK QA para instalar
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/quicktrip-mapa-integrado-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa-mapa:
+    name: "Solo Mapa integrado (Conductor incluido, no APK aparte)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restaurar los recursos existentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK disponible
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Preparar Mapa QA con ID sin conflicto
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_quicktrip_native_qa.py \
+            --source . \
+            --dest "$RUNNER_TEMP/quicktrip-native-qa" \
+            --qa-id "r${GITHUB_RUN_ID}"
+          git diff --exit-code -- mapatrayectos conductor core-reservations
+      - name: Compilar SOLO Mapa con Conductor integrado
+        shell: bash
+        run: gradle -p "$RUNNER_TEMP/quicktrip-native-qa" :mapatrayectos:assembleDebug --no-daemon --stacktrace
+      - name: Crear paquete QA verificado
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/quicktrip-mapa-integrado-qa
+          cp "$RUNNER_TEMP/quicktrip-native-qa/mapatrayectos/build/outputs/apk/debug/"*.apk \
+            artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk
+          bash scripts/android_qa_install_preflight.sh \
+            artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
+            "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}" \
+            | tee artifacts/quicktrip-mapa-integrado-qa/Paquete-y-firma.txt
+          (cd artifacts/quicktrip-mapa-integrado-qa && sha256sum QuickTrip-Mapa-Conductor-Unificado-QA.apk > SHA256SUMS.txt)
+      - name: Entregar una APK QA, sin Conductor independiente
+        uses: actions/upload-artifact@v4
+        with:
+          name: quicktrip-mapa-conductor-unificado-qa
+          path: artifacts/quicktrip-mapa-integrado-qa/
+          retention-days: 14
+          if-no-files-found: error
