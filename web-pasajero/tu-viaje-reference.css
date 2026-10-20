@@ -144,3 +144,39 @@ body.tu-viaje-ref.journey-mode-quick #view-viaje #urgent-send{
  }
  body.tu-viaje-ref.journey-mode-quick #view-viaje .premium-actions{padding-right:9%!important}
 }
+
+
+/* Immediate ride only: no programming, diagnostics or account menu in the
+   booking footer. Two working original nav handlers, one row, one icon each.
+   The main Home still owns Tu Viaje Programado and Tu Paquete. */
+body.tu-viaje-ref.tu-viaje-immediate .tabs{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:0!important;
+ width:100%!important;min-height:73px!important;
+ padding:5px max(10px,env(safe-area-inset-left)) 7px max(10px,env(safe-area-inset-right))!important
+}
+body.tu-viaje-ref.tu-viaje-immediate .tabs .tab[data-view="reservar"],
+body.tu-viaje-ref.tu-viaje-immediate .tabs .tab[data-view="cuenta"]{
+ display:none!important
+}
+body.tu-viaje-ref.tu-viaje-immediate .tabs .tab[data-view="inicio"],
+body.tu-viaje-ref.tu-viaje-immediate .tabs .tab[data-view="viajes"]{
+ display:flex!important;flex-direction:column!important;
+ justify-content:center!important;align-items:center!important;
+ gap:5px!important;min-height:58px!important;
+ padding:7px 8px!important;font-size:12px!important
+}
+/* Passenger must not enter, remember, or read an internal booking reference
+   to travel now. The server still stores it for idempotency and trip history.
+   Only the immediate success screen omits the reference display. */
+body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-receipt>.success-label:first-child,
+body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-receipt>.code{
+ display:none!important
+}
+body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-receipt{
+ gap:8px!important
+}
+body.tu-viaje-ref.tu-viaje-immediate #booking-success .success-lead{
+ max-width:33ch!important
+}
