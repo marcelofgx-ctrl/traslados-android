@@ -288,13 +288,20 @@ public class MainActivity extends Activity {
             backToMap.setOnClickListener(v->returnToMapa());
             box.addView(backToMap,lpMatch(dp(45),3,7));
         }
+        if(isEmbeddedMapa()&&!getSharedPreferences("pickup_presence",MODE_PRIVATE)
+            .getBoolean("enabled",false)){
+            TextView aviso=body("Recogidas no localizables. Volvé a Mapa → Conductor y recogidas para vincular este dispositivo.",12,GOLD);
+            aviso.setPadding(dp(12),dp(9),dp(12),dp(9));
+            aviso.setBackground(rounded(PANEL_2,GOLD_DARK,12));
+            box.addView(aviso,lpMatch(-2,2,6));
+        }
         screenTitle=heading(history?"HISTORIAL":"SOLICITUDES",24);box.addView(screenTitle,lpMatch(-2,3,0));
         screenSub=body(history?"Viajes finalizados, cancelados y rechazados":"Monitor activo · esperando solicitudes",12,GOLD);box.addView(screenSub,lpMatch(-2,0,7));
 
         statsBox=new LinearLayout(this);statsBox.setOrientation(LinearLayout.HORIZONTAL);box.addView(statsBox,lpMatch(history?dp(50):dp(66),0,8));
 
         LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
-        refreshBtn=secondaryButton("ACTUALIZAR");historyBtn=secondaryButton(history?"SOLICITUDES":"HISTORIAL");logoutBtn=secondaryButton("SALIR");
+        refreshBtn=secondaryButton("ACTUALIZAR");historyBtn=secondaryButton(history?"SOLICITUDES":"HISTORIAL");logoutBtn=secondaryButton(isEmbeddedMapa()?"‹ MAPA":"SALIR");
         applyActionIcon(refreshBtn,R.drawable.ic_refresh);applyActionIcon(historyBtn,R.drawable.ic_history);applyActionIcon(logoutBtn,R.drawable.ic_logout);
         actions.addView(refreshBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,6);
         actions.addView(historyBtn,new LinearLayout.LayoutParams(0,dp(50),1));spacerH(actions,6);
@@ -353,7 +360,7 @@ public class MainActivity extends Activity {
         }
         refreshBtn.setOnClickListener(v->{if(historyMode)loadHistory();else loadActive(true);});
         historyBtn.setOnClickListener(v->{expandedId="";currentRows.clear();historyDayGroupsInitialized=false;activeDayGroupsInitialized=false;collapsedHistoryDays.clear();collapsedActiveDays.clear();buildDashboard(!historyMode);if(historyMode)loadHistory();else loadActive(true);});
-        logoutBtn.setOnClickListener(v->confirmLogout());
+        logoutBtn.setOnClickListener(v->{if(isEmbeddedMapa())returnToMapa();else confirmLogout();});
 
         listBox=new LinearLayout(this);listBox.setOrientation(LinearLayout.VERTICAL);box.addView(listBox,lpMatch(-2,0,20));
         listBox.addView(loadingCard(history?"Cargando historial…":"Actualizando reservas…"));
