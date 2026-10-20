@@ -237,6 +237,42 @@ body.qt-clean .qtc-app .qtc-owned-tracking.reservation-live:not([hidden]){
   display:grid;gap:9px;margin-top:9px;padding:10px;
   border:1px solid rgba(240,217,176,.26);border-radius:12px;background:#0b2e35
 }
+body.qt-clean .qtc-app .qtc-owned-tracking[hidden]{display:none!important}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading{
+  display:flex;align-items:center;gap:10px;min-width:0
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-icon{
+  display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;
+  border:1px solid #bfa16d;border-radius:10px;background:#174349
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-copy{
+  display:grid;gap:3px;min-width:0
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-copy strong{
+  font-size:14px;line-height:1.35;color:#fff4df
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-status{
+  font-size:11px;line-height:1.4;color:#b7e9cb
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map{
+  overflow:hidden;border-radius:12px;background:#0b2633
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-real-map{
+  position:relative;width:100%;overflow:hidden;border-radius:12px
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-tiles{
+  position:absolute;inset:0;overflow:hidden;filter:grayscale(.28) brightness(.82)
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-tiles img{
+  position:absolute;width:256px;height:256px;max-width:none;pointer-events:none
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-overlays{
+  position:absolute;inset:0;width:100%;height:100%;pointer-events:none
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-credit{
+  position:absolute;right:4px;bottom:4px;padding:3px 5px;border-radius:5px;
+  background:#08242bdc;color:#fff;font-size:9px
+}
 body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-metrics{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
 }
