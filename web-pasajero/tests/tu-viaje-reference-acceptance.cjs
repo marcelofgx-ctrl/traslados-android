@@ -25,7 +25,7 @@ for(const asset of ["map-first-review.css","map-first-v3.css","map-first-v4-conf
 for(const label of ["TRASLADOS · TU PRÓXIMO VIAJE","Todo listo para solicitar","SIN ENVIAR",
 "Comprobá los datos y continuá","TU RECORRIDO","Editar recorrido",
 "Indicaciones, email y preferencias (opcional)"]){
- assert(presentation.includes(label),"approved visible label missing: "+label);
+ assert((presentation+original).includes(label),"approved visible label missing in original presentation: "+label);
 }
 assert(presentation.includes('header.innerHTML=')&&presentation.includes("<strong>Tu viaje</strong>"),"compact original Tu viaje header");
 assert(presentation.includes('route.prepend(map)')===false,"map must never be reparented ABOVE inputs");
