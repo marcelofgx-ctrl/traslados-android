@@ -210,6 +210,53 @@ body.qt-clean .qtc-app .qtc-section-name{display:flex;align-items:center;gap:8px
 body.qt-clean .qtc-app .qtc-section-name strong{color:#f6e0b1;font-size:12px}
 body.qt-clean .qtc-app .qtc-section-name small{margin-left:auto;text-align:right;font-size:9px;color:#b7cac2}
 body.qt-clean .qtc-app .qtc-live-dot{width:9px;height:9px;border-radius:50%;background:#3fbd8c;box-shadow:0 0 0 4px #3fbd8c1a}
+
+/* Buscando conductor: estado derivado SOLO de data-phase del motor original. */
+body.qt-clean .qtc-app .qtc-driver-search:not([hidden]){
+  display:flex;align-items:center;gap:13px;min-height:78px;
+  margin:9px 0 6px;padding:12px 10px;border-radius:13px;
+  background:linear-gradient(110deg,#0c2e35,#17444a,#0c2e35);
+  border:1px solid rgba(129,211,177,.27);overflow:hidden
+}
+body.qt-clean .qtc-app .qtc-search-orbit{
+  position:relative;flex:0 0 47px;height:47px;border-radius:50%;
+  display:grid;place-items:center;border:2px solid rgba(90,207,164,.28);
+  background:#0d333b;box-shadow:0 0 0 5px rgba(58,176,144,.05)
+}
+body.qt-clean .qtc-app .qtc-search-orbit::before,
+body.qt-clean .qtc-app .qtc-search-orbit::after{
+  content:"";position:absolute;inset:-3px;border-radius:50%;
+  border:2px solid transparent;border-top-color:#69ddb1;
+  animation:qtc-search-spin 1.6s linear infinite
+}
+body.qt-clean .qtc-app .qtc-search-orbit::after{
+  inset:-8px;border-top-color:rgba(243,214,148,.57);
+  animation-duration:2.9s;animation-direction:reverse
+}
+body.qt-clean .qtc-app .qtc-search-car{
+  display:block;color:#f4d69a;font-size:29px;font-weight:800;
+  transform:rotate(-16deg);text-shadow:0 0 12px rgba(233,197,122,.22)
+}
+body.qt-clean .qtc-app .qtc-search-copy{min-width:0;flex:1;display:grid;gap:4px}
+body.qt-clean .qtc-app .qtc-search-copy strong{font-size:15px;color:#f6e1b4;font-weight:800}
+body.qt-clean .qtc-app .qtc-search-copy small{font-size:11px;color:#c8ded4;line-height:1.5}
+body.qt-clean .qtc-app .qtc-search-dots{display:flex;align-items:center;gap:4px}
+body.qt-clean .qtc-app .qtc-search-dots i{
+  width:5px;height:5px;border-radius:50%;background:#76deb4;opacity:.24;
+  animation:qtc-search-pulse 1.3s ease-in-out infinite
+}
+body.qt-clean .qtc-app .qtc-search-dots i:nth-child(2){animation-delay:.2s}
+body.qt-clean .qtc-app .qtc-search-dots i:nth-child(3){animation-delay:.4s}
+body.qt-clean .qtc-app .qtc-driver[data-search-state="checking"] #pickup-presence .pickup-card-header,
+body.qt-clean .qtc-app .qtc-driver[data-search-state="routing"] #pickup-presence .pickup-card-header,
+body.qt-clean .qtc-app .qtc-driver[data-search-state="waiting"] #pickup-presence .pickup-card-header{
+  display:none!important
+}
+@keyframes qtc-search-spin{to{transform:rotate(360deg)}}
+@keyframes qtc-search-pulse{
+  0%,100%{opacity:.2;transform:translateY(0)}
+  45%{opacity:1;transform:translateY(-3px)}
+}
 body.qt-clean .qtc-app #pickup-presence{
   display:block!important;background:transparent!important;border:0!important;
   margin:0!important;padding:5px 0 0!important;box-shadow:none!important
@@ -337,6 +384,56 @@ body.qt-clean .qtc-app #urgent-send-error:not([hidden]){
 body.qt-clean .qtc-app .qtc-success-slot .success:not([hidden]){
   display:block;padding:16px;background:#12423f;color:#f4eddd;border:1px solid #80b39a;border-radius:16px
 }
+
+/* Solicitud recibida: jerarquía levemente mayor sin duplicar la confirmación. */
+body.qt-clean .qtc-app #booking-success.success:not([hidden]){
+  display:grid!important;gap:11px!important;text-align:center!important;
+  padding:24px 19px 22px!important;
+  border:1px solid rgba(236,204,145,.73)!important;
+  border-radius:23px!important;
+  background:linear-gradient(150deg,#0d3c43,#082c34)!important
+}
+body.qt-clean .qtc-app #booking-success.success .mark{
+  font-size:46px!important;line-height:1;margin:1px 0 0!important
+}
+body.qt-clean .qtc-app #booking-success.success h2{
+  color:#fff6e6!important;font-size:clamp(27px,7vw,35px)!important;
+  line-height:1.12!important;margin:2px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-lead{
+  font-size:15.5px!important;line-height:1.5!important;
+  margin:3px 0 5px!important;color:#e9f2eb!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-receipt{
+  display:grid!important;gap:8px!important;text-align:left!important;
+  margin:7px 0 5px!important;padding:18px!important;
+  border-radius:17px!important;
+  border:1px solid rgba(230,202,150,.48)!important;
+  background:#092e37!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-label{
+  font-size:11px!important;letter-spacing:.11em!important;font-weight:850!important
+}
+body.qt-clean .qtc-app #booking-success.success .code{
+  font-size:clamp(25px,6.5vw,34px)!important;line-height:1.18!important;
+  color:#f6d795!important;margin:0 0 5px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-price{
+  font-size:clamp(32px,8.2vw,41px)!important;line-height:1.15!important;
+  color:#fff0c9!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-hint,
+body.qt-clean .qtc-app #booking-success.success .success-footer{
+  font-size:14px!important;line-height:1.5!important;margin:1px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-time{
+  font-size:13.5px!important;line-height:1.5!important;
+  margin:2px 0!important;padding:12px!important
+}
+body.qt-clean .qtc-app #booking-success.success .primary.full{
+  min-height:60px!important;margin-top:8px!important;font-size:15px!important;
+  font-weight:800!important;border-radius:15px!important
+}
 body.qt-clean .qtc-app .qtc-bottom-nav{
   position:fixed!important;bottom:0;left:50%;transform:translateX(-50%);max-width:620px;display:grid;grid-template-columns:repeat(3,1fr);
   width:100%;z-index:4;padding:9px 8px calc(9px + env(safe-area-inset-bottom,0px));
@@ -363,5 +460,5 @@ body.qt-clean .qtc-app .qtc-bottom-nav svg{
  body.qt-clean .qtc-app .premium-route-cartography{height:276px!important;min-height:276px!important}
 }
 @media(prefers-reduced-motion:reduce){
- body.qt-clean .qtc-app *,body.qt-clean .qtc-app *:before{animation:none!important;transition:none!important}
+ body.qt-clean .qtc-app *,body.qt-clean .qtc-app *:before,body.qt-clean .qtc-app *:after{animation:none!important;transition:none!important}
 }

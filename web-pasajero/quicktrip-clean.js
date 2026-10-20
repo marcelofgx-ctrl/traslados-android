@@ -131,7 +131,13 @@
       '<section class="qtc-places" aria-label="Elegí tu recorrido"></section>'+
       '<section class="qtc-driver" aria-label="Conductor y recogida">'+
       '<div class="qtc-section-name"><span class="qtc-live-dot"></span><strong>Tu conductor</strong>'+
-      '<small>Disponibilidad y llegada reales</small></div><div class="qtc-driver-slot"></div></section>'+
+      '<small>Disponibilidad y llegada reales</small></div>'+
+      '<div class="qtc-driver-search" role="status" aria-live="polite" hidden>'+
+      '<span class="qtc-search-orbit" aria-hidden="true"><span class="qtc-search-car">↗</span></span>'+
+      '<span class="qtc-search-copy"><strong id="qtc-search-title">Buscando conductor…</strong>'+
+      '<small id="qtc-search-subtitle">Consultando disponibilidad en tiempo real.</small></span>'+
+      '<span class="qtc-search-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>'+
+      '<div class="qtc-driver-slot"></div></section>'+
       '<details class="qtc-schedule"><summary><span class="qtc-time-icon">◷</span>'+
       '<span class="qtc-time-copy"><strong id="qtc-when-title">Viajás ahora</strong>'+
       '<small>Podés cambiar el horario</small></span><span class="qtc-chevron">⌄</span></summary>'+
@@ -140,7 +146,7 @@
       '<small>Nombre, teléfono y pasajeros</small><span class="qtc-chevron">⌄</span></summary>'+
       '<div class="qtc-contact-slot"></div></details>'+
       '<section class="qtc-submit-region" aria-label="Resumen del viaje y solicitud">'+
-      '<div class="qtc-summary-title"><span>Tu recorrido</span><small>Tarifa orientativa</small></div>'+
+      '<div class="qtc-summary-title"><span>Tu recorrido</span><small>Precio del viaje</small></div>'+
       '<p id="qtc-summary-wait">Elegí origen y destino para calcular kilómetros, duración y precio.</p>'+
       '<div class="qtc-action-slot"></div></section>'+
       '<div class="qtc-success-slot"></div></div>'+
@@ -163,6 +169,47 @@
     syncWhenLabel();
     doc.body.classList.add("qt-clean");
     return true;
+  }
+  // Presentación únicamente: la comprobación del conductor y la ETA siguen
+  // viniendo del motor existente. Nunca inventamos conductor ni tiempo.
+  function syncDriverSearch(){
+    if(!shell)return;
+    const driver=shell.querySelector(".qtc-driver");
+    const presence=byId("pickup-presence");
+    const banner=driver?.querySelector(".qtc-driver-search");
+    if(!driver||!presence||!banner)return;
+    const phase=presence.dataset.phase||"";
+    const mode=["checking","routing","waiting"].includes(phase)?phase:"";
+    const searching=Boolean(mode&&!presence.hidden&&doc.body.classList.contains("journey-mode-quick"));
+    driver.dataset.searchState=searching?mode:"settled";
+    banner.hidden=!searching;
+    if(searching){
+      byId("qtc-search-title").textContent=mode==="checking"?"Buscando conductor…":"Calculando la llegada…";
+      byId("qtc-search-subtitle").textContent=mode==="checking"
+        ?"Consultando la disponibilidad real.":"Verificando la distancia y el tiempo hasta tu origen.";
+    }
+  }
+  // No alteramos el valor ni el cálculo. El resumen del mapa toma el texto
+  // verificado del renderizador vial y solo retiramos el adjetivo visual.
+  function cleanMapCaption(){
+    const note=doc.querySelector(".qtc-places .premium-route-map-note");
+    if(!note)return;
+    const value=note.textContent||"";
+    const cleaned=value.replace(/\s+orientativos?\b/gi,"");
+    if(cleaned!==value)note.textContent=cleaned;
+  }
+  function installVisualObservers(){
+    const presence=byId("pickup-presence");
+    if(presence){
+      new MutationObserver(syncDriverSearch).observe(presence,{
+        attributes:true,attributeFilter:["data-phase","data-presence","hidden"]
+      });
+    }
+    const caption=doc.querySelector(".premium-route-map-note");
+    if(caption){
+      new MutationObserver(cleanMapCaption).observe(caption,{childList:true,characterData:true,subtree:true});
+    }
+    syncDriverSearch();cleanMapCaption();
   }
   function syncWhenLabel(){
     const select=byId("journey-when-select"),label=byId("qtc-when-title");
@@ -214,7 +261,7 @@
     if(urgent&&submit&&urgent.parentElement!==submit)submit.append(urgent);
     const success=byId("booking-success"),successSlot=shell.querySelector(".qtc-success-slot");
     if(success&&successSlot&&success.parentElement!==successSlot)successSlot.append(success);
-    updateSummary();
+    updateSummary();syncDriverSearch();cleanMapCaption();
   }
   function updateSummary(){
     const recap=byId("urgent-route-recap"),wait=byId("qtc-summary-wait");
@@ -235,6 +282,7 @@
       attributes:true,attributeFilter:["hidden"]
     });
     doc.addEventListener("traslados:route-updated",updateSummary);
+    installVisualObservers();
     reconcile();
     // Abrir el servicio NATIVO por su acción ya registrada. Sin llamadas RPC.
     const open=doc.querySelector('[data-service="now"]');
