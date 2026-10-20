@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/quicktrip-v7-apks.yml"
+      - "mapatrayectos/build.gradle"
+      - "conductor/build.gradle"
+      - "mapatrayectos/src/main/AndroidManifest.xml"
+      - "conductor/src/main/AndroidManifest.xml"
+      - "scripts/android_qa_install_preflight.sh"
   workflow_dispatch:
 
 permissions:
@@ -46,6 +51,10 @@ jobs:
         with:
           gradle-version: "8.9"
           cache-read-only: true
+      - name: Asignar identificador QA exclusivo de esta compilación
+        shell: bash
+        run: |
+          echo "QUICKTRIP_QA_INSTALL_ID=r${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
       - name: Compilar APK debug independiente y APK integrado
         shell: bash
         run: gradle :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
@@ -58,13 +67,23 @@ jobs:
           find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
           cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
           cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          echo "QA Android installation preflight (no uninstall, no data deletion)"
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk "uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
           sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
-          echo "COMMIT: $GITHUB_SHA" > artifacts/test-apks/BUILD-INFO.txt
-          echo "QA debug signing; not a production-signed release." >> artifacts/test-apks/BUILD-INFO.txt
+          {
+            echo "COMMIT: $GITHUB_SHA"
+            echo "QA build: $GITHUB_RUN_ID"
+            echo "Conductor QA package: uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
+            echo "Mapa QA package: uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
+            echo "NO desinstala originales. NO usa identificadores de producción."
+            echo "Cada compilación QA tiene un ID diferente, evitando colisiones de firma con builds anteriores."
+            echo "QA debug signing; not a production-signed release."
+          } > artifacts/test-apks/BUILD-INFO.txt
       - name: Adjuntar APKs descargables
         uses: actions/upload-artifact@v4
         with:
-          name: quicktrip-v7-apks-qa
+          name: quicktrip-v7-apks-qa-sin-conflicto
           path: artifacts/test-apks/
           retention-days: 14
           if-no-files-found: error
