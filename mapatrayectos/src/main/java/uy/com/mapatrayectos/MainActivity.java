@@ -986,7 +986,9 @@ public class MainActivity extends Activity {
     private void addPickupPresenceRow(LinearLayout menu,PopupWindow popup){
         boolean enabled=Api.pickupPresenceEnabled();
         boolean busy=Api.pickupManuallyBusy();
-        boolean publishing=enabled&&!busy;
+        boolean linked=!getSharedPreferences("driver_session",MODE_PRIVATE)
+            .getString("pin","").isEmpty();
+        boolean publishing=enabled&&linked&&!busy;
         LinearLayout row=new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(7),dp(3),dp(7),dp(3));
@@ -997,7 +999,7 @@ public class MainActivity extends Activity {
         labels.setOrientation(LinearLayout.VERTICAL);
         TextView title=text("Conductor y recogidas",12.8f,TEXT,true);
         title.setSingleLine(true);
-        TextView desc=text(!enabled?"Vincular una vez en Mapa":
+        TextView desc=text((!enabled||!linked)?"Vincular una vez en Mapa":
             busy?"Ocupado · no localizable":
             (!shiftActive||shiftPaused||tripActive)?"Activada · esperando jornada libre":
             "Activada · GPS y agenda mandan",10.3f,MUTED,false);
@@ -1030,7 +1032,9 @@ public class MainActivity extends Activity {
     private void showPickupPresenceDialog(){
         final boolean enabled=Api.pickupPresenceEnabled();
         final boolean busy=Api.pickupManuallyBusy();
-        if(!enabled){
+        boolean linked=!getSharedPreferences("driver_session",MODE_PRIVATE)
+            .getString("pin","").isEmpty();
+        if(!enabled||!linked){
             new AlertDialog.Builder(this)
                 .setTitle("Vincular conductor y recogidas en Mapa")
                 .setMessage("Una sola vinculación para esta instalación. Después, " +
