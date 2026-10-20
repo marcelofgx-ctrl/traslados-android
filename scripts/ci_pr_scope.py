@@ -13,7 +13,7 @@ import sys
 ENFORCE_FROM = dt.datetime.fromisoformat("2026-10-18T11:57:04+00:00")
 BLOCK_RE = re.compile(r"<!--\s*traslados-scope\s*\n(.*?)\n\s*-->", re.S | re.I)
 OWNER_ROUTES = {
-    "ci": [".github/workflows/**", "scripts/**", "docs/**", "AGENTS.md"],
+    "ci": [".github/workflows/**", "scripts/**", "docs/**", "db/**", "AGENTS.md"],
     "docs": ["docs/**", "README.md", "AGENTS.md"],
     "pwa": ["web-pasajero/**", "docs/**", "scripts/**", ".github/workflows/**"],
     "mapa": ["mapatrayectos/**", "conductor/src/**", "core-reservations/**",
