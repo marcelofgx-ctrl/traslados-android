@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/quicktrip-v7-apks.yml"
+
+      - "scripts/android_qa_install_preflight.sh"
+      - "scripts/prepare_quicktrip_cliente_qa.py"
+      - "scripts/prepare_quicktrip_native_qa.py"
   workflow_dispatch:
 
 permissions:
@@ -10,9 +14,9 @@ permissions:
 
 jobs:
   build:
-    name: "Compilar Conductor y Mapa (QA, sin cambios de motor)"
+    name: "Compilar Quick Trip Pasajero, Conductor y Mapa (QA)"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Restaurar recursos de Android desde assets codificados
@@ -46,71 +50,67 @@ jobs:
         with:
           gradle-version: "8.9"
           cache-read-only: true
-      - name: Aislar QA de las apps instaladas sin tocar Gradle ni fuentes
+      - name: Asignar identificador QA exclusivo de esta compilación
+        shell: bash
+        run: |
+          echo "QUICKTRIP_QA_INSTALL_ID=r${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
+      - name: Crear copias temporales de Mapa y Conductor con ID aislados
         shell: bash
         run: |
           set -euo pipefail
-          # A temporary init script applies suffixes ONLY inside this CI job.
-          # Never persist or modify build.gradle, product source or release IDs.
-          cat > "$RUNNER_TEMP/quicktrip-qa.init.gradle" <<'GRADLE'
-          gradle.beforeProject { p ->
-              p.plugins.withId('com.android.application') {
-                  if (p.path == ':mapatrayectos' || p.path == ':conductor') {
-                      def debug = p.extensions.getByName('android').buildTypes.getByName('debug')
-                      debug.applicationIdSuffix = '.qa'
-                      debug.versionNameSuffix = '-QA'
-                  }
-              }
-          }
-          GRADLE
-          mkdir -p mapatrayectos/src/debug conductor/src/debug
-          cat > mapatrayectos/src/debug/AndroidManifest.xml <<'XML'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-                    xmlns:tools="http://schemas.android.com/tools">
-              <application android:label="Mapa Trayectos TEST" tools:replace="android:label"/>
-          </manifest>
-          XML
-          cat > conductor/src/debug/AndroidManifest.xml <<'XML'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-                    xmlns:tools="http://schemas.android.com/tools">
-              <application android:label="Conductor TEST" tools:replace="android:label"/>
-          </manifest>
-          XML
-      - name: Compilar APK debug independiente y APK integrado
+          python3 scripts/prepare_quicktrip_native_qa.py \
+            --source . \
+            --dest "$RUNNER_TEMP/quicktrip-native-qa" \
+            --qa-id "r${GITHUB_RUN_ID}"
+          git diff --exit-code -- mapatrayectos conductor core-reservations
+      - name: Compilar APK debug independiente y APK integrado desde copia temporal
         shell: bash
-        run: gradle -I "$RUNNER_TEMP/quicktrip-qa.init.gradle" :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+        run: gradle -p "$RUNNER_TEMP/quicktrip-native-qa" :conductor:assembleDebug :mapatrayectos:assembleDebug --stacktrace --no-daemon
+      - name: Crear Quick Trip Pasajero QA fuera de la fuente RELEASE
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_quicktrip_cliente_qa.py \
+            --source cliente-premium \
+            --dest "$RUNNER_TEMP/quicktrip-pasajero-qa" \
+            --qa-id "r${GITHUB_RUN_ID}" \
+            --icon web-pasajero/icons/icon-512.png
+          git diff --exit-code -- cliente-premium
+      - name: Compilar APK Quick Trip Pasajero QA (WebView oficial con ui=clean)
+        shell: bash
+        run: gradle -p "$RUNNER_TEMP/quicktrip-pasajero-qa" :app:assembleDebug --stacktrace --no-daemon
       - name: Preparar APKs y sumas de control
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/test-apks
-          find conductor/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
-          find mapatrayectos/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
-          cp conductor/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
-          cp mapatrayectos/build/outputs/apk/debug/*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
-          # Fail before delivery if package identity, version or signing is invalid.
-          APK_SIGNER="$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
-          AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
-          test -x "$APK_SIGNER"
-          test -x "$AAPT"
-          "$AAPT" dump badging artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk > artifacts/test-apks/Mapa-package.txt
-          "$AAPT" dump badging artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk > artifacts/test-apks/Conductor-package.txt
-          grep -q "^package: name='uy.com.mapatrayectos.qa'" artifacts/test-apks/Mapa-package.txt
-          grep -q "^package: name='uy.com.traslados.conductor.qa'" artifacts/test-apks/Conductor-package.txt
-          "$APK_SIGNER" verify --verbose --print-certs artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk > artifacts/test-apks/Mapa-signature.txt
-          "$APK_SIGNER" verify --verbose --print-certs artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk > artifacts/test-apks/Conductor-signature.txt
-          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' artifacts/test-apks/Mapa-signature.txt
-          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' artifacts/test-apks/Conductor-signature.txt
+          find "$RUNNER_TEMP/quicktrip-native-qa/conductor/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          find "$RUNNER_TEMP/quicktrip-native-qa/mapatrayectos/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -size +1M -print -quit | grep -q .
+          cp "$RUNNER_TEMP/quicktrip-native-qa/conductor/build/outputs/apk/debug/"*.apk artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk
+          cp "$RUNNER_TEMP/quicktrip-native-qa/mapatrayectos/build/outputs/apk/debug/"*.apk artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk
+          test -s "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk"
+          cp "$RUNNER_TEMP/quicktrip-pasajero-qa/app/build/outputs/apk/debug/app-debug.apk" artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk
+          echo "QA Android installation preflight (no uninstall, no data deletion)"
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Pasajero-V7-QA.apk "uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Pasajero-firma-paquete.txt
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Conductor-V7-QA.apk "uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Conductor-firma-paquete.txt
+          bash scripts/android_qa_install_preflight.sh artifacts/test-apks/QuickTrip-Mapa-V7-QA.apk "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}" | tee artifacts/test-apks/Mapa-firma-paquete.txt
           sha256sum artifacts/test-apks/*.apk | tee artifacts/test-apks/SHA256SUMS.txt
-          echo "COMMIT: $GITHUB_SHA" > artifacts/test-apks/BUILD-INFO.txt
-          echo "APP PACKAGE IDS: uy.com.mapatrayectos.qa and uy.com.traslados.conductor.qa" >> artifacts/test-apks/BUILD-INFO.txt
-          echo "Separate QA applications. Official apps and their local data are untouched." >> artifacts/test-apks/BUILD-INFO.txt
-          echo "QA debug signing uses a new certificate on each unconfigured runner." >> artifacts/test-apks/BUILD-INFO.txt
-          echo "If updating a previous QA install fails, request a stable QA signing key in GitHub Actions." >> artifacts/test-apks/BUILD-INFO.txt
+          {
+            echo "COMMIT: $GITHUB_SHA"
+            echo "QA build: $GITHUB_RUN_ID"
+            echo "Conductor QA package: uy.com.traslados.conductor.qa.r${GITHUB_RUN_ID}"
+            echo "Mapa QA package: uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}"
+            echo "Quick Trip Pasajero QA package: uy.com.traslados.cliente.qa.r${GITHUB_RUN_ID}"
+            echo "Quick Trip QA WebView: https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/?ui=clean"
+            echo "La APK oficial Cliente Premium sigue intacta."
+            echo "NO desinstala originales. NO usa identificadores de producción."\n            echo "Las QA usan la misma infraestructura real; realizar pruebas de reservas de manera controlada."
+            echo "Cada compilación QA tiene un ID diferente, evitando colisiones de firma con builds anteriores."
+            echo "QA debug signing; not a production-signed release."
+          } > artifacts/test-apks/BUILD-INFO.txt
       - name: Adjuntar APKs descargables
         uses: actions/upload-artifact@v4
         with:
-          name: quicktrip-v7-apks-qa
+          name: quicktrip-v7-apks-qa-sin-conflicto
           path: artifacts/test-apks/
           retention-days: 14
           if-no-files-found: error
