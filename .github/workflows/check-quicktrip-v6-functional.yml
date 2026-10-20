@@ -1,0 +1,39 @@
+name: Quick Trip V6 functional opt-in — no Android build
+on:
+  pull_request:
+    paths:
+      - 'web-pasajero/quicktrip-functional-v6.*'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/tests/quicktrip-functional-v6.cjs'
+      - 'web-pasajero/pruebas/visual-v6/**'
+      - '.github/workflows/check-quicktrip-v6-functional.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'web-pasajero/quicktrip-functional-v6.*'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/tests/quicktrip-functional-v6.cjs'
+      - 'web-pasajero/pruebas/visual-v6/**'
+      - '.github/workflows/check-quicktrip-v6-functional.yml'
+permissions:
+  contents: read
+jobs:
+  functional-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify opt-in skin and unchanged operational engines
+        run: |
+          node --check web-pasajero/quicktrip-functional-v6.js
+          node --check web-pasajero/tests/quicktrip-functional-v6.cjs
+          node web-pasajero/tests/quicktrip-functional-v6.cjs
+          node web-pasajero/tests/service-home-v61-smoke.cjs
+          node web-pasajero/tests/premium-journey-v75-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/urgent-mode-smoke.cjs
+          node web-pasajero/tests/flexible-schedule-r1-smoke.cjs
+          node web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
+          node web-pasajero/pruebas/visual-v6/tests/view-model-v6.cjs
