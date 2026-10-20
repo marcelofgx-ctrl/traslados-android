@@ -31,6 +31,10 @@ checkpoint(skin.includes("qt-v6-header-back")&&skin.includes('.tab[data-view="in
 checkpoint(skin.includes("qt-v6-tab-icon")&&skin.includes("qt-theme-sun")&&skin.includes("qt-theme-moon"),"Approved footer and two-theme toggle");
 checkpoint(css.includes("width:124px!important")&&css.includes("width:104px!important"),"Approved medium 124/104 px home emblems");
 checkpoint(css.includes('grid-template-columns:56px minmax(0,1fr)')&&css.includes("border-radius:999px"),"Single-row back and champagne CTA");
+checkpoint(css.includes('#view-viaje .journey-hero{')&&css.includes('display:none!important'),"V6 must hide the obsolete Tu viaje 1/4 hero");
+checkpoint(css.includes('position:fixed!important')&&css.includes('bottom:calc(78px + env(safe-area-inset-bottom))'),"Continue must stay visible above footer while scrolling the live map");
+checkpoint(css.includes('#view-viaje:not([data-premium-step="confirm"])'),"Only live stages 1-3 receive floating Continue; confirm uses original submit");
+checkpoint(!/\.premium-next[^\n]*addEventListener/.test(skin),"Keep original Continue action; never clone the click handler");
 checkpoint(css.includes(".qt-v6-contact-row")&&css.includes(".qt-v6-schedule-progress"),"Live contact card and programmed stages styled");
 checkpoint(css.includes("qt-theme-light")&&css.includes("qt-theme-dark"),"Both approved appearances");
 checkpoint(lab.includes(".flow-steps li")&&lab.includes(".section-title h1"),"Original V6 visual reference retained");
