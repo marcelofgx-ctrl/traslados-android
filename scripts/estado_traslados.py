@@ -35,7 +35,7 @@ def versions(root: Path) -> dict:
             extract(r"versionName\s+['\"]([^'\"]+)", data, path),
             extract(r"versionCode\s+(\d+)", data, path),
         )
-    pwa = extract(r"traslados-cliente-pwa-v(\d+)", (root / "web-pasajero/sw.js").read_text(encoding="utf-8"), "PWA")
+    pwa = extract(r"traslados-(?:cliente-)?pwa-v(\d+)", (root / "web-pasajero/sw.js").read_text(encoding="utf-8"), "PWA")
     return {"pwa": pwa, "conductor": android("conductor/build.gradle"),
             "mapa": android("mapatrayectos/build.gradle"),
             "cliente": android("cliente-premium/app/build.gradle")}
@@ -87,8 +87,7 @@ def build_time(run: dict) -> str:
 def latest_app_build(runs: list[dict]) -> dict | None:
     names = {
         "Verify and package passenger PWA (GitHub Pages via branch)",
-        "Build Traslados Cliente Premium v15 RELEASE",
-        "Build Traslados Conductor RELEASE",
+        "Quick Trip V7 - APKs de testing",
         "Build Mapa Trayectos RELEASE",
     }
     finished = [r for r in runs if r.get("head_branch") == "main"
@@ -188,13 +187,12 @@ def render(root: Path, offline: bool = False, now: dt.datetime | None = None) ->
       "",
       "**Versión detectada en las fuentes de GitHub** (regenerada únicamente cuando cambian versiones o resultados de ejecución).",
       "",
-      "Este archivo es generado automáticamente. La versión procede del código y la columna de descarga refleja si el nombre de APK existe en Git; no certifica instalación ni funcionamiento en Samsung.",
+      "Este reporte se entrega como artefacto del CI; no se publica como un nuevo commit. La compilación no certifica funcionamiento físico en Samsung.",
       "",
       "| Producto | Versión fuente | Archivo verificable | Última ejecución encontrada |",
       "|---|---|---|---|",
       "| Pasajero PWA | v" + v["pwa"] + " | [Abrir web](" + SITE + ") | " + recent_success(runs, "pages build and deployment") + " |",
-      apk_row("Cliente Premium", v["cliente"], client_name, "Build Traslados Cliente Premium v15 RELEASE"),
-      apk_row("Conductor", v["conductor"], conductor_name, "Build Traslados Conductor RELEASE"),
+      "Solo se distribuyen Web/PWA pasajero y Mapa integrado. **Conductor no es APK independiente.**",
       apk_row("Mapa Trayectos", v["mapa"], mapa_name, "Build Mapa Trayectos RELEASE"),
       "",
       "**PWA CI:** " + recent_completed(runs, "Verify and package passenger PWA (GitHub Pages via branch)") + ".",
