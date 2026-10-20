@@ -15,7 +15,7 @@
   ];
   for(const file of styles){
     const link=doc.createElement("link");
-    link.rel="stylesheet";link.href="./"+file+"?v=1";
+    link.rel="stylesheet";link.href="./"+file+(file==="tu-viaje-reference.css"?"?v=2":"?v=1");
     doc.head.appendChild(link);
   }
   function mount(){
