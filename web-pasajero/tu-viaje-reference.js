@@ -34,6 +34,26 @@
     header.innerHTML='<span class="premium-car" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M13 38l5-12c1-3 4-5 7-5h15c4 0 6 2 8 5l4 12" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/><path d="M11 38h42v10H11z" stroke="currentColor" stroke-width="2.7" stroke-linejoin="round"/><path d="M16 48v5m32-5v5M18 41h7m14 0h7M22 28h20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><span><small>TRASLADOS</small><strong>Tu viaje</strong></span>';
     view.querySelector(".qt-v6-contact-card")?.remove();
     for(const icon of doc.querySelectorAll(".qt-v6-tab-icon"))icon.remove();
+    // "Tu viaje" is ONE service. Keep only Home and the passenger's real
+    // trip history inside the immediate ride; scheduling belongs to Home.
+    // Reuse the original navigational buttons and their existing listeners.
+    const historyTab=doc.querySelector('.tabs .tab[data-view="viajes"]');
+    if(historyTab){
+      historyTab.textContent="Mis viajes";
+      historyTab.setAttribute("aria-label","Mis viajes: solicitudes, aceptaciones e historial");
+    }
+    const receipt=doc.getElementById("booking-success");
+    if(receipt){
+      const syncReceipt=()=>{
+        if(receipt.hidden || !view.classList.contains("active"))return;
+        const status=receipt.querySelector(".success-lead");
+        if(status)status.textContent="Solicitud enviada. Esperando respuesta del conductor: puede aceptar o rechazar el viaje.";
+        const link=receipt.querySelector("button.primary");
+        if(link&&link.textContent.trim()!=="VER MIS VIAJES")link.textContent="VER MIS VIAJES";
+      };
+      new MutationObserver(syncReceipt).observe(receipt,{childList:true,attributes:true,attributeFilter:["hidden"]});
+      syncReceipt();
+    }
     const presence=doc.querySelector("#view-viaje .premium-live-presence");
     const intro=view.querySelector(".premium-intro");
     function arrangeStage(){
@@ -49,6 +69,14 @@
       }else if(presence&&intro){
         view.querySelector(".premium-journey-header")?.after(presence);
         presence.after(intro);
+      }
+      if(stage==="confirm"){
+        // Instant pickup never asks the passenger for a tracking/booking code.
+        // The server's technical identifier continues to exist for history,
+        // idempotency and the driver's accept/reject workflow.
+        const description=doc.getElementById("urgent-actions-description");
+        if(description)description.textContent=
+          "El conductor recibe tu solicitud y la acepta o rechaza. Seguís su respuesta en Mis viajes.";
       }
       if(intro){
         const heading=intro.querySelector("h2"),note=intro.querySelector("p");
