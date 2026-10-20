@@ -11,7 +11,29 @@
     const caption=doc.createElement("p");caption.className="premium-route-map-note";
     const retry=doc.createElement("button");retry.type="button";retry.className="premium-route-retry";retry.textContent="Reintentar cálculo";retry.hidden=true;
     retry.addEventListener("click",()=>doc.querySelector("#route-overview .route-retry")?.click());
-    map.append(mapHost,caption,retry);card.append(map);
+    // Presentation-only ticket from historical approved MAP-FIRST V5.
+    // Values are always fed by the existing verified route state.
+    const approved=new URLSearchParams(root.location.search).get("ui")==="v6";
+    let summary=null,fareValue=null,kmValue=null,durationValue=null;
+    if(approved){
+      summary=doc.createElement("section");summary.className="premium-route-summary";
+      summary.setAttribute("aria-label","Resumen verificado del viaje");
+      const fare=doc.createElement("div");fare.className="premium-route-fare";
+      const fareLabel=doc.createElement("small");fareLabel.textContent="PRECIO ORIENTATIVO DEL VIAJE";
+      fareValue=doc.createElement("strong");fareValue.textContent="A confirmar";
+      fare.append(fareLabel,fareValue);
+      const tripMetrics=doc.createElement("div");tripMetrics.className="premium-route-trip-metrics";
+      const km=doc.createElement("div"),duration=doc.createElement("div");
+      const kmLabel=doc.createElement("small");kmLabel.textContent="DISTANCIA DEL VIAJE";
+      kmValue=doc.createElement("strong");kmValue.textContent="—";
+      const durationLabel=doc.createElement("small");durationLabel.textContent="DURACIÓN ESTIMADA";
+      durationValue=doc.createElement("strong");durationValue.textContent="—";
+      km.append(kmLabel,kmValue);duration.append(durationLabel,durationValue);
+      tripMetrics.append(km,duration);summary.append(fare,tripMetrics);
+    }
+    map.append(mapHost,caption);
+    if(summary)map.append(summary);
+    map.append(retry);card.append(map);
     const stops=doc.createElement("button");stops.type="button";stops.className="premium-route-stops";
     stops.textContent="Agregar paradas (opcional)";
     const stopBody=doc.getElementById("stop-wrap"),login=doc.getElementById("login-for-stops");
@@ -76,6 +98,26 @@
       }
       const originalRetry=doc.querySelector("#route-overview .route-retry");
       retry.hidden=points.length!==2||!originalRetry||originalRetry.hidden;
+      if(summary){
+        const verified=Boolean(state.metrics&&Number.isFinite(state.metrics.distanceKm)&&state.metrics.distanceKm>0
+          &&Number.isFinite(state.metrics.durationMin)&&state.metrics.durationMin>=0);
+        summary.dataset.verified=String(verified);
+        const m=state.metrics;
+        if(verified){
+          fareValue.textContent=Number.isFinite(m.referenceFareUyu)&&m.referenceFareUyu>0
+            ?"$ "+m.referenceFareUyu.toLocaleString("es-UY",{maximumFractionDigits:2}):"A confirmar";
+          kmValue.textContent=m.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+          durationValue.textContent=Math.round(m.durationMin)+" min";
+          caption.textContent="Ruta estimada del viaje por calles · sin tráfico en vivo";
+        }else{
+          const error=points.length===2&&!retry.hidden;
+          fareValue.textContent=error?"A confirmar":points.length===2?"Calculando…":"A confirmar";
+          kmValue.textContent=error?"Sin estimación":points.length===2?"Calculando…":"—";
+          durationValue.textContent=error?"Sin estimación":points.length===2?"Calculando…":"—";
+          caption.textContent=error?"No pudimos verificar el recorrido. Reintentá el cálculo.":
+            points.length===2?"Calculando recorrido…":"Elegí origen y destino para ver la ruta";
+        }
+      }
     }
     doc.addEventListener("traslados:route-updated",sync);
     const size=new ResizeObserver(()=>{lastMap="";sync();});size.observe(mapHost);
