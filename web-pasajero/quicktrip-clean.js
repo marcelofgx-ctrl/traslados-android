@@ -89,7 +89,7 @@
     historyPanel.setAttribute("aria-label","Elegir uno de mis destinos anteriores");
     historyPanel.hidden=true;
     box.append(historyButton,historyPanel);
-    destination.after(box);
+    destination.querySelector(".location-title")?.after(box);
     historyButton.addEventListener("click",()=>{
       const opening=historyPanel.hidden;
       historyPanel.hidden=!opening;
@@ -175,8 +175,7 @@
     // Se conserva exactamente el mismo mapa; no hay un segundo renderizador.
     const stops=doc.querySelector(".premium-route-stops");
     if(stops&&routeBody&&stops.parentElement!==routeBody){
-      const history=byId("qtc-history");
-      if(history)history.after(stops);else mapAnchor?.after(stops);
+      mapAnchor?.after(stops);
     }
     const presence=byId("pickup-presence");
     const driver=shell.querySelector(".qtc-driver-slot");
