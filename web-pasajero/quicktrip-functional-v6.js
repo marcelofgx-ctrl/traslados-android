@@ -173,8 +173,9 @@
       const journeyView=doc.getElementById("view-viaje");
       const scheduledView=doc.getElementById("view-reservar");
       function updateBack(){
-        back.hidden=!(journeyView?.classList.contains("active")||
-                       scheduledView?.classList.contains("active"));
+        back.classList.toggle("qt-v6-back-inactive",
+          !(journeyView?.classList.contains("active")||
+            scheduledView?.classList.contains("active")));
       }
       for(const view of [journeyView,scheduledView]){
         if(view)new MutationObserver(updateBack).observe(view,{attributes:true,attributeFilter:["class"]});
