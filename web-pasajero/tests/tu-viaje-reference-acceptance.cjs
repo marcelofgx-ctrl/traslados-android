@@ -52,5 +52,5 @@ assert(original.includes('next.addEventListener("click",forward)')&&original.inc
  "preserve native four-step navigation");
 assert(original.includes('requestHost.querySelector("#urgent-route-recap')&&home.includes("onSelect"),
  "preserve native confirmation data and three service cards");
-assert(refer.includes("las nueve capturas")&&refer.includes("apariencia"),"document is canonical source");
+assert(refer.includes("CONTRATO VISUAL BLOQUEADO")&&refer.includes("Checklist de aceptación"),"document is canonical source");
 console.log("PASS: approved exact Tu viaje reference 1/4–4/4, real price/maps/forms, original submit and no duplicate request");
