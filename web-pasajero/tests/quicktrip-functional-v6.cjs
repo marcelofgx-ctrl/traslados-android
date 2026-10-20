@@ -58,4 +58,13 @@ assert.equal(appended.length,1);
 assert.equal(appended[0].rel,"stylesheet");
 assert.equal(appended[0].href,"./quicktrip-functional-v6.css?v=1");
 assert(events.has("DOMContentLoaded"),"Skin must mount after native app.js");
+ // defer executes with readyState=interactive; it must also wait for app.js
+const interactiveEvents=new Map(),secondDoc={
+ readyState:"interactive",head:{appendChild(){}},
+ createElement(tag){return {tag,rel:"",href:""}},
+ addEventListener(name,handler){interactiveEvents.set(name,handler)},
+ getElementById(){throw Error("Premature V6 mount while native app has not initialized")}
+};
+vm.runInNewContext(skin,{window:{location:{search:"?ui=v6"},document:secondDoc},URLSearchParams});
+assert(interactiveEvents.has("DOMContentLoaded"),"Interactive/defer phase must wait for native handlers");
 console.log("PASS V6 functional: guarded opt-in, real engine reuse, themes, medium orbs, no mock data or duplicate writes");
