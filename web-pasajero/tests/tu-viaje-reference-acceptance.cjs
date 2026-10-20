@@ -11,9 +11,9 @@ const css=file("tu-viaje-reference.css"),route=file("premium-route.js");
 const original=file("premium-journey.js"),home=file("service-home.js");
 const refer=file("../docs/CONTRATO_VISUAL_TU_VIAJE_4_PANTALLAS_20261019.md");
 new vm.Script(presentation);new vm.Script(route);
-assert(html.includes('src="./tu-viaje-reference.js?v=2" defer'),"approved script is loaded");
-assert(html.indexOf('app.js?v=82')<html.indexOf('tu-viaje-reference.js?v=2'),"original engine mounts first");
-assert(html.indexOf('quicktrip-functional-v6.js?v=3')<html.indexOf('tu-viaje-reference.js?v=2'),"approved design overrides experimental V6");
+assert(html.includes('src="./tu-viaje-reference.js?v=3" defer'),"approved script is loaded");
+assert(html.indexOf('app.js?v=82')<html.indexOf('tu-viaje-reference.js?v=3'),"original engine mounts first");
+assert(html.indexOf('quicktrip-functional-v6.js?v=3')<html.indexOf('tu-viaje-reference.js?v=3'),"approved design overrides experimental V6");
 assert(presentation.includes('params')===false || presentation.includes('searchParams'),"fully scoped to opt-in");
 assert(presentation.includes('get("ui")!=="v6"'),"do not change the default PWA");
 assert(!presentation.includes("stopImmediatePropagation"),"preview protection must not swallow real booking click");
@@ -97,5 +97,23 @@ assert(refer.includes("CONTRATO VISUAL BLOQUEADO")&&refer.includes("Checklist de
  assert.equal(doc.head.links.length,6,"all archived reference styles must be loaded");
  assert.equal(observers,1,"stage layout must continue to follow native step state");
 }
+
+
+const immediateCss=css;
+assert(presentation.includes('doc.body.classList.toggle("tu-viaje-immediate",active)'),"minimal navigation must follow actual active ride only");
+assert(presentation.includes('historyTab.textContent="Mis viajes"'),"real history button reuses existing navigation listener");
+assert(presentation.includes('VER MIS VIAJES'),"success goes to live trips/history");
+assert(presentation.includes('El conductor recibe tu solicitud y la acepta o rechaza.'),"live acceptance or rejection must be explicit");
+assert(presentation.includes('Esperando respuesta del conductor:'),"sent is NOT driver accepted");
+assert(immediateCss.includes('grid-template-columns:repeat(2,minmax(0,1fr))!important'),"one-row minimal footer");
+for(const hiddenTab of ['data-view="reservar"','data-view="cuenta"']){
+ assert(immediateCss.includes(hiddenTab),"do not show programme or account menu in immediate trip");
+}
+assert(immediateCss.includes('#booking-success .success-receipt>.code')&&
+       immediateCss.includes('#booking-success .success-receipt>.success-label:first-child'),
+       "technical request identifiers must not be displayed in instant success");
+assert(immediateCss.includes('tu-viaje-ref.tu-viaje-immediate'),"classic UI remains untouched");
+assert(presentation.includes('file==="tu-viaje-reference.css"?"?v=2":"?v=1"'),
+ "Android must fetch fresh compact footer CSS");
 
 console.log("PASS: approved exact Tu viaje reference 1/4–4/4, real price/maps/forms, original submit and no duplicate request");
