@@ -41,10 +41,10 @@ body.theme-dark .app-shell:before{
  background:repeating-linear-gradient(132deg,transparent 0 16px,#55dfca1a 17px 18px,transparent 19px 37px);
  -webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)
 }
-.topbar{height:91px;position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) 77px;align-items:center;gap:9px;padding:13px 16px 3px;z-index:2}
+.topbar{height:81px;position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) 77px;align-items:center;gap:9px;padding:13px 16px 3px;z-index:2}
 .qt-back{border:1px solid var(--border);border-radius:50%;width:41px;height:41px;display:grid;place-items:center;background:var(--surface-2);font-size:33px;font-weight:350;line-height:.6}
 .qt-brand{min-width:0;display:flex;justify-content:center;align-items:center;height:72px}
-.qt-brand img{width:min(100%,225px);height:auto;max-height:77px;object-fit:contain;filter:drop-shadow(0 1px 2px #0005)}
+.qt-brand img{width:min(100%,202px);height:auto;max-height:66px;object-fit:contain;filter:drop-shadow(0 1px 2px #0005)}
 .theme-switch{width:74px;height:37px;display:flex;align-items:center;gap:2px;justify-content:center;padding:3px;border-radius:999px;background:var(--surface-2);border:1px solid var(--outline);box-shadow:0 0 12px #dca9512a}
 .theme-sun,.theme-moon{display:grid;place-items:center;border-radius:50%;width:32px;height:30px;flex:none;font-size:20px;color:var(--muted);line-height:1}
 body.theme-dark .theme-moon,body.theme-light .theme-sun{background:linear-gradient(125deg,#ffeeb9,#d9a048);box-shadow:0 0 13px #ffd27b88;color:#193939}
