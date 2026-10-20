@@ -104,6 +104,12 @@ async function main(){
   check(s.oldHidden,"Old journey navigation and hero are hidden");
   check(s.history&&s.schedule&&s.contact,"Animated history, collapsible time and passenger fields");
   check(s.logo,"Brand Quick Trip logo loads");
+  const contrastLogo=await expression(function(){
+   const im=document.querySelector(".qtc-logo");
+   return im?.complete&&im?.naturalWidth>0&&im.currentSrc.includes("quicktrip-logo-contrast.svg");
+  });
+  check(contrastLogo,"Brighter Quick Trip brand asset loads in mobile header");
+
   check(s.scrollWidth<=s.width+6,"No horizontal overflow at Samsung phone width");
   check(s.manifest==="./manifest-quicktrip-clean.webmanifest","Separate PWA manifest selected");
   await snap("01-quicktrip-arriba.png");
@@ -126,6 +132,47 @@ async function main(){
   }),4500);
   check(searching,"Animated search starts only when native pickup phase is checking");
   await snap("06-buscando-conductor.png");
+  // Simulate ONLY the PRESENTATION state; no RPC, GPS, or booking mutation.
+  const nativeUnavailable=await expression(function(){
+   const p=document.querySelector("#pickup-presence");
+   window.__qaPresenceOriginal=p.dataset.presence||"";
+   p.dataset.presence="busy";
+   p.dataset.phase="blocked";
+   return true;
+  });
+  const blockedPanel=await poll(()=>expression(function(){
+   const driver=document.querySelector(".qtc-driver");
+   const panel=driver?.querySelector(".qtc-driver-unavailable");
+   const native=driver?.querySelector("#pickup-presence .pickup-card-header");
+   return !!panel&&!panel.hidden&&driver.dataset.availability==="unavailable"&&
+     getComputedStyle(native).display==="none";
+  }),4500);
+  check(blockedPanel,"Unavailable conductor shown honestly with no false pickup ETA");
+  await expression(function(){
+    document.querySelector(".qtc-driver-unavailable").scrollIntoView({block:"center"});
+    return true;
+  });
+  await pause(150);
+  await snap("07-conductor-no-disponible.png");
+  await expression(function(){
+   const p=document.querySelector("#pickup-presence");
+   p.dataset.presence="online";
+   p.dataset.phase="ready";
+   return true;
+  });
+  const restored=await poll(()=>expression(function(){
+   const driver=document.querySelector(".qtc-driver");
+   const panel=driver?.querySelector(".qtc-driver-unavailable");
+   const native=driver?.querySelector("#pickup-presence .pickup-card-header");
+   return !!panel&&panel.hidden&&driver.dataset.availability==="normal"&&
+     getComputedStyle(native).display!=="none";
+  }),4500);
+  check(restored,"Real available state restores original ETA card without any replacement engine");
+  await expression(function(){
+   document.querySelector("#pickup-presence").dataset.presence=window.__qaPresenceOriginal;
+   delete window.__qaPresenceOriginal;
+   return true;
+  });
   await expression(function(){
    document.querySelector("#pickup-presence").dataset.phase="ready";return true;
   });
