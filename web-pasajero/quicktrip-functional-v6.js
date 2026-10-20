@@ -108,7 +108,7 @@
       passengerBody.prepend(card);
       const syncContact=()=>{
         const fullName=personName.value.trim(),number=personPhone.value.trim();
-        const complete=fullName.length>=2&&number.replace(/\\D/g,"").length>=8;
+        const complete=fullName.length>=2&&number.replace(/\D/g,"").length>=8;
         avatar.textContent=(fullName[0]||"•").toUpperCase();
         name.textContent=fullName||"Completá tus datos";
         phone.textContent=number||"Ingresá tu teléfono para coordinar";
