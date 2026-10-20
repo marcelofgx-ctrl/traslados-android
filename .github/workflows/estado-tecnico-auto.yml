@@ -7,27 +7,15 @@ on:
       - 'scripts/estado_traslados.py'
       - 'tests/test_estado_traslados.py'
       - '.github/workflows/estado-tecnico-auto.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'conductor/**'
-      - 'mapatrayectos/**'
-      - 'cliente-premium/app/**'
-      - 'core-reservations/**'
-      - 'scripts/estado_traslados.py'
-      - '.github/workflows/estado-tecnico-auto.yml'
-  # La web no actualiza metadatos hasta cerrar su CI. Evita commits de
-  # estado "EN CURSO" que cancelan en cadena el deploy de GitHub Pages.
   workflow_run:
     workflows:
-      - Build Traslados Conductor RELEASE
-      - Build Mapa Trayectos RELEASE
       - Verify and package passenger PWA (GitHub Pages via branch)
-      - Build Traslados Cliente Premium v15 RELEASE
+      - Build Mapa Trayectos RELEASE
+      - Quick Trip V7 - APKs de testing
     types: [completed]
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 concurrency:
@@ -85,22 +73,10 @@ jobs:
           echo 'Copiar: **Retomar Traslados Web desde Git**' >> "$GITHUB_STEP_SUMMARY"
           echo 'Primero consultar fechas/horas UYT de última compilación y último cambio en el estado automático.' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Publicar solo el archivo de estado si cambió
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add docs/ESTADO_AUTOMATICO_TRASLADOS.md
-          if git diff --cached --quiet; then
-            echo 'Sin diferencias; no crear commit'
-            exit 0
-          fi
-          git config user.name 'Traslados Estado Bot'
-          git config user.email 'actions@users.noreply.github.com'
-          git commit -m 'docs: actualizar estado técnico automático [skip ci]'
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then exit 0; fi
-            git fetch origin main
-            git rebase origin/main
-          done
-          echo 'main cambió durante la publicación; reintentar workflow'
-          exit 1
+      - name: Entregar estado como artefacto, sin commits ni cascadas
+        uses: actions/upload-artifact@v4
+        with:
+          name: quicktrip-estado-tecnico
+          path: docs/ESTADO_AUTOMATICO_TRASLADOS.md
+          retention-days: 14
+          if-no-files-found: error
