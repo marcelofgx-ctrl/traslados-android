@@ -16,7 +16,7 @@ borrar automáticamente bases, preferencias, PIN, historial, GPS ni reservas.
 ## Solución obligatoria para QA
 
 El workflow `.github/workflows/quicktrip-v7-apks.yml` define
-`QUICKTRIP_QA_INSTALL_ID=r<GITHUB_RUN_ID>` para compilar ambos módulos.
+`QUICKTRIP_QA_INSTALL_ID=r<GITHUB_RUN_ID>` para compilar Mapa, Conductor y un clon temporal aislado de la APK premium del pasajero.
 
 | Variante | Identificador Android | Nombre visible |
 |---|---|---|
@@ -24,20 +24,28 @@ El workflow `.github/workflows/quicktrip-v7-apks.yml` define
 | Mapa QA | `uy.com.mapatrayectos.qa.r<ID>` | Mapa QA |
 | Conductor oficial | `uy.com.traslados.conductor` | Traslados Conductor |
 | Conductor QA | `uy.com.traslados.conductor.qa.r<ID>` | Conductor QA |
+| Pasajero oficial | `uy.com.traslados.cliente` | Traslados (premium) |
+| Pasajero QA | `uy.com.traslados.cliente.qa.r<ID>` | Quick Trip QA |
 
 Cada compilación QA utiliza un identificador **único**, por lo que nunca
 intenta actualizar una aplicación que esté firmada con otra clave.
 Los nombres e identificadores de producción se mantienen intactos.
 
+El Pasajero QA se prepara en una carpeta temporal mediante
+`scripts/prepare_quicktrip_cliente_qa.py`, sin tocar el proyecto `cliente-premium`
+de release ni disparar la automatización que publica la APK oficial. El único
+cambio en el clon es el ID y nombre de instalación y que su WebView carga
+la página oficial en `?ui=clean` (la presentación Quick Trip V7).
+
 Antes de aceptar un artefacto, el workflow:
-1. Compila Conductor y Mapa con el mismo código de negocio de siempre.
+1. Compila Conductor y Mapa con el mismo código de negocio de siempre, y Quick Trip Pasajero desde un clon temporal de su WebView oficial.
 2. Revisa con `aapt dump badging` el identificador Android **exacto**,
    además de la etiqueta QA.
 3. Valida la firma APK con `apksigner verify --print-certs`.
 4. Genera hashes SHA-256 y un archivo `BUILD-INFO.txt` con paquetes y
    número del workflow.
 5. Falla cerrado si algún paquete no corresponde al QA exclusivo.
-6. Publica las dos APK en un artefacto de GitHub Actions.
+6. Publica las tres APK en un artefacto de GitHub Actions.
 
 El control local opcional `scripts/android_qa_install_preflight.sh`
 permite repetir la verificación y, con ADB conectado, enumerar
@@ -48,7 +56,7 @@ instalaciones previas **sin eliminar ninguna**.
 1. Descargar la APK nueva etiquetada QA del último workflow correcto.
 2. Instalar desde Archivos / Chrome; permitir la instalación desde esa fuente
    en los ajustes si Android lo solicita.
-3. Abrir **Mapa QA** o **Conductor QA**, no la aplicación oficial.
+3. Abrir **Quick Trip QA**, **Mapa QA** o **Conductor QA**, no la aplicación oficial.
 4. No desinstalar ni eliminar datos de la aplicación operativa.
 5. Detener/pausar monitores de la otra variante al probar reservas para evitar
    notificaciones simultáneas; ambas pueden consultar el **mismo** Supabase.
