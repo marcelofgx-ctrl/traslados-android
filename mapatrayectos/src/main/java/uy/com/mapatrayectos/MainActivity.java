@@ -88,6 +88,8 @@ public class MainActivity extends Activity {
     private boolean returningFromOverlaySettings=false;
     private boolean reopenConfigurationAfterOverlay=false;
     private boolean navigatingWithinMapa=false;
+    // Only one onboarding prompt per visible app session; explicit OFF is kept.
+    private boolean pickupEnrollmentOfferedThisActivity=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
 
     private void scheduleBubblePermissionCheck(){
@@ -489,7 +491,15 @@ public class MainActivity extends Activity {
     }
 
     private void performSliderAction(){
-        if(!shiftActive){if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0))maybeOfferBubblePermission();return;}
+        if(!shiftActive){
+            if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0)){
+                maybeOfferBubblePermission();
+                // The jornada always starts normally. First-time commercial GPS
+                // sharing requires explicit one-time consent in Mapa.
+                uiHandler.postDelayed(this::maybeOfferPickupEnrollmentForActiveShift,650);
+            }
+            return;
+        }
         if(shiftPaused){sendAction(TrackingService.ACTION_RESUME_SHIFT,null,null,0);return;}
         if(!tripActive){
             // Always confirm platform for EACH service. The upper circle is only a default.
@@ -1025,6 +1035,21 @@ public class MainActivity extends Activity {
         row.setOnClickListener(v->{popup.dismiss();showPickupPresenceDialog();});
     }
 
+    /** A shift with valid device pairing should publish automatically.
+     * On a fresh installation Play/Stop does not silently grant GPS sharing:
+     * offer enrollment once, and never nag after explicit revocation.
+     */
+    private void maybeOfferPickupEnrollmentForActiveShift(){
+        if(pickupEnrollmentOfferedThisActivity||isFinishing()||isDestroyed())return;
+        final SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        if(!(shiftActive||state.getBoolean("shift_active",false)))return;
+        if(Api.pickupPresenceEnabled())return;
+        if(getSharedPreferences("pickup_presence",MODE_PRIVATE)
+                .getBoolean("explicitly_disabled",false))return;
+        pickupEnrollmentOfferedThisActivity=true;
+        showPickupPresenceDialog();
+    }
+
     /** One-time Mapa enrollment: Conductor never presents a separate PIN.
      * After pairing, Play / Stop and the existing GPS heartbeat govern pickup.
      * The existing driver RPCs still require server authentication.
@@ -1053,6 +1078,8 @@ public class MainActivity extends Activity {
                             if(!uy.com.traslados.conductor.Api.pinValid(saved))
                                 throw new IllegalStateException("Vinculación anterior vencida");
                             boolean ok=Api.setPickupConsent(saved,true);
+                            if(ok)getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
+                                .putBoolean("explicitly_disabled",false).apply();
                             runOnUiThread(()->{
                                 if(ok){
                                     requestPickupPresenceSync();
@@ -1082,6 +1109,10 @@ public class MainActivity extends Activity {
                             "Esto no borra jornadas ni viajes guardados.")
                         .setNegativeButton("Cancelar",null)
                         .setPositiveButton("Desactivar",(d,w)->{
+                            // Remember an explicit no: Play must never re-enable
+                            // nor prompt for commercial GPS until chosen in Mapa.
+                            getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
+                                .putBoolean("explicitly_disabled",true).apply();
                             new Thread(()->{
                                 try{
                                     if(Api.setPickupConsent("",false)){
@@ -1122,6 +1153,8 @@ public class MainActivity extends Activity {
                             throw new IllegalArgumentException("Acceso de conductor no válido");
                         boolean ok=Api.setPickupConsent(pin,true);
                         if(ok){
+                            getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
+                                .putBoolean("explicitly_disabled",false).apply();
                             // Compatibility with authenticated conductor RPCs.
                             // Stored once in this app's private data, never passed
                             // in Intent extras or displayed in the Conductor view.
@@ -1936,7 +1969,8 @@ public class MainActivity extends Activity {
             sendUiSignal(TrackingService.ACTION_PREPARE_IDLE_BUBBLE);
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
-        scheduleBubblePermissionCheck();}
+        scheduleBubblePermissionCheck();
+        uiHandler.postDelayed(this::maybeOfferPickupEnrollmentForActiveShift,850);}
     @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
