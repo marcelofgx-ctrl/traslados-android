@@ -9,7 +9,7 @@ const file=p=>fs.readFileSync(path.resolve(root,p),"utf8");
 const html=file("index.html"),presentation=file("tu-viaje-reference.js");
 const css=file("tu-viaje-reference.css"),route=file("premium-route.js");
 const original=file("premium-journey.js"),home=file("service-home.js");
-const refer=file("../../docs/CONTRATO_VISUAL_TU_VIAJE_4_PANTALLAS_20261019.md");
+const refer=file("../docs/CONTRATO_VISUAL_TU_VIAJE_4_PANTALLAS_20261019.md");
 new vm.Script(presentation);new vm.Script(route);
 assert(html.includes('src="./tu-viaje-reference.js?v=1" defer'),"approved script is loaded");
 assert(html.indexOf('app.js?v=82')<html.indexOf('tu-viaje-reference.js?v=1'),"original engine mounts first");
