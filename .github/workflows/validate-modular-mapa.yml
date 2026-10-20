@@ -60,7 +60,7 @@ jobs:
           java -cp /tmp/qt-unified-pages DriverPanelSwipePolicyTest
           grep -q 'Api.setPickupConsent(pin,true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(isEmbeddedMapa())' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
-          grep -q "['drawable','raw','anim']" mapatrayectos/build.gradle || test -s conductor/src/main/res/anim/qt_from_driver_in.xml
+          grep -Fq "['drawable','raw','anim'].each" mapatrayectos/build.gradle
       - name: Standalone reservation rules regression
         shell: bash
         run: |
