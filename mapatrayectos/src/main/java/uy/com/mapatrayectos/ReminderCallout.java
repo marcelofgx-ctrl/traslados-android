@@ -19,6 +19,7 @@ public final class ReminderCallout extends FrameLayout {
     private final int petrol=Color.rgb(5,49,56),gold=Color.rgb(212,174,96),ivory=Color.rgb(252,250,241);
     private Runnable doneAction,postponeAction,dismissAction;
     private LinearLayout cardView;
+    private TextView messageView,negativeActionView,positiveActionView;
     private View pointerView;
     private boolean tailOnLeft=false;
     private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
@@ -58,14 +59,14 @@ public final class ReminderCallout extends FrameLayout {
         LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(0,LayoutParams.WRAP_CONTENT,1);
         hp.leftMargin=dp(5);head.addView(headings,hp);
         card.addView(head);
-        TextView msg=title(message==null?"Recordatorio":message,14,petrol,true);
+        TextView msg=title(message==null?"Recordatorio":message,14,petrol,true);messageView=msg;
         msg.setMaxLines(3);msg.setEllipsize(android.text.TextUtils.TruncateAt.END);
         msg.setPadding(dp(2),dp(8),dp(2),dp(8));card.addView(msg);
         LinearLayout actions=new LinearLayout(c);
         actions.setOrientation(LinearLayout.HORIZONTAL);
-        TextView later=title(leftLabel,11,petrol,true);later.setGravity(Gravity.CENTER);
+        TextView later=title(leftLabel,11,petrol,true);negativeActionView=later;later.setGravity(Gravity.CENTER);
         later.setBackground(bg(Color.rgb(237,222,191),0,10));
-        TextView finish=title(rightLabel,11,ivory,true);finish.setGravity(Gravity.CENTER);
+        TextView finish=title(rightLabel,11,ivory,true);positiveActionView=finish;finish.setGravity(Gravity.CENTER);
         finish.setBackground(bg(petrol,0,10));
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(0,dp(33),1);ap.rightMargin=dp(7);
         actions.addView(later,ap);actions.addView(finish,new LinearLayout.LayoutParams(0,dp(33),1));
@@ -103,6 +104,22 @@ public final class ReminderCallout extends FrameLayout {
         addView(pointer,pp);pointerView=pointer;
         setContentDescription(heading+": "+message+". "+leftLabel+" o "+rightLabel+".");
     }
+    /** Slightly more prominent callout ONLY for an immediate fixed-price decision.
+     * The shared personal-reminder presentation and bubble geometry are unchanged. */
+    public void emphasizeDirectRequest(){
+        cardView.setPadding(dp(10),dp(9),dp(10),dp(10));
+        if(messageView!=null){
+            messageView.setTextSize(15f);
+            messageView.setMaxLines(4);
+        }
+        for(TextView action:new TextView[]{negativeActionView,positiveActionView}){
+            if(action==null)continue;
+            action.setTextSize(11.5f);
+            android.view.ViewGroup.LayoutParams lp=action.getLayoutParams();
+            if(lp!=null){lp.height=dp(38);action.setLayoutParams(lp);}
+        }
+    }
+
     /**
      * R23.0: slide the tail to the actual anchor center, and flip its direction
      * when the floating shortcut sits on the left edge. The tail remains part
