@@ -122,15 +122,21 @@ async function main(){
   });
   say("Timing choice: "+JSON.stringify(when));
   check(when.title.includes("10")&&when.official.includes("10"),"Existing pickup-mode handler reused");
-  const schedule=await expression(function(){
+  await expression(function(){
    document.querySelector('[data-qtc-nav="schedule"]').click();
-   return{
+   return true;
+  });
+  // MutationObserver restitutes the original nodes on the next browser task.
+  // Wait for DOM settlement instead of reading state inside the click callback.
+  const schedule=await poll(()=>expression(function(){
+   const state={
     active:!!document.querySelector("#view-reservar.active"),
     pax:!!document.querySelector("#booking-step-when #passengers"),
     route:!!document.querySelector('#reserve-field-host [data-booking-step="route"]'),
     map:!!document.querySelector('[data-booking-step="route"] > .premium-route-canvas')
    };
-  });
+   return state.active&&state.pax&&state.route&&state.map?state:null;
+  }),10000);
   say("Scheduled restored: "+JSON.stringify(schedule));
   check(schedule.active&&schedule.pax&&schedule.route&&schedule.map,
    "Scheduled trip restored to original UI with native controls");
