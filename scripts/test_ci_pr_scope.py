@@ -30,6 +30,11 @@ class ScopeGuardTest(unittest.TestCase):
                  ".github/workflows/pr-scope-guard.yml", "docs/PR_SCOPE_POLICY.md"]
         self.assertTrue(check_scope(block("ci", files), NEW, files)[0])
 
+    def test_ci_control_schema_is_allowed_only_for_ci(self):
+        paths = ["db/quicktrip_control_v1.sql", ".github/workflows/estado-tecnico-auto.yml"]
+        self.assertTrue(check_scope(block("ci", paths), NEW, paths)[0])
+        self.assertFalse(check_scope(block("pwa", paths), NEW, paths)[0])
+
     def test_undeclared_file_is_rejected(self):
         files = ["web-pasajero/app.js", "web-pasajero/sw.js"]
         ok, msg = check_scope(block("pwa", files[:1]), NEW, files)

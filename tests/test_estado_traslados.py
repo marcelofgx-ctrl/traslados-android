@@ -37,6 +37,12 @@ class EstadoAutomaticoTests(unittest.TestCase):
     def git(self, *arguments):
         subprocess.run(["git", *arguments], cwd=self.root, check=True, capture_output=True)
 
+    def test_current_pwa_cache_id_is_supported(self):
+        (self.root / "web-pasajero/sw.js").write_text(
+            'const CACHE="traslados-pwa-v82-consolidado-20261018-quicktrip4";',
+            encoding="utf-8")
+        self.assertEqual(status.versions(self.root)["pwa"], "82")
+
     def test_extracts_all_versions_from_sources(self):
         v = status.versions(self.root)
         self.assertEqual(v["pwa"], "68")
@@ -49,7 +55,8 @@ class EstadoAutomaticoTests(unittest.TestCase):
         b = status.render(self.root, offline=True)
         self.assertEqual(a, b, "Repeated runs must not create duplicate documentation commits")
         self.assertIn("PWA | v68", a)
-        self.assertIn("11.5-R6", a)
+        self.assertIn("Conductor no es APK independiente", a)
+        self.assertNotIn("| Conductor |", a)
         self.assertIn("NO PUBLICADA EN REPOSITORIO", a)
         self.assertIn("No consultado", a)
         self.assertIn("Supabase", a)
@@ -58,13 +65,13 @@ class EstadoAutomaticoTests(unittest.TestCase):
     def test_exact_apk_path_uses_version(self):
         d = self.root / "web-pasajero/downloads"
         d.mkdir(parents=True, exist_ok=True)
-        (d / "traslados-conductor-r6.apk").write_bytes(b"fixture-for-name-only")
+        (d / "mapa-trayectos-r25.0.apk").write_bytes(b"fixture-for-name-only")
         self.git("add", ".")
         self.git("-c", "user.name=test", "-c", "user.email=test@example.invalid",
                  "commit", "-qm", "Add fake tracked path")
         value = status.render(self.root, offline=True)
-        self.assertIn("downloads/traslados-conductor-r6.apk", value)
-        self.assertIn("NO PUBLICADA EN REPOSITORIO", value, "Other APKs remain unverified")
+        self.assertIn("downloads/mapa-trayectos-r25.0.apk", value)
+        self.assertNotIn("NO PUBLICADA EN REPOSITORIO", value, "Only Mapa APK is presented")
 
     def test_formats_build_and_change_times_in_uruguay(self):
         self.assertEqual(status.time_uy("2026-10-13T05:36:21Z"), "13/10/2026 02:36 UYT")
@@ -79,14 +86,14 @@ class EstadoAutomaticoTests(unittest.TestCase):
             {"name": "pages build and deployment", "head_branch": "main",
              "conclusion": "success", "status": "completed",
              "updated_at": "2026-10-13T11:00:00Z"},
-            {"name": "Build Traslados Conductor RELEASE", "head_branch": "main",
+            {"name": "Quick Trip V7 - APKs de testing", "head_branch": "main",
              "conclusion": "success", "status": "completed",
              "updated_at": "2026-10-13T05:36:21Z"},
             {"name": "Build Mapa Trayectos RELEASE", "head_branch": "main",
              "conclusion": "failure", "status": "completed",
              "updated_at": "2026-10-13T12:00:00Z"},
         ]
-        self.assertEqual(status.latest_app_build(runs)["name"], "Build Traslados Conductor RELEASE")
+        self.assertEqual(status.latest_app_build(runs)["name"], "Quick Trip V7 - APKs de testing")
 
     def test_ci_status_ignores_transient_builds(self):
         latest = {"name": "Verify and package passenger PWA (GitHub Pages via branch)",
