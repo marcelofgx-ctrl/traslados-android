@@ -138,7 +138,8 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.rgb(5,34,42));
         getWindow().setNavigationBarColor(Color.rgb(5,34,42));
         getWindow().getDecorView().setSystemUiVisibility(
-            driverPreviousSystemUiFlags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            driverPreviousSystemUiFlags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         driverPanel.setVisibility(View.VISIBLE);
         int pageWidth=Math.max(rootFrame.getWidth(),
             getResources().getDisplayMetrics().widthPixels);
