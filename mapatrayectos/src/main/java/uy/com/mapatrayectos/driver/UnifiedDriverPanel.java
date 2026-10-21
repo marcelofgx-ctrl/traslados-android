@@ -431,7 +431,14 @@ public final class UnifiedDriverPanel extends FrameLayout {
             end.set(java.util.Calendar.MINUTE,0);
             end.set(java.util.Calendar.SECOND,0);
             end.set(java.util.Calendar.MILLISECOND,0);
-            end.add(java.util.Calendar.DATE,1);
+            if(screen==Screen.AGENDA&&period==Period.SEMANA){
+                while(end.get(java.util.Calendar.DAY_OF_WEEK)!=java.util.Calendar.MONDAY)
+                    end.add(java.util.Calendar.DATE,-1);
+                end.add(java.util.Calendar.DATE,7);
+            }else if(screen==Screen.AGENDA&&period==Period.MES){
+                end.set(java.util.Calendar.DAY_OF_MONTH,1);
+                end.add(java.util.Calendar.MONTH,1);
+            }else end.add(java.util.Calendar.DATE,1);
             return !when.before(threshold.getTime())&&when.before(end.getTime());
         }catch(Exception e){return false;}
     }
@@ -443,7 +450,11 @@ public final class UnifiedDriverPanel extends FrameLayout {
         LinearLayout tile=vertical();
         tile.setPadding(dp(13),dp(18),dp(10),dp(17));
         tile.setBackground(bg(Color.BLACK,Color.BLACK,18));
-        tile.addView(text(value,24,WHITE,true),match(9));
+        TextView number=text(value,24,WHITE,true);
+        number.setSingleLine(true);
+        number.setAutoSizeTextTypeUniformWithConfiguration(14,24,1,
+            android.util.TypedValue.COMPLEX_UNIT_SP);
+        tile.addView(number,match(9));
         tile.addView(text(label,12,MUTED,false));
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(104),1);
         lp.setMargins(dp(4),0,dp(4),dp(8));
@@ -471,7 +482,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         LinearLayout first=row(),second=row();
         summaryValue(first,String.valueOf(finished),"Finalizados");
         summaryValue(first,String.valueOf(canceled),"Cancelados");
-        summaryValue(second,String.format(Locale.forLanguageTag("es-UY"),"%.1f km",km),"Distancia registrada");
+        summaryValue(second,String.format(Locale.forLanguageTag("es-UY"),"%.1f km",km),"Km estimados de ruta");
         summaryValue(second,"$ "+String.format(Locale.forLanguageTag("es-UY"),"%.0f",quoted),"Importes cotizados");
         list.addView(first,match(0));
         list.addView(second,match(3));
