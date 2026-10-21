@@ -7,10 +7,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 jobs:
   qa-mapa:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     name: "Solo Mapa integrado (Conductor incluido, no APK aparte)"
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -44,6 +46,18 @@ jobs:
         with:
           gradle-version: '8.9'
           cache-read-only: true
+      - name: Restaurar firmante persistente autorizado (NO publicar JKS)
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64" || { echo "Falta firmante persistente; se bloquea APK no actualizable" >&2; exit 1; }
+          test -n "$STORE_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
       - name: Preparar Mapa QA con ID sin conflicto
         shell: bash
         run: |
@@ -51,10 +65,17 @@ jobs:
           python3 scripts/prepare_quicktrip_native_qa.py \
             --source . \
             --dest "$RUNNER_TEMP/quicktrip-native-qa" \
-            --qa-id "r${GITHUB_RUN_ID}"
+            --qa-id "r${GITHUB_RUN_ID}" \
+            --stable-mapa \
+            --mapa-version-code "$((100000+GITHUB_RUN_NUMBER))"
           git diff --exit-code -- mapatrayectos conductor core-reservations
       - name: Compilar SOLO Mapa con Conductor integrado
         shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
         run: gradle -p "$RUNNER_TEMP/quicktrip-native-qa" :mapatrayectos:assembleDebug --no-daemon --stacktrace
       - name: Crear paquete QA verificado
         shell: bash
@@ -65,9 +86,35 @@ jobs:
             artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk
           bash scripts/android_qa_install_preflight.sh \
             artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
-            "uy.com.mapatrayectos.qa.r${GITHUB_RUN_ID}" \
+            "uy.com.mapatrayectos.qa" \
             | tee artifacts/quicktrip-mapa-integrado-qa/Paquete-y-firma.txt
           (cd artifacts/quicktrip-mapa-integrado-qa && sha256sum QuickTrip-Mapa-Conductor-Unificado-QA.apk > SHA256SUMS.txt)
+          {
+            echo "Package: uy.com.mapatrayectos.qa"
+            echo "QA VersionCode: $((100000+GITHUB_RUN_NUMBER))"
+            echo "Git SHA: $GITHUB_SHA"
+            echo "The stable QA app can update itself on future builds signed with the protected certificate."
+            echo "Different historical QA package IDs are not upgraded or deleted."
+          } > artifacts/quicktrip-mapa-integrado-qa/BUILD-INFO.txt
+      - name: Publicar nueva APK QA actualizable con nombre único
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QA_TAG: qa-mapa-unificado-20261020-r39476812976
+        run: |
+          set -euo pipefail
+          gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          cp artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
+             artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-QA-Actualizable.apk
+          gh release upload "$QA_TAG" \
+            artifacts/quicktrip-mapa-integrado-qa/QuickTrip-Mapa-QA-Actualizable.apk \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          {
+            echo "### Mapa + Conductor · QA actualizable"
+            echo "Paquete estable: uy.com.mapatrayectos.qa"
+            echo "VersionCode: $((100000+GITHUB_RUN_NUMBER))"
+            echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-QA-Actualizable.apk"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Entregar una APK QA, sin Conductor independiente
         uses: actions/upload-artifact@v4
         with:
