@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
     private void openIntegratedConductor(){
         hideInAppTransfer(false);
         TransferAlerts.markViewed(this);
-        startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class));
+        startActivity(new Intent(this,uy.com.mapatrayectos.driver.UnifiedDriverActivity.class));
         overridePendingTransition(R.anim.qt_to_driver_in,R.anim.qt_to_driver_out);
     }
     // Mapa and Conductor are adjacent pages of the SAME installed application.
