@@ -71,7 +71,7 @@ jobs:
           profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash .github/scripts/mapa-visual-capture.sh
+          script: bash mapatrayectos/scripts/mapa-visual-capture-with-panel.sh
       - name: Inspección geométrica y visual de capturas
         shell: bash
         run: |
