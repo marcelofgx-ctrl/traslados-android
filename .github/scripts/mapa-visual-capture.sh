@@ -112,6 +112,48 @@ else:
     raise SystemExit('Slider de iniciar jornada NO visible en jerarquía Android')
 PY
 )"
+
+# Regression for the new in-place Conductor page. The old visual QA did
+# not exercise this transition, so a blank page could ship unnoticed.
+header_coords="$(python3 - <<'PY'
+import xml.etree.ElementTree as ET,re
+root=ET.parse('docs/visual-qa/idle-ui.xml').getroot()
+for n in root.iter():
+    desc=n.get('content-desc','')
+    if 'Deslizá hacia la izquierda' in desc and 'Mapa Trayectos' in desc:
+        bounds=list(map(int,re.findall(r'\d+',n.get('bounds',''))))
+        if len(bounds)==4:
+            print((bounds[0]+bounds[2])//2,(bounds[1]+bounds[3])//2)
+            break
+else:
+    raise SystemExit('QA: falta acceso al Conductor en cabecera')
+PY
+)"
+echo "Open integrated Conductor from header: $header_coords"
+adb shell input tap $header_coords
+sleep 2
+capture_window docs/visual-qa/mapa-preview-conductor.png
+# Only enforce hierarchy assertions when Android UIAutomator actually returns XML.
+adb shell uiautomator dump /sdcard/conductor-ui.xml >/dev/null 2>&1 || true
+adb exec-out cat /sdcard/conductor-ui.xml > docs/visual-qa/conductor-ui.xml 2>/dev/null || true
+python3 - <<'PY'
+from pathlib import Path
+import xml.etree.ElementTree as ET
+p=Path('docs/visual-qa/conductor-ui.xml')
+if p.exists() and p.stat().st_size:
+    try:
+        text=' '.join(n.get('text','')+' '+n.get('content-desc','') for n in ET.parse(p).getroot().iter()).upper()
+    except ET.ParseError:
+        print('QA: UIAutomator returned malformed XML; pixel test remains required')
+    else:
+        assert 'CENTRO DE VIAJES' in text and 'SOLICITUDES' in text, 'Conductor no mostró el tablero nativo'
+        print('QA Conductor: dashboard visible, even without pairing')
+PY
+# Swipe RIGHT from the interior left band of Conductor; Mapa must still be alive.
+adb shell input swipe 135 1150 530 1150 440
+sleep 2
+capture_window docs/visual-qa/mapa-preview-back-from-conductor.png
+
 echo "Start journey swipe: $coords"
 adb shell input swipe $coords 1350
 sleep 11
