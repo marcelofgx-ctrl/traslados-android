@@ -61,6 +61,18 @@ jobs:
           grep -q 'Api.setPickupConsent(pin,true)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'if(isEmbeddedMapa())' conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java
           grep -Fq "['drawable','raw','anim'].each" mapatrayectos/build.gradle
+      - name: Fresh Conductor state policy regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qt-new-driver-rules
+          javac -d /tmp/qt-new-driver-rules \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/driver/UnifiedDriverPolicy.java \
+            mapatrayectos/tests/UnifiedDriverPolicyTest.java
+          java -cp /tmp/qt-new-driver-rules UnifiedDriverPolicyTest
+          grep -Fq 'uy.com.mapatrayectos.driver.UnifiedDriverActivity.class' \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -Fq '.driver.UnifiedDriverActivity' mapatrayectos/src/main/AndroidManifest.xml
       - name: Standalone reservation rules regression
         shell: bash
         run: |
