@@ -214,8 +214,8 @@ async function main(){
    box.innerHTML=old;box.hidden=hide;
    return {title,price,button};
   });
-  check(receiptStyle.title>=27&&receiptStyle.price>=32&&receiptStyle.button>=58,
-   "Receipt hierarchy enlarged without touching submission engine");
+  check(receiptStyle.title>=22&&receiptStyle.title<=27&&receiptStyle.price>=24&&receiptStyle.price<=30&&receiptStyle.button>=45,
+   "Compact readable receipt retains native submission behavior");
 
   const opened=await expression(function(){
    const button=document.querySelector(".qtc-history-button");button.click();
