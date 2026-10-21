@@ -70,7 +70,11 @@ jobs:
             mapatrayectos/src/main/java/uy/com/mapatrayectos/driver/UnifiedDriverPolicy.java \
             mapatrayectos/tests/UnifiedDriverPolicyTest.java
           java -cp /tmp/qt-new-driver-rules UnifiedDriverPolicyTest
-          grep -Fq 'uy.com.mapatrayectos.driver.UnifiedDriverActivity.class' \
+          grep -Fq 'new uy.com.mapatrayectos.driver.UnifiedDriverPanel(' \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -Fq 'rootFrame.addView(driverPanel' \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          ! grep -Fq 'startActivity(new Intent(this,uy.com.mapatrayectos.driver.UnifiedDriverActivity.class))' \
             mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -Fq '.driver.UnifiedDriverActivity' mapatrayectos/src/main/AndroidManifest.xml
       - name: Standalone reservation rules regression
