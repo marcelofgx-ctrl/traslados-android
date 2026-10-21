@@ -436,7 +436,7 @@ public final class UnifiedDriverActivity extends Activity {
                     String body=msg.optString("body","");
                     if(body.isEmpty())continue;
                     list.append("driver".equalsIgnoreCase(sender)?"CONDUCTOR":"PASAJERO")
-                        .append(": ").append(body).append("\\n\\n");
+                        .append(": ").append(body).append("\n\n");
                 }
                 final String shown=list.length()==0?"Todavía no hay mensajes.":list.toString().trim();
                 runOnUiThread(()->{
