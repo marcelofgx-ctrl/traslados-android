@@ -18,6 +18,20 @@ public final class UnifiedDriverPolicyTest {
         eq(UnifiedDriverPolicy.allowedStatus("CANCELADA"),false,"no cancellation");
         eq(UnifiedDriverPolicy.allowedPickupPhase("EN_PUNTO"),true,"known pickup phase");
         eq(UnifiedDriverPolicy.allowedPickupPhase("LISTO"),false,"unknown pickup");
-        System.out.println("PASS: new Conductor state machine");
+        // Direct "Tu viaje": answer immediately and never create a quote flow.
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"now"),true,"direct now");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"10"),true,"direct in 10m");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"120"),true,"direct in 120m");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"121"),false,"over 120m is not direct");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"scheduled"),false,"scheduled does not use direct accept");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","SIN_PRESUPUESTO",840,"now"),false,"unpriced cannot accept direct");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","ENVIADO",840,"now"),false,"submitted quote is different");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",0,"now"),false,"missing price cannot accept");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",Double.NaN,"now"),false,"invalid price");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",Double.POSITIVE_INFINITY,"now"),false,"infinite price");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("ACEPTADA","PRECIO_FIJO",840,"now"),false,"already accepted cannot accept twice");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,""),false,"missing pickup mode");
+        eq(UnifiedDriverPolicy.isDirectFixedRequest("PENDIENTE","PRECIO_FIJO",840,"01"),false,"bad time encoding");
+        System.out.println("PASS: new Conductor state machine and direct-vs-scheduled guard");
     }
 }
