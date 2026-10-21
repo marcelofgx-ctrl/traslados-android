@@ -198,6 +198,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         openDays.clear();
         daysInitialized=false;
         render();
+        scroller.scrollTo(0,0);
         reload(true);
     }
     private void addTab(LinearLayout bar,Screen view,String label){
@@ -625,26 +626,69 @@ public final class UnifiedDriverPanel extends FrameLayout {
         t.setOnClickListener(v->run.run());
         parent.addView(t,match(0));
     }
+    /**
+     * Incoming petitions keep the user's original large card, with actionable price,
+     * route and Accept/Reject buttons visible immediately. Other records collapse.
+     * No changes to the reservation RPCs or Mapa's GPS/journey implementation.
+     */
     private void showReservation(JSONObject item){
         String id=item.optString("id","");
         String status=item.optString("status","");
         String phase=item.optString("pickup_phase","");
         if(id.isEmpty())return;
+        boolean urgent=screen==Screen.SOLICITUDES&&
+            ("PENDIENTE".equals(status)||"EN_VIAJE".equals(status));
+        boolean expanded=urgent||openCards.contains(id);
+
         LinearLayout card=vertical();
-        card.setPadding(dp(13),dp(16),dp(13),dp(15));
+        card.setPadding(dp(13),dp(14),dp(13),dp(14));
         card.setBackground(bg(Color.BLACK,Color.BLACK,22));
-        list.addView(card,match(11));
+        list.addView(card,match(10));
 
         String title="PENDIENTE".equals(status)?"Nueva solicitud":
             UnifiedDriverPolicy.label(status,phase);
-        card.addView(text(title,22,WHITE,true),match(7));
         String code=item.optString("code","");
         String customer=item.optString("customer_name","");
-        String when=prettyDay(item.optString("pickup_date",""))
-            +" · "+item.optString("pickup_time","");
-        String details=(code.isEmpty()?"":code+" · ")+when
-            +(customer.trim().isEmpty()?"":" · "+customer.trim());
-        card.addView(text(details,12,MUTED,false),match(15));
+        String date=item.optString("pickup_date","");
+        String time=item.optString("pickup_time","");
+        String when=(date.isEmpty()?"Sin fecha":prettyDay(date))+
+            (time.isEmpty()?"":" · "+time);
+        String details=(code.isEmpty()?"":code+" · ")+when+
+            (customer.trim().isEmpty()?"":" · "+customer.trim());
+
+        LinearLayout header=row();
+        LinearLayout titleGroup=vertical();
+        titleGroup.addView(text(title,urgent?22:17,WHITE,true),match(6));
+        titleGroup.addView(text(details,12,MUTED,false));
+        header.addView(titleGroup,new LinearLayout.LayoutParams(0,-2,1));
+        if(!urgent){
+            TextView toggle=center(expanded?"−":"+",23,MUTED,false);
+            header.addView(toggle,new LinearLayout.LayoutParams(dp(38),dp(40)));
+            header.setContentDescription((expanded?"Contraer ":"Desplegar ")+title);
+            header.setOnClickListener(v->{
+                if(openCards.contains(id))openCards.remove(id);
+                else openCards.add(id);
+                render();
+            });
+        }
+        card.addView(header,match(expanded?17:8));
+
+        if(!expanded){
+            String origin=item.optString("origin_text","");
+            String destination=item.optString("destination_text","");
+            if(!origin.trim().isEmpty()||!destination.trim().isEmpty()){
+                TextView route=text(plain(origin)+"  →  "+plain(destination),13,MUTED,false);
+                route.setMaxLines(2);
+                route.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                card.addView(route,match(4));
+            }
+            if(screen==Screen.SOLICITUDES&&"ACEPTADA".equals(status)){
+                TextView hint=text("Tocá para ver recogida y acciones",12,GREEN,false);
+                card.addView(hint,match(0));
+            }
+            return;
+        }
+
         routeBlock(card,"ORIGEN",plain(item.optString("origin_text")),
             Color.rgb(0,163,82));
         TextView dotted=text("│",17,Color.rgb(85,85,85),false);
@@ -726,6 +770,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
                 host.runOnUiThread(()->{
                     loading.set(false);
                     if(host.isFinishing()||host.isDestroyed())return;
+                    if("ACEPTADA".equals(status))openCards.add(id);
                     reload(false);
                 });
             }catch(Exception e){
