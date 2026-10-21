@@ -228,10 +228,11 @@ async function main(){
    const sel=document.querySelector("#journey-when-select");
    sel.value="10";sel.dispatchEvent(new Event("change",{bubbles:true}));
    return {title:document.querySelector("#qtc-when-title").textContent,
+    detail:document.querySelector("#qtc-when-detail").textContent,
     official:document.querySelector("#urgent-actions-title").textContent};
   });
   say("Timing choice: "+JSON.stringify(when));
-  check(when.title.includes("10")&&when.official.includes("10"),"Existing pickup-mode handler reused");
+  check(when.title==="Horario de recogida"&&when.detail.includes("10")&&when.official.includes("10"),"Native pickup mode preserved under compact timing control");
   await expression(function(){
    document.querySelector('[data-qtc-nav="schedule"]').click();
    return true;
