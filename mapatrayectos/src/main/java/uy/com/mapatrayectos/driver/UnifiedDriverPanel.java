@@ -197,7 +197,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         page=vertical();
         page.setBackground(bg(CARD,CARD,24));
         page.setPadding(dp(13),dp(15),dp(13),dp(15));
-        viewport.addView(page,new ScrollView.LayoutParams(-1,-1));
+        viewport.addView(page,new ScrollView.LayoutParams(-1,-2));
 
         LinearLayout header=row();
         LinearLayout titleGroup=vertical();
