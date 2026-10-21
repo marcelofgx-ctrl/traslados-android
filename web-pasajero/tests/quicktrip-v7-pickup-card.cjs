@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,".."),read=name=>fs.readFileSync(path.join(roo
 const source=read("quicktrip-clean.js");
 const css=read("quicktrip-clean.css");
 const html=read("index.html"),sw=read("sw.js");
-assert(html.includes("quicktrip-clean.js?v=5")&&html.includes("quicktrip-clean.css?v=5"));
+assert(html.includes("quicktrip-clean.js?v=5")&&html.includes("quicktrip-clean.css?v=6"));
 assert(sw.includes("./quicktrip-clean.js")&&sw.includes("./quicktrip-clean.css"));
 assert(!/\bfetch\s*\(|XMLHttpRequest|\.rpc\s*\(/.test(source),
   "Pure presentation must not introduce a second HTTP or reservation engine");
