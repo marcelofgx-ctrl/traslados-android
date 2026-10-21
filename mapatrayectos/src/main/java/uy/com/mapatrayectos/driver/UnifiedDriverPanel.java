@@ -364,6 +364,10 @@ public final class UnifiedDriverPanel extends FrameLayout {
             items.add(item);
         }
         Collections.sort(items,(a,b)->{
+            if(screen==Screen.SOLICITUDES){
+                int pa=reservationPriority(a),pb=reservationPriority(b);
+                if(pa!=pb)return Integer.compare(pa,pb);
+            }
             String left=a.optString("pickup_date","")+" "+a.optString("pickup_time","");
             String right=b.optString("pickup_date","")+" "+b.optString("pickup_time","");
             return screen==Screen.HISTORIAL?right.compareTo(left):left.compareTo(right);
@@ -387,6 +391,22 @@ public final class UnifiedDriverPanel extends FrameLayout {
             screen==Screen.AGENDA?"ACTUALIZAR AGENDA":"ACTUALIZAR SOLICITUDES",
             ()->reload(false));
         if(oldY>0)scroller.post(()->scroller.scrollTo(0,oldY));
+    }
+    /** Live journey and direct fixed-price decisions appear before scheduled work. */
+    private int reservationPriority(JSONObject item){
+        String status=item.optString("status","");
+        if("EN_VIAJE".equals(status))return 0;
+        if(isDirectFixedRequest(item))return 1;
+        if("ACEPTADA".equals(status))return 2;
+        if("PENDIENTE".equals(status))return 3;
+        return 4;
+    }
+    private boolean isDirectFixedRequest(JSONObject item){
+        return item!=null&&UnifiedDriverPolicy.isDirectFixedRequest(
+            item.optString("status",""),
+            item.optString("quote_status",""),
+            item.optDouble("quote_final_total",Double.NaN),
+            item.optString("pickup_mode",""));
     }
     private String screenTitle(){
         if(screen==Screen.AGENDA)return "Agenda";
@@ -636,8 +656,12 @@ public final class UnifiedDriverPanel extends FrameLayout {
         String status=item.optString("status","");
         String phase=item.optString("pickup_phase","");
         if(id.isEmpty())return;
+        final boolean direct=isDirectFixedRequest(item);
+        String pickupMode=item.optString("pickup_mode","");
+        final boolean scheduled="PENDIENTE".equals(status)&&
+            !pickupMode.isEmpty()&&!UnifiedDriverPolicy.isImmediateMode(pickupMode);
         boolean urgent=screen==Screen.SOLICITUDES&&
-            ("PENDIENTE".equals(status)||"EN_VIAJE".equals(status));
+            (direct||"EN_VIAJE".equals(status));
         boolean expanded=urgent||openCards.contains(id);
 
         LinearLayout card=vertical();
@@ -645,7 +669,9 @@ public final class UnifiedDriverPanel extends FrameLayout {
         card.setBackground(bg(Color.BLACK,Color.BLACK,22));
         list.addView(card,match(10));
 
-        String title="PENDIENTE".equals(status)?"Nueva solicitud":
+        String title="PENDIENTE".equals(status)?
+            (direct?"Nueva solicitud · Tu viaje":
+                scheduled?"Viaje programado":"Petición por revisar"):
             UnifiedDriverPolicy.label(status,phase);
         String code=item.optString("code","");
         String customer=item.optString("customer_name","");
@@ -706,14 +732,37 @@ public final class UnifiedDriverPanel extends FrameLayout {
             String.format(Locale.ROOT,"%.0f min",minutes):"—";
         metricDetail(three,"DISTANCIA",distance);
         metricDetail(three,"DURACIÓN",duration);
-        metricDetail(three,"IMPORTE",amount(item));
+        String value=amount(item);
+        if("PENDIENTE".equals(status)&&!direct){
+            String quote=item.optString("quote_status","");
+            if("ENVIADO".equals(quote))value="Cotización enviada";
+            else if(!"ACEPTADO".equals(quote)&&!"PRECIO_FIJO".equals(quote))
+                value="A cotizar";
+        }
+        metricDetail(three,direct?"PRECIO FIJO":"IMPORTE",value);
         card.addView(three,match(17));
 
         if(screen!=Screen.HISTORIAL){
-            if(UnifiedDriverPolicy.canAccept(status))
-                actions(card,"Rechazar",()->performChange(item,"RECHAZADA",true),
-                    "Aceptar",()->performChange(item,"ACEPTADA",false));
-            else if(UnifiedDriverPolicy.canStart(status)){
+            if(UnifiedDriverPolicy.canAccept(status)){
+                if(direct){
+                    // EXACTLY TWO one-tap decisions. The server confirms the state change.
+                    // No quote dialog, confirmation sheet or editable price for Tu viaje.
+                    actions(card,"Rechazar",()->performChange(item,"RECHAZADA",false),
+                        "Aceptar",()->performChange(item,"ACEPTADA",false));
+                }else{
+                    TextView explanation=text(scheduled?
+                        "Reserva programada: gestionar fecha, disponibilidad y presupuesto desde Agenda. No es una solicitud directa.":
+                        "Falta confirmar modalidad o precio. Actualizá la reserva antes de ofrecer aceptación directa.",
+                        12,MUTED,false);
+                    explanation.setPadding(dp(6),dp(2),dp(6),dp(5));
+                    card.addView(explanation,match(3));
+                    if(scheduled)
+                        secondary(card,"VER EN AGENDA",()->openScreen(Screen.AGENDA));
+                    else secondary(card,"ACTUALIZAR DATOS",()->reload(false));
+                    secondary(card,"RECHAZAR RESERVA",
+                        ()->performChange(item,"RECHAZADA",true));
+                }
+            }else if(UnifiedDriverPolicy.canStart(status)){
                 if(UnifiedDriverPolicy.canSetPickup(status,phase,"EN_CAMINO"))
                     actions(card,"Ruta",()->openRoute(item),
                         "Iniciar recogida",()->performPickup(item,"EN_CAMINO"));
