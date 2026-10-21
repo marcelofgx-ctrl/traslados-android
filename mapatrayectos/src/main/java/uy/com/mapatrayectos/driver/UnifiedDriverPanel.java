@@ -223,8 +223,9 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private void build(){
         setBackgroundColor(PETROL);
         ScrollView viewport=new ScrollView(host);
-        // Content dictates height: no blank panel reserved while idle.
-        viewport.setFillViewport(false);
+        // Reference layout: the charcoal surface fills the usable device
+        // height, but real reservation cards still scroll when needed.
+        viewport.setFillViewport(true);
         viewport.setVerticalScrollBarEnabled(false);
         viewport.setClipToPadding(false);
         viewport.setBackgroundColor(PETROL);
@@ -268,6 +269,11 @@ public final class UnifiedDriverPanel extends FrameLayout {
         scroller=viewport;
         list=vertical();
         page.addView(list,match(12));
+        // Flexible breathing room belongs INSIDE the charcoal panel.
+        // This absorbs spare height when idle and collapses when reservations
+        // need vertical space; do not overlay any element on Mapa.
+        View stretch=new View(host);
+        page.addView(stretch,new LinearLayout.LayoutParams(1,0,1));
 
         TextView swipe=center("➜   Deslizar a la derecha para volver a Mapa",12,MUTED,false);
         swipe.setContentDescription("Deslizá desde el borde izquierdo hacia la derecha para volver a Mapa");
@@ -334,7 +340,8 @@ public final class UnifiedDriverPanel extends FrameLayout {
         if(!gateway.linked()){
             emptyCard("Conductor sin vincular",
                 "Para ver solicitudes, agenda e histórico, autorizá las reservas desde Mapa → Conductor y recogidas. La jornada y el GPS siguen en Mapa.");
-            secondary(list,"← Volver a Mapa para vincular",this::backToMap);
+            // Footer already contains the single return gesture.
+            // No duplicate "Volver" button and no PIN form here.
             return;
         }
         if(syncError){
