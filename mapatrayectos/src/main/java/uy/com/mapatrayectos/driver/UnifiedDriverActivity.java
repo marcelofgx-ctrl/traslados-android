@@ -410,14 +410,45 @@ public final class UnifiedDriverActivity extends Activity {
     private void showMessages(JSONObject row){
         final String id=row.optString("id","");
         if(id.isEmpty())return;
+        LinearLayout dialogue=vertical();dialogue.setPadding(dp(14),dp(8),dp(14),dp(10));
+        TextView historyView=text("Cargando mensajes…",12,PETROL,false);
+        ScrollView chatScroll=new ScrollView(this);
+        chatScroll.addView(historyView);
+        dialogue.addView(chatScroll,new LinearLayout.LayoutParams(-1,dp(195)));
         EditText input=new EditText(this);
         input.setSingleLine(false);input.setMinLines(2);
         input.setHint("Escribir mensaje para el pasajero");
-        new AlertDialog.Builder(this).setTitle("MENSAJES · "+row.optString("code"))
-            .setView(input).setNegativeButton("CANCELAR",null)
+        dialogue.addView(input,new LinearLayout.LayoutParams(-1,-2));
+        AlertDialog dialog=new AlertDialog.Builder(this)
+            .setTitle("MENSAJES · "+row.optString("code"))
+            .setView(dialogue).setNegativeButton("CERRAR",null)
             .setNeutralButton("LLEGO EN 5 MIN",(d,w)->sendMessage(id,"Llego en 5 minutos"))
             .setPositiveButton("ENVIAR",(d,w)->sendMessage(id,input.getText().toString()))
-            .show();
+            .create();
+        dialog.show();
+        io.execute(()->{
+            try{
+                JSONArray messages=gateway.messages(id);
+                StringBuilder list=new StringBuilder();
+                for(int i=0;i<messages.length();i++){
+                    JSONObject msg=messages.optJSONObject(i);if(msg==null)continue;
+                    String sender=msg.optString("sender_role","cliente");
+                    String body=msg.optString("body","");
+                    if(body.isEmpty())continue;
+                    list.append("driver".equalsIgnoreCase(sender)?"CONDUCTOR":"PASAJERO")
+                        .append(": ").append(body).append("\\n\\n");
+                }
+                final String shown=list.length()==0?"Todavía no hay mensajes.":list.toString().trim();
+                runOnUiThread(()->{
+                    if(dialog.isShowing())historyView.setText(shown);
+                });
+            }catch(Exception e){
+                runOnUiThread(()->{
+                    if(dialog.isShowing())historyView.setText(
+                        "No se pudieron cargar los mensajes. Intentá nuevamente.");
+                });
+            }
+        });
     }
     private void sendMessage(String id,String value){
         if(value==null||value.trim().isEmpty())return;
