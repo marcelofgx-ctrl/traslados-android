@@ -77,16 +77,16 @@ def main() -> int:
             signingConfig signingConfigs.release
         }
 """
-            gradle = once(gradle, "    buildTypes {\\n", signing, gradle_file)
+            gradle = once(gradle, "    buildTypes {\n", signing, gradle_file)
             matches=list(re.finditer(r"(?m)^        versionCode [0-9]+$",gradle))
             if len(matches)!=1:
                 raise ValueError("Expected exactly one base Android versionCode in Mapa")
             a=matches[0]
             gradle=gradle[:a.start()]+f"        versionCode {args.mapa_version_code}"+gradle[a.end():]
         else:
-            gradle = once(gradle, "    buildTypes {\\n",
-                "    buildTypes {\\n        debug { applicationIdSuffix '.qa." +
-                args.qa_id + "'; versionNameSuffix '-QA' }\\n",
+            gradle = once(gradle, "    buildTypes {\n",
+                "    buildTypes {\n        debug { applicationIdSuffix '.qa." +
+                args.qa_id + "'; versionNameSuffix '-QA' }\n",
                 gradle_file)
         gradle_file.write_text(gradle, encoding="utf-8")
 
@@ -99,7 +99,7 @@ def main() -> int:
         assert 'android:label="' + original_label + '"' in (
             src / module / "src" / "main" / "AndroidManifest.xml"
         ).read_text(encoding="utf-8")
-        assert "    buildTypes {\\n" in (src / module / "build.gradle").read_text(encoding="utf-8")
+        assert "    buildTypes {\n" in (src / module / "build.gradle").read_text(encoding="utf-8")
 
     print("Created isolated Android QA project: " + str(dst))
     print("Mapa QA package: " + ("uy.com.mapatrayectos.qa" if args.stable_mapa
