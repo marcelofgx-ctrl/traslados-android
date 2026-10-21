@@ -26,15 +26,19 @@ public final class UnifiedDriverGateway {
     private final Context app;
     public UnifiedDriverGateway(Context context){app=context.getApplicationContext();}
     public boolean linked(){
+        // The session is encrypted at rest and PIN is never needed again.
+        if(DriverSessionStore.linked(app))return true;
+        // Read-only compatibility for older Mapa builds during migration.
         return !app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
             .getString("pin","").isEmpty();
     }
     private String access(){
-        SharedPreferences p=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE);
-        String pin=p.getString("pin","");
-        if(pin==null||pin.isEmpty())throw new IllegalStateException(
-            "Vinculá este dispositivo desde Mapa → Conductor y recogidas");
-        return pin;
+        String token=DriverSessionStore.token(app);
+        if(!token.isEmpty())return token;
+        String old=app.getSharedPreferences("driver_session",Context.MODE_PRIVATE)
+            .getString("pin","");
+        if(old!=null&&!old.isEmpty())return old;
+        throw new IllegalStateException("Conductor no autorizado en esta instalación de Mapa");
     }
     private String post(String endpoint,JSONObject body)throws Exception{
         if(!endpoint.matches("driver_[a-z0-9_]+"))throw new IllegalArgumentException("RPC no permitido");
