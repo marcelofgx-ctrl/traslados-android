@@ -40,21 +40,23 @@ import uy.com.mapatrayectos.R;
 public final class UnifiedDriverPanel extends FrameLayout {
     private final Activity host;
     private final Runnable onReturnToMapa;
-    private static final int PETROL=Color.rgb(5,34,42);
-    private static final int CARD=Color.rgb(14,56,64);
-    private static final int GOLD=Color.rgb(240,207,147);
-    private static final int WHITE=Color.rgb(241,246,243);
-    private static final int MUTED=Color.rgb(174,200,196);
-    private static final int GREEN=Color.rgb(77,193,146);
-    private static final int RED=Color.rgb(228,150,134);
+    // Exact user-supplied design reference: #000000 background, #242424
+    // container, black tiles, gray Reject and green Accept. No gold UI.
+    private static final int PETROL=Color.rgb(0,0,0);
+    private static final int CARD=Color.rgb(37,37,37);
+    private static final int GOLD=Color.rgb(255,255,255);
+    private static final int WHITE=Color.rgb(255,255,255);
+    private static final int MUTED=Color.rgb(174,174,174);
+    private static final int GREEN=Color.rgb(0,120,89);
+    private static final int RED=Color.rgb(207,67,68);
     private final Handler ui=new Handler(Looper.getMainLooper());
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private final AtomicBoolean loading=new AtomicBoolean(false);
     private UnifiedDriverGateway gateway;
     private LinearLayout page,list;
     private ScrollView scroller;
-    private TextView connection,metrics;
-    private Button tripsButton,historyButton;
+    private TextView connection,newCount,acceptedCount,travelCount,heading,historyLink;
+    private LinearLayout contentCard;
     private JSONArray rows=new JSONArray();
     private boolean history=false,foreground=false;
     private long lastSuccessfulFetch=0;
@@ -148,66 +150,97 @@ public final class UnifiedDriverPanel extends FrameLayout {
         View spacer=new View(host);
         target.addView(spacer,new LinearLayout.LayoutParams(1,dp(h)));
     }
+    private LinearLayout row(){
+        LinearLayout v=new LinearLayout(host);
+        v.setOrientation(LinearLayout.HORIZONTAL);
+        v.setGravity(Gravity.CENTER_VERTICAL);
+        return v;
+    }
+    private LinearLayout.LayoutParams match(int bottomMarginDp){
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);
+        lp.bottomMargin=dp(bottomMarginDp);
+        return lp;
+    }
+    private TextView center(String value,int sp,int color,boolean strong){
+        TextView t=text(value,sp,color,strong);
+        t.setGravity(Gravity.CENTER);
+        return t;
+    }
+    private TextView metric(LinearLayout strip,String category){
+        LinearLayout tile=vertical();
+        tile.setGravity(Gravity.CENTER);
+        tile.setBackground(bg(Color.BLACK,Color.BLACK,16));
+        tile.setPadding(dp(4),dp(9),dp(4),dp(9));
+        TextView count=center("—",31,WHITE,true);
+        tile.addView(count,new LinearLayout.LayoutParams(-1,0,1));
+        tile.addView(center(category,13,MUTED,false));
+        LinearLayout.LayoutParams tileLp=new LinearLayout.LayoutParams(0,dp(91),1);
+        tileLp.setMargins(dp(4),0,dp(4),0);
+        strip.addView(tile,tileLp);
+        return count;
+    }
     private void build(){
-        page=vertical();page.setBackgroundColor(PETROL);
-        // Mapa uses edge-to-edge insets for its HUD. The embedded Conductor
-        // page needs its own safe top padding to avoid Android status icons.
-        int inset=dp(26);
-        int id=getResources().getIdentifier("status_bar_height","dimen","android");
-        if(id>0)inset=Math.max(inset,getResources().getDimensionPixelSize(id));
-        page.setPadding(0,inset,0,0);
-        LinearLayout top=new LinearLayout(host);
-        top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(14),dp(14),dp(14),dp(12));
-        Button map=btn("←",false);
-        map.setContentDescription("Regresar al mapa deslizando a la derecha o tocando aquí");
-        map.setTextSize(19);
-        map.setOnClickListener(v->backToMap());
-        top.addView(map,new LinearLayout.LayoutParams(dp(48),dp(48)));
-        LinearLayout heading=vertical();heading.setPadding(dp(12),0,0,0);
-        heading.addView(text("QUICK TRIP  /  MAPA",11,GOLD,true));
-        heading.addView(text("Conductor",24,WHITE,true));
-        top.addView(heading,new LinearLayout.LayoutParams(0,-2,1));
-        page.addView(top);
+        setBackgroundColor(PETROL);
+        ScrollView viewport=new ScrollView(host);
+        viewport.setFillViewport(true);
+        viewport.setVerticalScrollBarEnabled(false);
+        viewport.setClipToPadding(false);
+        viewport.setBackgroundColor(PETROL);
+        // Device safe area: the reference's black margin starts below
+        // Android's status bar and above the gesture navigation bar.
+        int inset=dp(25);
+        int statusId=getResources().getIdentifier("status_bar_height","dimen","android");
+        if(statusId>0)inset=Math.max(inset,getResources().getDimensionPixelSize(statusId));
+        viewport.setPadding(dp(16),inset+dp(7),dp(16),dp(20));
+        addView(viewport,new FrameLayout.LayoutParams(-1,-1));
 
-        LinearLayout hero=vertical();
-        hero.setPadding(dp(16),dp(15),dp(16),dp(16));
-        hero.setBackground(bg(CARD,0xff477379,18));
-        LinearLayout.LayoutParams heroLp=new LinearLayout.LayoutParams(-1,-2);
-        heroLp.setMargins(dp(14),dp(3),dp(14),dp(16));
-        page.addView(hero,heroLp);
-        hero.addView(text("CENTRO DE VIAJES",11,GOLD,true));
-        connection=text("Consultando jornada y disponibilidad…",14,WHITE,true);
-        connection.setPadding(0,dp(9),0,dp(8));
-        hero.addView(connection);
-        hero.addView(text("Mapa permanece activo mientras gestionás tus solicitudes.",12,MUTED,false));
-        gap(hero,15);
-        LinearLayout stats=new LinearLayout(host);
-        stats.setGravity(Gravity.CENTER_VERTICAL);
-        hero.addView(stats);
-        metrics=text("NUEVAS —       ACEPTADAS —       EN VIAJE —",12,GOLD,true);
-        stats.addView(metrics,new LinearLayout.LayoutParams(-1,-2));
-        LinearLayout tabs=new LinearLayout(host);
-        tabs.setPadding(dp(14),0,dp(14),dp(8));
-        tripsButton=btn("SOLICITUDES",true);historyButton=btn("HISTORIAL",false);
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(45),1);
-        lp.setMargins(0,0,dp(5),0);tabs.addView(tripsButton,lp);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(0,dp(45),1);
-        hp.setMargins(dp(5),0,0,0);tabs.addView(historyButton,hp);
-        tripsButton.setOnClickListener(v->{history=false;toggle();reload(true);});
-        historyButton.setOnClickListener(v->{history=true;toggle();reload(true);});
-        page.addView(tabs);
-        scroller=new ScrollView(host);scroller.setFillViewport(true);
-        list=vertical();list.setPadding(dp(14),dp(4),dp(14),dp(25));
-        scroller.addView(list);
-        page.addView(scroller,new LinearLayout.LayoutParams(-1,0,1));
-        addView(page,new FrameLayout.LayoutParams(-1,-1));
-        toggle();render();
+        page=vertical();
+        page.setBackground(bg(CARD,CARD,24));
+        page.setPadding(dp(13),dp(15),dp(13),dp(15));
+        viewport.addView(page,new ScrollView.LayoutParams(-1,-1));
+
+        LinearLayout header=row();
+        LinearLayout titleGroup=vertical();
+        TextView brand=text("QUICK TRIP",13,MUTED,false);
+        titleGroup.addView(brand);
+        gap(titleGroup,9);
+        heading=text("Conductor",28,WHITE,true);
+        titleGroup.addView(heading);
+        titleGroup.setOnClickListener(v->{
+            history=!history;
+            heading.setText(history?"Historial":"Conductor");
+            render();
+            reload(true);
+        });
+        titleGroup.setContentDescription("Conductor. Tocá para alternar entre solicitudes e historial");
+        header.addView(titleGroup,new LinearLayout.LayoutParams(0,-2,1));
+        connection=text("● Jornada detenida",12,MUTED,false);
+        connection.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+        header.addView(connection,new LinearLayout.LayoutParams(-2,dp(54)));
+        page.addView(header,match(16));
+
+        LinearLayout strip=row();
+        newCount=metric(strip,"Nuevas");
+        acceptedCount=metric(strip,"Aceptadas");
+        travelCount=metric(strip,"En viaje");
+        page.addView(strip,match(13));
+
+        scroller=new ScrollView(host);
+        scroller.setVerticalScrollBarEnabled(false);
+        scroller.setFillViewport(false);
+        list=vertical();
+        list.setPadding(0,0,0,0);
+        scroller.addView(list,new ScrollView.LayoutParams(-1,-2));
+        page.addView(scroller,match(14));
+
+        TextView swipe=center("➜   Deslizar a la derecha para volver a Mapa",12,MUTED,false);
+        swipe.setContentDescription("Deslizá desde el borde izquierdo hacia la derecha para volver a Mapa");
+        swipe.setPadding(0,dp(5),0,dp(4));
+        page.addView(swipe,match(0));
+        render();
     }
     private void toggle(){
-        tripsButton.setBackground(bg(history?CARD:GOLD,history?0xff477379:GOLD,12));
-        tripsButton.setTextColor(history?WHITE:PETROL);
-        historyButton.setBackground(bg(history?GOLD:CARD,history?GOLD:0xff477379,12));
-        historyButton.setTextColor(history?PETROL:WHITE);
+        heading.setText(history?"Historial":"Conductor");
     }
     private void reload(boolean moveTop){
         if(!gateway.linked()){render();return;}
@@ -237,63 +270,57 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private void render(){
         boolean started=host.getSharedPreferences("tracking_state",Context.MODE_PRIVATE)
             .getBoolean("shift_active",false);
-        boolean enabled=Api.pickupPresenceEnabled();
-        if(!gateway.linked()){
-            connection.setText(started?
-                "● Jornada activa en Mapa · recogidas sin autorización":
-                "● Jornada detenida · abrí Mapa para iniciar");
-            metrics.setText("NUEVAS —       ACEPTADAS —       EN VIAJE —");
-            list.removeAllViews();
-            cardMessage("Solicitudes",
-                "Todavía no se pueden consultar las reservas de esta instalación. El enlace seguro con el conductor debe completarse desde Mapa.");
-            cardMessage("Recogidas y disponibilidad",
-                "Play y Stop pertenecen a Mapa. La ubicación se comparte únicamente cuando este dispositivo está autorizado y tiene GPS reciente.");
-            TextView hint=text("DESLIZÁ  →  PARA VOLVER AL MAPA",11,MUTED,true);
-            hint.setGravity(Gravity.CENTER);
-            LinearLayout.LayoutParams hintLp=new LinearLayout.LayoutParams(-1,dp(52));
-            hintLp.setMargins(0,dp(9),0,0);
-            list.addView(hint,hintLp);
-            return;
-        }
-        connection.setText(started?
-            (enabled?"● Jornada activa en Mapa · disponibilidad sujeta a GPS y agenda":
-                "● Jornada activa · recogidas todavía sin vincular"):
-            "● Jornada detenida en Mapa · nuevas solicitudes visibles");
-        int pending=0,accepted=0,traveling=0;
+        connection.setText(started?"✓ Jornada activa":"○ Jornada detenida");
+        connection.setTextColor(started?GREEN:MUTED);
+
         ArrayList<JSONObject> items=new ArrayList<>();
+        int pending=0,accepted=0,traveling=0;
         for(int i=0;i<rows.length();i++){
-            JSONObject o=rows.optJSONObject(i);if(o==null)continue;
-            if(!history&&!UnifiedDriverPolicy.active(o.optString("status")))continue;
-            items.add(o);
-            String status=o.optString("status");
+            JSONObject r=rows.optJSONObject(i);if(r==null)continue;
+            String status=r.optString("status");
             if("PENDIENTE".equals(status))pending++;
             if("ACEPTADA".equals(status))accepted++;
             if("EN_VIAJE".equals(status))traveling++;
+            if(history||UnifiedDriverPolicy.active(status))items.add(r);
         }
-        metrics.setText(history?"Historial: "+items.size()+" registros":
-            "NUEVAS "+pending+"     ACEPTADAS "+accepted+"     EN VIAJE "+traveling);
-        int oldY=scroller==null?0:scroller.getScrollY();
+        if(gateway.linked()){
+            newCount.setText(String.format(Locale.ROOT,"%02d",pending));
+            acceptedCount.setText(String.format(Locale.ROOT,"%02d",accepted));
+            travelCount.setText(String.format(Locale.ROOT,"%02d",traveling));
+        }else{
+            newCount.setText("—");acceptedCount.setText("—");travelCount.setText("—");
+        }
+        int oldY=scroller.getScrollY();
         list.removeAllViews();
-        if(items.isEmpty())cardMessage(history?"Sin historial":"Sin solicitudes nuevas",
-            history?"No hay viajes finalizados ni rechazados en el historial autorizado.":
-            "La bandeja está vacía. Cuando llegue una solicitud aparecerá aquí para aceptar o rechazar.");
-        // Do not display fictitious fares. Each card uses server-provided totals.
-        for(JSONObject item:items)showReservation(item);
-        if(!history){
-            gap(list,12);
-            Button update=btn("ACTUALIZAR AHORA",false);
-            update.setOnClickListener(v->reload(false));
-            list.addView(update,new LinearLayout.LayoutParams(-1,dp(48)));
+
+        if(!gateway.linked()){
+            emptyCard("Solicitudes no vinculadas",
+                "Mapa mantiene la jornada y el GPS. Todavía falta autorizar la conexión de reservas desde la configuración de Mapa.");
+        }else if(items.isEmpty()){
+            emptyCard(history?"Sin viajes en el historial":"Sin solicitudes nuevas",
+                history?"Tus viajes registrados aparecerán aquí.":
+                "Quedamos atentos a una nueva solicitud. No hay viajes para mostrar.");
+        }else{
+            for(JSONObject item:items)showReservation(item);
+        }
+        if(!history&&gateway.linked()){
+            TextView refresh=center("Actualizar solicitudes",12,MUTED,false);
+            refresh.setPadding(dp(5),dp(8),dp(5),dp(8));
+            refresh.setOnClickListener(v->reload(false));
+            list.addView(refresh,match(0));
         }
         if(oldY>0)scroller.post(()->scroller.scrollTo(0,oldY));
     }
-    private void cardMessage(String heading,String detail){
-        LinearLayout card=vertical();card.setPadding(dp(17),dp(17),dp(17),dp(17));
-        card.setBackground(bg(CARD,0xff436f70,17));
-        card.addView(text(heading,18,GOLD,true));gap(card,7);
-        card.addView(text(detail,13,WHITE,false));
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(10),0,dp(9));
-        list.addView(card,p);
+    private void emptyCard(String title,String description){
+        LinearLayout card=vertical();
+        card.setBackground(bg(Color.BLACK,Color.BLACK,22));
+        card.setPadding(dp(15),dp(21),dp(15),dp(26));
+        TextView headline=text(title,21,WHITE,true);
+        card.addView(headline,match(18));
+        TextView detail=text(description,14,MUTED,false);
+        detail.setMinHeight(dp(110));
+        card.addView(detail,match(2));
+        list.addView(card,match(0));
     }
     private String plain(String s){return s==null||s.trim().isEmpty()?"No informado":s.trim();}
     private String amount(JSONObject o){
@@ -302,72 +329,137 @@ public final class UnifiedDriverPanel extends FrameLayout {
         return Double.isFinite(amt)&&amt>0?"$ "+String.format(Locale.forLanguageTag("es-UY"),"%.0f",amt):
             "Precio no confirmado";
     }
+    private void routeBlock(LinearLayout card,String label,String address,int markerColor){
+        LinearLayout r=row();
+        TextView marker=center("◉",22,markerColor,true);
+        r.addView(marker,new LinearLayout.LayoutParams(dp(25),dp(51)));
+        LinearLayout content=vertical();
+        content.setPadding(dp(9),0,0,0);
+        content.addView(text(label,12,MUTED,false));
+        gap(content,5);
+        content.addView(text(address,18,WHITE,true));
+        r.addView(content,new LinearLayout.LayoutParams(0,-2,1));
+        card.addView(r,match(0));
+    }
+    private void rule(LinearLayout parent){
+        View line=new View(host);
+        line.setBackgroundColor(Color.rgb(33,33,33));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(1));
+        p.setMargins(0,dp(17),0,dp(17));
+        parent.addView(line,p);
+    }
+    private void metricDetail(LinearLayout parent,String label,String value){
+        LinearLayout stack=vertical();
+        stack.setPadding(dp(3),0,dp(3),0);
+        stack.addView(text(label,10,MUTED,false));
+        gap(stack,9);
+        TextView val=text(value,19,WHITE,true);
+        val.setSingleLine(true);
+        val.setAutoSizeTextTypeUniformWithConfiguration(11,19,1,
+            android.util.TypedValue.COMPLEX_UNIT_SP);
+        stack.addView(val);
+        parent.addView(stack,new LinearLayout.LayoutParams(0,-2,1));
+    }
+    private Button action(String title,boolean accept){
+        Button b=new Button(host);
+        b.setAllCaps(false);
+        b.setText(title);
+        b.setTextSize(17);
+        b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+        b.setTextColor(WHITE);
+        b.setMinHeight(0);b.setMinimumHeight(0);
+        b.setPadding(dp(6),0,dp(6),0);
+        int fill=accept?GREEN:Color.rgb(47,47,47);
+        b.setBackground(bg(fill,fill,16));
+        return b;
+    }
+    private void actions(LinearLayout parent,String left,Runnable leftAction,
+                         String right,Runnable rightAction){
+        LinearLayout actionRow=row();
+        Button reject=action(left,false),accept=action(right,true);
+        reject.setOnClickListener(v->leftAction.run());
+        accept.setOnClickListener(v->rightAction.run());
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(55),1);
+        lp.rightMargin=dp(4);
+        actionRow.addView(reject,lp);
+        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(0,dp(55),1);
+        rp.leftMargin=dp(4);
+        actionRow.addView(accept,rp);
+        parent.addView(actionRow,match(0));
+    }
+    private void secondary(LinearLayout parent,String name,Runnable run){
+        TextView t=center(name,12,MUTED,false);
+        t.setPadding(dp(12),dp(12),dp(12),dp(9));
+        t.setOnClickListener(v->run.run());
+        parent.addView(t,match(0));
+    }
     private void showReservation(JSONObject item){
         String id=item.optString("id","");
         String status=item.optString("status","");
         String phase=item.optString("pickup_phase","");
         if(id.isEmpty())return;
-        LinearLayout card=vertical();card.setPadding(dp(14),dp(13),dp(14),dp(15));
-        card.setBackground(bg(CARD,0xff477379,16));
-        LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);
-        cp.setMargins(0,dp(7),0,dp(9));
-        list.addView(card,cp);
-        card.addView(text(UnifiedDriverPolicy.label(status,phase),12,
-            "PENDIENTE".equals(status)?GOLD:GREEN,true));
-        gap(card,6);
-        String when=plain(item.optString("pickup_date"))+"  "+plain(item.optString("pickup_time"));
-        card.addView(text(when+"   ·   "+plain(item.optString("code")),12,MUTED,false));gap(card,7);
-        card.addView(text("ORIGEN  "+plain(item.optString("origin_text")),14,WHITE,true));gap(card,5);
-        card.addView(text("DESTINO  "+plain(item.optString("destination_text")),14,WHITE,true));
-        gap(card,10);
+        LinearLayout card=vertical();
+        card.setPadding(dp(13),dp(16),dp(13),dp(15));
+        card.setBackground(bg(Color.BLACK,Color.BLACK,22));
+        list.addView(card,match(11));
+
+        String title="PENDIENTE".equals(status)?"Nueva solicitud":
+            UnifiedDriverPolicy.label(status,phase);
+        card.addView(text(title,22,WHITE,true),match(20));
+        routeBlock(card,"ORIGEN",plain(item.optString("origin_text")),
+            Color.rgb(0,163,82));
+        TextView dotted=text("│",17,Color.rgb(85,85,85),false);
+        dotted.setPadding(dp(7),0,0,0);
+        card.addView(dotted,match(0));
+        routeBlock(card,"DESTINO",plain(item.optString("destination_text")),
+            Color.rgb(231,61,63));
+        rule(card);
+        LinearLayout three=row();
         double km=item.optDouble("route_distance_km",Double.NaN);
         String distance=Double.isFinite(km)&&km>0?
-            String.format(Locale.forLanguageTag("es-UY"),"%.1f km",km):
-            "Distancia sin confirmar";
-        card.addView(text(distance+"    ·    "+amount(item),16,GOLD,true));
-        gap(card,5);
-        card.addView(text("Pasajero: "+plain(item.optString("customer_name")),12,MUTED,false));
-        gap(card,11);
+            String.format(Locale.forLanguageTag("es-UY"),"%.1f km",km):"—";
+        double minutes=item.optDouble("route_duration_min",Double.NaN);
+        String duration=Double.isFinite(minutes)&&minutes>0?
+            String.format(Locale.ROOT,"%.0f min",minutes):"—";
+        metricDetail(three,"DISTANCIA",distance);
+        metricDetail(three,"DURACIÓN",duration);
+        metricDetail(three,"IMPORTE",amount(item));
+        card.addView(three,match(17));
+
         if(!history){
-            if(UnifiedDriverPolicy.canAccept(status)){
-                buttons(card,"ACEPTAR",true,()->performChange(item,"ACEPTADA",false),
-                    "RECHAZAR",false,()->performChange(item,"RECHAZADA",true));
-            }else if(UnifiedDriverPolicy.canStart(status)){
+            if(UnifiedDriverPolicy.canAccept(status))
+                actions(card,"Rechazar",()->performChange(item,"RECHAZADA",true),
+                    "Aceptar",()->performChange(item,"ACEPTADA",false));
+            else if(UnifiedDriverPolicy.canStart(status)){
                 if(UnifiedDriverPolicy.canSetPickup(status,phase,"EN_CAMINO"))
-                    button(card,"INICIAR RECOGIDA",true,
-                        ()->performPickup(item,"EN_CAMINO"));
+                    actions(card,"Ruta",()->openRoute(item),
+                        "Iniciar recogida",()->performPickup(item,"EN_CAMINO"));
                 else if(UnifiedDriverPolicy.canSetPickup(status,phase,"EN_PUNTO"))
-                    button(card,"LLEGUÉ AL ORIGEN",true,
-                        ()->performPickup(item,"EN_PUNTO"));
-                button(card,"INICIAR VIAJE",false,
-                    ()->performChange(item,"EN_VIAJE",true));
-            }else if(UnifiedDriverPolicy.canFinish(status)){
-                button(card,"FINALIZAR VIAJE",true,
-                    ()->performChange(item,"FINALIZADA",true));
-            }
+                    actions(card,"Ruta",()->openRoute(item),
+                        "Llegué",()->performPickup(item,"EN_PUNTO"));
+                else
+                    actions(card,"Ruta",()->openRoute(item),
+                        "Iniciar viaje",()->performChange(item,"EN_VIAJE",true));
+                secondary(card,"INICIAR VIAJE",()->performChange(item,"EN_VIAJE",true));
+            }else if(UnifiedDriverPolicy.canFinish(status))
+                actions(card,"Ruta",()->openRoute(item),
+                    "Finalizar",()->performChange(item,"FINALIZADA",true));
         }
-        buttons(card,"RUTA",false,()->openRoute(item),
-            "LLAMAR",false,()->dial(item));
-        if(!history)buttons(card,"WHATSAPP",false,()->whatsapp(item),
-            "MENSAJES",false,()->showMessages(item));
+        if(!history&&!UnifiedDriverPolicy.canAccept(status)){
+            LinearLayout extras=row();
+            extras.addView(extra("Llamar",()->dial(item)),
+                new LinearLayout.LayoutParams(0,dp(43),1));
+            extras.addView(extra("WhatsApp",()->whatsapp(item)),
+                new LinearLayout.LayoutParams(0,dp(43),1));
+            extras.addView(extra("Mensajes",()->showMessages(item)),
+                new LinearLayout.LayoutParams(0,dp(43),1));
+            card.addView(extras,match(0));
+        }
     }
-    private void button(LinearLayout card,String name,boolean primary,Runnable action){
-        Button b=btn(name,primary);b.setOnClickListener(v->action.run());
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(47));
-        p.setMargins(0,dp(7),0,0);card.addView(b,p);
-    }
-    private void buttons(LinearLayout card,String left,boolean primaryLeft,Runnable leftAction,
-                         String right,boolean primaryRight,Runnable rightAction){
-        LinearLayout row=new LinearLayout(host);
-        Button one=btn(left,primaryLeft),two=btn(right,primaryRight);
-        one.setOnClickListener(v->leftAction.run());
-        two.setOnClickListener(v->rightAction.run());
-        LinearLayout.LayoutParams a=new LinearLayout.LayoutParams(0,dp(48),1);
-        a.setMargins(0,0,dp(4),0);row.addView(one,a);
-        LinearLayout.LayoutParams b=new LinearLayout.LayoutParams(0,dp(48),1);
-        b.setMargins(dp(4),0,0,0);row.addView(two,b);
-        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(48));
-        rp.setMargins(0,dp(7),0,0);card.addView(row,rp);
+    private TextView extra(String value,Runnable action){
+        TextView t=center(value,12,MUTED,false);
+        t.setOnClickListener(v->action.run());
+        return t;
     }
     private void performChange(JSONObject row,String status,boolean confirm){
         String id=row.optString("id","");
