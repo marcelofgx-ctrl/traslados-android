@@ -1030,12 +1030,29 @@ public class MainActivity extends Activity {
             }).show();
     }
 
+    private boolean hasDriverSession(){
+        return uy.com.mapatrayectos.driver.DriverSessionStore.linked(this) ||
+            !getSharedPreferences("driver_session",MODE_PRIVATE)
+              .getString("pin","").isEmpty();
+    }
+    private void migrateDriverSessionIfNeeded(){
+        String old=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+        if(old==null||old.isEmpty()||
+           uy.com.mapatrayectos.driver.DriverSessionStore.linked(this)||
+           !Api.pickupPresenceEnabled())return;
+        new Thread(()->{
+            try{
+                if(Api.setPickupConsent(old,true))
+                    runOnUiThread(this::requestPickupPresenceSync);
+            }catch(Exception ignored){}
+        },"mapa-legacy-driver-token-upgrade").start();
+    }
+
     /** Semáforo del permiso comercial, no una garantía automática de GPS o agenda. */
     private void addPickupPresenceRow(LinearLayout menu,PopupWindow popup){
         boolean enabled=Api.pickupPresenceEnabled();
         boolean busy=Api.pickupManuallyBusy();
-        boolean linked=!getSharedPreferences("driver_session",MODE_PRIVATE)
-            .getString("pin","").isEmpty();
+        boolean linked=hasDriverSession();
         boolean publishing=enabled&&linked&&!busy;
         LinearLayout row=new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -1080,9 +1097,37 @@ public class MainActivity extends Activity {
     private void showPickupPresenceDialog(){
         final boolean enabled=Api.pickupPresenceEnabled();
         final boolean busy=Api.pickupManuallyBusy();
-        boolean linked=!getSharedPreferences("driver_session",MODE_PRIVATE)
-            .getString("pin","").isEmpty();
-        if(!enabled||!linked){
+        boolean linked=hasDriverSession();
+        if(linked&&!enabled){
+            new AlertDialog.Builder(this)
+                .setTitle("Activar recogidas")
+                .setMessage("El dispositivo ya está autorizado. Al activarlo, "+
+                    "Mapa compartirá GPS únicamente durante tu jornada, "+
+                    "con ubicación válida y disponibilidad real.")
+                .setNegativeButton("Cancelar",null)
+                .setPositiveButton("Activar",(d,w)->new Thread(()->{
+                    try{
+                        String legacy=getSharedPreferences("driver_session",MODE_PRIVATE).getString("pin","");
+                        boolean ok=Api.setPickupConsent(legacy==null?"":legacy,true);
+                        runOnUiThread(()->{
+                            if(ok){
+                                getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
+                                    .putBoolean("explicitly_disabled",false).apply();
+                                requestPickupPresenceSync();
+                            }
+                            Toast.makeText(this,ok?"Recogidas activadas":
+                                "No se pudo activar la disponibilidad",Toast.LENGTH_LONG).show();
+                        });
+                    }catch(Exception e){
+                        runOnUiThread(()->Toast.makeText(this,
+                            "No se pudo activar. Verificá la conexión o autorizá Mapa nuevamente.",
+                            Toast.LENGTH_LONG).show());
+                    }
+                },"mapa-resume-pickup").start())
+                .show();
+            return;
+        }
+        if(!linked){
             new AlertDialog.Builder(this)
                 .setTitle("Vincular conductor y recogidas en Mapa")
                 .setMessage("Una sola vinculación para esta instalación. Después, " +
@@ -1160,7 +1205,7 @@ public class MainActivity extends Activity {
         pinInput.setSingleLine(true);
         int padding=(int)(22*getResources().getDisplayMetrics().density);
         pinInput.setPadding(padding,padding/2,padding,padding/2);
-        new AlertDialog.Builder(this).setTitle("Vincular conductor desde Mapa")
+        new AlertDialog.Builder(this).setTitle("Autorizar Mapa una sola vez")
             .setView(pinInput)
             .setNegativeButton("Cancelar",null)
             .setPositiveButton("VINCULAR",(d,w)->{
@@ -1171,18 +1216,12 @@ public class MainActivity extends Activity {
                 }
                 new Thread(()->{
                     try{
-                        uy.com.traslados.conductor.Api.init(getApplicationContext());
-                        if(!uy.com.traslados.conductor.Api.pinValid(pin))
-                            throw new IllegalArgumentException("Acceso de conductor no válido");
+                        // A one-time PIN exchange returns a revocable device token.
                         boolean ok=Api.setPickupConsent(pin,true);
                         if(ok){
                             getSharedPreferences("pickup_presence",MODE_PRIVATE).edit()
                                 .putBoolean("explicitly_disabled",false).apply();
-                            // Compatibility with authenticated conductor RPCs.
-                            // Stored once in this app's private data, never passed
-                            // in Intent extras or displayed in the Conductor view.
-                            getSharedPreferences("driver_session",MODE_PRIVATE).edit()
-                                .putString("pin",pin).apply();
+                            // The PIN is never saved to app preferences.
                         }
                         runOnUiThread(()->{
                             Toast.makeText(this,ok?
@@ -1993,6 +2032,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();
+        migrateDriverSessionIfNeeded();
 }
     @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
