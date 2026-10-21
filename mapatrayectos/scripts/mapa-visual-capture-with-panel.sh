@@ -146,8 +146,11 @@ if p.exists() and p.stat().st_size:
     except ET.ParseError:
         print('QA: UIAutomator returned malformed XML; pixel test remains required')
     else:
-        assert 'CENTRO DE VIAJES' in text and 'SOLICITUDES' in text, 'Conductor no mostró el tablero nativo'
-        print('QA Conductor: dashboard visible, even without pairing')
+        must=('CONDUCTOR','QUICK TRIP','NUEVAS','ACEPTADAS','EN VIAJE')
+        missing=[label for label in must if label not in text]
+        assert not missing, 'Conductor de referencia incompleto: '+str(missing)
+        assert 'CENTRO DE VIAJES' not in text, 'Se coló el panel antiguo de Conductor'
+        print('QA Conductor: cabecera y tres contadores de la imagen original presentes')
 PY
 # Swipe RIGHT from the interior left band of Conductor; Mapa must still be alive.
 adb shell input swipe 135 1150 530 1150 440
