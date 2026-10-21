@@ -5,7 +5,7 @@ const fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const base=path.resolve(__dirname,"..");
 const source=fs.readFileSync(path.join(base,"reservation-live.js"),"utf8");
 const app=fs.readFileSync(path.join(base,"app.js"),"utf8");
-const style=fs.readFileSync(path.join(base,"premium-journey.css"),"utf8");
+const style=fs.readFileSync(path.join(base,"quicktrip-clean.css"),"utf8");
 const callbacks=[];
 let tabActive=false,connected=true,network=true,visibility="visible";
 const activeView={classList:{contains:name=>name==="active"&&tabActive}};

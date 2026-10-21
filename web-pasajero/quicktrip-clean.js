@@ -6,7 +6,8 @@
  * Las funciones app.js, premium-route.js y los motores siguen intactos.
  */
 (function(win,doc){
-  if(new URLSearchParams(win.location.search).get("ui")!=="clean")return;
+  // V7 is the sole production presentation. No legacy UI query flag.
+  // The underlying reservation, pricing and routing engines remain unchanged.
   const byId=id=>doc.getElementById(id);
   const node=(tag,className,txt)=>{
     const n=doc.createElement(tag);
@@ -147,8 +148,8 @@
       '<div class="qtc-owned-tracking" aria-label="Seguimiento autorizado del vehículo" hidden></div>'+ 
       '<div class="qtc-driver-slot"></div></section>'+
       '<details class="qtc-schedule"><summary><span class="qtc-time-icon">◷</span>'+
-      '<span class="qtc-time-copy"><strong id="qtc-when-title">Viajás ahora</strong>'+
-      '<small>Podés cambiar el horario</small></span><span class="qtc-chevron">⌄</span></summary>'+
+      '<span class="qtc-time-copy"><strong id="qtc-when-title">Horario de recogida</strong>'+
+      '<small id="qtc-when-detail">Ahora</small></span><span class="qtc-chevron">⌄</span></summary>'+
       '<div class="qtc-schedule-slot"></div></details>'+
       '<details class="qtc-contact"><summary><span>♙</span><strong>Tus datos</strong>'+
       '<small>Nombre, teléfono y pasajeros</small><span class="qtc-chevron">⌄</span></summary>'+
@@ -311,12 +312,14 @@
     syncDriverSearch();cleanMapCaption();
   }
   function syncWhenLabel(){
-    const select=byId("journey-when-select"),label=byId("qtc-when-title");
+    const select=byId("journey-when-select"),label=byId("qtc-when-title"),
+      detail=byId("qtc-when-detail");
     if(!select||!label)return;
     const value=select.value;
-    label.textContent=value==="now"?"Viajás ahora":
+    label.textContent="Horario de recogida";
+    if(detail)detail.textContent=value==="now"?"Ahora":
       value==="custom"?"Horario personalizado":
-      /^[0-9]+$/.test(value)?"Viajás en "+value+" min":"Elegí cuándo viajás";
+      /^[0-9]+$/.test(value)?"En "+value+" min":"Elegí horario";
   }
   function reconcile(){
     if(!build())return;

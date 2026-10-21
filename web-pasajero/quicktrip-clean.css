@@ -1,6 +1,6 @@
 /*
  * QUICK TRIP — CLEAN SCREEN V7
- * Única hoja visual del producto nuevo. Se activa solo con ?ui=clean.
+ * Única hoja visual del producto Quick Trip V7 en producción.
  * Los estilos históricos del resto de la PWA quedan fuera de esta pantalla.
  * No hay fórmulas, mapas falsos, kilómetros ni importes de demostración.
  */
@@ -579,3 +579,105 @@ body.qt-clean .qtc-app .qtc-bottom-nav svg{
 @media(prefers-reduced-motion:reduce){
  body.qt-clean .qtc-app *,body.qt-clean .qtc-app *:before,body.qt-clean .qtc-app *:after{animation:none!important;transition:none!important}
 }
+
+/* Producción V7: disponibilidad real en espacio compacto. La validación y el
+   resultado siguen siendo propiedad de app.js, no de la presentación. */
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"] #pickup-presence{
+  display:none!important
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable:not([hidden]){
+  display:flex;flex-direction:column;gap:3px;margin:6px 0 0;
+  padding:10px 12px;min-height:0;border-radius:12px;
+  background:#17383d;border:1px solid rgba(225,190,121,.32)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable strong{font-size:13px}
+body.qt-clean .qtc-app .qtc-driver-unavailable small{
+  font-size:11px;line-height:1.36
+}
+/* El origen tiene su propio botón GPS: evitar un segundo botón dentro de la
+   ficha de disponibilidad, manteniendo el vínculo de datos intacto. */
+body.qt-clean .qtc-app .qtc-driver #pickup-use-location{
+  display:none!important
+}
+
+/* Estilos funcionales de seguimiento de reservas migrados desde la antigua hoja
+   antes de retirarla. No restaura su diseño de Tu viaje 1/4–4/4. */
+#view-viajes .reservation-live-slot{margin:12px 0 8px;padding:12px;
+  border:1px solid rgba(197,171,112,.65);border-radius:16px;
+  background:linear-gradient(135deg,#0a3640,#071e2c);
+  box-shadow:inset 0 1px rgba(255,245,218,.08),0 8px 22px #0003}
+#view-viajes .reservation-live-heading{display:flex;align-items:center;gap:10px;
+  margin-bottom:10px;min-width:0}
+#view-viajes .reservation-live-heading-icon{display:grid;place-items:center;
+  font-size:24px;width:40px;height:40px;flex:0 0 40px;
+  border:1px solid #bfa16d;border-radius:13px;background:#0e3b40}
+#view-viajes .reservation-live-heading-copy{display:grid;gap:3px;min-width:0}
+#view-viajes .reservation-live-heading-copy strong{font-size:15px;line-height:1.25;
+  font-weight:800;color:#fff4df}
+#view-viajes .reservation-live-status{font-size:12px;font-weight:660;color:#b7e9cb;
+  line-height:1.35}
+#view-viajes .reservation-live-map{min-height:188px;overflow:hidden;border-radius:12px;
+  background:#0b2633}
+#view-viajes .reservation-live-map .premium-real-map{position:relative;width:100%;
+  border:1px solid #5e8a8877;border-radius:12px;overflow:hidden;
+  background:linear-gradient(115deg,#143942,#0b2331)}
+#view-viajes .reservation-live-map .premium-map-tiles{position:absolute;inset:0;overflow:hidden;
+  filter:grayscale(.45) brightness(.72)}
+#view-viajes .reservation-live-map .premium-map-tiles img{position:absolute;
+  width:256px;height:256px;max-width:none;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-overlays{position:absolute;
+  inset:0;width:100%;height:100%;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-credit{position:absolute;right:4px;
+  bottom:4px;background:#08242bdc;padding:3px 5px;border-radius:5px;color:#fff;font-size:9px}
+#view-viajes .reservation-live-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#view-viajes .reservation-live-metric{background:#062531;border:1px solid #9baf9a55;
+  border-radius:11px;padding:10px 12px;min-width:0}
+#view-viajes .reservation-live-metric small{display:block;color:#bfd2c4;
+  font-size:10px;font-weight:750;letter-spacing:.08em}
+#view-viajes .reservation-live-metric strong{display:block;color:#ffe1a8;
+  margin-top:4px;font-size:20px;font-weight:850;line-height:1.2}
+#view-viajes .reservation-live-note{margin:10px 1px 3px;font-size:11px;
+  line-height:1.45;color:#d2e4dd}
+#view-viajes .reservation-live-freshness{display:block;font-size:10px;color:#a9bdba}
+@media(max-width:359px){
+  #view-viajes .trip-route-label{font-size:13px}
+  #view-viajes .reservation-live-metric strong{font-size:17px}
+  #view-viajes .reservation-live-slot{padding:9px}
+}
+
+/* Seguimiento de fases: números legibles incluso en pantallas estrechas. */
+#view-viajes .reservation-live-metric strong{
+  font-size:clamp(16px,4.6vw,20px);overflow-wrap:anywhere
+}
+#view-viajes .reservation-live-map{min-height:208px}
+#view-viajes .reservation-live-map .premium-map-tiles{filter:grayscale(.28) brightness(.82)}
+#view-viajes .reservation-live-freshness{line-height:1.5}
+
+/* v82 QA · Mis traslados and expanded follow-up reuse the same live GPS module.
+   This panel is not a second static approximation of the driver's location. */
+#view-seguimiento .premium-tracking-map.reservation-live{
+  display:block;padding:12px;border:1px solid rgba(197,171,112,.65);
+  border-radius:16px;background:linear-gradient(135deg,#0a3640,#071e2c);
+  box-shadow:0 8px 22px #0003
+}
+#view-seguimiento .reservation-live-heading{display:flex;align-items:center;gap:10px;
+  min-width:0;margin-bottom:10px}
+#view-seguimiento .reservation-live-heading-icon{display:grid;place-items:center;
+  width:40px;height:40px;flex:0 0 40px;font-size:23px;
+  background:#0e3b40;border:1px solid #bfa16d;border-radius:13px}
+#view-seguimiento .reservation-live-heading-copy{display:grid;gap:3px;min-width:0}
+#view-seguimiento .reservation-live-heading-copy strong{font-size:15px;color:#fff4df}
+#view-seguimiento .reservation-live-status{font-size:12px;color:#b7e9cb;line-height:1.4}
+#view-seguimiento .reservation-live-map{min-height:208px;border-radius:12px;overflow:hidden;background:#0b2633}
+#view-seguimiento .reservation-live-map .premium-real-map{position:relative;width:100%;border-radius:12px;overflow:hidden}
+#view-seguimiento .reservation-live-map .premium-map-tiles{position:absolute;inset:0;overflow:hidden;filter:grayscale(.28) brightness(.82)}
+#view-seguimiento .reservation-live-map .premium-map-tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none}
+#view-seguimiento .reservation-live-map .premium-map-overlays{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#view-seguimiento .reservation-live-map .premium-map-credit{position:absolute;right:4px;bottom:4px;background:#08242bdc;padding:3px 5px;border-radius:5px;color:#fff;font-size:9px}
+#view-seguimiento .reservation-live-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+#view-seguimiento .reservation-live-metric{padding:10px;background:#062531;border:1px solid #9baf9a55;border-radius:11px;min-width:0}
+#view-seguimiento .reservation-live-metric small{display:block;color:#bfd2c4;font-size:10px;font-weight:750;letter-spacing:.06em}
+#view-seguimiento .reservation-live-metric strong{display:block;margin-top:4px;color:#ffe1a8;font-size:clamp(16px,4.6vw,20px);overflow-wrap:anywhere}
+#view-seguimiento .reservation-live-note{margin:10px 1px 3px;color:#d2e4dd;font-size:11px;line-height:1.5}
+#view-seguimiento .reservation-live-freshness{display:block;color:#a9bdba;font-size:10px;line-height:1.5}
+@media(max-width:359px){#view-seguimiento .premium-tracking-map.reservation-live{padding:9px}}

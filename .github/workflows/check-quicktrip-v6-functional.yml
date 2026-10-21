@@ -1,50 +1,40 @@
-name: Quick Trip V6 functional opt-in — no Android build
+name: Quick Trip production - no legacy UI regression
 on:
   pull_request:
     paths:
-      - 'web-pasajero/quicktrip-functional-v6.*'
-      - 'web-pasajero/tu-viaje-reference.*'
-      - 'web-pasajero/premium-route.js'
-      - 'web-pasajero/tests/tu-viaje-reference-acceptance.cjs'
-      - 'web-pasajero/index.html'
-      - 'web-pasajero/tests/quicktrip-functional-v6.cjs'
-      - 'web-pasajero/tests/quicktrip-v6-approved-live-dom.cjs'
-      - 'web-pasajero/pruebas/visual-v6/**'
+      - 'web-pasajero/**'
       - '.github/workflows/check-quicktrip-v6-functional.yml'
   push:
     branches: [main]
     paths:
-      - 'web-pasajero/quicktrip-functional-v6.*'
-      - 'web-pasajero/tu-viaje-reference.*'
-      - 'web-pasajero/premium-route.js'
-      - 'web-pasajero/tests/tu-viaje-reference-acceptance.cjs'
-      - 'web-pasajero/index.html'
-      - 'web-pasajero/tests/quicktrip-functional-v6.cjs'
-      - 'web-pasajero/pruebas/visual-v6/**'
+      - 'web-pasajero/**'
       - '.github/workflows/check-quicktrip-v6-functional.yml'
 permissions:
   contents: read
 jobs:
-  functional-smoke:
+  no-legacy:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Verify opt-in skin and unchanged operational engines
+      - name: Verify sole Quick Trip V7 production presentation and preserved engines
+        shell: bash
         run: |
-          node --check web-pasajero/quicktrip-functional-v6.js
-          node --check web-pasajero/tests/quicktrip-functional-v6.cjs
-          node --check web-pasajero/tu-viaje-reference.js
+          set -euo pipefail
+          for old in quicktrip-functional-v6.js quicktrip-functional-v6.css tu-viaje-reference.js tu-viaje-reference.css premium-journey.js premium-journey.css quicktrip-clean-boot.js manifest-quicktrip-clean.webmanifest; do
+            test ! -e "web-pasajero/$old"
+            ! grep -q "$old" web-pasajero/index.html
+          done
+          grep -q 'quicktrip-clean.js?v=5' web-pasajero/index.html
+          grep -q 'const CACHE="traslados-pwa-v82-quicktrip-v7-production-20261021"' web-pasajero/sw.js
+          grep -q 'customer_create_reservation_v12' web-pasajero/app.js
+          grep -q 'route-engine.js' web-pasajero/index.html
+          grep -q 'premium-route.js' web-pasajero/index.html
+          grep -q 'booking-contracts.js' web-pasajero/index.html
+          node --check web-pasajero/quicktrip-clean.js
+          node --check web-pasajero/app.js
           node --check web-pasajero/premium-route.js
-          node web-pasajero/tests/tu-viaje-reference-acceptance.cjs
-          node web-pasajero/tests/quicktrip-functional-v6.cjs
-          node web-pasajero/tests/quicktrip-v6-approved-live-dom.cjs
-          node web-pasajero/tests/service-home-v61-smoke.cjs
-          node web-pasajero/tests/premium-journey-v75-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
           node web-pasajero/tests/urgent-mode-smoke.cjs
           node web-pasajero/tests/flexible-schedule-r1-smoke.cjs
-          node web-pasajero/pruebas/visual-v6/tests/static-v6.cjs
-          node web-pasajero/pruebas/visual-v6/tests/view-model-v6.cjs
