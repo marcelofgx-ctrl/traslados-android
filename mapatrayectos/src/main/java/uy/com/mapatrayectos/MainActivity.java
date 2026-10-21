@@ -90,8 +90,6 @@ public class MainActivity extends Activity {
     private boolean returningFromOverlaySettings=false;
     private boolean reopenConfigurationAfterOverlay=false;
     private boolean navigatingWithinMapa=false;
-    // Only one onboarding prompt per visible app session; explicit OFF is kept.
-    private boolean pickupEnrollmentOfferedThisActivity=false;
     private final Runnable checkBubblePermission=this::maybeOfferBubblePermission;
 
     private void scheduleBubblePermissionCheck(){
@@ -519,9 +517,8 @@ public class MainActivity extends Activity {
         if(!shiftActive){
             if(sendAction(TrackingService.ACTION_START_SHIFT,null,null,0)){
                 maybeOfferBubblePermission();
-                // The jornada always starts normally. First-time commercial GPS
-                // sharing requires explicit one-time consent in Mapa.
-                uiHandler.postDelayed(this::maybeOfferPickupEnrollmentForActiveShift,650);
+                // Do not interrupt Play with another PIN/login modal.
+                // Enrollment remains an explicit choice in the Mapa menu.
             }
             return;
         }
@@ -1058,21 +1055,6 @@ public class MainActivity extends Activity {
         line.setBackgroundColor(Color.argb(70,231,202,130));
         menu.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
         row.setOnClickListener(v->{popup.dismiss();showPickupPresenceDialog();});
-    }
-
-    /** A shift with valid device pairing should publish automatically.
-     * On a fresh installation Play/Stop does not silently grant GPS sharing:
-     * offer enrollment once, and never nag after explicit revocation.
-     */
-    private void maybeOfferPickupEnrollmentForActiveShift(){
-        if(pickupEnrollmentOfferedThisActivity||isFinishing()||isDestroyed())return;
-        final SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
-        if(!(shiftActive||state.getBoolean("shift_active",false)))return;
-        if(Api.pickupPresenceEnabled())return;
-        if(getSharedPreferences("pickup_presence",MODE_PRIVATE)
-                .getBoolean("explicitly_disabled",false))return;
-        pickupEnrollmentOfferedThisActivity=true;
-        showPickupPresenceDialog();
     }
 
     /** One-time Mapa enrollment: Conductor never presents a separate PIN.
@@ -1995,7 +1977,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();
-        uiHandler.postDelayed(this::maybeOfferPickupEnrollmentForActiveShift,850);}
+}
     @Override protected void onPause(){uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
