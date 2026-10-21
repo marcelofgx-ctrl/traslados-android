@@ -31,23 +31,18 @@ jobs:
           sha256sum --check SHA256SUMS.txt
           test -s QuickTrip-Mapa-Conductor-Unificado-QA.apk
           echo "APK autentificada por SHA256"
-      - name: Publicar como pre-release QA sin fusionar código
+      - name: Publicar nueva APK en release QA existente, sin sobreescribir la anterior
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          QA_TAG: qa-mapa-conductor-reconstruido-r39519717059
-          QA_SHA: 109ec4f2d87e604476a95368004292bd15d5ca69
+          QA_TAG: qa-mapa-unificado-20261020-r39476812976
         run: |
           set -euo pipefail
-          if ! gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$QA_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$QA_SHA" \
-              --title "Mapa + Conductor reconstruido - QA 20/10/2026" \
-              --notes "VERSION QA PARA INSTALAR. Incluye panel Conductor reconstruido nativamente dentro de Mapa, con solicitudes, aceptar/rechazar, recogida, historial y chat. Navegacion lateral: deslizar izquierda a Conductor y derecha a Mapa. La compilacion Android y pruebas modulares pasaron; la prueba visual Android de esta compilacion fallo y requiere validacion fisica. La autorizacion inicial comercial del GPS desde Mapa sigue pendiente de validacion. No sustituye la APK oficial ni publicar APK Conductor independiente." \
-              --prerelease
-          fi
-          gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
+          # La release QA ya existe; no crear nuevas releases con permisos limitados.
+          gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          cp qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
+             qa/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk
+          gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk \
             --repo "$GITHUB_REPOSITORY" --clobber
-          echo "### APK directa (sin login GitHub)" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-Conductor-Unificado-QA.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Conductor reconstruido - APK QA exacta de compilación #39519717059" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk" >> "$GITHUB_STEP_SUMMARY"
