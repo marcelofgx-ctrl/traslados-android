@@ -309,6 +309,56 @@ async function main(){
       doc.querySelector('link[rel="manifest"]')?.getAttribute("href")==="./manifest.webmanifest";
   }),"Canonical web is Quick Trip V7, keeps native route/time and no old Viajás ahora");
   await snap("04-quicktrip-produccion.png");
+  // V7 parity is required on the REAL trips board, not just the journey form.
+  await expression(function(){
+    document.querySelector('.tabs .tab[data-view="viajes"]').click();
+    return true;
+  });
+  await poll(()=>expression(function(){
+    return !!document.querySelector("#view-viajes.active .trips-board");
+  }),8000);
+  const tripsStyle=await expression(function(){
+    const q=x=>document.querySelector(x),logo=q(".header .quicktrip-page-logo"),
+      tabs=q(".shell>.tabs"),board=q("#view-viajes .trips-board");
+    return {logo:!!logo&&logo.complete&&logo.naturalWidth>0,
+      page:!!q("#view-viajes.active"),nav:getComputedStyle(tabs).position,
+      navBottom:getComputedStyle(tabs).bottom,
+      columns:getComputedStyle(q("#view-viajes .trips-tabs")).gridTemplateColumns.split(" ").length,
+      border:getComputedStyle(board).borderRadius};
+  });
+  say("V7 trips parity: "+JSON.stringify(tripsStyle));
+  check(tripsStyle.logo&&tripsStyle.page,"Quick Trip identity remains on My Trips");
+  check(tripsStyle.nav==="fixed"&&tripsStyle.navBottom==="0px","Trips navigation uses V7 bottom bar");
+  check(tripsStyle.columns===3,"Trips scopes stay compact in a three-column row");
+  await snap("08-mis-traslados-v7.png");
+
+  await expression(function(){
+    document.querySelector('.tabs .tab[data-view="inicio"]').click();
+    document.querySelector('[data-service="now"]').click();
+    return true;
+  });
+  await poll(()=>expression(function(){return !!document.querySelector("#view-viaje.active .qtc-app")}),8000);
+  const receiptState=await expression(function(){
+    const success=document.querySelector("#booking-success");
+    window.__qaReceiptSnapshot={hidden:success.hidden,html:success.innerHTML};
+    success.innerHTML='<div class="mark">✓</div><h2>Solicitud enviada</h2>'+
+      '<div class="success-receipt"><span class="success-label">NÚMERO DE SOLICITUD</span>'+
+      '<strong class="code">QA-TEST</strong></div><button class="primary full">VER MIS TRASLADOS</button>';
+    success.hidden=false;
+    return {route:getComputedStyle(document.querySelector(".qtc-places")).display,
+      driver:getComputedStyle(document.querySelector(".qtc-driver")).display,
+      receipt:getComputedStyle(success).display};
+  });
+  check(receiptState.route==="none"&&receiptState.driver==="none"&&receiptState.receipt!=="none",
+    "Sent receipt uses a compact single focus and hides the draft form");
+  await snap("09-recibo-compacto-v7-qa.png");
+  await expression(function(){
+    const el=document.querySelector("#booking-success");
+    el.innerHTML=window.__qaReceiptSnapshot.html;
+    el.hidden=window.__qaReceiptSnapshot.hidden;
+    delete window.__qaReceiptSnapshot;
+    return true;
+  });
   say("ALL BROWSER CHECKS PASSED — no booking submitted");
  }catch(e){
   say("ERROR "+e.stack);
