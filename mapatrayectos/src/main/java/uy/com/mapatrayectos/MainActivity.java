@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
     private SlideActionView slider,endShiftSlider; private TextView endShiftAction;
     private View endShiftSliderWrap; private boolean shiftCloseExpanded=false;
     private FrameLayout rootFrame;
+    private uy.com.mapatrayectos.driver.UnifiedDriverPanel driverPanel;
+    private boolean driverPanelOpen=false;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
     private final Runnable dismissTransferCallout=()->hideInAppTransfer(false);
@@ -115,11 +117,40 @@ public class MainActivity extends Activity {
             }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction()))updateTransferBadge();
         }
     };
+    /** Genuine in-place horizontal page change: Mapa/GPS never leave this Activity. */
     private void openIntegratedConductor(){
+        if(driverPanelOpen||rootFrame==null)return;
         hideInAppTransfer(false);
         TransferAlerts.markViewed(this);
-        startActivity(new Intent(this,uy.com.mapatrayectos.driver.UnifiedDriverActivity.class));
-        overridePendingTransition(R.anim.qt_to_driver_in,R.anim.qt_to_driver_out);
+        if(driverPanel==null){
+            driverPanel=new uy.com.mapatrayectos.driver.UnifiedDriverPanel(
+                this,this::closeIntegratedConductor);
+            rootFrame.addView(driverPanel,new FrameLayout.LayoutParams(-1,-1));
+        }
+        driverPanelOpen=true;
+        driverPanel.bringToFront();
+        driverPanel.setVisibility(View.VISIBLE);
+        int pageWidth=Math.max(rootFrame.getWidth(),
+            getResources().getDisplayMetrics().widthPixels);
+        driverPanel.setTranslationX(pageWidth);
+        driverPanel.showPage();
+        driverPanel.animate().cancel();
+        driverPanel.animate().translationX(0).setDuration(280)
+            .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+    }
+    private void closeIntegratedConductor(){
+        if(!driverPanelOpen||driverPanel==null)return;
+        driverPanelOpen=false;
+        driverPanel.hidePage();
+        int pageWidth=Math.max(rootFrame.getWidth(),
+            getResources().getDisplayMetrics().widthPixels);
+        driverPanel.animate().cancel();
+        driverPanel.animate().translationX(pageWidth).setDuration(260)
+            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+            .withEndAction(()->{
+                if(!driverPanelOpen&&driverPanel!=null)
+                    driverPanel.setVisibility(View.GONE);
+            }).start();
     }
     // Mapa and Conductor are adjacent pages of the SAME installed application.
     // Only side-edge gestures inside the map viewport count; ordinary pans
@@ -133,16 +164,19 @@ public class MainActivity extends Activity {
         }else if(event.getActionMasked()==MotionEvent.ACTION_POINTER_DOWN){
             unifiedGestureArmed=false;
         }else if(event.getActionMasked()==MotionEvent.ACTION_UP){
+            final boolean pageOpen=driverPanelOpen;
             final boolean go=unifiedGestureArmed&&UnifiedDriverSwipePolicy.isPageSwipe(
                 unifiedDownX,unifiedDownY,event.getX(),event.getY(),
                 getWindow().getDecorView().getWidth(),getWindow().getDecorView().getHeight(),
-                getResources().getDisplayMetrics().density,true);
+                getResources().getDisplayMetrics().density,!pageOpen);
             unifiedGestureArmed=false;
             if(go){
                 MotionEvent cancel=MotionEvent.obtain(event);
                 cancel.setAction(MotionEvent.ACTION_CANCEL);
                 super.dispatchTouchEvent(cancel);cancel.recycle();
-                openIntegratedConductor();return true;
+                if(pageOpen)closeIntegratedConductor();
+                else openIntegratedConductor();
+                return true;
             }
         }else if(event.getActionMasked()==MotionEvent.ACTION_CANCEL)unifiedGestureArmed=false;
         return super.dispatchTouchEvent(event);
@@ -202,7 +236,9 @@ public class MainActivity extends Activity {
         tripSourceBadge=brand;
         brand.setOnClickListener(v->chooseUpcomingTripPlatform());
         refreshPlatformBadge();
-        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS",13.0f,TEXT,true);title.setSingleLine(true);title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,13.4f,Color.rgb(255,232,177),true);
+        LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("MAPA TRAYECTOS  ›",13.0f,TEXT,true);title.setSingleLine(true);
+        title.setContentDescription("Mapa Trayectos. Deslizá hacia la izquierda o tocá aquí para ver Conductor.");
+        title.setOnClickListener(v->openIntegratedConductor());title.setAutoSizeTextTypeUniformWithConfiguration(9,13,1,android.util.TypedValue.COMPLEX_UNIT_SP);zoneText=text(zone,13.4f,Color.rgb(255,232,177),true);
         zoneText.setSingleLine(true);zoneText.setMaxLines(1);
         zoneText.setAutoSizeTextTypeUniformWithConfiguration(11,14,1,android.util.TypedValue.COMPLEX_UNIT_SP);
         zoneText.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -235,19 +271,8 @@ public class MainActivity extends Activity {
          root.addView(floatingAccessBanner,accessLp);
          updateFloatingAccessBanner();
 
-        // Visible, accessible invitation: swipe left from the inside-right
-        // edge or tap. This does not replace the map and never changes GPS.
-        TextView driverSideTab=text("‹\nCONDUCTOR",10.5f,CHAMPAGNE,true);
-        driverSideTab.setGravity(Gravity.CENTER);
-        driverSideTab.setContentDescription("Conductor. Tocá o deslizá a la izquierda desde el borde derecho para ver solicitudes");
-        driverSideTab.setBackground(premiumGradient(Color.rgb(6,44,52),Color.rgb(8,66,67),
-            Color.argb(238,234,193,99),18f,1.0f));
-        driverSideTab.setElevation(dp(9));
-        driverSideTab.setOnClickListener(v->openIntegratedConductor());
-        FrameLayout.LayoutParams driverTabLp=new FrameLayout.LayoutParams(
-            dp(65),dp(72),Gravity.RIGHT|Gravity.CENTER_VERTICAL);
-        driverTabLp.rightMargin=dp(3);
-        root.addView(driverSideTab,driverTabLp);
+        // Do not obscure the cartography with an oversized Conductor tab.
+        // The subtle header chevron and edge swipe are the two entry paths.
         speedGauge=new SpeedGaugeView(this);speedGauge.setElevation(dp(6));FrameLayout.LayoutParams spdLp=new FrameLayout.LayoutParams(dp(116),dp(105),Gravity.TOP|Gravity.RIGHT);spdLp.setMargins(0,dp(80),dp(12),0);root.addView(speedGauge,spdLp);
         gpsText=text("●  GPS buscando…",11.6f,TEXT,true);gpsText.setGravity(Gravity.CENTER);gpsText.setElevation(dp(5));gpsText.setBackground(statusPillGradient(GREEN));FrameLayout.LayoutParams gpsLp=new FrameLayout.LayoutParams(dp(145),dp(38),Gravity.TOP|Gravity.LEFT);gpsLp.setMargins(dp(14),dp(82),0,0);root.addView(gpsText,gpsLp);
         compassView=new CompassView(this);compassView.setElevation(dp(5));FrameLayout.LayoutParams compassLp=new FrameLayout.LayoutParams(dp(57),dp(57),Gravity.TOP|Gravity.CENTER_HORIZONTAL);compassLp.setMargins(0,dp(80),0,0);root.addView(compassView,compassLp);
@@ -1979,9 +2004,17 @@ public class MainActivity extends Activity {
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
-    @Override protected void onDestroy(){uiHandler.removeCallbacksAndMessages(null);if(mapView!=null)mapView.onDestroy();super.onDestroy();}
+    @Override protected void onDestroy(){
+        uiHandler.removeCallbacksAndMessages(null);
+        if(driverPanel!=null)driverPanel.dispose();
+        if(mapView!=null)mapView.onDestroy();
+        super.onDestroy();
+    }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);}
-    @Override public void onBackPressed(){super.onBackPressed();}
+    @Override public void onBackPressed(){
+        if(driverPanelOpen&&driverPanel!=null){driverPanel.handleBack();return;}
+        super.onBackPressed();
+    }
 
     public static final class MetricIconView extends View {
         static final int DISTANCE=0,TIME=1,MOVING=2,STOPPED=3,TRIPS=4;
