@@ -26,7 +26,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +67,9 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private Period period=Period.TODOS;
     private JSONArray activeRows=new JSONArray(), historyRows=new JSONArray();
     private boolean activeLoaded=false, historyLoaded=false, foreground=false, syncError=false;
+    private final Set<String> openCards=new HashSet<>();
+    private final Set<String> openDays=new HashSet<>();
+    private boolean daysInitialized=false;
     private long lastSuccessfulFetch=0;
     private float downX,downY;
     private boolean swipeArmed=false;
@@ -188,6 +195,8 @@ public final class UnifiedDriverPanel extends FrameLayout {
         if(screen==next)return;
         screen=next;
         period=Period.TODOS;
+        openDays.clear();
+        daysInitialized=false;
         render();
         reload(true);
     }
@@ -322,8 +331,8 @@ public final class UnifiedDriverPanel extends FrameLayout {
         int oldY=scroller.getScrollY();
         list.removeAllViews();
         if(!gateway.linked()){
-            emptyCard("Solicitudes no vinculadas",
-                "Mapa mantiene la jornada y el GPS. Para consultar reservas e histórico autorizá la conexión desde Mapa → Conductor y recogidas.");
+            emptyCard("Conductor sin vincular",
+                "Para ver solicitudes, agenda e histórico, autorizá las reservas desde Mapa → Conductor y recogidas. La jornada y el GPS siguen en Mapa.");
             secondary(list,"← Volver a Mapa para vincular",this::backToMap);
             return;
         }
@@ -359,27 +368,23 @@ public final class UnifiedDriverPanel extends FrameLayout {
             return screen==Screen.HISTORIAL?right.compareTo(left):left.compareTo(right);
         });
         if(items.isEmpty()){
-            emptyCard(screen==Screen.HISTORIAL?"Sin viajes en este período":
-                    screen==Screen.AGENDA?"Agenda sin reservas":"Sin solicitudes nuevas",
-                screen==Screen.HISTORIAL?"Probá otro período para consultar tus viajes registrados.":
-                    screen==Screen.AGENDA?"No hay reservas programadas para el período seleccionado.":
-                    "Quedamos atentos a una nueva solicitud.");
-        }else{
-            String lastDay="";
-            for(JSONObject item:items){
-                if(screen!=Screen.SOLICITUDES){
-                    String day=item.optString("pickup_date","");
-                    if(!day.equals(lastDay)){
-                        TextView date=text(prettyDay(day),14,WHITE,true);
-                        date.setPadding(dp(7),dp(10),0,dp(6));
-                        list.addView(date,match(0));
-                        lastDay=day;
-                    }
-                }
-                showReservation(item);
-            }
-        }
-        secondary(list,screen==Screen.HISTORIAL?"Actualizar histórico":"Actualizar solicitudes",()->reload(false));
+            emptyCard(screen==Screen.HISTORIAL?"Sin viajes registrados":
+                    screen==Screen.AGENDA?"Agenda sin viajes":"Sin solicitudes pendientes",
+                screen==Screen.HISTORIAL?"Cuando finalices un viaje aparecerá aquí. Mientras tanto, podés consultar la agenda.":
+                    screen==Screen.AGENDA?"No hay reservas para este período. Probá con otras fechas.":
+                    "Al recibir una petición aparecerán origen, destino, kilómetros, importe y los botones de aceptar y rechazar.");
+            if(screen==Screen.SOLICITUDES){
+                secondary(list,"VER AGENDA  →",()->openScreen(Screen.AGENDA));
+                secondary(list,"VER HISTORIAL  →",()->openScreen(Screen.HISTORIAL));
+            }else if(screen==Screen.HISTORIAL)
+                secondary(list,"VER AGENDA  →",()->openScreen(Screen.AGENDA));
+            else secondary(list,"VER SOLICITUDES  →",()->openScreen(Screen.SOLICITUDES));
+        }else if(screen==Screen.SOLICITUDES){
+            for(JSONObject item:items)showReservation(item);
+        }else renderDateGroups(items);
+        secondary(list,screen==Screen.HISTORIAL?"ACTUALIZAR HISTORIAL":
+            screen==Screen.AGENDA?"ACTUALIZAR AGENDA":"ACTUALIZAR SOLICITUDES",
+            ()->reload(false));
         if(oldY>0)scroller.post(()->scroller.scrollTo(0,oldY));
     }
     private String screenTitle(){
@@ -399,7 +404,13 @@ public final class UnifiedDriverPanel extends FrameLayout {
                 period==option?GREEN:Color.BLACK,11));
             LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(39),1);
             lp.setMargins(dp(3),0,dp(3),0);
-            chip.setOnClickListener(v->{period=option;render();scroller.scrollTo(0,0);});
+            chip.setOnClickListener(v->{
+                period=option;
+                openDays.clear();
+                daysInitialized=false;
+                render();
+                scroller.scrollTo(0,0);
+            });
             strip.addView(chip,lp);
         }
         list.addView(strip,match(11));
@@ -439,6 +450,41 @@ public final class UnifiedDriverPanel extends FrameLayout {
             return !when.before(threshold.getTime())&&when.before(end.getTime());
         }catch(Exception e){return false;}
     }
+    /** The date header is compact; expanding one date contracts the others. */
+    private void renderDateGroups(ArrayList<JSONObject> items){
+        LinkedHashMap<String,ArrayList<JSONObject>> groups=new LinkedHashMap<>();
+        for(JSONObject item:items){
+            String day=item.optString("pickup_date","");
+            if(!groups.containsKey(day))groups.put(day,new ArrayList<>());
+            groups.get(day).add(item);
+        }
+        if(!daysInitialized){
+            openDays.clear();
+            if(!groups.isEmpty())openDays.add(groups.keySet().iterator().next());
+            daysInitialized=true;
+        }
+        for(Map.Entry<String,ArrayList<JSONObject>> entry:groups.entrySet()){
+            String day=entry.getKey();
+            int count=entry.getValue().size();
+            boolean expanded=openDays.contains(day);
+            LinearLayout row=row();
+            row.setPadding(dp(14),dp(13),dp(13),dp(13));
+            row.setBackground(bg(Color.BLACK,Color.BLACK,17));
+            TextView title=text(prettyDay(day),16,WHITE,true);
+            row.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+            row.addView(text(count+(count==1?" viaje":" viajes")+
+                (expanded?"   −":"   +"),12,MUTED,false));
+            row.setContentDescription(prettyDay(day)+", "+count+" viajes, "+
+                (expanded?"contraer":"desplegar"));
+            row.setOnClickListener(v->{
+                if(openDays.contains(day))openDays.remove(day);
+                else {openDays.clear();openDays.add(day);}
+                render();
+            });
+            list.addView(row,match(expanded?8:10));
+            if(expanded)for(JSONObject item:entry.getValue())showReservation(item);
+        }
+    }
     private String prettyDay(String date){
         if(date.length()>=10)return date.substring(8,10)+"/"+date.substring(5,7)+"/"+date.substring(0,4);
         return "Sin fecha";
@@ -458,11 +504,12 @@ public final class UnifiedDriverPanel extends FrameLayout {
         container.addView(tile,lp);
     }
     private void renderSummary(){
-        int finished=0,canceled=0,rejected=0,priced=0;
+        int finished=0,canceled=0,rejected=0,priced=0,records=0;
         double km=0,quoted=0;
         for(int i=0;i<historyRows.length();i++){
             JSONObject item=historyRows.optJSONObject(i);
             if(item==null||!matchesPeriod(item))continue;
+            records++;
             String status=item.optString("status","");
             if("FINALIZADA".equals(status)){
                 finished++;
@@ -474,6 +521,13 @@ public final class UnifiedDriverPanel extends FrameLayout {
                 if(Double.isFinite(amount)&&amount>0){quoted+=amount;priced++;}
             }else if("CANCELADA".equals(status))canceled++;
             else if("RECHAZADA".equals(status))rejected++;
+        }
+        if(records==0){
+            emptyCard("Sin actividad registrada en este período",
+                "Los viajes realizados aparecerán aquí con kilómetros estimados e importes informados, sin confundir cotizaciones con cobros.");
+            secondary(list,"VER HISTORIAL  →",()->openScreen(Screen.HISTORIAL));
+            secondary(list,"VER SOLICITUDES  →",()->openScreen(Screen.SOLICITUDES));
+            return;
         }
         list.addView(text("Resumen de viajes",20,WHITE,true),match(14));
         LinearLayout first=row(),second=row();
