@@ -15,6 +15,25 @@ public final class UnifiedDriverPolicy {
             ||"EN_VIAJE".equals(s);
     }
     public static boolean canAccept(String s){return "PENDIENTE".equals(s);}
+
+    /** Only an already server-priced immediate trip gets a one-tap answer.
+     * Mirrors the original Conductor's isDirectFixedRequest contract:
+     * quote_status=PRECIO_FIJO, finite positive quote_final_total and
+     * pickup_mode=now or 1..120 minutes.
+     * A scheduled or unpriced request must never reach direct Accept.
+     */
+    public static boolean isImmediateMode(String mode){
+        if("now".equals(mode))return true;
+        if(mode==null||!mode.matches("[1-9][0-9]{0,2}"))return false;
+        try{return Integer.parseInt(mode)<=120;}
+        catch(NumberFormatException e){return false;}
+    }
+    public static boolean isDirectFixedRequest(String status,String quoteStatus,
+                                                double finalPrice,String pickupMode){
+        return canAccept(status)&&"PRECIO_FIJO".equals(quoteStatus)
+            &&Double.isFinite(finalPrice)&&finalPrice>0
+            &&isImmediateMode(pickupMode);
+    }
     public static boolean canStart(String s){return "ACEPTADA".equals(s);}
     public static boolean canFinish(String s){return "EN_VIAJE".equals(s);}
     public static boolean canSetPickup(String status,String current,String next){
