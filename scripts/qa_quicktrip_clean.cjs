@@ -88,7 +88,8 @@ async function main(){
     driver:!!q(".qtc-driver-slot #pickup-presence"),
     eta:!!q("#pickup-distance"),price:!!q(".qtc-action-slot #urgent-route-recap"),
     submit:!!q(".qtc-action-slot #urgent-send"),
-    oldHidden:display("#view-viaje .premium-journey-header")==="none"&&
+    oldHidden:(!q("#view-viaje .premium-journey-header")||
+      display("#view-viaje .premium-journey-header")==="none")&&
       display("#view-viaje .journey-hero")==="none",
     history:!!q("#qtc-history-panel"),schedule:!!q(".qtc-schedule #journey-when-select"),
     contact:!!q(".qtc-contact #booking-step-passenger"),
@@ -111,7 +112,7 @@ async function main(){
   check(contrastLogo,"Brighter Quick Trip brand asset loads in mobile header");
 
   check(s.scrollWidth<=s.width+6,"No horizontal overflow at Samsung phone width");
-  check(s.manifest==="./manifest-quicktrip-clean.webmanifest","Separate PWA manifest selected");
+  check(s.manifest==="./manifest.webmanifest","Quick Trip production manifest selected");
   await snap("01-quicktrip-arriba.png");
   const newTitle=await expression(function(){
    return document.querySelector(".qtc-summary-title small")?.textContent.trim();
@@ -143,7 +144,7 @@ async function main(){
   const blockedPanel=await poll(()=>expression(function(){
    const driver=document.querySelector(".qtc-driver");
    const panel=driver?.querySelector(".qtc-driver-unavailable");
-   const native=driver?.querySelector("#pickup-presence .pickup-card-header");
+   const native=driver?.querySelector("#pickup-presence");
    return !!panel&&!panel.hidden&&driver.dataset.availability==="unavailable"&&
      getComputedStyle(native).display==="none";
   }),4500);
@@ -163,7 +164,7 @@ async function main(){
   const restored=await poll(()=>expression(function(){
    const driver=document.querySelector(".qtc-driver");
    const panel=driver?.querySelector(".qtc-driver-unavailable");
-   const native=driver?.querySelector("#pickup-presence .pickup-card-header");
+   const native=driver?.querySelector("#pickup-presence");
    return !!panel&&panel.hidden&&driver.dataset.availability==="normal"&&
      getComputedStyle(native).display!=="none";
   }),4500);
@@ -292,13 +293,21 @@ async function main(){
   const manifest=await cmd("Page.getAppManifest").catch(()=>null);
   if(manifest?.data){
    const meta=JSON.parse(manifest.data);
-   check(String(meta.start_url||"").includes("ui=clean"),"Installed PWA opens new UI");
+   check(String(meta.start_url||"")==="./","Installed PWA opens Quick Trip production root");
   }
   await goto(HOST);
-  await poll(()=>expression(function(){return !!document.querySelector("#view-inicio.active")}),12000);
-  check(await expression(function(){return !document.body.classList.contains("qt-clean")}),
-   "Ordinary web is not affected by testing UI");
-  await snap("04-original-protegida.png");
+  await poll(()=>expression(function(){
+    return !!document.querySelector("body.qt-clean.qt-clean-active #qtc-app .qtc-places [data-booking-step=route]");
+  }),16000);
+  check(await expression(function(){
+    const doc=document;
+    return !!doc.querySelector(".qtc-places #origin-picker .location-widget")&&
+      !!doc.querySelector(".qtc-places #destination-picker .location-widget")&&
+      !!doc.querySelector(".qtc-app .qtc-schedule #journey-when-select")&&
+      !doc.querySelector(".qtc-app .qtc-schedule").textContent.includes("Viajás ahora")&&
+      doc.querySelector('link[rel="manifest"]')?.getAttribute("href")==="./manifest.webmanifest";
+  }),"Canonical web is Quick Trip V7, keeps native route/time and no old Viajás ahora");
+  await snap("04-quicktrip-produccion.png");
   say("ALL BROWSER CHECKS PASSED — no booking submitted");
  }catch(e){
   say("ERROR "+e.stack);
