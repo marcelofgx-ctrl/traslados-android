@@ -229,7 +229,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         });
     }
     private void render(){
-        boolean started=host.getSharedPreferences("tracking_state",MODE_PRIVATE)
+        boolean started=host.getSharedPreferences("tracking_state",Context.MODE_PRIVATE)
             .getBoolean("shift_active",false);
         boolean enabled=Api.pickupPresenceEnabled();
         if(!gateway.linked()){
