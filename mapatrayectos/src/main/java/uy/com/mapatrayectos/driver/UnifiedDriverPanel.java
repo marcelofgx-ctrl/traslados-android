@@ -227,11 +227,13 @@ public final class UnifiedDriverPanel extends FrameLayout {
 
         scroller=new ScrollView(host);
         scroller.setVerticalScrollBarEnabled(false);
-        scroller.setFillViewport(false);
+        scroller.setFillViewport(true);
         list=vertical();
         list.setPadding(0,0,0,0);
         scroller.addView(list,new ScrollView.LayoutParams(-1,-2));
-        page.addView(scroller,match(14));
+        LinearLayout.LayoutParams contentLp=new LinearLayout.LayoutParams(-1,0,1);
+        contentLp.bottomMargin=dp(14);
+        page.addView(scroller,contentLp);
 
         TextView swipe=center("➜   Deslizar a la derecha para volver a Mapa",12,MUTED,false);
         swipe.setContentDescription("Deslizá desde el borde izquierdo hacia la derecha para volver a Mapa");
@@ -315,6 +317,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         LinearLayout card=vertical();
         card.setBackground(bg(Color.BLACK,Color.BLACK,22));
         card.setPadding(dp(15),dp(21),dp(15),dp(26));
+        card.setMinimumHeight(dp(310));
         TextView headline=text(title,21,WHITE,true);
         card.addView(headline,match(18));
         TextView detail=text(description,14,MUTED,false);
