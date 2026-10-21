@@ -55,10 +55,14 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private UnifiedDriverGateway gateway;
     private LinearLayout page,list;
     private ScrollView scroller;
-    private TextView connection,newCount,acceptedCount,travelCount,heading,historyLink;
-    private LinearLayout contentCard;
-    private JSONArray rows=new JSONArray();
-    private boolean history=false,foreground=false;
+    private TextView connection,newCount,acceptedCount,travelCount,heading;
+    private LinearLayout navigation;
+    private enum Screen { SOLICITUDES, AGENDA, HISTORIAL, RESUMEN }
+    private enum Period { TODOS, HOY, SEMANA, MES }
+    private Screen screen=Screen.SOLICITUDES;
+    private Period period=Period.TODOS;
+    private JSONArray activeRows=new JSONArray(), historyRows=new JSONArray();
+    private boolean activeLoaded=false, historyLoaded=false, foreground=false, syncError=false;
     private long lastSuccessfulFetch=0;
     private float downX,downY;
     private boolean swipeArmed=false;
@@ -97,7 +101,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         io.shutdownNow();
     }
     public void handleBack(){
-        if(history){history=false;toggle();reload(true);}
+        if(screen!=Screen.SOLICITUDES)openScreen(Screen.SOLICITUDES);
         else backToMap();
     }
     private void backToMap(){onReturnToMapa.run();}
@@ -179,6 +183,33 @@ public final class UnifiedDriverPanel extends FrameLayout {
         strip.addView(tile,tileLp);
         return count;
     }
+
+    private void openScreen(Screen next){
+        if(screen==next)return;
+        screen=next;
+        period=Period.TODOS;
+        render();
+        reload(true);
+    }
+    private void addTab(LinearLayout bar,Screen view,String label){
+        TextView tab=center(label,11,screen==view?WHITE:MUTED,screen==view);
+        tab.setSingleLine(true);
+        tab.setGravity(Gravity.CENTER);
+        tab.setBackground(bg(screen==view?Color.BLACK:CARD,
+            screen==view?GREEN:CARD,12));
+        tab.setContentDescription("Ver "+label);
+        tab.setOnClickListener(v->openScreen(view));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(43),1);
+        p.setMargins(dp(2),0,dp(2),0);
+        bar.addView(tab,p);
+    }
+    private void buildNavigation(){
+        navigation.removeAllViews();
+        addTab(navigation,Screen.SOLICITUDES,"Solicitudes");
+        addTab(navigation,Screen.AGENDA,"Agenda");
+        addTab(navigation,Screen.HISTORIAL,"Historial");
+        addTab(navigation,Screen.RESUMEN,"Resumen");
+    }
     private void build(){
         setBackgroundColor(PETROL);
         ScrollView viewport=new ScrollView(host);
@@ -186,8 +217,6 @@ public final class UnifiedDriverPanel extends FrameLayout {
         viewport.setVerticalScrollBarEnabled(false);
         viewport.setClipToPadding(false);
         viewport.setBackgroundColor(PETROL);
-        // Device safe area: the reference's black margin starts below
-        // Android's status bar and above the gesture navigation bar.
         int inset=dp(25);
         int statusId=getResources().getIdentifier("status_bar_height","dimen","android");
         if(statusId>0)inset=Math.max(inset,getResources().getDimensionPixelSize(statusId));
@@ -204,20 +233,12 @@ public final class UnifiedDriverPanel extends FrameLayout {
 
         LinearLayout header=row();
         LinearLayout titleGroup=vertical();
-        TextView brand=text("QUICK TRIP",13,MUTED,false);
-        titleGroup.addView(brand);
+        titleGroup.addView(text("QUICK TRIP",13,MUTED,false));
         gap(titleGroup,9);
         heading=text("Conductor",28,WHITE,true);
         titleGroup.addView(heading);
-        titleGroup.setOnClickListener(v->{
-            history=!history;
-            heading.setText(history?"Historial":"Conductor");
-            render();
-            reload(true);
-        });
-        titleGroup.setContentDescription("Conductor. Tocá para alternar entre solicitudes e historial");
         header.addView(titleGroup,new LinearLayout.LayoutParams(0,-2,1));
-        connection=text("● Jornada detenida",12,MUTED,false);
+        connection=text("○ Jornada detenida",12,MUTED,false);
         connection.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
         header.addView(connection,new LinearLayout.LayoutParams(-2,dp(54)));
         page.addView(header,match(16));
@@ -226,13 +247,16 @@ public final class UnifiedDriverPanel extends FrameLayout {
         newCount=metric(strip,"Nuevas");
         acceptedCount=metric(strip,"Aceptadas");
         travelCount=metric(strip,"En viaje");
-        page.addView(strip,match(13));
+        page.addView(strip,match(14));
+
+        // All four destinations remain inside Conductor; Mapa's view is untouched.
+        navigation=row();
+        page.addView(navigation,match(13));
 
         scroller=new ScrollView(host);
         scroller.setVerticalScrollBarEnabled(false);
         scroller.setFillViewport(true);
         list=vertical();
-        list.setPadding(0,0,0,0);
         scroller.addView(list,new ScrollView.LayoutParams(-1,-2));
         LinearLayout.LayoutParams contentLp=new LinearLayout.LayoutParams(-1,0,1);
         contentLp.bottomMargin=dp(14);
@@ -244,21 +268,23 @@ public final class UnifiedDriverPanel extends FrameLayout {
         page.addView(swipe,match(0));
         render();
     }
-    private void toggle(){
-        heading.setText(history?"Historial":"Conductor");
-    }
+
     private void reload(boolean moveTop){
         if(!gateway.linked()){render();return;}
         if(!loading.compareAndSet(false,true))return;
-        final boolean requestedHistory=history;
+        final Screen requestedScreen=screen;
+        final boolean loadArchive=screen==Screen.HISTORIAL||screen==Screen.RESUMEN;
         io.execute(()->{
             try{
-                final JSONArray answer=requestedHistory?gateway.history():gateway.requests();
+                final JSONArray answer=loadArchive?gateway.history():gateway.requests();
                 host.runOnUiThread(()->{
                     loading.set(false);
                     if(host.isFinishing()||host.isDestroyed())return;
-                    if(history!=requestedHistory){reload(true);return;}
-                    rows=answer;lastSuccessfulFetch=System.currentTimeMillis();
+                    if(loadArchive){historyRows=answer;historyLoaded=true;}
+                    else{activeRows=answer;activeLoaded=true;}
+                    lastSuccessfulFetch=System.currentTimeMillis();
+                    syncError=false;
+                    if(screen!=requestedScreen){reload(true);return;}
                     render();
                     if(moveTop)scroller.smoothScrollTo(0,0);
                 });
@@ -266,55 +292,195 @@ public final class UnifiedDriverPanel extends FrameLayout {
                 host.runOnUiThread(()->{
                     loading.set(false);
                     if(host.isFinishing()||host.isDestroyed())return;
-                    connection.setText("Sin sincronización. Verificá Internet y la vinculación en Mapa.");
-                    if(lastSuccessfulFetch==0){rows=new JSONArray();render();}
+                    syncError=true;
+                    render();
                 });
             }
         });
     }
+    private boolean isArchive(){return screen==Screen.HISTORIAL||screen==Screen.RESUMEN;}
     private void render(){
         boolean started=host.getSharedPreferences("tracking_state",Context.MODE_PRIVATE)
             .getBoolean("shift_active",false);
-        connection.setText(started?"✓ Jornada activa":"○ Jornada detenida");
+        connection.setText((started?"✓ Jornada activa":"○ Jornada detenida")
+            +(syncError?" · Sin sincronizar":""));
         connection.setTextColor(started?GREEN:MUTED);
-
-        ArrayList<JSONObject> items=new ArrayList<>();
+        buildNavigation();
         int pending=0,accepted=0,traveling=0;
-        for(int i=0;i<rows.length();i++){
-            JSONObject r=rows.optJSONObject(i);if(r==null)continue;
+        for(int i=0;i<activeRows.length();i++){
+            JSONObject r=activeRows.optJSONObject(i);if(r==null)continue;
             String status=r.optString("status");
             if("PENDIENTE".equals(status))pending++;
-            if("ACEPTADA".equals(status))accepted++;
+            if("ACEPTADA".equals(status)||"CONFIRMADA".equals(status))accepted++;
             if("EN_VIAJE".equals(status))traveling++;
-            if(history||UnifiedDriverPolicy.active(status))items.add(r);
         }
-        if(gateway.linked()){
+        if(gateway.linked()&&activeLoaded){
             newCount.setText(String.format(Locale.ROOT,"%02d",pending));
             acceptedCount.setText(String.format(Locale.ROOT,"%02d",accepted));
             travelCount.setText(String.format(Locale.ROOT,"%02d",traveling));
         }else{
             newCount.setText("—");acceptedCount.setText("—");travelCount.setText("—");
         }
+
         int oldY=scroller.getScrollY();
         list.removeAllViews();
-
         if(!gateway.linked()){
             emptyCard("Solicitudes no vinculadas",
-                "Mapa mantiene la jornada y el GPS. Todavía falta autorizar la conexión de reservas desde la configuración de Mapa.");
-        }else if(items.isEmpty()){
-            emptyCard(history?"Sin viajes en el historial":"Sin solicitudes nuevas",
-                history?"Tus viajes registrados aparecerán aquí.":
-                "Quedamos atentos a una nueva solicitud. No hay viajes para mostrar.");
+                "Mapa mantiene la jornada y el GPS. Para consultar reservas e histórico autorizá la conexión desde Mapa → Conductor y recogidas.");
+            secondary(list,"← Volver a Mapa para vincular",this::backToMap);
+            return;
+        }
+        if(syncError){
+            TextView error=text("Sin conexión actual. Se conserva la última información recibida.",12,MUTED,false);
+            error.setPadding(dp(8),dp(4),dp(8),dp(10));
+            list.addView(error,match(0));
+        }
+        boolean loaded=isArchive()?historyLoaded:activeLoaded;
+        if(!loaded){
+            emptyCard(syncError?"No se pudieron cargar los datos":"Cargando "+screenTitle().toLowerCase(Locale.ROOT)+"…",
+                syncError?"Revisá Internet y volvé a intentar.":"Esperando respuesta de las reservas autorizadas.");
+            secondary(list,"REINTENTAR",()->reload(false));
+            return;
+        }
+
+        if(screen!=Screen.SOLICITUDES)showPeriodFilters();
+        if(screen==Screen.RESUMEN){renderSummary();return;}
+
+        JSONArray source=isArchive()?historyRows:activeRows;
+        ArrayList<JSONObject> items=new ArrayList<>();
+        for(int i=0;i<source.length();i++){
+            JSONObject item=source.optJSONObject(i);
+            if(item==null)continue;
+            String status=item.optString("status");
+            if(screen==Screen.SOLICITUDES&&!UnifiedDriverPolicy.active(status))continue;
+            if(screen!=Screen.SOLICITUDES&&!matchesPeriod(item))continue;
+            items.add(item);
+        }
+        Collections.sort(items,(a,b)->{
+            String left=a.optString("pickup_date","")+" "+a.optString("pickup_time","");
+            String right=b.optString("pickup_date","")+" "+b.optString("pickup_time","");
+            return screen==Screen.HISTORIAL?right.compareTo(left):left.compareTo(right);
+        });
+        if(items.isEmpty()){
+            emptyCard(screen==Screen.HISTORIAL?"Sin viajes en este período":
+                    screen==Screen.AGENDA?"Agenda sin reservas":"Sin solicitudes nuevas",
+                screen==Screen.HISTORIAL?"Probá otro período para consultar tus viajes registrados.":
+                    screen==Screen.AGENDA?"No hay reservas programadas para el período seleccionado.":
+                    "Quedamos atentos a una nueva solicitud.");
         }else{
-            for(JSONObject item:items)showReservation(item);
+            String lastDay="";
+            for(JSONObject item:items){
+                if(screen!=Screen.SOLICITUDES){
+                    String day=item.optString("pickup_date","");
+                    if(!day.equals(lastDay)){
+                        TextView date=text(prettyDay(day),14,WHITE,true);
+                        date.setPadding(dp(7),dp(10),0,dp(6));
+                        list.addView(date,match(0));
+                        lastDay=day;
+                    }
+                }
+                showReservation(item);
+            }
         }
-        if(!history&&gateway.linked()){
-            TextView refresh=center("Actualizar solicitudes",12,MUTED,false);
-            refresh.setPadding(dp(5),dp(8),dp(5),dp(8));
-            refresh.setOnClickListener(v->reload(false));
-            list.addView(refresh,match(0));
-        }
+        secondary(list,screen==Screen.HISTORIAL?"Actualizar histórico":"Actualizar solicitudes",()->reload(false));
         if(oldY>0)scroller.post(()->scroller.scrollTo(0,oldY));
+    }
+    private String screenTitle(){
+        if(screen==Screen.AGENDA)return "Agenda";
+        if(screen==Screen.HISTORIAL)return "Historial";
+        if(screen==Screen.RESUMEN)return "Resumen";
+        return "Solicitudes";
+    }
+    private void showPeriodFilters(){
+        LinearLayout strip=row();
+        for(Period option:Period.values()){
+            final String label=option==Period.TODOS?"Todos":option==Period.HOY?"Hoy":
+                option==Period.SEMANA?"Semana":"Mes";
+            TextView chip=center(label,12,period==option?WHITE:MUTED,period==option);
+            chip.setSingleLine(true);
+            chip.setBackground(bg(period==option?GREEN:Color.BLACK,
+                period==option?GREEN:Color.BLACK,11));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(39),1);
+            lp.setMargins(dp(3),0,dp(3),0);
+            chip.setOnClickListener(v->{period=option;render();scroller.scrollTo(0,0);});
+            strip.addView(chip,lp);
+        }
+        list.addView(strip,match(11));
+    }
+    private boolean matchesPeriod(JSONObject row){
+        if(period==Period.TODOS)return true;
+        String raw=row.optString("pickup_date","");
+        if(raw.length()<10)return false;
+        try{
+            SimpleDateFormat fmt=new SimpleDateFormat("yyyy-MM-dd",Locale.ROOT);
+            fmt.setLenient(false);
+            Date when=fmt.parse(raw.substring(0,10));
+            if(when==null)return false;
+            java.util.Calendar threshold=java.util.Calendar.getInstance();
+            threshold.set(java.util.Calendar.HOUR_OF_DAY,0);
+            threshold.set(java.util.Calendar.MINUTE,0);
+            threshold.set(java.util.Calendar.SECOND,0);
+            threshold.set(java.util.Calendar.MILLISECOND,0);
+            if(period==Period.SEMANA){
+                while(threshold.get(java.util.Calendar.DAY_OF_WEEK)!=java.util.Calendar.MONDAY)
+                    threshold.add(java.util.Calendar.DATE,-1);
+            }else if(period==Period.MES)
+                threshold.set(java.util.Calendar.DAY_OF_MONTH,1);
+            java.util.Calendar end=java.util.Calendar.getInstance();
+            end.set(java.util.Calendar.HOUR_OF_DAY,0);
+            end.set(java.util.Calendar.MINUTE,0);
+            end.set(java.util.Calendar.SECOND,0);
+            end.set(java.util.Calendar.MILLISECOND,0);
+            end.add(java.util.Calendar.DATE,1);
+            return !when.before(threshold.getTime())&&when.before(end.getTime());
+        }catch(Exception e){return false;}
+    }
+    private String prettyDay(String date){
+        if(date.length()>=10)return date.substring(8,10)+"/"+date.substring(5,7)+"/"+date.substring(0,4);
+        return "Sin fecha";
+    }
+    private void summaryValue(LinearLayout container,String value,String label){
+        LinearLayout tile=vertical();
+        tile.setPadding(dp(13),dp(18),dp(10),dp(17));
+        tile.setBackground(bg(Color.BLACK,Color.BLACK,18));
+        tile.addView(text(value,24,WHITE,true),match(9));
+        tile.addView(text(label,12,MUTED,false));
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(104),1);
+        lp.setMargins(dp(4),0,dp(4),dp(8));
+        container.addView(tile,lp);
+    }
+    private void renderSummary(){
+        int finished=0,canceled=0,rejected=0,priced=0;
+        double km=0,quoted=0;
+        for(int i=0;i<historyRows.length();i++){
+            JSONObject item=historyRows.optJSONObject(i);
+            if(item==null||!matchesPeriod(item))continue;
+            String status=item.optString("status","");
+            if("FINALIZADA".equals(status)){
+                finished++;
+                double distance=item.optDouble("route_distance_km",Double.NaN);
+                if(Double.isFinite(distance)&&distance>0)km+=distance;
+                double amount=item.optDouble("quote_final_total",Double.NaN);
+                if(!Double.isFinite(amount)||amount<=0)
+                    amount=item.optDouble("quote_reference_total",Double.NaN);
+                if(Double.isFinite(amount)&&amount>0){quoted+=amount;priced++;}
+            }else if("CANCELADA".equals(status))canceled++;
+            else if("RECHAZADA".equals(status))rejected++;
+        }
+        list.addView(text("Resumen de viajes",20,WHITE,true),match(14));
+        LinearLayout first=row(),second=row();
+        summaryValue(first,String.valueOf(finished),"Finalizados");
+        summaryValue(first,String.valueOf(canceled),"Cancelados");
+        summaryValue(second,String.format(Locale.forLanguageTag("es-UY"),"%.1f km",km),"Distancia registrada");
+        summaryValue(second,"$ "+String.format(Locale.forLanguageTag("es-UY"),"%.0f",quoted),"Importes cotizados");
+        list.addView(first,match(0));
+        list.addView(second,match(3));
+        TextView disclaimer=text(rejected+" rechazados · Importes informados en "+
+            priced+" viaje(s) finalizados. No representa recaudación efectivamente cobrada.",12,MUTED,false);
+        disclaimer.setPadding(dp(7),dp(8),dp(7),dp(14));
+        list.addView(disclaimer,match(0));
+        secondary(list,"VER HISTORIAL DE VIAJES",()->openScreen(Screen.HISTORIAL));
+        secondary(list,"ACTUALIZAR RESUMEN",()->reload(false));
     }
     private void emptyCard(String title,String description){
         LinearLayout card=vertical();
@@ -411,7 +577,14 @@ public final class UnifiedDriverPanel extends FrameLayout {
 
         String title="PENDIENTE".equals(status)?"Nueva solicitud":
             UnifiedDriverPolicy.label(status,phase);
-        card.addView(text(title,22,WHITE,true),match(20));
+        card.addView(text(title,22,WHITE,true),match(7));
+        String code=item.optString("code","");
+        String customer=item.optString("customer_name","");
+        String when=prettyDay(item.optString("pickup_date",""))
+            +" · "+item.optString("pickup_time","");
+        String details=(code.isEmpty()?"":code+" · ")+when
+            +(customer.trim().isEmpty()?"":" · "+customer.trim());
+        card.addView(text(details,12,MUTED,false),match(15));
         routeBlock(card,"ORIGEN",plain(item.optString("origin_text")),
             Color.rgb(0,163,82));
         TextView dotted=text("│",17,Color.rgb(85,85,85),false);
@@ -432,7 +605,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
         metricDetail(three,"IMPORTE",amount(item));
         card.addView(three,match(17));
 
-        if(!history){
+        if(screen!=Screen.HISTORIAL){
             if(UnifiedDriverPolicy.canAccept(status))
                 actions(card,"Rechazar",()->performChange(item,"RECHAZADA",true),
                     "Aceptar",()->performChange(item,"ACEPTADA",false));
@@ -451,7 +624,7 @@ public final class UnifiedDriverPanel extends FrameLayout {
                 actions(card,"Ruta",()->openRoute(item),
                     "Finalizar",()->performChange(item,"FINALIZADA",true));
         }
-        if(!history&&!UnifiedDriverPolicy.canAccept(status)){
+        if(screen!=Screen.HISTORIAL&&!UnifiedDriverPolicy.canAccept(status)){
             LinearLayout extras=row();
             extras.addView(extra("Llamar",()->dial(item)),
                 new LinearLayout.LayoutParams(0,dp(43),1));
