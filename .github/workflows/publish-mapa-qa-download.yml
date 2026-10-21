@@ -23,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qa
-          gh run download 39519717059 \
+          gh run download 39525385001 \
             --repo "$GITHUB_REPOSITORY" \
             --name quicktrip-mapa-conductor-unificado-qa \
             --dir qa
@@ -41,8 +41,8 @@ jobs:
           # La release QA ya existe; no crear nuevas releases con permisos limitados.
           gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
           cp qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
-             qa/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk
-          gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk \
+             qa/QuickTrip-Mapa-Panel-Conductor-Corregido-QA.apk
+          gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Panel-Conductor-Corregido-QA.apk \
             --repo "$GITHUB_REPOSITORY" --clobber
-          echo "### Conductor reconstruido - APK QA exacta de compilación #39519717059" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-Conductor-Reconstruido-QA.apk" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Mapa + panel Conductor corregido - APK QA exacta de compilación #39525385001" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/$QA_TAG/QuickTrip-Mapa-Panel-Conductor-Corregido-QA.apk" >> "$GITHUB_STEP_SUMMARY"
