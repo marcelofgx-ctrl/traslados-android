@@ -150,6 +150,12 @@ public final class UnifiedDriverPanel extends FrameLayout {
     }
     private void build(){
         page=vertical();page.setBackgroundColor(PETROL);
+        // Mapa uses edge-to-edge insets for its HUD. The embedded Conductor
+        // page needs its own safe top padding to avoid Android status icons.
+        int inset=dp(26);
+        int id=getResources().getIdentifier("status_bar_height","dimen","android");
+        if(id>0)inset=Math.max(inset,getResources().getDimensionPixelSize(id));
+        page.setPadding(0,inset,0,0);
         LinearLayout top=new LinearLayout(host);
         top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(14),dp(14),dp(14),dp(12));
         Button map=btn("←",false);
@@ -233,18 +239,20 @@ public final class UnifiedDriverPanel extends FrameLayout {
             .getBoolean("shift_active",false);
         boolean enabled=Api.pickupPresenceEnabled();
         if(!gateway.linked()){
-            connection.setText("Jornada y GPS gestionados por Mapa");
+            connection.setText(started?
+                "● Jornada activa en Mapa · recogidas sin autorización":
+                "● Jornada detenida · abrí Mapa para iniciar");
             metrics.setText("NUEVAS —       ACEPTADAS —       EN VIAJE —");
             list.removeAllViews();
             cardMessage("Solicitudes",
                 "Todavía no se pueden consultar las reservas de esta instalación. El enlace seguro con el conductor debe completarse desde Mapa.");
             cardMessage("Recogidas y disponibilidad",
                 "Play y Stop pertenecen a Mapa. La ubicación se comparte únicamente cuando este dispositivo está autorizado y tiene GPS reciente.");
-            Button home=btn("VOLVER A MAPA",true);
-            home.setOnClickListener(v->backToMap());
-            LinearLayout.LayoutParams toMap=new LinearLayout.LayoutParams(-1,dp(52));
-            toMap.setMargins(0,dp(10),0,dp(8));
-            list.addView(home,toMap);
+            TextView hint=text("DESLIZÁ  →  PARA VOLVER AL MAPA",11,MUTED,true);
+            hint.setGravity(Gravity.CENTER);
+            LinearLayout.LayoutParams hintLp=new LinearLayout.LayoutParams(-1,dp(52));
+            hintLp.setMargins(0,dp(9),0,0);
+            list.addView(hint,hintLp);
             return;
         }
         connection.setText(started?
