@@ -23,6 +23,9 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false">
 
+        <!-- New independent Mapa-owned Conductor presentation, no launcher/PIN screen. -->
+        <activity android:name=".driver.UnifiedDriverActivity"
+            android:exported="false" android:screenOrientation="portrait" />
         <!-- Integrated native Traslados Conductor, not an external APK/deep link. -->
         <activity android:name="uy.com.traslados.conductor.MainActivity"
             android:exported="false" android:screenOrientation="portrait" />
