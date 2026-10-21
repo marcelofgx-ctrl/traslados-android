@@ -154,3 +154,17 @@ Horarios y disponibilidad, bloqueos, tarifas, avisos, GPS/telemetría, vehículo
 
 ## 7. Definición de terminado
 Solo consideraremos “Conductor completo” cuando cada fila del inventario tenga: vista/acceso, lectura real o contrato identificado, acciones autorizadas donde corresponda, prueba de éxito y error, captura estética aprobada, y ausencia de regresión en Mapa. La mera compilación exitosa **no equivale** a paridad funcional.
+
+
+## 8. Regla prioritaria aprobada: «Tu viaje» directo ≠ viaje programado
+Confirmación de producto del 21/10/2026:
+- **Tu viaje directo / inmediato**: el pasajero ya eligió origen, destino y vio **precio fijo final**. Conductor recibe automáticamente la **tarjeta grande original** de la captura, con recorrido, km, tiempo y precio. Al pie hay **solo dos acciones: RECHAZAR y ACEPTAR**. Se ejecutan a un toque, sin abrir cotizador, formulario, contraoferta ni un segundo diálogo. Mientras el servidor registra la decisión se inhiben duplicados y se comunica el estado real. El rechazo también es directo, porque el usuario prioriza agilidad.
+- El contrato ya existente del Conductor antiguo identifica esta clase de solicitud exclusivamente cuando \`status=PENDIENTE\`, \`quote_status=PRECIO_FIJO\`, \`quote_final_total>0\` y finito, y \`pickup_mode=now\` o intervalo numérico de 1 a 120 minutos. Implementado y probado en \`UnifiedDriverPolicy.isDirectFixedRequest\`. **Nunca inferir el precio ni habilitar aceptación directa cuando faltan datos**.
+- Aceptado el directo, el viaje pasa al flujo normal de recogida: En camino → Llegué → Iniciar viaje → Finalizar. No son pasos previos a aceptar; vienen después.
+- **Tu viaje programado**: distinguir claramente por modalidad y fecha/hora. Mostrar tarjeta programada y permitir gestionar agenda, disponibilidad y presupuesto **únicamente según el contrato de reservas programadas**. No renderizar Aceptar/Rechazar directos para una petición todavía no presupuestada. El viejo flujo de presupuestos/consulta de agenda debe portarse a V2 en etapa P1; hasta entonces se señala gestión programada pendiente, sin simular que la cotización se envió.
+- Si una petición dice \`now\` pero carece de precio fijo confirmado, se marca **petición por revisar**, no se finge que es programada ni se habilita el botón directo. La actualización debe volver a consultar Supabase.
+- Prioridad visible de tarjetas: viaje en curso, petición directa recién recibida, reserva aceptada, resto de solicitudes; no esconder una petición urgente detrás de reservas programadas.
+- QA obligatoria: directo con precio fijado, directo 10/120 min, programada sin cotizar, programada cotizada, precio faltante, precio inválido, petición ya aceptada, doble toque, fallos de RPC y refresco. Probar que jamás se abre el cotizador para el directo ni se cambia Mapa.
+- Esta regla prevalece sobre cualquier antigua indicación genérica de «Aceptar cualquier PENDIENTE».
+
+**Estado de implementación:** clasificación y botón directo simple incorporados al panel y sus pruebas unitarias; flujo de cotización programada y validación extremo a extremo en Samsung **pendientes**. No fusionar como paridad completa antes de cerrar ambas.
