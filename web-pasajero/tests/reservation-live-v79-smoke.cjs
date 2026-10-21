@@ -22,7 +22,7 @@ assert.equal(mod.coordinates(0,0),null);
 assert.equal(mod.coordinates(null,undefined),null);
 const app=fs.readFileSync(path.join(web,"app.js"),"utf8");
 const html=fs.readFileSync(path.join(web,"index.html"),"utf8");
-const css=fs.readFileSync(path.join(web,"premium-journey.css"),"utf8");
+const css=fs.readFileSync(path.join(web,"quicktrip-clean.css"),"utf8");
 assert.match(html,/reservation-live\.js\?v=3/);
 assert.match(app,/customer_reservation_position_v1|TrasladosReservationLive\?\.mount/);
 assert.match(app,/firstConfirmation/);
