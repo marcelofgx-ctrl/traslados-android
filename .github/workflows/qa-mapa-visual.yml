@@ -102,6 +102,22 @@ jobs:
               # Never reject a legitimate bright map road/vehicle pixel.
               images.append(im)
               print(p,w,h)
+          # The in-place Conductor dashboard must be visual and distinct,
+          # not another blank activity or a map covered by a uniform rectangle.
+          conductor=Image.open('docs/visual-qa/mapa-preview-conductor.png').convert('RGB')
+          returned=Image.open('docs/visual-qa/mapa-preview-back-from-conductor.png').convert('RGB')
+          assert conductor.size==images[0].size
+          from statistics import mean
+          panel_variance=mean(ImageStat.Stat(conductor).stddev)
+          assert panel_variance>15,('Conductor looks blank',panel_variance)
+          panel_change=ImageChops.difference(images[0],conductor).convert('L')
+          panel_ratio=sum(panel_change.histogram()[36:])/(panel_change.width*panel_change.height)
+          assert panel_ratio>0.15,('Conductor not shown',panel_ratio)
+          back_change=ImageChops.difference(images[0],returned).convert('L')
+          back_ratio=sum(back_change.histogram()[36:])/(back_change.width*back_change.height)
+          assert back_ratio<0.14,('Swipe right did not return to Mapa',back_ratio)
+          print('Conductor non-blank variance:',round(panel_variance,1),
+                'page difference:',round(panel_ratio,3),'map-return difference:',round(back_ratio,3))
           diff=ImageChops.difference(images[0],images[1]).convert('L')
           strong=sum(diff.histogram()[36:])/(diff.width*diff.height)
           print('Strong pixel difference:',round(strong*100,2),'%')
