@@ -33,7 +33,7 @@ if [[ "$PACKAGE" != "$EXPECTED" ]]; then
 fi
 STABLE_MAPA=false
 if [[ "$PACKAGE" == "uy.com.mapatrayectos.qa" ]]; then STABLE_MAPA=true; fi
-if [[ "$STABLE_MAPA" != true && ! "$PACKAGE" =~ ^uy\\.com\\.(mapatrayectos|traslados\\.(conductor|cliente))\\.qa\\.r[0-9]+$ ]]; then
+if [[ "$STABLE_MAPA" != true && ! "$PACKAGE" =~ ^uy\.com\.(mapatrayectos|traslados\.(conductor|cliente))\.qa\.r[0-9]+$ ]]; then
   echo "ERROR: el APK no tiene identificador exclusivo para QA." >&2
   exit 5
 fi
@@ -67,7 +67,7 @@ echo "SHA-256 APK: $(sha256sum "$APK" | awk '{print $1}')"
 
 # With ADB, check collisions without deleting apps or user data.
 if command -v adb >/dev/null 2>&1 && [[ "$(adb get-state 2>/dev/null || true)" == "device" ]]; then
-  if [[ -n "$(adb shell pm path "$PACKAGE" 2>/dev/null | tr -d '\\r')" ]]; then
+  if [[ -n "$(adb shell pm path "$PACKAGE" 2>/dev/null | tr -d '\r')" ]]; then
     if [[ "$STABLE_MAPA" == true ]]; then
       echo "QA estable presente. Instalación actualizable con adb install -r si versionCode aumenta."
     else
