@@ -23,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qa
-          gh run download 39476812976 \
+          gh run download 39519717059 \
             --repo "$GITHUB_REPOSITORY" \
             --name quicktrip-mapa-conductor-unificado-qa \
             --dir qa
@@ -35,16 +35,16 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          QA_TAG: qa-mapa-unificado-20261020-r39476812976
-          QA_SHA: 7f569505c14fd6f8ea45d8841f14c919622e79c2
+          QA_TAG: qa-mapa-conductor-reconstruido-r39519717059
+          QA_SHA: 109ec4f2d87e604476a95368004292bd15d5ca69
         run: |
           set -euo pipefail
           if ! gh release view "$QA_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$QA_TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$QA_SHA" \
-              --title "Mapa + Conductor unificado - QA 20/10/2026" \
-              --notes "VERSION DE PRUEBA. No sustituye la APK oficial. APK unica Mapa + Conductor con navegación lateral y autorización desde Mapa. Probado en compilación; faltan pruebas en Samsung de instalación, GPS, distancia y ETA. No descargar APK Conductor independiente." \
+              --title "Mapa + Conductor reconstruido - QA 20/10/2026" \
+              --notes "VERSION QA PARA INSTALAR. Incluye panel Conductor reconstruido nativamente dentro de Mapa, con solicitudes, aceptar/rechazar, recogida, historial y chat. Navegacion lateral: deslizar izquierda a Conductor y derecha a Mapa. La compilacion Android y pruebas modulares pasaron; la prueba visual Android de esta compilacion fallo y requiere validacion fisica. La autorizacion inicial comercial del GPS desde Mapa sigue pendiente de validacion. No sustituye la APK oficial ni publicar APK Conductor independiente." \
               --prerelease
           fi
           gh release upload "$QA_TAG" qa/QuickTrip-Mapa-Conductor-Unificado-QA.apk \
