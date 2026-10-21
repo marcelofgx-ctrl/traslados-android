@@ -47,6 +47,7 @@ public class MainActivity extends Activity {
     private FrameLayout rootFrame;
     private uy.com.mapatrayectos.driver.UnifiedDriverPanel driverPanel;
     private boolean driverPanelOpen=false;
+    private int driverPreviousSystemUiFlags=0,driverPreviousStatusBar=0,driverPreviousNavBar=0;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
     private final Runnable dismissTransferCallout=()->hideInAppTransfer(false);
@@ -123,10 +124,21 @@ public class MainActivity extends Activity {
         if(driverPanel==null){
             driverPanel=new uy.com.mapatrayectos.driver.UnifiedDriverPanel(
                 this,this::closeIntegratedConductor);
+            // The map cockpit uses elevation for badges, heading and jornada.
+            // The Conductor page must sit ABOVE every map control as one plane.
+            driverPanel.setElevation(dp(48));
             rootFrame.addView(driverPanel,new FrameLayout.LayoutParams(-1,-1));
         }
         driverPanelOpen=true;
+        driverPanel.setElevation(dp(48));
         driverPanel.bringToFront();
+        driverPreviousStatusBar=getWindow().getStatusBarColor();
+        driverPreviousNavBar=getWindow().getNavigationBarColor();
+        driverPreviousSystemUiFlags=getWindow().getDecorView().getSystemUiVisibility();
+        getWindow().setStatusBarColor(Color.rgb(5,34,42));
+        getWindow().setNavigationBarColor(Color.rgb(5,34,42));
+        getWindow().getDecorView().setSystemUiVisibility(
+            driverPreviousSystemUiFlags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         driverPanel.setVisibility(View.VISIBLE);
         int pageWidth=Math.max(rootFrame.getWidth(),
             getResources().getDisplayMetrics().widthPixels);
@@ -140,6 +152,9 @@ public class MainActivity extends Activity {
         if(!driverPanelOpen||driverPanel==null)return;
         driverPanelOpen=false;
         driverPanel.hidePage();
+        getWindow().setStatusBarColor(driverPreviousStatusBar);
+        getWindow().setNavigationBarColor(driverPreviousNavBar);
+        getWindow().getDecorView().setSystemUiVisibility(driverPreviousSystemUiFlags);
         int pageWidth=Math.max(rootFrame.getWidth(),
             getResources().getDisplayMetrics().widthPixels);
         driverPanel.animate().cancel();
