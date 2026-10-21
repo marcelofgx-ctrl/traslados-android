@@ -30,21 +30,41 @@ public final class Api {
         return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .getBoolean("manually_busy",false);
     }
-    /** User PIN is used only for one-time device linking, never persisted. */
+    /** Mapa is the only enrollment surface. Only first pairing uses the PIN.
+     * Thereafter the revocable token is encrypted by Android Keystore and
+     * enables explicit GPS sharing without asking for the PIN again.
+     */
     public static boolean setPickupConsent(String pin,boolean enabled)throws Exception{
-        // Privacy first: OFF must stop future GPS uploads even if offline.
-        // Remote presence will expire after 90 s if the revocation request fails.
+        if(APP==null)throw new IllegalStateException("Mapa no inicializado");
         if(!enabled)pickupDemandExpiresAt=0L;
-        if(!enabled&&APP!=null)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+        if(!enabled)APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .edit().putBoolean("enabled",false).apply();
         registerDevice();
-        String[] ids=credentials();JSONObject body=new JSONObject();
-        body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
-        body.put("p_pin",enabled?pin:"");body.put("p_enabled",enabled);
-        JSONObject result=new JSONObject(postRpc("mapa_presence_consent_v1",body));
+        String[] ids=credentials();
+        JSONObject body=new JSONObject();
+        body.put("p_device_id",ids[0]);
+        body.put("p_device_secret",ids[1]);
+        boolean existing=enabled&&(pin==null||pin.isEmpty())&&
+            uy.com.mapatrayectos.driver.DriverSessionStore.linked(APP);
+        final String rpc;
+        if(existing){
+            rpc="mapa_presence_resume_v1";
+            body.put("p_session_token",
+                uy.com.mapatrayectos.driver.DriverSessionStore.token(APP));
+        }else{
+            rpc="mapa_presence_consent_v1";
+            body.put("p_pin",enabled?pin:"");
+            body.put("p_enabled",enabled);
+        }
+        JSONObject result=new JSONObject(postRpc(rpc,body));
         if(!result.optBoolean("ok",false))return false;
-        APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE).edit()
-            .putBoolean("enabled",enabled).apply();
+        if(enabled&&!existing){
+            String token=result.optString("driverSessionToken","");
+            // Do not signal successful linking when the server omitted a token.
+            uy.com.mapatrayectos.driver.DriverSessionStore.save(APP,token);
+        }
+        APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+            .edit().putBoolean("enabled",enabled).apply();
         return true;
     }
     /** Asynchronous, bounded heartbeat; never blocks GPS or writes secret/PIN to logs. */
