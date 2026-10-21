@@ -213,7 +213,8 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private void build(){
         setBackgroundColor(PETROL);
         ScrollView viewport=new ScrollView(host);
-        viewport.setFillViewport(true);
+        // Content dictates height: no blank panel reserved while idle.
+        viewport.setFillViewport(false);
         viewport.setVerticalScrollBarEnabled(false);
         viewport.setClipToPadding(false);
         viewport.setBackgroundColor(PETROL);
@@ -253,14 +254,10 @@ public final class UnifiedDriverPanel extends FrameLayout {
         navigation=row();
         page.addView(navigation,match(13));
 
-        scroller=new ScrollView(host);
-        scroller.setVerticalScrollBarEnabled(false);
-        scroller.setFillViewport(true);
+        // One outer ScrollView prevents the weighted nested container from stretching.
+        scroller=viewport;
         list=vertical();
-        scroller.addView(list,new ScrollView.LayoutParams(-1,-2));
-        LinearLayout.LayoutParams contentLp=new LinearLayout.LayoutParams(-1,0,1);
-        contentLp.bottomMargin=dp(14);
-        page.addView(scroller,contentLp);
+        page.addView(list,match(12));
 
         TextView swipe=center("➜   Deslizar a la derecha para volver a Mapa",12,MUTED,false);
         swipe.setContentDescription("Deslizá desde el borde izquierdo hacia la derecha para volver a Mapa");
@@ -496,12 +493,10 @@ public final class UnifiedDriverPanel extends FrameLayout {
     private void emptyCard(String title,String description){
         LinearLayout card=vertical();
         card.setBackground(bg(Color.BLACK,Color.BLACK,22));
-        card.setPadding(dp(15),dp(21),dp(15),dp(26));
-        card.setMinimumHeight(dp(310));
+        card.setPadding(dp(15),dp(17),dp(15),dp(18));
         TextView headline=text(title,21,WHITE,true);
-        card.addView(headline,match(18));
+        card.addView(headline,match(11));
         TextView detail=text(description,14,MUTED,false);
-        detail.setMinHeight(dp(110));
         card.addView(detail,match(2));
         list.addView(card,match(0));
     }
