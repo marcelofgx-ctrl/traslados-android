@@ -191,7 +191,10 @@ public final class UnifiedDriverPanel extends FrameLayout {
         int inset=dp(25);
         int statusId=getResources().getIdentifier("status_bar_height","dimen","android");
         if(statusId>0)inset=Math.max(inset,getResources().getDimensionPixelSize(statusId));
-        viewport.setPadding(dp(16),inset+dp(7),dp(16),dp(20));
+        int navInset=dp(29);
+        int navId=getResources().getIdentifier("navigation_bar_height","dimen","android");
+        if(navId>0)navInset=Math.max(navInset,getResources().getDimensionPixelSize(navId));
+        viewport.setPadding(dp(16),inset+dp(7),dp(16),navInset+dp(22));
         addView(viewport,new FrameLayout.LayoutParams(-1,-1));
 
         page=vertical();
