@@ -681,3 +681,188 @@ body.qt-clean .qtc-app .qtc-driver #pickup-use-location{
 #view-seguimiento .reservation-live-note{margin:10px 1px 3px;color:#d2e4dd;font-size:11px;line-height:1.5}
 #view-seguimiento .reservation-live-freshness{display:block;color:#a9bdba;font-size:10px;line-height:1.5}
 @media(max-width:359px){#view-seguimiento .premium-tracking-map.reservation-live{padding:9px}}
+
+/* V7.1 — identidad de producción también en Mis traslados, Programar, Cuenta,
+   Seguimiento e instalación. Solo presentación: no reemplaza handlers. */
+body.qt-clean:not(.qt-clean-active){
+  background:#082830!important;color:#f6f0e4;
+}
+body.qt-clean:not(.qt-clean-active)>.header{
+  background:linear-gradient(135deg,#133b40,#082a32)!important;
+  border-bottom:1px solid rgba(237,207,151,.2)!important;
+  box-shadow:none!important;backdrop-filter:none!important
+}
+body.qt-clean:not(.qt-clean-active) .header-inner{
+  max-width:620px!important;margin:0 auto!important;
+  padding:9px 14px!important;min-height:62px;gap:10px
+}
+body.qt-clean:not(.qt-clean-active) .identity{gap:9px;align-items:center;overflow:hidden}
+body.qt-clean:not(.qt-clean-active) .identity .quicktrip-page-logo{
+  width:150px;height:43px;object-fit:contain;object-position:left center;
+  border:0!important;border-radius:0!important;box-shadow:none!important
+}
+body.qt-clean:not(.qt-clean-active) .identity small{
+  font-size:9px;color:#d8c69d;letter-spacing:.08em;white-space:nowrap
+}
+body.qt-clean:not(.qt-clean-active) .tel{
+  flex:0 0 38px;width:38px;height:38px;border-radius:13px;
+  display:grid;place-items:center;padding:0!important;
+  color:#ecd19b!important;background:#143a3f!important;
+  font-size:17px
+}
+body.qt-clean:not(.qt-clean-active) .tel span{display:none}
+body.qt-clean:not(.qt-clean-active) .shell{
+  max-width:620px!important;width:100%!important;
+  margin:0 auto!important;padding:0 12px 98px!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  position:fixed!important;top:auto!important;bottom:0;left:50%;
+  transform:translateX(-50%);width:100%;max-width:620px;
+  padding:8px 7px calc(8px + env(safe-area-inset-bottom,0px))!important;
+  margin:0!important;gap:3px;z-index:70;
+  border:0!important;border-top:1px solid #35555b!important;
+  border-radius:0!important;background:#062126!important;
+  box-shadow:none!important;backdrop-filter:none!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs .tab{
+  color:#bbceca;background:transparent;border:0!important;
+  box-shadow:none!important;border-radius:11px!important;
+  min-width:0;min-height:48px;padding:8px 3px!important;
+  font-size:10.5px;line-height:1.25;font-weight:750
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs .tab.active{
+  color:#f1d4a1!important;background:#13393c!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.view.active{
+  padding:13px 0 0!important;min-width:0
+}
+body.qt-clean:not(.qt-clean-active) .shell>.footer{display:none!important}
+
+/* Mis traslados: mismo carbón/petróleo sobrio que Quick Trip, tarjetas útiles y
+   plegables; las categorías/consultas originales siguen a cargo de trip-board. */
+body.qt-clean #view-viajes .trip-intro{display:none!important}
+body.qt-clean #view-viajes .trips-board{
+  padding:15px 12px!important;margin:0!important;
+  background:linear-gradient(155deg,#153c40,#10333b)!important;
+  border:1px solid rgba(226,198,146,.31)!important;
+  border-radius:20px!important;box-shadow:none!important;
+  max-width:100%!important
+}
+body.qt-clean #view-viajes .trips-board-heading{gap:10px;align-items:center}
+body.qt-clean #view-viajes .trips-board-heading h3{
+  color:#fff3dc!important;font-size:20px!important;margin:0
+}
+body.qt-clean #view-viajes .trips-eyebrow{
+  font-size:9px!important;color:#ddc18d!important;margin:0 0 3px;
+  letter-spacing:.12em
+}
+body.qt-clean #view-viajes .trips-refresh{
+  min-height:36px!important;min-width:38px;
+  padding:7px 10px!important;border:1px solid rgba(231,203,133,.32)!important;
+  background:#103239!important;border-radius:11px!important;
+  color:#e9cb93!important;font-size:11px!important
+}
+body.qt-clean #view-viajes .trips-tabs{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+  overflow:visible!important;gap:5px!important;
+  margin:12px 0 10px!important;padding:0!important
+}
+body.qt-clean #view-viajes .trips-tab{
+  min-width:0!important;min-height:42px!important;
+  padding:7px 3px!important;flex:1 1 auto!important;
+  border-radius:11px!important;background:#0b2d35!important;
+  border:1px solid #436365!important;box-shadow:none!important;
+  font-size:11px!important;color:#e0e6d9!important;
+  white-space:normal!important
+}
+body.qt-clean #view-viajes .trips-tab.active{
+  background:#ecd09b!important;color:#193638!important;
+  border-color:#ecd09b!important
+}
+body.qt-clean #view-viajes .trips-focus{
+  padding:8px 10px!important;margin:0 0 9px!important;
+  font-size:11px!important;line-height:1.4!important;
+  background:#0c3138!important;border:1px solid #2c5557!important
+}
+body.qt-clean #view-viajes .trips-focus:empty,
+body.qt-clean #view-viajes .trips-status:empty{display:none!important}
+body.qt-clean #view-viajes .trips-advanced{margin:0 0 8px!important}
+body.qt-clean #view-viajes .trips-advanced>summary{
+  min-height:38px!important;padding:8px 11px!important;
+  background:#102e36!important;color:#edd1a1!important;
+  font-size:11px!important;border-radius:11px!important
+}
+body.qt-clean #view-viajes .trips-status{
+  font-size:10.5px!important;margin:4px 0 8px!important;
+  white-space:normal!important;overflow-wrap:anywhere
+}
+body.qt-clean #view-viajes .trips-list{gap:8px!important}
+body.qt-clean #view-viajes .trips-day{
+  border-radius:14px!important;background:#082c32!important;
+  border:1px solid rgba(225,196,137,.26)!important
+}
+body.qt-clean #view-viajes .trips-day>summary{
+  min-height:49px!important;padding:10px 12px!important;
+  background:#123b40!important
+}
+body.qt-clean #view-viajes .trips-day-caption{font-size:12.5px!important}
+body.qt-clean #view-viajes .trips-day-count{font-size:10px!important}
+
+/* Comprobante: solo recibo y acción de seguimiento; después del envío ya no
+   tiene sentido mantener debajo el mapa, el formulario ni una tarjeta vacía. */
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-places,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-driver,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-schedule,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-contact,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-submit-region{
+  display:none!important
+}
+body.qt-clean .qtc-app #booking-success.success:not([hidden]){
+  gap:7px!important;padding:16px 13px!important;
+  border-radius:18px!important
+}
+body.qt-clean .qtc-app #booking-success.success .mark{
+  font-size:30px!important
+}
+body.qt-clean .qtc-app #booking-success.success h2{
+  font-size:24px!important;line-height:1.15!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-lead{
+  font-size:12.5px!important;line-height:1.4!important;margin:2px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-receipt{
+  padding:12px!important;gap:4px!important;margin:5px 0 2px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-label{
+  font-size:9px!important
+}
+body.qt-clean .qtc-app #booking-success.success .code{
+  font-size:clamp(18px,4.8vw,23px)!important;margin:0 0 3px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-price{
+  font-size:27px!important;line-height:1.13!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-hint,
+body.qt-clean .qtc-app #booking-success.success .success-footer{
+  font-size:12px!important;line-height:1.4!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-time{
+  padding:8px!important;margin:0!important;font-size:11.5px!important
+}
+body.qt-clean .qtc-app #booking-success.success .primary.full{
+  min-height:49px!important;font-size:13px!important;margin:6px 0 0!important
+}
+
+/* Pantallas auxiliares: mismo fondo sin reconstruir cuenta y seguimiento. */
+body.qt-clean #view-seguimiento .premium-tracking-toolbar,
+body.qt-clean #view-cuenta .section-heading,
+body.qt-clean #view-instalar .section-heading{
+  border-radius:14px;color:#f4eddd
+}
+@media(max-width:359px){
+ body.qt-clean:not(.qt-clean-active) .identity .quicktrip-page-logo{width:125px}
+ body.qt-clean:not(.qt-clean-active) .identity small{display:none}
+ body.qt-clean #view-viajes .trips-refresh{font-size:0!important}
+ body.qt-clean #view-viajes .trips-refresh::first-letter{font-size:17px}
+}
