@@ -15,11 +15,13 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import java.util.Locale;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * CONDUCTOR V0 — brand-new UI, no legacy imports, no PIN, no network.
  *
- * An inert, native presentation component that belongs to Mapa's Activity.
+ * Local demo actions only: never write to a booking backend from this view.
  * Play/Stop, GPS, authorization, journeys and navigation remain in Mapa.
  * The caller may wire real request actions only in a reviewed future phase.
  *
@@ -60,8 +62,12 @@ public final class ConductorV0View extends FrameLayout {
         void onReject(String requestId);
     }
 
-    private final LinearLayout cardBody;
+    private final LinearLayout cardBody, historyBody;
     private final TextView shiftBadge, countNew, countAccepted, countInJourney;
+    private final TextView feedbackText, historyToggle;
+    private final List<String> historyItems = new ArrayList<>();
+    private Runnable onDemoReset;
+    private boolean historyExpanded;
     private Listener listener;
     private Request pending;
     private boolean previewMode=false;
@@ -119,13 +125,35 @@ public final class ConductorV0View extends FrameLayout {
         countNew=counter(context,counters,"Nuevas");
         countAccepted=counter(context,counters,"Aceptadas");
         countInJourney=counter(context,counters,"En viaje");
-        panel.addView(counters,marginBottom(15));
+        panel.addView(counters,marginBottom(8));
+
+        TextView demoNotice=label(context,
+            "MODO DEMOSTRACIÓN · Sin viajes reales ni envíos al pasajero",12,MUTED,true);
+        demoNotice.setGravity(Gravity.CENTER);
+        panel.addView(demoNotice,marginBottom(15));
 
         cardBody=vertical(context);
         cardBody.setPadding(dp(14),dp(20),dp(14),dp(22));
         cardBody.setBackground(shape(BLACK,20));
         cardBody.setMinimumHeight(dp(295));
         panel.addView(cardBody,marginBottom(14));
+
+        feedbackText=label(context,"",14,WHITE,true);
+        feedbackText.setGravity(Gravity.CENTER);
+        feedbackText.setVisibility(View.GONE);
+        panel.addView(feedbackText,marginBottom(10));
+
+        historyToggle=label(context,"Histórico de pruebas (0)  ▾",14,WHITE,true);
+        historyToggle.setPadding(dp(12),dp(12),dp(12),dp(12));
+        historyToggle.setBackground(shape(BLACK,13));
+        historyToggle.setOnClickListener(v->{
+            historyExpanded=!historyExpanded;
+            renderHistory();
+        });
+        panel.addView(historyToggle,marginBottom(6));
+        historyBody=vertical(context);
+        historyBody.setVisibility(View.GONE);
+        panel.addView(historyBody,marginBottom(12));
 
         TextView swipe=label(context,
             "➜  Deslizar a la derecha para volver a Mapa",12,MUTED,false);
@@ -162,6 +190,45 @@ public final class ConductorV0View extends FrameLayout {
         countInJourney.setText(value(inJourney));
     }
 
+    /** Local illustrative history only; a real request history needs authorized data. */
+    public void setDemoHistory(List<String> entries) {
+        historyItems.clear();
+        if(entries!=null)historyItems.addAll(entries);
+        renderHistory();
+    }
+
+    public void setOnDemoReset(Runnable action) {
+        onDemoReset=action;
+        renderCard();
+    }
+
+    /** Explicitly mark feedback as simulation, never as a confirmed real booking. */
+    public void setDemoFeedback(String message,boolean positive) {
+        feedbackText.setText(message==null?"":message);
+        feedbackText.setTextColor(positive?GREEN:MUTED);
+        feedbackText.setVisibility(message==null||message.isEmpty()?View.GONE:View.VISIBLE);
+    }
+
+    private void renderHistory() {
+        historyToggle.setText("Histórico de pruebas ("+historyItems.size()+")  "
+                +(historyExpanded?"▴":"▾"));
+        historyBody.removeAllViews();
+        historyBody.setVisibility(historyExpanded?View.VISIBLE:View.GONE);
+        if(!historyExpanded)return;
+        if(historyItems.isEmpty()) {
+            TextView empty=label(getContext(),"Todavía no hay acciones de prueba.",13,MUTED,false);
+            historyBody.addView(empty,marginBottom(6));
+            return;
+        }
+        int limit=Math.min(historyItems.size(),10);
+        for(int i=0;i<limit;i++) {
+            TextView row=label(getContext(),historyItems.get(i),13,WHITE,false);
+            row.setBackground(shape(BLACK,12));
+            row.setPadding(dp(12),dp(12),dp(12),dp(12));
+            historyBody.addView(row,marginBottom(5));
+        }
+    }
+
     public void setPendingRequest(Request request) {
         pending=request!=null&&request.complete()?request:null;
         renderCard();
@@ -177,6 +244,11 @@ public final class ConductorV0View extends FrameLayout {
                 14,MUTED,false);
             empty.setPadding(0,0,0,dp(16));
             cardBody.addView(empty,marginBottom(16));
+            if(previewMode && onDemoReset!=null) {
+                Button repeat=action("Repetir prueba",ACCEPT);
+                repeat.setOnClickListener(v->onDemoReset.run());
+                cardBody.addView(repeat,new LinearLayout.LayoutParams(-1,dp(54)));
+            }
             return;
         }
         final Request current=pending;
@@ -208,7 +280,7 @@ public final class ConductorV0View extends FrameLayout {
 
         LinearLayout actions=horizontal(getContext());
         Button reject=action("Rechazar",REJECT),accept=action("Aceptar",ACCEPT);
-        // No backend callbacks are available in phase 1; never pretend success.
+        // Enabled only when navigator installs an explicit listener for LOCAL DEMO.
         boolean wired=listener!=null;
         reject.setEnabled(wired);
         accept.setEnabled(wired);
