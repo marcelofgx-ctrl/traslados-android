@@ -62,3 +62,10 @@ La fuente visual es **la imagen original aportada y aprobada por el usuario**. R
 - Fase 2 bloqueada hasta aprobación explícita: transición Mapa ↔ Conductor.
 - No hay compilación APK ni PR nuevos; la rama está aislada de `main`.
 - Backend de pasajero/Supabase y app instalada: sin cambios en esta rama.
+
+## Ajuste visual del 22/10/2026 — pendiente de nueva validación
+- La primera captura real de Android 35 confirmó que la barra de estado se superponía a «QUICK TRIP» y que un espaciador flexible prolongaba el panel gris sin contenido.
+- Corrección acotada a `ConductorV0View.java` en commit `15e1b9e8c16a947a1d4ed5f5d0c2722dc14ef950`: respetar insets superior/inferior de barras de Android y mantener el panel a altura de contenido, sin espaciador flexible.
+- Nueva corrida de captura: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/39792706064. **No declarar QA superada ni semejanza final hasta inspeccionar su captura nueva.**
+- No se integró con Mapa, no se hicieron cambios GPS/reservas/Supabase/motores, no se generó entrega APK, no se fusionó a `main`.
+- La Fase 2 sigue bloqueada hasta aprobación visual explícita.
