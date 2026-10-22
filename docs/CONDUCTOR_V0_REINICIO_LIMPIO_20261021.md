@@ -52,5 +52,7 @@ La fuente visual es **la imagen original aportada y aprobada por el usuario**. R
 - Rama limpia: realizada.
 - Análisis de dependencias críticas: inicial, requiere barrido completo antes de eliminar clases heredadas.
 - Eliminación física de código legado: **no realizada**; sería inseguro sin separar servicios y referencias que utiliza Mapa.
-- Nueva pantalla nativa: pendiente de acuerdo de la primera fase de implementación.
+- Nueva pantalla nativa: **componente V0 creado**, `mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0View.java`, sin importaciones legadas, sin PIN, sin conexión ni lógica GPS. Todavía no está conectado a la aplicación ni fue compilado; no reemplaza la pantalla vieja.
+- Fase 1 pendiente: revisar la pantalla integrada y aprobar su renderizado real antes de avanzar a la transición.
+- No hay compilación APK ni PR nuevos; la rama está aislada de `main`.
 - Backend de pasajero/Supabase y app instalada: sin cambios en esta rama.
