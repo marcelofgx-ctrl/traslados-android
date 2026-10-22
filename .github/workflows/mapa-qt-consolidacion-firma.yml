@@ -1,0 +1,84 @@
+name: Mapa QT Consolidacion - firma original - sin despliegue
+on:
+  push:
+    branches:
+      - consolidacion/mapa-qt-base-20261022
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Validar cambios mínimos y misma identidad Android
+        run: |
+          set -euo pipefail
+          grep -q "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
+          grep -q 'android:label="Mapa QT"' mapatrayectos/src/main/AndroidManifest.xml
+          ! grep -q 'applicationIdSuffix' mapatrayectos/build.gradle
+          grep -q 'versionCode 83' mapatrayectos/build.gradle
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.9', cache-read-only: true}
+      - name: Preparar recursos originales
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Android SDK 35
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restaurar certificado oficial solo dentro de CI
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          SIGNING_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$SIGNING_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compilar release firmada; NO publicar ni desplegar
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: gradle :mapatrayectos:assembleRelease --no-daemon --stacktrace
+      - name: Verificar identificador, firma, versión y nombre
+        run: |
+          set -euo pipefail
+          APK="$(find mapatrayectos/build/outputs/apk/release -maxdepth 1 -name '*.apk' | head -1)"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          "$AAPT" dump badging "$APK" | tee /tmp/mapa-badging.txt
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='83'" /tmp/mapa-badging.txt
+          grep -q "application-label:'Mapa QT'" /tmp/mapa-badging.txt
+          "$SIGNER" verify --verbose --print-certs "$APK" | tee /tmp/mapa-signing.txt
+          grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/mapa-signing.txt
+          sha256sum "$APK" | tee /tmp/mapa-sha256.txt
+          cp /tmp/mapa-signing.txt mapatrayectos/build/outputs/apk/release/SIGNING.txt
+          cp /tmp/mapa-sha256.txt mapatrayectos/build/outputs/apk/release/SHA256SUMS.txt
+      - name: Guardar evidencia privada de CI sin release ni web
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-QT-Candidata-R25-30-FirmaOriginal
+          path: |
+            mapatrayectos/build/outputs/apk/release/*.apk
+            mapatrayectos/build/outputs/apk/release/SIGNING.txt
+            mapatrayectos/build/outputs/apk/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
