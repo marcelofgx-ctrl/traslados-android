@@ -6,6 +6,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 /**
  * Phase 2 UI navigation ONLY. Keeps the existing MapView in place and never
@@ -18,6 +19,7 @@ public final class ConductorV0Navigator {
     private final SwipeHost host;
     private final ConductorV0View conductor;
     private boolean open;
+    private final TextView returnTab;
     private int oldStatusBarColor, oldNavigationBarColor, oldDecorFlags;
 
     public ConductorV0Navigator(Activity activity, FrameLayout root) {
@@ -76,7 +78,22 @@ public final class ConductorV0Navigator {
         host.addView(conductor,new FrameLayout.LayoutParams(-1,-1));
         host.setVisibility(View.GONE);
         // Above the edge zone while open; hidden views never block MapView.
+        // Raised above Mapa's elevated widgets without changing their state.
+        host.setElevation(dp(64));
         root.addView(host,new FrameLayout.LayoutParams(-1,-1));
+        returnTab = new TextView(activity);
+        returnTab.setText("❮  Mapa");
+        returnTab.setTextColor(Color.WHITE);
+        returnTab.setTextSize(12);
+        returnTab.setGravity(Gravity.CENTER);
+        returnTab.setContentDescription("Volver al Mapa");
+        returnTab.setClickable(true);
+        returnTab.setBackgroundColor(Color.rgb(28,57,60));
+        returnTab.setElevation(dp(68));
+        returnTab.setOnClickListener(v -> close());
+        FrameLayout.LayoutParams tabParams = new FrameLayout.LayoutParams(
+                dp(76),dp(48),Gravity.LEFT|Gravity.CENTER_VERTICAL);
+        host.addView(returnTab,tabParams);
     }
 
     public boolean isOpen() {return open;}
@@ -91,6 +108,7 @@ public final class ConductorV0Navigator {
             "sample-only", "18 de Julio, Montevideo", "Aeropuerto de Carrasco",
             "21 km", "30 min", "$ 840 UYU"));
         host.animate().cancel();
+        host.bringToFront();
         host.setVisibility(View.VISIBLE);
         int width=root.getWidth()>0?root.getWidth():
                 activity.getResources().getDisplayMetrics().widthPixels;
