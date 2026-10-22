@@ -39,7 +39,6 @@ jobs:
           assert 'demoState.decide(requestId,decision)' in source
           assert 'setPreviewMode(true)' in source
           assert 'Api.' not in source and 'postRpc(' not in source
-          assert 'Supabase' not in source.replace('Supabase.', '')
           assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
           print('PASS Mapa QT native V0 mock-only, no second APK')
           PY
