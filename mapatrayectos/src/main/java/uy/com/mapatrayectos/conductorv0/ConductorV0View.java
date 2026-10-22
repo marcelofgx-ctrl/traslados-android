@@ -253,10 +253,10 @@ public final class ConductorV0View extends FrameLayout {
         return (int)(getResources().getDisplayMetrics().density*n+.5f);
     }
 
-    private static GradientDrawable shape(int fill,int radius) {
+    private GradientDrawable shape(int fill,int radius) {
         GradientDrawable shape=new GradientDrawable();
         shape.setColor(fill);
-        shape.setCornerRadius(radius*3f);
+        shape.setCornerRadius(dp(radius));
         return shape;
     }
     private static LinearLayout vertical(Context c) {
@@ -278,10 +278,9 @@ public final class ConductorV0View extends FrameLayout {
         if(bold)v.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
         return v;
     }
-    private static LinearLayout.LayoutParams marginBottom(int dp) {
+    private LinearLayout.LayoutParams marginBottom(int bottomDp) {
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
-        // dp conversion independent from Context is intentionally avoided above.
-        p.bottomMargin=dp*3;
+        p.bottomMargin=dp(bottomDp);
         return p;
     }
     private static void gap(Context c,LinearLayout parent,int dp) {
