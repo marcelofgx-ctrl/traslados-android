@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Quick Trip · Conductor V0 · Demostración aislada</title>
+<style>
+:root{color-scheme:dark;--bg:#000;--panel:#252525;--line:#292929;--muted:#afafaf;--white:#fff;--green:#007859;--bright:#00a659;--red:#da3e43;--reject:#2f2f2f}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#000;color:#fff;font:400 16px/1.37 Roboto,"Arial",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}button:focus-visible{outline:3px solid #98e9cb;outline-offset:3px}.demo-shell{min-height:100svh;display:flex;justify-content:center;align-items:flex-start;background:#000}.device{width:min(100%,480px);min-height:100svh;position:relative;padding:0 0 max(23px,env(safe-area-inset-bottom))}.system-bar{height:45px;padding:11px 21px 0;display:flex;justify-content:space-between;align-items:flex-start;font-weight:600;letter-spacing:.1px;font-size:14px}.system-icons{display:flex;align-items:center;gap:6px;font-size:13px}.battery{border:2px solid #fff;border-radius:2px;height:12px;width:9px;position:relative}.battery:before{content:"";position:absolute;background:#fff;width:3px;height:2px;top:-4px;left:1px}.signal{font-size:12px;letter-spacing:-3px}.nav-bottom{height:32px;display:flex;align-items:center;justify-content:space-around;color:#62636b;margin-top:20px}.back-triangle{width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-right:14px solid #62636b}.home-dot{width:14px;height:14px;border-radius:50%;background:#62636b}.task-square{width:15px;height:15px;background:#62636b;border-radius:3px}
+.panel-wrap{padding:14px 16px 10px}.panel{border-radius:24px;background:var(--panel);padding:22px 14px 18px}.header{display:flex;justify-content:space-between;align-items:end;gap:8px}.eyebrow{font-size:13px;color:var(--muted);letter-spacing:.04px}.page-title{font-size:29px;line-height:1.1;font-weight:700;margin:14px 0 0}.shift{font-size:12px;color:var(--bright);white-space:nowrap;margin-bottom:6px}.counts{margin:20px 0 15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.count{height:96px;border-radius:15px;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}.count-num{font-weight:700;font-size:30px;line-height:1.15;font-variant-numeric:tabular-nums}.count-label{font-size:13px;color:var(--muted)}
+.request-card{border-radius:20px;background:#000;min-height:295px;padding:20px 14px 22px}.req-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:25px}.req-heading{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.3px}.example{font-size:12px;color:var(--muted);white-space:nowrap}.route{position:relative;display:flex;gap:11px}.route+.route{margin-top:30px}.dot{font-size:19px;line-height:1;flex:none;width:17px;margin-top:25px}.origin .dot{color:var(--bright)}.destination .dot{color:var(--red)}.route:has(+.destination):after{content:'│';position:absolute;left:5px;top:69px;font-size:19px;color:var(--muted)}.route-caption{color:var(--muted);font-size:12px;line-height:1.4}.route-address{font-size:18px;font-weight:700;margin-top:3px;line-height:1.28}.divider{height:1px;background:#2c2c2c;margin:19px 0 19px}.totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:19px}.total-label{font-size:11px;color:var(--muted);text-transform:uppercase}.total-value{font-weight:700;font-size:18px;margin-top:6px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{height:56px;color:#fff;border:0;border-radius:15px;font-size:17px;font-weight:700;cursor:pointer}.action.reject{background:var(--reject)}.action.accept{background:var(--green)}.action:active{transform:scale(.98)}.hint{font-size:12px;color:var(--muted);text-align:center;margin:18px auto 0;padding:8px 0}.empty-title{font-weight:700;font-size:21px;margin-bottom:18px}.empty-desc{font-size:14px;color:var(--muted);line-height:1.5}.toast{margin:11px 0 0;min-height:22px;font-size:12px;line-height:1.4;text-align:center;color:#88dfba}.toast.error{color:#ff9b9e}.history-toggle{margin:12px auto 0;border:1px solid #424242;border-radius:14px;background:transparent;color:#dadada;padding:10px 16px;width:100%;font-size:13px;cursor:pointer}.history{padding:10px 0 0;display:none}.history.visible{display:block}.history-h{font-size:13px;font-weight:700;color:#e8e8e8;margin:6px 0 8px}.history-item{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #3c3c3c;padding:11px 2px}.history-name{font-size:12px;font-weight:600}.history-price{font-size:12px;color:#a0a0a0;margin-top:3px}.pill{font-size:11px;white-space:nowrap}.pill.pending{color:#e7ce96}.pill.accepted{color:#75dcae}.pill.rejected{color:#fc9797}.pill.journey{color:#9cbfe0}
+.lab-tools{padding:8px 16px 24px;display:grid;gap:10px}.lab-note{font-size:12px;color:#c9c9c9;background:#161616;border:1px solid #363636;padding:12px;border-radius:11px;line-height:1.5}.lab-controls{display:flex;flex-wrap:wrap;gap:8px}.lab-button{font-size:12px;color:#fff;border:1px solid #414141;background:#171717;padding:11px 12px;border-radius:10px;cursor:pointer}.lab-button:active{background:#2c2c2c}.lab-button[aria-pressed="true"]{border-color:#bfa061;color:#ffddb0}.map-standin{display:none;min-height:500px;background:#111;border:1px solid #333;border-radius:23px;margin:14px 16px;padding:22px;position:relative;overflow:hidden}.map-standin.active{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px}.map-standin .roads{position:absolute;inset:0;opacity:.13;background:repeating-linear-gradient(35deg,transparent 0 41px,#b0b0b0 42px 46px,transparent 47px 95px),repeating-linear-gradient(125deg,transparent 0 31px,#b0b0b0 32px 37px,transparent 38px 108px)}.map-content{position:relative;text-align:center;max-width:280px}.map-content h2{font-size:26px;margin:0 0 8px}.map-content p{color:#aaa;font-size:14px;line-height:1.5}.map-content button{background:#007859;border:0;border-radius:13px;padding:13px 18px;color:#fff;font-weight:700}.demo-footer{color:#888;font-size:11px;text-align:center;padding:0 18px 12px}.sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;white-space:nowrap}@media(min-width:520px){.device{border-left:1px solid #202020;border-right:1px solid #202020;box-shadow:0 0 60px #151515}}
+@media(prefers-reduced-motion:no-preference){.fade{animation:fadeIn .18s ease-out}@keyframes fadeIn{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+</style>
+</head>
+<body>
+<main class="demo-shell"><div class="device" id="device">
+<div class="system-bar" aria-hidden="true"><span>2:08 ▢</span><div class="system-icons"><span class="signal">◕ ▲</span><span class="battery"></span></div></div>
+<div class="panel-wrap" id="conductor-screen">
+<section class="panel" aria-label="Panel Conductor V0">
+  <header class="header"><div><div class="eyebrow">QUICK TRIP</div><h1 class="page-title">Conductor</h1></div><div class="shift">✓ Jornada activa</div></header>
+  <section class="counts" aria-label="Contadores de solicitudes"><div class="count"><span class="count-num" id="count-new">02</span><span class="count-label">Nuevas</span></div><div class="count"><span class="count-num" id="count-accepted">01</span><span class="count-label">Aceptadas</span></div><div class="count"><span class="count-num" id="count-journey">00</span><span class="count-label">En viaje</span></div></section>
+  <section class="request-card fade" id="request-card" aria-label="Solicitud inmediata actual"><div class="req-top"><div class="req-heading" id="request-title">Nueva solicitud</div><span class="example">Ejemplo visual</span></div><div id="request-content"></div></section>
+  <div class="hint" id="hint">➜&nbsp; Deslizar a la derecha para volver a Mapa</div>
+  <div id="notice" class="toast" role="status" aria-live="polite"></div>
+  <button type="button" id="history-toggle" class="history-toggle" aria-expanded="false" aria-controls="history">Histórico de peticiones · ▾</button>
+  <section id="history" class="history" aria-label="Histórico simulado"><div class="history-h">Peticiones recientes</div><div id="history-list"></div></section>
+</section>
+</div>
+<section class="map-standin" id="map-screen" aria-label="Mapa ilustrativo (no GPS)"><div class="roads"></div><div class="map-content"><h2>Mapa Trayectos</h2><p>Vista ilustrativa para probar la navegación lateral. No utiliza GPS, rutas ni motores reales de Mapa.</p><button type="button" id="open-conductor">Abrir Conductor →</button></div></section>
+<div class="lab-tools" aria-label="Controles de la demostración"><div class="lab-note"><strong>DEMOSTRACIÓN AISLADA</strong> · Basada en el diseño de <code>ConductorV0View.java</code> y los datos de <code>ImmediateTripSimulation.sample()</code>. Todo se ejecuta en este archivo, sin Internet, PIN ni reservas reales.</div><div class="lab-controls"><button type="button" class="lab-button" id="reset">↺ Reiniciar solicitudes</button><button type="button" class="lab-button" id="fail-next" aria-pressed="false">Simular error al decidir</button><button type="button" class="lab-button" id="toggle-map">Ver Mapa ilustrativo</button></div></div>
+<div class="nav-bottom" aria-hidden="true"><span class="back-triangle"></span><span class="home-dot"></span><span class="task-square"></span></div>
+<div class="demo-footer">V0 · Solo visualización local · Sin despliegue ni APK</div>
+</div></main>
+<script>
+'use strict';
+const DEMO_TRIPS=Object.freeze([
+ {id:'00000000-0000-0000-0000-000000000001',origin:'18 de Julio, Montevideo',destination:'Aeropuerto de Carrasco',distance:21,duration:30,price:840,mode:'now',quote:'PRECIO_FIJO',status:'PENDIENTE'},
+ {id:'00000000-0000-0000-0000-000000000002',origin:'Plaza Independencia',destination:'Tres Cruces',distance:10,duration:18,price:400,mode:'20',quote:'PRECIO_FIJO',status:'PENDIENTE'},
+ {id:'00000000-0000-0000-0000-000000000003',origin:'Centro',destination:'Parque Rodó',distance:7,duration:14,price:300,mode:'now',quote:'PRECIO_FIJO',status:'ACEPTADA'},
+ {id:'00000000-0000-0000-0000-000000000004',origin:'Canelones',destination:'Colonia',distance:130,duration:110,price:1200,mode:'scheduled',quote:'ENVIADO',status:'PENDIENTE'}
+]);
+const $=id=>document.getElementById(id);
+let requests=[],pendingError=false,mapVisible=false;
+const immediate=r=>r.quote==='PRECIO_FIJO'&&Number.isFinite(r.price)&&r.price>0&&r.origin&&r.destination&&(r.mode==='now'||/^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)$/.test(r.mode));
+const count=s=>requests.filter(r=>immediate(r)&&r.status===s).length;
+const two=n=>String(n).padStart(2,'0');
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function notice(msg,error=false){$('notice').textContent=msg;$('notice').classList.toggle('error',error);}
+function decide(id,status){
+ const item=requests.find(r=>r.id===id);
+ if(!item||!immediate(item)||item.status!=='PENDIENTE'){notice('Esta solicitud ya cambió; no se realizó ninguna acción.',true);return false;}
+ if(pendingError){pendingError=false;$('fail-next').setAttribute('aria-pressed','false');notice('Error de prueba: no se cambió el estado ni el contador.',true);return false;}
+ item.status=status;
+ render();notice(status==='ACEPTADA'?'✓ Solicitud aceptada (simulación local).':'Solicitud rechazada (simulación local).');
+ return true;
+}
+function render(){
+ $('count-new').textContent=two(count('PENDIENTE'));
+ $('count-accepted').textContent=two(count('ACEPTADA'));
+ $('count-journey').textContent=two(count('EN_VIAJE'));
+ const next=requests.find(r=>immediate(r)&&r.status==='PENDIENTE');
+ const body=$('request-content');
+ if(!next){$('request-title').textContent='Sin solicitudes nuevas';body.innerHTML='<p class="empty-desc">Las solicitudes aparecerán aquí cuando haya alguna pendiente.</p>';}
+ else {
+ $('request-title').textContent='Nueva solicitud';
+ body.innerHTML=`<div class="route origin"><span class="dot" aria-hidden="true">●</span><div><div class="route-caption">ORIGEN</div><div class="route-address">${escapeHTML(next.origin)}</div></div></div>
+ <div class="route destination"><span class="dot" aria-hidden="true">●</span><div><div class="route-caption">DESTINO</div><div class="route-address">${escapeHTML(next.destination)}</div></div></div>
+ <div class="divider"></div><div class="totals"><div><div class="total-label">DISTANCIA</div><div class="total-value">${next.distance} km</div></div><div><div class="total-label">DURACIÓN</div><div class="total-value">${next.duration} min</div></div><div><div class="total-label">IMPORTE</div><div class="total-value">$${next.price}</div></div></div>
+ <div class="actions"><button type="button" class="action reject" id="reject">Rechazar</button><button type="button" class="action accept" id="accept">Aceptar</button></div>`;
+ $('reject').addEventListener('click',()=>decide(next.id,'RECHAZADA'));
+ $('accept').addEventListener('click',()=>decide(next.id,'ACEPTADA'));
+ }
+ const rows=requests.filter(immediate).map(r=>{let label=r.status==='ACEPTADA'?'Aceptada':r.status==='RECHAZADA'?'Rechazada':r.status==='EN_VIAJE'?'En viaje':'Pendiente';let cls=r.status==='ACEPTADA'?'accepted':r.status==='RECHAZADA'?'rejected':r.status==='EN_VIAJE'?'journey':'pending';return `<div class="history-item"><div><div class="history-name">${escapeHTML(r.origin)} → ${escapeHTML(r.destination)}</div><div class="history-price">$${r.price} UYU</div></div><span class="pill ${cls}">${label}</span></div>`;});
+ $('history-list').innerHTML=rows.join('');
+}
+function reset(){requests=DEMO_TRIPS.map(r=>({...r}));pendingError=false;$('fail-next').setAttribute('aria-pressed','false');notice('');render();}
+function setMap(on){mapVisible=on;$('conductor-screen').hidden=on;$('map-screen').classList.toggle('active',on);$('toggle-map').textContent=on?'Volver a Conductor':'Ver Mapa ilustrativo';notice('');}
+$('reset').addEventListener('click',reset);
+$('fail-next').addEventListener('click',()=>{pendingError=!pendingError;$('fail-next').setAttribute('aria-pressed',String(pendingError));notice(pendingError?'El próximo intento de Aceptar/Rechazar simulará un error.':'');});
+$('history-toggle').addEventListener('click',()=>{let open=$('history-toggle').getAttribute('aria-expanded')!=='true';$('history-toggle').setAttribute('aria-expanded',String(open));$('history').classList.toggle('visible',open);$('history-toggle').textContent=open?'Histórico de peticiones · ▴':'Histórico de peticiones · ▾';});
+$('toggle-map').addEventListener('click',()=>setMap(!mapVisible));
+$('open-conductor').addEventListener('click',()=>setMap(false));
+let touchX=0,touchY=0;
+$('device').addEventListener('touchstart',e=>{touchX=e.changedTouches[0].screenX;touchY=e.changedTouches[0].screenY;},{passive:true});
+$('device').addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchX,dy=e.changedTouches[0].screenY-touchY;if(Math.abs(dx)>75&&Math.abs(dx)>Math.abs(dy)*1.7){if(!mapVisible&&dx>0)setMap(true);else if(mapVisible&&dx<0)setMap(false);}},{passive:true});
+window.__qtDemo={snapshot:()=>requests.map(x=>({...x})),decide,reset,count,immediate,setMap};
+reset();
+</script>
+</body>
+</html>
