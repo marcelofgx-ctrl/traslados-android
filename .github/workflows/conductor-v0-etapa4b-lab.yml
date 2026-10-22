@@ -58,8 +58,8 @@ jobs:
               assert 'supabase.co' not in s, path
               assert 'service_role' not in s, path
           w=Path('.github/workflows/conductor-v0-etapa4b-lab.yml').read_text()
-          assert 'assembleDebug' not in w and 'assembleRelease' not in w
-          assert 'packageDebug' not in w and 'bundleRelease' not in w
+          for command in ('assemble'+'Debug','assemble'+'Release','package'+'Debug','bundle'+'Release'):
+              assert command not in w, command
           print('PASS 4B strict file whitelist, no production identifiers or packaging')
           PY
       - uses: actions/setup-java@v4
