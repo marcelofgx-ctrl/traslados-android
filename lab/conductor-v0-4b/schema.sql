@@ -151,83 +151,13 @@ BEGIN
   IF NOT FOUND OR trip.driver_id IS DISTINCT FROM actor THEN
     RAISE EXCEPTION 'NOT_AUTHORIZED';
   END IF;
-  -- Status must be checked before quote_status: a previously accepted
-  -- fixed-price trip legitimately has quote_status='ACEPTADO'.
+  -- Check status first: already accepted fixed-fare rows have ACEPTADO quote.
   IF trip.status<>'PENDIENTE' THEN
     RAISE EXCEPTION 'ALREADY_DECIDED';
   END IF;
   IF trip.fare_mode<>'fixed' OR trip.quote_status<>'PRECIO_FIJO'
        OR NOT (trip.pickup_mode='now' OR
-          trip.pickup_mode ~ '^([1-9]|[1-9][0-9]|1[01][0-9]|120)
-  IF trip.created_at < now()-interval '90 minutes' THEN
-    RAISE EXCEPTION 'EXPIRED';
-  END IF;
-  -- The local boolean simulates existing availability_route_check_v11_4;
-  -- it is NOT a substitute for the real engine in production.
-  IF p_accept AND NOT trip.available THEN
-    RAISE EXCEPTION 'NOT_AVAILABLE';
-  END IF;
-  IF p_accept THEN
-    UPDATE lab_data.reservations SET status='ACEPTADA',
-      quote_status='ACEPTADO', confirmed_at=now(),quote_accepted_at=now()
-      WHERE id=trip.id;
-  ELSE
-    UPDATE lab_data.reservations SET status='RECHAZADA',
-      quote_status='RECHAZADO',quote_rejected_at=now()
-      WHERE id=trip.id;
-  END IF;
-  INSERT INTO lab_data.reservation_events(reservation_id,actor,state)
-    VALUES(trip.id, actor, CASE WHEN p_accept THEN 'ACEPTADA' ELSE 'RECHAZADA' END);
-  response:=jsonb_build_object('id',trip.id,'status',
-    CASE WHEN p_accept THEN 'ACEPTADA' ELSE 'RECHAZADA' END,
-    'already_decided',false, 'request_id',p_request_id);
-  INSERT INTO lab_data.decision_requests(driver_id,request_id,reservation_id,accept,response)
-    VALUES(actor,p_request_id,p_reservation_id,p_accept,response);
-  RETURN response;
-END $f$;
-
-CREATE FUNCTION lab_api.driver_decide_direct_auth_v1(
-  p_reservation_id uuid, p_accept boolean, p_request_id uuid
-) RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER
-SET search_path = pg_catalog AS $f$
-SELECT lab_internal.decide_direct_impl_v1(p_reservation_id,p_accept,p_request_id)
-$f$;
-
-REVOKE ALL ON ALL FUNCTIONS IN SCHEMA lab_api, lab_internal FROM PUBLIC, lab_anon;
-GRANT EXECUTE ON FUNCTION lab_api.driver_session_status_auth_v1() TO lab_authenticated;
-GRANT EXECUTE ON FUNCTION lab_api.driver_list_direct_auth_v1() TO lab_authenticated;
-GRANT EXECUTE ON FUNCTION lab_api.driver_decide_direct_auth_v1(uuid,boolean,uuid) TO lab_authenticated;
-GRANT EXECUTE ON FUNCTION lab_internal.decide_direct_impl_v1(uuid,boolean,uuid) TO lab_authenticated;
-
-INSERT INTO lab_data.drivers(id,active) VALUES
- ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',true),
- ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',true),
- ('cccccccc-cccc-cccc-cccc-cccccccccccc',false);
-
-INSERT INTO lab_data.reservations
-(id,driver_id,status,quote_status,fare_mode,pickup_mode,
- quote_final_total,route_distance_km,route_duration_min,created_at,available)
-VALUES
- ('00000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',840,21,30,now()-interval '2 minutes',true),
- ('00000000-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','PRECIO_FIJO','fixed','15',450,10,20,now()-interval '3 minutes',true),
- ('00000000-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','ENVIADO','quote','schedule',1200,30,35,now()-interval '3 minutes',true),
- ('00000000-0000-0000-0000-000000000004','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',500,13,20,now()-interval '4 minutes',true),
- ('00000000-0000-0000-0000-000000000005','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',550,14,22,now()-interval '95 minutes',true),
- ('00000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',250,4,8,now()-interval '4 minutes',false),
- ('00000000-0000-0000-0000-000000000007','cccccccc-cccc-cccc-cccc-cccccccccccc',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',320,7,12,now()-interval '2 minutes',true),
- ('00000000-0000-0000-0000-000000000008','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'CANCELADA','PRECIO_FIJO','fixed','now',700,18,26,now()-interval '4 minutes',true),
- ('00000000-0000-0000-0000-000000000009','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-  'PENDIENTE','PRECIO_FIJO','fixed','now',0,5,8,now()-interval '4 minutes',true);
-COMMIT;
-)
+          trip.pickup_mode ~ '^([1-9]|[1-9][0-9]|1[01][0-9]|120)$')
        OR trip.quote_final_total<=0 OR trip.route_distance_km<=0 THEN
     RAISE EXCEPTION 'NOT_DIRECT_FIXED';
   END IF;
