@@ -1,0 +1,93 @@
+name: Conductor V0 Etapa 3 - Simulacion sin operaciones reales
+
+on:
+  push:
+    branches: [feat/conductor-v0-etapa3-simulacion-20261022]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulation-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Alcance y bloqueo de trafico real
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only 4305f4617cb0c1a0750a6faf7ad68fef542a5af3..HEAD > /tmp/v0-stage3.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          files = set(Path('/tmp/v0-stage3.txt').read_text().splitlines())
+          allowed = {
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ImmediateTripRequest.java',
+            'mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ImmediateTripSimulation.java',
+            'mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ConductorV0MockBinding.java',
+            'mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ConductorV0PreviewActivity.java',
+            'mapatrayectos/tests/ConductorV0ImmediateSimulationTest.java',
+            'docs/CONDUCTOR_V0_ETAPA3_SIMULACION_20261022.md',
+            '.github/workflows/conductor-v0-etapa3-simulacion.yml',
+          }
+          assert files and files <= allowed, sorted(files-allowed)
+          main = Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0')
+          debug = Path('mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0')
+          nav = (main/'ConductorV0Navigator.java').read_text()
+          assert 'setListener(null)' in nav and 'setPendingRequest(null)' in nav
+          for path in [main/'ImmediateTripRequest.java',
+                       debug/'ImmediateTripSimulation.java',
+                       debug/'ConductorV0MockBinding.java']:
+            code=path.read_text().lower()
+            for banned in ['driver_session', 'p_pin', 'authorization', 'httpurlconnection',
+                           'url(', 'supabase.co', 'postrpc(', 'startservice(', 'sharedpreferences']:
+              assert banned not in code, (str(path), banned)
+          # The only implementation of decisions remains debug-only.
+          assert not (main/'ConductorV0MockBinding.java').exists()
+          assert not (main/'ImmediateTripSimulation.java').exists()
+          for path in ['mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0View.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+                       'mapatrayectos/build.gradle', 'settings.gradle']:
+            assert path not in files, path
+          print('PASS: simulation-only; no live backend, main UI, GPS or PIN access')
+          PY
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - name: Simulaciones JVM sin llamadas externas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/conductor-stage3-test
+          javac -d /tmp/conductor-stage3-test             mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ImmediateTripRequest.java             mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ImmediateTripSimulation.java             mapatrayectos/tests/ConductorV0ImmediateSimulationTest.java
+          java -cp /tmp/conductor-stage3-test ConductorV0ImmediateSimulationTest
+      - name: Preparar solo recursos para compilacion Java
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Android 35 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.9', cache-read-only: true}
+      - name: Solo compilar Java; prohibido empaquetar APK
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:compileDebugJavaWithJavac --no-daemon --stacktrace
+          test ! -d mapatrayectos/build/outputs/apk
+          echo 'PASS: no APK or deployment'
