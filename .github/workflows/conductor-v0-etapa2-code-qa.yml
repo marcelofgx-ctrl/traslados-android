@@ -1,0 +1,89 @@
+name: Conductor V0 Etapa 2 - Solo codigo (sin APK)
+on:
+  push:
+    branches:
+      - feat/conductor-v0-etapa2-navegacion-20261022
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  navigation-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Control de alcance - sin motores ni otros modulos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only 499fd8d58ee4bddde29f428a078baa1549a5b35f..HEAD > /tmp/stage2-changed.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          names=set(Path('/tmp/stage2-changed.txt').read_text().splitlines())
+          allowed={
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java',
+            'mapatrayectos/tests/ConductorSwipePolicyTest.java',
+            '.github/workflows/conductor-v0-etapa2-code-qa.yml',
+            'docs/CONDUCTOR_V0_ETAPA2_NAVEGACION_20261022.md',
+          }
+          assert names and names<=allowed,('Forbidden modifications',sorted(names-allowed))
+          main=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java').read_text()
+          nav=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java').read_text()
+          assert 'conductorV0.open(shiftActive)' in main
+          assert 'conductorV0.handleBack()' in main
+          assert 'startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class))' not in main
+          assert 'setListener(null)' in nav and 'setPendingRequest(null)' in nav
+          forbidden=['supabase','http', 'https', 'setPickupConsent', 'ReservationMonitorService', 'TrackingService', 'startService(', 'startActivity(']
+          assert not any(s.lower() in nav.lower() for s in forbidden)
+          for path in ['mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java',
+                       'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java',
+                       'mapatrayectos/build.gradle','mapatrayectos/src/main/AndroidManifest.xml',
+                       'settings.gradle']:
+            assert path not in names,('Stable module changed',path)
+          print('PASS: changes isolated to UI/navigation and QA')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Pruebas JVM de gestos sin Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/conductor-v0-gestos
+          javac -d /tmp/conductor-v0-gestos             mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java             mapatrayectos/tests/ConductorSwipePolicyTest.java
+          java -cp /tmp/conductor-v0-gestos ConductorSwipePolicyTest
+      - name: Preparar recursos existentes sin cambios de codigo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Android 35 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Compilar clases Java solamente - prohibido assemble APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:compileDebugJavaWithJavac --no-daemon --stacktrace
+          test ! -d mapatrayectos/build/outputs/apk
+          echo 'PASS: Java compilation only; no APK packaged'
