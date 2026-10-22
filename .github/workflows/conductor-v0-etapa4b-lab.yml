@@ -1,0 +1,111 @@
+name: Conductor V0 Stage 4B - isolated local auth laboratory
+on:
+  push:
+    branches: [feat/conductor-v0-etapa4b-lab-20261022]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-4b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: qt_lab
+          POSTGRES_PASSWORD: qt_lab_local_only
+          POSTGRES_DB: qt_lab
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qt_lab -d qt_lab"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: qt_lab_local_only
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: qt_lab
+      PGDATABASE: qt_lab
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Strict branch + change scope and absence of production credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "feat/conductor-v0-etapa4b-lab-20261022"
+          git diff --name-only d8b772d30628cfbffd0dcbe171cd5b58d97e0ded..HEAD > /tmp/qt4b-files
+          python3 - <<'PY'
+          from pathlib import Path
+          files=set(Path('/tmp/qt4b-files').read_text().splitlines())
+          allow={
+            '.github/workflows/conductor-v0-etapa4b-lab.yml',
+            'docs/CONDUCTOR_V0_ETAPA4B_LAB_20261022.md',
+            'lab/conductor-v0-4b/schema.sql',
+            'lab/conductor-v0-4b/tests.sql',
+            'lab/conductor-v0-4b/AuthContract.java',
+            'lab/conductor-v0-4b/AuthContractTest.java'
+          }
+          assert files == allow, (sorted(allow-files), sorted(files-allow))
+          for path in files:
+              s=Path(path).read_text()
+              assert 'zetaudvvutlouiqxopvg' not in s, path
+              assert 'supabase.co' not in s, path
+              assert 'service_role' not in s, path
+          w=Path('.github/workflows/conductor-v0-etapa4b-lab.yml').read_text()
+          assert 'assembleDebug' not in w and 'assembleRelease' not in w
+          assert 'packageDebug' not in w and 'bundleRelease' not in w
+          print('PASS 4B strict file whitelist, no production identifiers or packaging')
+          PY
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: "17"}
+      - name: Pure Java identity policy and classification tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qt4bclasses
+          javac -d /tmp/qt4bclasses lab/conductor-v0-4b/AuthContract.java lab/conductor-v0-4b/AuthContractTest.java
+          java -cp /tmp/qt4bclasses lab.quicktrip.AuthContractTest
+      - name: Isolated PostgreSQL schema and synthetic contract tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          test "$PGHOST" = "127.0.0.1"
+          test "$PGDATABASE" = "qt_lab"
+          psql -v ON_ERROR_STOP=1 -f lab/conductor-v0-4b/schema.sql
+          psql -v ON_ERROR_STOP=1 -f lab/conductor-v0-4b/tests.sql
+          echo "PASS local ephemeral PostgreSQL integration; no remote endpoint"
+      - name: Prepare Android Java resources without creating an APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: "8.9", cache-read-only: true}
+      - name: Compile Android classes only - APK prohibited
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:compileDebugJavaWithJavac --no-daemon --stacktrace
+          test ! -d mapatrayectos/build/outputs/apk
+          echo 'PASS classes only - NO APK, merge, deploy or remote database'
