@@ -4,9 +4,11 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -69,9 +71,27 @@ public final class ConductorV0View extends FrameLayout {
         setBackgroundColor(BLACK);
         setClickable(true);
         setContentDescription("Quick Trip. Panel Conductor dentro de Mapa.");
+        // Android 15 may render activities edge-to-edge. Reserve the actual
+        // system-bar insets so QUICK TRIP never sits behind the status bar.
+        // This only changes the V0 view: no Mapa activity/window flags.
+        setOnApplyWindowInsetsListener((view,insets)->{
+            int top,bottom;
+            if(Build.VERSION.SDK_INT>=30){
+                android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());
+                top=bars.top;
+                bottom=bars.bottom;
+            }else{
+                top=insets.getSystemWindowInsetTop();
+                bottom=insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(0,top,0,bottom);
+            return insets;
+        });
 
         ScrollView viewport=new ScrollView(context);
-        viewport.setFillViewport(true);
+        // Keep this charcoal card only as tall as its content; do not stretch
+        // it to the bottom of a tall phone screen.
+        viewport.setFillViewport(false);
         viewport.setVerticalScrollBarEnabled(false);
         viewport.setClipToPadding(false);
         viewport.setPadding(dp(16),dp(12),dp(16),dp(28));
@@ -106,9 +126,6 @@ public final class ConductorV0View extends FrameLayout {
         cardBody.setBackground(shape(BLACK,20));
         cardBody.setMinimumHeight(dp(295));
         panel.addView(cardBody,marginBottom(14));
-
-        View flexSpace=new View(context);
-        panel.addView(flexSpace,new LinearLayout.LayoutParams(1,0,1));
 
         TextView swipe=label(context,
             "➜  Deslizar a la derecha para volver a Mapa",12,MUTED,false);
