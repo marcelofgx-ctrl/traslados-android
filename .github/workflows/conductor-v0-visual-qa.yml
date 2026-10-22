@@ -1,0 +1,96 @@
+name: Conductor V0 — Captura Android aislada
+
+on:
+  push:
+    branches:
+      - feat/conductor-v0-limpio-20261021
+    paths:
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/**'
+      - 'mapatrayectos/src/debug/**'
+      - 'mapatrayectos/scripts/conductor-v0-preview.sh'
+      - '.github/workflows/conductor-v0-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-visual:
+    name: "Solo captura de interfaz V0, sin publicar APK"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restaurar assets existentes sin alterar Mapa
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android 35 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Compilar exclusivamente debug para el emulador
+        shell: bash
+        run: gradle :mapatrayectos:assembleDebug --no-daemon --stacktrace
+      - name: Preparar inspección de imagen
+        run: python3 -m pip -q install pillow
+      - name: Autorizar KVM para emulador Android
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Capturar nueva pantalla V0 en Android (sin Mapa abierto)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: default
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash mapatrayectos/scripts/conductor-v0-preview.sh
+      - name: Validar composición negro y gris
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from PIL import Image,ImageStat
+          p="docs/visual-qa/conductor-v0/conductor-v0-android.png"
+          im=Image.open(p).convert("RGB")
+          w,h=im.size
+          assert w>=700 and h>=1400,(w,h)
+          # The main black backdrop is dark and the panel is neutral charcoal.
+          center=im.crop((int(w*.2),int(h*.07),int(w*.8),int(h*.12)))
+          color=ImageStat.Stat(center).mean
+          assert all(22<c<75 for c in color),(p,'wrong main panel',color)
+          assert max(color)-min(color)<9,(p,'premium teal/gold palette leaked into V0',color)
+          button=im.crop((int(w*.53),int(h*.48),int(w*.94),int(h*.81)))
+          pixels=list(button.getdata())
+          assert any(g>r*1.25 and g>b*1.06 and 60<g<190 for r,g,b in pixels),'Green accept button missing'
+          print('PASS Android image:',w,h,'charcoal',list(map(lambda x:round(x,1),color)))
+          PY
+      - name: Retener solamente imagen y jerarquía Android; nunca publicar APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conductor-v0-captura-android
+          path: docs/visual-qa/conductor-v0/
+          if-no-files-found: warn
+          retention-days: 14
