@@ -62,6 +62,7 @@ public final class ConductorV0View extends FrameLayout {
     private final TextView shiftBadge, countNew, countAccepted, countInJourney;
     private Listener listener;
     private Request pending;
+    private boolean previewMode=false;
 
     public ConductorV0View(Context context) {
         super(context);
@@ -106,6 +107,9 @@ public final class ConductorV0View extends FrameLayout {
         cardBody.setMinimumHeight(dp(295));
         panel.addView(cardBody,marginBottom(14));
 
+        View flexSpace=new View(context);
+        panel.addView(flexSpace,new LinearLayout.LayoutParams(1,0,1));
+
         TextView swipe=label(context,
             "➜  Deslizar a la derecha para volver a Mapa",12,MUTED,false);
         swipe.setGravity(Gravity.CENTER);
@@ -117,6 +121,12 @@ public final class ConductorV0View extends FrameLayout {
         setPendingRequest(null);
     }
 
+    /** Visual testing only: labels all example data, never publishes an event. */
+    public void setPreviewMode(boolean enabled){
+        previewMode=enabled;
+        renderCard();
+    }
+
     public void setListener(Listener next) {
         listener=next;
         renderCard();
@@ -124,7 +134,7 @@ public final class ConductorV0View extends FrameLayout {
 
     /** UI only. This never starts/stops a journey or publishes any GPS. */
     public void setShiftActive(boolean active) {
-        shiftBadge.setText(active?"● Jornada activa":"○ Jornada detenida");
+        shiftBadge.setText(active?"✓ Jornada activa":"○ Jornada detenida");
         shiftBadge.setTextColor(active?GREEN:MUTED);
     }
 
@@ -153,8 +163,15 @@ public final class ConductorV0View extends FrameLayout {
             return;
         }
         final Request current=pending;
-        cardBody.addView(label(getContext(),"Nueva solicitud",22,WHITE,true),
-            marginBottom(19));
+        LinearLayout titleRow=horizontal(getContext());
+        TextView title=label(getContext(),"Nueva solicitud",22,WHITE,true);
+        titleRow.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+        if(previewMode){
+            TextView example=label(getContext(),"Ejemplo visual",12,MUTED,false);
+            example.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+            titleRow.addView(example,new LinearLayout.LayoutParams(-2,-1));
+        }
+        cardBody.addView(titleRow,marginBottom(23));
         routeRow("ORIGEN",current.origin,GREEN);
         TextView connector=label(getContext(),"│",18,MUTED,false);
         connector.setPadding(dp(4),0,0,0);
@@ -178,8 +195,9 @@ public final class ConductorV0View extends FrameLayout {
         boolean wired=listener!=null;
         reject.setEnabled(wired);
         accept.setEnabled(wired);
-        reject.setAlpha(wired?1f:.55f);
-        accept.setAlpha(wired?1f:.55f);
+        // Keep reference colors accurate for screenshots, even if preview-only.
+        reject.setAlpha(1f);
+        accept.setAlpha(1f);
         reject.setOnClickListener(v->{if(listener!=null)listener.onReject(current.id);});
         accept.setOnClickListener(v->{if(listener!=null)listener.onAccept(current.id);});
         LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,dp(56),1);
