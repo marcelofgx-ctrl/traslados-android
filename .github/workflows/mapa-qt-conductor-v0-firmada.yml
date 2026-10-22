@@ -1,7 +1,7 @@
 name: Mapa QT Conductor V0 - release oficial aislada
 on:
   push:
-    branches: [consolidacion/mapa-qt-conductor-v0-20261022]
+    branches: [consolidacion/mapa-qt-conductor-v0-20261022, fix/mapa-qt-conductor-capas-r2532-20261022]
   workflow_dispatch:
 permissions:
   contents: read
