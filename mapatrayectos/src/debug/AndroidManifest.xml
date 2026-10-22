@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-only preview Activity: excluded from all release APKs. -->
+        <activity android:name="uy.com.mapatrayectos.conductorv0.ConductorV0PreviewActivity"
+            android:exported="true" android:theme="@android:style/Theme.Material.NoActionBar"
+            android:screenOrientation="portrait" />
+    </application>
+</manifest>
