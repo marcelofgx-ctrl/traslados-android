@@ -1,6 +1,8 @@
 package uy.com.mapatrayectos.conductorv0;
 
 import android.widget.Toast;
+import android.app.AlertDialog;
+import java.util.List;
 
 /**
  * Debug-only connector of approved Conductor V0 UI to in-memory fake data.
@@ -13,6 +15,7 @@ public final class ConductorV0MockBinding {
         final ImmediateTripSimulation simulated = ImmediateTripSimulation.sample();
         view.setPreviewMode(true);
         view.setShiftActive(true);
+        view.setHistoryAction(()->showHistory(view,simulated));
         view.setListener(new ConductorV0View.Listener() {
             @Override public void onAccept(String id) {
                 act(id, ImmediateTripRequest.ACCEPTED);
@@ -31,6 +34,23 @@ public final class ConductorV0MockBinding {
             }
         });
         render(view, simulated);
+    }
+
+    private static void showHistory(ConductorV0View view,ImmediateTripSimulation data) {
+        List<ImmediateTripRequest> rows=data.snapshot();
+        String[] labels=new String[rows.size()];
+        for(int i=0;i<rows.size();i++){
+            ImmediateTripRequest r=rows.get(i);
+            String status=r.status;
+            if(!r.isDirectFixed())status += " · Programado";
+            labels[i]=(i+1)+". "+r.origin+" → "+r.destination+
+                     "\n"+r.amountText()+"  ·  "+status;
+        }
+        new AlertDialog.Builder(view.getContext())
+            .setTitle("Histórico — Simulación sin conexión")
+            .setItems(labels,(dialog,position)->{})
+            .setPositiveButton("Cerrar",(dialog,which)->dialog.dismiss())
+            .show();
     }
 
     private static void render(ConductorV0View view, ImmediateTripSimulation data) {

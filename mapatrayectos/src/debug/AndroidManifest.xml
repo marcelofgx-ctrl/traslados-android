@@ -1,8 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
-        <!-- Debug-only preview Activity: excluded from all release APKs. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- This QA APK CANNOT call real REST, RPC or web APIs. Mapa tiles will be offline. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <application android:label="Mapa Trayectos QA" android:allowBackup="false"
+        tools:replace="android:label,android:allowBackup">
+        <!-- The built-in preview is not exported; the sole launcher remains Mapa. -->
         <activity android:name="uy.com.mapatrayectos.conductorv0.ConductorV0PreviewActivity"
-            android:exported="true" android:theme="@android:style/Theme.Material.NoActionBar"
+            android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"
             android:screenOrientation="portrait" />
     </application>
 </manifest>

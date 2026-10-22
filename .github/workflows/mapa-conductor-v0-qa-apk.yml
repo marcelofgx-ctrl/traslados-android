@@ -1,0 +1,121 @@
+name: Mapa Trayectos QA - Conductor V0 standalone isolated build
+
+on:
+  push:
+    branches: [feat/mapa-conductor-v0-qa-apk-20261022]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate only allowlisted files changed and QA identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "feat/mapa-conductor-v0-qa-apk-20261022"
+          git diff --name-only 257d3550d35e9659791588f52fa3b4cf76b222d5..HEAD > /tmp/qa-scope-files
+          python3 - <<'PY'
+          from pathlib import Path
+          files=set(Path('/tmp/qa-scope-files').read_text().splitlines())
+          allowed={
+              'mapatrayectos/build.gradle',
+              'mapatrayectos/src/debug/AndroidManifest.xml',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0View.java',
+              'mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ConductorV0MockBinding.java',
+              'docs/CONDUCTOR_V0_QA_INSTALL_20261022.md',
+              '.github/workflows/mapa-conductor-v0-qa-apk.yml'
+          }
+          assert files == allowed,(sorted(allowed-files),sorted(files-allowed))
+          for banned in ('mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java',
+                         'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+                         'mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java',
+                         'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java'):
+              assert banned not in files
+          gradle=Path('mapatrayectos/build.gradle').read_text()
+          assert "applicationIdSuffix '.qa.r78'" in gradle
+          navigator=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java').read_text()
+          assert 'qaDemo=' in navigator and 'if(!qaDemo)' in navigator
+          manifest=Path('mapatrayectos/src/debug/AndroidManifest.xml').read_text()
+          assert 'android.permission.INTERNET' in manifest and 'tools:node="remove"' in manifest
+          assert 'android:label="Mapa Trayectos QA"' in manifest
+          print('PASS isolated 7-file QA-only scope; main/GPS/Api/alerts unchanged')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Java synthetic direct-request regression suite
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v0-qa-classes
+          javac -d /tmp/v0-qa-classes             mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ImmediateTripRequest.java             mapatrayectos/src/debug/java/uy/com/mapatrayectos/conductorv0/ImmediateTripSimulation.java             mapatrayectos/tests/ConductorV0ImmediateSimulationTest.java
+          java -cp /tmp/v0-qa-classes ConductorV0ImmediateSimulationTest
+      - name: Restore checked-in encoded resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Android SDK 35 and signing tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"; fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Build QA-only APK, never release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleDebug --no-daemon --stacktrace
+          test ! -d mapatrayectos/build/outputs/apk/release
+      - name: Verify APK package, label, INTERNET denied, signing v2 and SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find mapatrayectos/build/outputs/apk/debug -name '*.apk' -type f | head -1)"
+          test -n "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          bash scripts/android_qa_install_preflight.sh "$APK" uy.com.mapatrayectos.qa.r78 | tee /tmp/qa-preflight.txt
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.INTERNET'; then
+            echo 'SECURITY FAIL: APK can reach real backend'; exit 17;
+          fi
+          grep -q 'QA' /tmp/qa-preflight.txt
+          {
+            echo 'Quick Trip - Conductor V0 (QA solamente)'
+            echo 'Paquete: uy.com.mapatrayectos.qa.r78'
+            echo 'Sin INTERNET, sin conexión Supabase ni solicitudes reales.'
+            echo 'APK compilada solamente desde rama aislada.'
+            cat /tmp/qa-preflight.txt
+          } > mapatrayectos/build/outputs/apk/debug/LEER_ANTES_DE_INSTALAR.txt
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
+          echo 'PASS QA package, Android signature and offline-only safety'
+      - name: Publish QA download archive only (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-Trayectos-ConductorV0-QA-R78
+          path: |
+            mapatrayectos/build/outputs/apk/debug/*.apk
+            mapatrayectos/build/outputs/apk/debug/LEER_ANTES_DE_INSTALAR.txt
+          if-no-files-found: error
+          retention-days: 14

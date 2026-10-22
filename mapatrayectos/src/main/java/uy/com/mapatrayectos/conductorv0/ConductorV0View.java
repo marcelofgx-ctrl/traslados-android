@@ -61,6 +61,7 @@ public final class ConductorV0View extends FrameLayout {
     }
 
     private final LinearLayout cardBody;
+    private final Button historyButton;
     private final TextView shiftBadge, countNew, countAccepted, countInJourney;
     private Listener listener;
     private Request pending;
@@ -125,7 +126,12 @@ public final class ConductorV0View extends FrameLayout {
         cardBody.setPadding(dp(14),dp(20),dp(14),dp(22));
         cardBody.setBackground(shape(BLACK,20));
         cardBody.setMinimumHeight(dp(295));
-        panel.addView(cardBody,marginBottom(14));
+        panel.addView(cardBody,marginBottom(10));
+
+        // Hidden by default; visible only when the debug-only fake attaches.
+        historyButton=action("Ver histórico de prueba",REJECT);
+        historyButton.setVisibility(View.GONE);
+        panel.addView(historyButton,marginBottom(8));
 
         TextView swipe=label(context,
             "➜  Deslizar a la derecha para volver a Mapa",12,MUTED,false);
@@ -147,6 +153,12 @@ public final class ConductorV0View extends FrameLayout {
     public void setListener(Listener next) {
         listener=next;
         renderCard();
+    }
+
+    /** Optional local presentation callback; does not read or change reservations. */
+    public void setHistoryAction(Runnable callback) {
+        historyButton.setVisibility(callback==null?View.GONE:View.VISIBLE);
+        historyButton.setOnClickListener(callback==null?null:v->callback.run());
     }
 
     /** UI only. This never starts/stops a journey or publishes any GPS. */

@@ -32,6 +32,12 @@ android {
     }
 
     buildTypes {
+        // QA-only install: unique package, Android debug signature.
+        // Never replace or re-sign the user's official Mapa Trayectos installation.
+        debug {
+            applicationIdSuffix '.qa.r78'
+            versionNameSuffix '-QA-ConductorV0'
+        }
         release {
             minifyEnabled false
             shrinkResources false

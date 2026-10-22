@@ -18,11 +18,13 @@ public final class ConductorV0Navigator {
     private final SwipeHost host;
     private final ConductorV0View conductor;
     private boolean open;
+    private final boolean qaDemo;
     private int oldStatusBarColor, oldNavigationBarColor, oldDecorFlags;
 
     public ConductorV0Navigator(Activity activity, FrameLayout root) {
         this.activity = activity;
         this.root = root;
+        qaDemo="uy.com.mapatrayectos.qa.r78".equals(activity.getPackageName());
 
         // Small right-edge gesture zone, never a floating action button.
         // Leaves the map and its controls untouched outside this narrow edge.
@@ -67,6 +69,17 @@ public final class ConductorV0Navigator {
         conductor.setListener(null);
         conductor.setCounters(null,null,null);
         conductor.setPendingRequest(null);
+        if(qaDemo) {
+            // QA ONLY. The binding class lives exclusively in src/debug; the
+            // release package never calls or contains this fake reservation feed.
+            try {
+                Class.forName("uy.com.mapatrayectos.conductorv0.ConductorV0MockBinding")
+                    .getMethod("attach",ConductorV0View.class).invoke(null,conductor);
+            } catch(ReflectiveOperationException ex) {
+                android.util.Log.e("ConductorV0QA","Synthetic-only binding failed",ex);
+                // Fail closed: buttons remain inert, never fall back to live RPC.
+            }
+        }
         host.addView(conductor,new FrameLayout.LayoutParams(-1,-1));
         host.setVisibility(View.GONE);
         // Above the edge zone while open; hidden views never block MapView.
@@ -79,8 +92,10 @@ public final class ConductorV0Navigator {
         if(open)return;
         open=true;
         conductor.setShiftActive(shiftActive);
-        conductor.setCounters(null,null,null);
-        conductor.setPendingRequest(null);
+        if(!qaDemo) {
+            conductor.setCounters(null,null,null);
+            conductor.setPendingRequest(null);
+        }
         host.animate().cancel();
         host.setVisibility(View.VISIBLE);
         int width=root.getWidth()>0?root.getWidth():
