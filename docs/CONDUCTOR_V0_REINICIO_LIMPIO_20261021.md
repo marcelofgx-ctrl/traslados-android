@@ -53,6 +53,12 @@ La fuente visual es **la imagen original aportada y aprobada por el usuario**. R
 - Análisis de dependencias críticas: inicial, requiere barrido completo antes de eliminar clases heredadas.
 - Eliminación física de código legado: **no realizada**; sería inseguro sin separar servicios y referencias que utiliza Mapa.
 - Nueva pantalla nativa: **componente V0 creado**, `mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0View.java`, sin importaciones legadas, sin PIN, sin conexión ni lógica GPS. Todavía no está conectado a la aplicación ni fue compilado; no reemplaza la pantalla vieja.
-- Fase 1 pendiente: revisar la pantalla integrada y aprobar su renderizado real antes de avanzar a la transición.
+- Fase 1: **implementación visual y QA de captura Android completadas**, pendiente exclusivamente aprobación estética del usuario; no se integró con Mapa ni con el backend.
+  - Captura de emulador Pixel 5 / Android 35: flujo GitHub Actions https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/39712015547
+  - Artefacto: `conductor-v0-captura-android` (imagen `conductor-v0-android.png` y jerarquía de vistas).
+  - La captura utiliza una **Activity solo de `src/debug`** para presentar datos ficticios identificados como «Ejemplo visual». Excluida de builds release.
+  - QA verificó todos los textos de la muestra, color carbón, botón verde y ausencia de PIN; no hay servidor ni listener operativo.
+  - Se corrigió una interferencia del lanzador Quickstep del emulador en la prueba inicial, sin tocar el diseño de Mapa.
+- Fase 2 bloqueada hasta aprobación explícita: transición Mapa ↔ Conductor.
 - No hay compilación APK ni PR nuevos; la rama está aislada de `main`.
 - Backend de pasajero/Supabase y app instalada: sin cambios en esta rama.
