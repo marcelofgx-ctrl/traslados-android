@@ -1,7 +1,7 @@
-name: Mapa QT Conductor V0 - release oficial aislada
+name: Mapa QT R25.33 - Conductor V0 demo firmada
 on:
   push:
-    branches: [consolidacion/mapa-qt-conductor-v0-20261022, fix/mapa-qt-conductor-capas-r2532-20261022]
+    branches: [feat/conductor-v0-acciones-locales-20261022]
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +26,9 @@ jobs:
             'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0View.java',
             'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java',
             '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
+            '.github/workflows/validate-modular-mapa.yml',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0DemoState.java',
+            'mapatrayectos/tests/ConductorV0DemoStateTest.java',
             'docs/MAPA_QT_CONDUCTOR_V0_20261022.md',
           }
           assert changed==allowed,(changed-allowed,allowed-changed)
@@ -75,7 +78,7 @@ jobs:
           test -s "$APK"
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='uy.com.mapatrayectos' versionCode='85'" /tmp/badging.txt
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='86'" /tmp/badging.txt
           grep -q "application-label:'Mapa QT'" /tmp/badging.txt
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/signing.txt
           grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/signing.txt
@@ -84,7 +87,7 @@ jobs:
       - name: Conservar un único APK firmado en Actions
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-QT-R25.32-ConductorV0-SIGNADA
+          name: Mapa-QT-R25.33-ConductorV0-DEMO-SIGNADA
           path: |
             mapatrayectos/build/outputs/apk/release/*.apk
             mapatrayectos/build/outputs/apk/release/SIGNING.txt
