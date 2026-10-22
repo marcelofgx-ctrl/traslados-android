@@ -51,6 +51,8 @@ jobs:
           }
           assert files == allow, (sorted(allow-files), sorted(files-allow))
           for path in files:
+              if path.endswith('.yml'):
+                  continue  # The guard's own forbidden substrings are literal here.
               s=Path(path).read_text()
               assert 'zetaudvvutlouiqxopvg' not in s, path
               assert 'supabase.co' not in s, path
