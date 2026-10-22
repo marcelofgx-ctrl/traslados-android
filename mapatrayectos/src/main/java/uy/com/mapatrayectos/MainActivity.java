@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
     private SlideActionView slider,endShiftSlider; private TextView endShiftAction;
     private View endShiftSliderWrap; private boolean shiftCloseExpanded=false;
     private FrameLayout rootFrame;
+    private uy.com.mapatrayectos.conductorv0.ConductorV0Navigator conductorV0;
     private TextView quickActionsAnchor, transferBadge;
     private View activeReminderCallout, activeTransferCallout;
     private final Runnable dismissTransferCallout=()->hideInAppTransfer(false);
@@ -392,6 +393,8 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
         root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(79);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(81);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(79);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
+        // Conductor V0 native slide-over inside the SAME Mapa QT Activity.
+        conductorV0=new uy.com.mapatrayectos.conductorv0.ConductorV0Navigator(this,root);
         setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",2)));setSheetState(sheetState,false);updateUi();
         mapView.getMapAsync(m->{map=m;map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(new LatLng(-34.88,-56.08),11.8));map.setStyle(new Style.Builder().fromUri(STYLE_URL),s->{
             style=s;applyLightCartography(style);style.addImage(DRIVER_IMAGE,driverArrow());
@@ -2070,7 +2073,7 @@ public class MainActivity extends Activity {
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
     @Override protected void onDestroy(){uiHandler.removeCallbacksAndMessages(null);if(mapView!=null)mapView.onDestroy();super.onDestroy();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);}
-    @Override public void onBackPressed(){super.onBackPressed();}
+    @Override public void onBackPressed(){if(conductorV0!=null&&conductorV0.handleBack())return;super.onBackPressed();}
 
     public static final class MetricIconView extends View {
         static final int DISTANCE=0,TIME=1,MOVING=2,STOPPED=3,TRIPS=4;
