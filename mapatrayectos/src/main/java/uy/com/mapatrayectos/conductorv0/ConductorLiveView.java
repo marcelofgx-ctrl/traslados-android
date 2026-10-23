@@ -181,13 +181,13 @@ public final class ConductorLiveView extends FrameLayout {
         feedbackText.setVisibility(View.GONE);
         root.addView(feedbackText,bottom(7));
 
+        activeBody=col();
         activeToggle=section("Aceptadas y en curso",()->{
             android.transition.TransitionManager.beginDelayedTransition(
                 activeBody,new android.transition.AutoTransition());
             activeOpen=!activeOpen;renderActive();
         });
         root.addView(activeToggle,bottom(7));
-        activeBody=col();
         root.addView(activeBody,bottom(8));
 
         scheduledToggle=section("Programadas / presupuesto",()->{
