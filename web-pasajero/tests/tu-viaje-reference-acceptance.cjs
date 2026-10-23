@@ -12,7 +12,7 @@ const original=file("premium-journey.js"),home=file("service-home.js");
 const refer=file("../docs/CONTRATO_VISUAL_TU_VIAJE_4_PANTALLAS_20261019.md");
 new vm.Script(presentation);new vm.Script(route);
 assert(html.includes('src="./tu-viaje-reference.js?v=3" defer'),"approved script is loaded");
-assert(html.indexOf('app.js?v=82')<html.indexOf('tu-viaje-reference.js?v=3'),"original engine mounts first");
+assert(html.indexOf('app.js?v=83')<html.indexOf('tu-viaje-reference.js?v=3'),"original engine mounts first");
 assert(html.indexOf('quicktrip-functional-v6.js?v=3')<html.indexOf('tu-viaje-reference.js?v=3'),"approved design overrides experimental V6");
 assert(presentation.includes('params')===false || presentation.includes('searchParams'),"fully scoped to opt-in");
 assert(presentation.includes('get("ui")!=="v6"'),"do not change the default PWA");

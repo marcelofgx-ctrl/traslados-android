@@ -22,7 +22,7 @@ assert(app.includes('customer_list_reservations_v16'));
 assert(app.includes('get_reservation_by_token_v5'));
 assert(app.includes("tripBoard.timeline(r)"),"Timeline uses one shared projection");
 assert(board.timeline(moving).events.some(e=>e.label==="Conductor en camino"),"Movement event comes from canonical timeline");
-assert(html.includes('app.js?v=82')&&html.includes('styles.css?v=82')&&html.includes('trip-board.js?v=7'));
+assert(html.includes('app.js?v=83')&&html.includes('styles.css?v=83')&&html.includes('trip-board.js?v=7'));
 assert(sw.includes('traslados-pwa-v82'));
 assert(read("styles.css").includes('.trip-card[data-tone="moving"] .trip-status-dot'));
 console.log("PASS v51: authenticated pickup-phase changes drive real moving and arrived badges");
