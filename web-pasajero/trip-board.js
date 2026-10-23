@@ -144,6 +144,20 @@
     return [r.status||"",r.pickup_phase||"",r.pickup_phase_updated_at||"",r.quote_status||"",r.quote_sent_at||"",r.quote_final_total||"",
       r.last_driver_message_id||"",r.updated_at||""].map(x=>String(x)).join("|");
   }
+  // The passenger-facing result is determined by the real reservation status.
+  // Never interpret a GPS phase or an estimate as accepting/rejecting a request.
+  function driverDecision(row){
+    const s=String(row?.status||"");
+    if(s==="RECHAZADA")return {
+      result:"rejected",title:"Tu solicitud fue rechazada",
+      label:"RECHAZADA",description:"El conductor rechazó esta solicitud."
+    };
+    if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(s))return {
+      result:"accepted",title:"¡Tu solicitud fue aceptada!",
+      label:"ACEPTADA",description:"El conductor aceptó el viaje solicitado."
+    };
+    return null;
+  }
   function notifications(previous,items){
     const changed=[];
     if(!previous||typeof previous.has!=="function")return changed;
@@ -153,6 +167,13 @@
       const p=previous.get(key);
       if(p.signature===signature(r))continue;
       const m=metadata(r);
+      // Decisions take precedence over chat/phase notifications so passengers
+      // immediately see ACCEPTED vs REJECTED, not a generic status update.
+      const decision=driverDecision(r);
+      if(decision&&p.status!==r.status){
+        changed.push({kind:"decision",row:r,decision});
+        continue;
+      }
       // Nuevos mensajes: solo si ya existía una línea base conocida.
       if(r.last_driver_message_id&&p.lastDriverMessage!==r.last_driver_message_id)
         changed.push({kind:"message",row:r});
@@ -169,6 +190,6 @@
     }]));
   }
   root.TrasladosTripBoard=Object.freeze({
-    metadata,guidance,isHistory,expiredQuote,expiredImmediate,isImmediateRequest,compactDay,groupReservations,notifications,snapshot,signature
+    metadata,guidance,isHistory,expiredQuote,expiredImmediate,isImmediateRequest,compactDay,groupReservations,notifications,snapshot,signature,driverDecision
   });
 })(window);
