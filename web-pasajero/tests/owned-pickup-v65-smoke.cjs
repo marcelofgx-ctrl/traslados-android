@@ -27,9 +27,9 @@ assert.equal(owned.match([{...recent,stops:[{text:"Parada"}]}],origin,destinatio
 assert.equal(owned.match([],origin,destination,[],now),null);
 assert.equal(owned.match([{...recent,pickup_mode:"schedule"}],origin,destination,[],now),null);
 const html=read("index.html"),app=read("app.js"),sw=read("sw.js"),css=read("styles.css");
-assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")<html.indexOf("app.js?v=75"));
-assert(sw.includes("traslados-cliente-pwa-v75")&&sw.includes("./owned-pickup.js"));
-assert(html.includes('styles.css?v=75')&&html.includes('app.js?v=75'));
+assert(html.includes('owned-pickup.js?v=1')&&html.indexOf("owned-pickup.js?v=1")<html.indexOf("app.js?v=76"));
+assert(sw.includes("traslados-cliente-pwa-v76")&&sw.includes("./owned-pickup.js"));
+assert(html.includes('styles.css?v=76')&&html.includes('app.js?v=76'));
 assert(html.includes('id="pickup-existing-open"'));
 assert(app.includes("window.TrasladosOwnedPickup?.match?.(tripRows"));
 assert(app.includes('if($("booking-success")?.hidden&&$("urgent-actions"))$("urgent-actions").hidden=true'));
