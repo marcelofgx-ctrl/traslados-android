@@ -306,6 +306,9 @@ public final class TransferAlerts {
             }catch(Exception ex){
                 android.util.Log.w("MapaTransfers","Fixed decision was not confirmed: "+ex.getClass().getSimpleName());
                 if(ex instanceof IllegalStateException)message=ex.getMessage();
+                else message=uy.com.traslados.conductor.Api.publicMessage("fixed",ex);
+                // UI only: preserve actual failure reason (occupied vs offline).
+                // No booking or GPS behavior is modified.
             }
             final boolean confirmed=ok;
             final String result=message;

@@ -34,6 +34,10 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ArrayList<JSONObject> pending=new ArrayList<>();
     private final HashSet<String> locallyConfirmed=new HashSet<>();
+    // Read-only capacity, always derived from the same fresh server snapshot.
+    // Pending offers never imply the driver is available.
+    private boolean capacityFresh=false;
+    private int unclosedImmediate=0;
     private boolean open=false,hostResumed=false,receiverRegistered=false,busy=false,historyLoading=false;
     private Runnable onConfirmedImmediateDecision;
     public void setOnConfirmedImmediateDecision(Runnable action){
@@ -123,6 +127,8 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         String pin=DriverIdentity.pin(activity);
         if(pin.isEmpty()){
             view.setConnection("Conductor sin vincular. Usá Vincular conductor en el menú de Mapa.",false);
+            capacityFresh=false;unclosedImmediate=0;
+            view.setCapacity(false,0);
             view.setCounters(null,null,null);
             view.setPendingRequest(null,0,0);
             view.setActiveTrips(new ArrayList<>());
@@ -135,6 +141,8 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         String error=TransferAlerts.syncError(activity);
         boolean fresh=synced>0 && now>=synced && now-synced<=45000L;
         if(!fresh){
+            capacityFresh=false;unclosedImmediate=0;
+            view.setCapacity(false,0);
             view.setConnection(synced<=0?"Conectando con solicitudes reales…":
                 "Sin actualización reciente · revisá la conexión"+(error.isEmpty()?"":" ("+error+")"),false);
             view.setCounters(null,null,null);
@@ -152,10 +160,13 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         ArrayList<JSONObject> nextPending=new ArrayList<>();
         ArrayList<ConductorLiveView.Trip> accepted=new ArrayList<>(),scheduled=new ArrayList<>();
         int activeCount=0,inJourney=0;
+        int openImmediate=0;
         for(int i=0;i<snapshot.length();i++){
             JSONObject r=snapshot.optJSONObject(i);if(r==null)continue;
             String id=r.optString("id",""),status=r.optString("status","");
             if(!ConductorLivePolicy.safeId(id))continue;
+            if(ConductorCapacityPolicy.countsAsUnclosedImmediate(
+                    status,r.optString("pickup_mode","")))openImmediate++;
             if(ConductorLivePolicy.pending(status)){
                 if(locallyConfirmed.contains(id))continue; // avoid a stale optimistic reclick after confirmed RPC
                 boolean fixed=ConductorLivePolicy.actionableFixed(status,
@@ -177,6 +188,9 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
             if(r!=null&&ConductorLivePolicy.pending(r.optString("status")))stillPending.add(r.optString("id"));
         }
         locallyConfirmed.retainAll(stillPending);
+        capacityFresh=true;
+        unclosedImmediate=openImmediate;
+        view.setCapacity(true,openImmediate);
         pending.clear();pending.addAll(nextPending);
         if(!pending.isEmpty()){
             boolean found=false;
@@ -249,6 +263,12 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     @Override public void onReject(String id){decide(id,false);}
     private void decide(String id,boolean accepted){
         if(busy||!ConductorLivePolicy.safeId(id)||DriverIdentity.pin(activity).isEmpty())return;
+        if(accepted&&!ConductorCapacityPolicy.mayAcceptImmediate(capacityFresh,unclosedImmediate)){
+            view.setFeedback(capacityFresh?
+                "Conductor ocupado: hay un servicio sin cerrar. Terminá o cancelá el anterior antes de aceptar otra recogida inmediata.":
+                "No se confirmó si el conductor está disponible. Actualizá las solicitudes.",false);
+            return;
+        }
         boolean present=false;
         for(JSONObject r:pending)if(id.equals(r.optString("id")))present=true;
         if(!present)return;

@@ -83,12 +83,13 @@ public final class ConductorLiveView extends FrameLayout {
         void onFinishTrip(String id);
     }
 
-    private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,connectionDot,feedbackText;
+    private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,connectionDot,feedbackText,capacityText;
     private final TextView historyToggle,activeToggle,scheduledToggle;
     private final LinearLayout requestBody,historyBody,activeBody,scheduledBody;
     private final List<String> history=new ArrayList<>();
     private final List<Trip> active=new ArrayList<>(),scheduled=new ArrayList<>();
-    private boolean historyOpen=false,activeOpen=true,scheduledOpen=false,busy=false;
+    private boolean historyOpen=false,activeOpen=false,scheduledOpen=false,busy=false;
+    private boolean allowAccept=false;
     private boolean connected=false;
     private Listener listener;
     private Request request;
@@ -122,7 +123,7 @@ public final class ConductorLiveView extends FrameLayout {
         addView(scroll,new FrameLayout.LayoutParams(-1,-1));
 
         LinearLayout root=col();
-        root.setPadding(dp(20),dp(23),dp(20),dp(30));
+        root.setPadding(dp(15),dp(14),dp(15),dp(25));
         scroll.addView(root,new ScrollView.LayoutParams(-1,-2));
 
         LinearLayout brandRow=row();
@@ -138,14 +139,14 @@ public final class ConductorLiveView extends FrameLayout {
         shiftBadge.setPadding(dp(11),dp(8),dp(11),dp(8));
         shiftBadge.setBackground(shape(CARD_DEEP,50,STROKE));
         brandRow.addView(shiftBadge,new LinearLayout.LayoutParams(-2,-2));
-        root.addView(brandRow,bottom(21));
+        root.addView(brandRow,bottom(11));
 
         // Three small stats, never fabricated earnings or fake trip counts.
         LinearLayout stats=row();
         countNew=stat(stats,"NUEVAS");
         countAccepted=stat(stats,"ACEPTADAS");
         countInJourney=stat(stats,"EN VIAJE");
-        root.addView(stats,bottom(16));
+        root.addView(stats,bottom(9));
 
         LinearLayout monitor=row();
         connectionDot=text("●",13,MUTED,true);
@@ -161,26 +162,33 @@ public final class ConductorLiveView extends FrameLayout {
         LinearLayout.LayoutParams refreshLp=new LinearLayout.LayoutParams(dp(44),dp(40));
         refreshLp.leftMargin=dp(8);
         monitor.addView(refresh,refreshLp);
-        root.addView(monitor,bottom(16));
+        root.addView(monitor,bottom(8));
+
+        capacityText=text("Estado del conductor por confirmar",12,MUTED,true);
+        capacityText.setPadding(dp(11),dp(8),dp(11),dp(8));
+        capacityText.setBackground(shape(CARD_DEEP,12,STROKE));
+        root.addView(capacityText,bottom(9));
 
         requestBody=col();
-        requestBody.setPadding(dp(16),dp(16),dp(16),dp(16));
+        requestBody.setPadding(dp(14),dp(12),dp(14),dp(14));
         requestBody.setBackground(shape(CARD,20,STROKE));
-        root.addView(requestBody,bottom(12));
+        root.addView(requestBody,bottom(8));
 
         feedbackText=text("",12,WHITE,true);
         feedbackText.setGravity(Gravity.CENTER_VERTICAL);
         feedbackText.setPadding(dp(13),dp(11),dp(13),dp(11));
         feedbackText.setBackground(shape(CARD_DEEP,12,STROKE));
         feedbackText.setVisibility(View.GONE);
-        root.addView(feedbackText,bottom(11));
+        root.addView(feedbackText,bottom(7));
 
+        activeBody=col();
         activeToggle=section("Aceptadas y en curso",()->{
+            android.transition.TransitionManager.beginDelayedTransition(
+                activeBody,new android.transition.AutoTransition());
             activeOpen=!activeOpen;renderActive();
         });
         root.addView(activeToggle,bottom(7));
-        activeBody=col();
-        root.addView(activeBody,bottom(13));
+        root.addView(activeBody,bottom(8));
 
         scheduledToggle=section("Programadas / presupuesto",()->{
             scheduledOpen=!scheduledOpen;renderScheduled();
@@ -202,6 +210,7 @@ public final class ConductorLiveView extends FrameLayout {
         root.addView(gesture);
 
         setShiftActive(false);
+        setCapacity(false,0);
         setCounters(null,null,null);
         setPendingRequest(null,0,0);
         renderActive();renderScheduled();renderHistory();
@@ -213,6 +222,14 @@ public final class ConductorLiveView extends FrameLayout {
     }
     public void setBusy(boolean next){
         busy=next;renderRequest();renderActive();renderScheduled();
+    }
+    public void setCapacity(boolean fresh,int openImmediate){
+        allowAccept=ConductorCapacityPolicy.mayAcceptImmediate(fresh,openImmediate);
+        String status=ConductorCapacityPolicy.occupancyLabel(fresh,openImmediate);
+        capacityText.setText((fresh&&openImmediate>0?"●  ":"○  ")+status);
+        capacityText.setTextColor(!fresh?MUTED:openImmediate>0?GOLD:GREEN);
+        capacityText.setContentDescription(status);
+        if(request!=null)renderRequest();
     }
     public void setShiftActive(boolean isActive){
         shiftBadge.setText(isActive?"●  Jornada activa":"○  Jornada detenida");
@@ -284,9 +301,9 @@ public final class ConductorLiveView extends FrameLayout {
         requestBody.addView(header,bottom(8));
         if(!r.code.isEmpty())
             requestBody.addView(text(r.code,11,GOLD,true),bottom(11));
-        route(requestBody,"RECOGIDA",r.origin,GREEN,16);
+        route(requestBody,"RECOGIDA",r.origin,GREEN,15);
         rail(requestBody);
-        route(requestBody,"DESTINO",r.destination,GOLD,16);
+        route(requestBody,"DESTINO",r.destination,GOLD,15);
         divider(requestBody,14,12);
 
         LinearLayout metrics=row();
@@ -294,18 +311,29 @@ public final class ConductorLiveView extends FrameLayout {
         metric(metrics,"TIEMPO",r.duration);
         metric(metrics,"PRECIO",r.amount);
         requestBody.addView(metrics,bottom(13));
-        if(!r.customer.isEmpty())
-            requestBody.addView(text("Pasajero · "+r.customer,12,MUTED,false),bottom(12));
+        LinearLayout passenger=row();
+        passenger.addView(text("PASAJERO",10,MUTED,true),new LinearLayout.LayoutParams(-2,-2));
+        TextView name=text(r.customer.isEmpty()?"Nombre por confirmar":r.customer,15,WHITE,true);
+        LinearLayout.LayoutParams passengerLp=new LinearLayout.LayoutParams(0,-2,1);
+        passengerLp.leftMargin=dp(10);
+        passenger.addView(name,passengerLp);
+        requestBody.addView(passenger,bottom(12));
 
         LinearLayout decisions=row();
         Button reject=button(busy?"Procesando…":"Rechazar",Action.OUTLINE);
         Button accept=button(busy?"Procesando…":"Aceptar",Action.PRIMARY);
         reject.setEnabled(listener!=null&&!busy);
-        accept.setEnabled(listener!=null&&!busy);
+        accept.setEnabled(listener!=null&&!busy&&allowAccept);
+        if(!allowAccept)accept.setAlpha(.43f);
         reject.setOnClickListener(v->{if(listener!=null)listener.onReject(r.id);});
         accept.setOnClickListener(v->{if(listener!=null)listener.onAccept(r.id);});
         equal(decisions,reject,52,0,6);equal(decisions,accept,52,6,0);
         requestBody.addView(decisions);
+        if(!allowAccept){
+            TextView reason=text("No podés aceptar otra recogida inmediata mientras haya un servicio sin cerrar o sin conexión verificada.",11,GOLD,false);
+            reason.setPadding(0,dp(8),0,0);
+            requestBody.addView(reason);
+        }
 
         if(total>1){
             LinearLayout paging=row();
@@ -323,8 +351,35 @@ public final class ConductorLiveView extends FrameLayout {
     private void renderActive(){
         updateSection(activeToggle,"Aceptadas y en curso",active.size(),activeOpen);
         activeBody.removeAllViews();
-        activeBody.setVisibility(activeOpen?View.VISIBLE:View.GONE);
-        if(!activeOpen||active.isEmpty())return; // No dead empty-state vertical area.
+        activeBody.setVisibility(active.isEmpty()?View.GONE:View.VISIBLE);
+        if(active.isEmpty())return;
+        if(!activeOpen){
+            // One compact, tappable summary replaces several tall full cards.
+            // All operational buttons remain in the expanded native cards.
+            Trip current=active.get(0);
+            LinearLayout summary=col();
+            summary.setPadding(dp(14),dp(12),dp(14),dp(12));
+            summary.setBackground(shape(CARD,16,STROKE));
+            String person=current.customer.isEmpty()?"Pasajero por confirmar":current.customer;
+            summary.addView(text(person+"  ·  "+prettyStatus(current.status),14,WHITE,true),bottom(5));
+            TextView itinerary=text(current.origin+" → "+current.destination,11,MUTED,false);
+            itinerary.setSingleLine(true);
+            itinerary.setEllipsize(TextUtils.TruncateAt.END);
+            summary.addView(itinerary,bottom(4));
+            summary.addView(text("Ver acciones y recorrido  ▾"+
+                (active.size()>1?"   ·   +"+(active.size()-1)+" servicio(s)":""),11,GOLD,true));
+            summary.setContentDescription("Servicio activo de "+person+
+                ". Toque para ampliar acciones y ver "+active.size()+" servicio(s).");
+            summary.setClickable(true);
+            summary.setFocusable(true);
+            summary.setOnClickListener(v->{
+                android.transition.TransitionManager.beginDelayedTransition(
+                    activeBody,new android.transition.AutoTransition());
+                activeOpen=true;renderActive();
+            });
+            activeBody.addView(summary,bottom(8));
+            return;
+        }
         for(Trip t:active){
             LinearLayout card=tripCard(t);
 
@@ -487,15 +542,15 @@ public final class ConductorLiveView extends FrameLayout {
         LinearLayout tile=col();
         tile.setGravity(Gravity.CENTER);
         tile.setBackground(shape(CARD,17,STROKE));
-        TextView value=text("—",27,WHITE,true);
+        TextView value=text("—",23,WHITE,true);
         value.setGravity(Gravity.CENTER);
         value.setIncludeFontPadding(false);
-        tile.addView(value,bottom(9));
+        tile.addView(value,bottom(4));
         TextView title=text(caption,10,MUTED,true);
         title.setGravity(Gravity.CENTER);
         title.setLetterSpacing(.04f);
         tile.addView(title);
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(83),1);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(66),1);
         p.setMargins(dp(4),0,dp(4),0);
         row.addView(tile,p);
         return value;

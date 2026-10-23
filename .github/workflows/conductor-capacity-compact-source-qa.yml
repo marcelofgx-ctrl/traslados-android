@@ -1,0 +1,87 @@
+name: Quick Trip - Single Driver Capacity + Compact UI (NO APK)
+on:
+  push:
+    branches: [fix/conductor-capacidad-compacta-qa-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Strict scope and unchanged booking GPS PWA backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base='feat/quicktrip-solicitudes-focus-y-estado-pasajero-20261023'
+          changes=set(subprocess.check_output(['git','diff','--name-only','origin/'+base+'..HEAD'],text=True).splitlines())
+          allowed={
+              '.github/workflows/conductor-capacity-compact-source-qa.yml',
+              'docs/QUICKTRIP_AUDITORIA_20261023.md',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorCapacityPolicy.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
+              'mapatrayectos/tests/ConductorCapacityPolicyTest.java',
+          }
+          assert changes==allowed,('Unexpected files changed',changes^allowed)
+          build=Path('mapatrayectos/build.gradle').read_text()
+          assert 'versionCode 91' in build
+          assert "applicationId 'uy.com.mapatrayectos'" in build
+          assert not any(x.startswith(('web-pasajero/','conductor/','core-reservations/','supabase/')) for x in changes)
+          control=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java').read_text()
+          view=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java').read_text()
+          transfer=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java').read_text()
+          assert 'ConductorCapacityPolicy.countsAsUnclosedImmediate' in control
+          assert 'ConductorCapacityPolicy.mayAcceptImmediate' in control
+          assert 'setCapacity(false,0)' in control
+          assert 'requestBody.addView(passenger,bottom(12))' in view
+          assert 'activeOpen=false' in view
+          assert 'android.transition.TransitionManager.beginDelayedTransition' in view
+          assert 'else message=uy.com.traslados.conductor.Api.publicMessage("fixed",ex)' in transfer
+          print('PASS: unchanged original motors, R25.38 install identity, no server/DB edits')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Run isolated capacity policy JVM tests only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qt-capacity
+          javac -d /tmp/qt-capacity \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorCapacityPolicy.java \
+            mapatrayectos/tests/ConductorCapacityPolicyTest.java
+          java -cp /tmp/qt-capacity ConductorCapacityPolicyTest
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare existing assets for class-only compilation
+        shell: bash
+        run: |
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw
+          base64 --decode mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          base64 --decode mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+      - name: Verify Android Java compile only, NO APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+          gradle :core-reservations:classes :mapatrayectos:compileDebugJavaWithJavac --build-cache --no-daemon --console=plain
+          test ! -e mapatrayectos/build/outputs/apk/debug/mapatrayectos-debug.apk
+          test ! -e mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk
+          echo 'PASS: Java classes compiled. NO APK created. NO GitHub merge, deployment or DB writes.' >> "$GITHUB_STEP_SUMMARY"
