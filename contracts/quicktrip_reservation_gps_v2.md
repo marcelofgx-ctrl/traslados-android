@@ -18,7 +18,7 @@ Entradas: identificador/credencial de dispositivo vinculado, UUID de reserva, jo
 Requisitos transaccionales:
 1. Consentimiento remoto habilitado; dispositivo autenticado; jornada activa y no pausada.
 2. Fijación de GPS con antigüedad <= 75 segundos, hasta 10 segundos de tolerancia futura, precisión de 0 a 45 metros y coordenadas en Uruguay.
-3. La reserva identificada pertenece al **único servicio operativo** y está `EN_VIAJE`, o `ACEPTADA` con `EN_CAMINO` / `EN_PUNTO`. Nunca elegir otra reserva automáticamente.
+3. La reserva identificada pertenece al **único servicio operativo** y está `EN_VIAJE`, o estado `ACEPTADA`/`ACEPTADA_CLIENTE`/`CONFIRMADA` con `EN_CAMINO` / `EN_PUNTO`. Nunca elegir otra reserva automáticamente.
 4. Actualizar solo una fila por reserva, y solo si la marca de tiempo GPS es más reciente.
 5. Respuesta con `ok`, `reason`, `reservationId`, `serverAt`, **sin coordenadas ni credenciales**.
 6. Autorización según esquema actual, RLS/grants verificados, ejecución restringida y `search_path` fijo; ningún procedimiento nuevo público sin control.

@@ -14,7 +14,7 @@
 ## Qué protege exactamente la regla
 Solo el conductor de Quick Trip:
 - Todo `EN_VIAJE` ocupa la capacidad.
-- Todo `ACEPTADA` con `pickup_mode='now'` ocupa la capacidad hasta el cierre real, incluso si el recorrido lleva horas de retraso.
+- Todo `ACEPTADA`, `ACEPTADA_CLIENTE` o `CONFIRMADA` con `pickup_mode='now'` ocupa la capacidad hasta el cierre real, incluso si el recorrido lleva horas de retraso.
 - Un programado `ACEPTADA` ocupa el turno al iniciar `EN_CAMINO` / `EN_PUNTO`, pero puede quedar programado en agenda sin bloquear anticipadamente los viajes inmediatos.
 - El índice único hace fracasar una segunda aceptación de cualquier RPC o dispositivo, con SQLSTATE `23505`; el cliente deberá convertirlo en un mensaje claro de conductor ocupado.
 
