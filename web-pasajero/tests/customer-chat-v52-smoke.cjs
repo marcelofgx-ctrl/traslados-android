@@ -26,7 +26,7 @@ assert(app.includes('if(!response?.id)throw'));
 assert(app.includes('function playTripAlertSound()'));
 assert(app.includes('if(!$("trips-alert-sound").checked||!tripAlertAudio'));
 assert(app.includes('function showTripNotice(change)')&&app.includes('message?"Nuevo mensaje del conductor"'));
-assert(app.includes('if($("trips-alert-vibrate").checked&&navigator.vibrate)'));
+assert(app.includes('if($("trips-alert-vibrate").checked&&typeof navigator.vibrate==="function")'),"Opt-in browser vibration is capability-guarded");
 assert(app.includes('text(bubble,"span",item.body||"")'),"No HTML injection in messages");
 assert(app.includes('id===activeTripChat.id'),"Chat survives background refresh without losing its reservation");
 assert(html.includes('id="trip-chat-sheet"')&&app.includes('function closeTripChat()'),
