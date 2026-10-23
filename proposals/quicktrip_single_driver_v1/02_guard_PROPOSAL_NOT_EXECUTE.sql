@@ -13,7 +13,7 @@ BEGIN
   SELECT count(*) INTO operational_count
   FROM public.reservations
   WHERE status='EN_VIAJE'
-     OR (status='ACEPTADA'
+     OR (status IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA')
          AND (pickup_mode='now' OR pickup_phase IN ('EN_CAMINO','EN_PUNTO')));
   IF operational_count > 1 THEN
     RAISE EXCEPTION
@@ -26,6 +26,6 @@ $guard$;
 CREATE UNIQUE INDEX quicktrip_one_operational_service_v1_uq
   ON public.reservations ((1))
   WHERE status='EN_VIAJE'
-     OR (status='ACEPTADA'
+     OR (status IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA')
          AND (pickup_mode='now' OR pickup_phase IN ('EN_CAMINO','EN_PUNTO')));
 COMMIT;
