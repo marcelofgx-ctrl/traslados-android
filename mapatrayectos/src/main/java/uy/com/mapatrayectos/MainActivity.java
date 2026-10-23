@@ -142,15 +142,60 @@ public class MainActivity extends Activity {
         @Override public void onReceive(Context c,Intent i){
             if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
                 updateTransferBadge();
-                showInAppTransfer();
+                showIncomingRequestInConductor();
             }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction()))updateTransferBadge();
         }
     };
+    /**
+     * When Mapa is visible, show the EXISTING integrated black conductor panel.
+     * The map-anchored accept/reject callout is reserved for the background
+     * floating bubble (TrackingService) and is not layered over the map.
+     */
+    private void showIncomingRequestInConductor(){
+        if(conductorV0==null||isFinishing()||isDestroyed())return;
+        if(!getSharedPreferences("bubble_state",MODE_PRIVATE).getBoolean("ui_visible",false))return;
+        if(DriverIdentity.pin(this).isEmpty())return;
+        // Scheduled quotes have their own workflow; auto-focus only immediate fixed fare.
+        if(TransferAlerts.lastActionableFixed(this)==null){
+            TransferAlerts.refreshAsync(this);
+            return;
+        }
+        hideInAppTransfer(false);
+        boolean wasOpen=conductorV0.isOpen();
+        if(!wasOpen){
+            boolean shift=getSharedPreferences("tracking_state",MODE_PRIVATE)
+                .getBoolean("shift_active",false);
+            conductorV0.open(shift);
+        }
+        TransferAlerts.markViewed(this);
+        vibrateImmediateRequest();
+    }
+    private void vibrateImmediateRequest(){
+        if(!getSharedPreferences("driver_alert_settings",MODE_PRIVATE)
+            .getBoolean("vibrate",true))return;
+        try{
+            android.os.Vibrator vibrator=
+                (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
+            if(vibrator==null||!vibrator.hasVibrator())return;
+            // Three prolonged, separated pulses. One ACTION_NEW is deduplicated
+            // per reservation in TransferAlerts.reportNew.
+            long[] pattern=new long[]{0,360,180,360,180,360};
+            if(Build.VERSION.SDK_INT>=26)
+                vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern,-1));
+            else vibrator.vibrate(pattern,-1);
+        }catch(Exception ex){
+            android.util.Log.w("QuickTripConductor","Haptic unavailable",ex);
+        }
+    }
     private void openIntegratedConductor(){
         hideInAppTransfer(false);
         if(DriverIdentity.pin(this).isEmpty()){promptDriverBinding();return;}
         TransferAlerts.markViewed(this);
-        startActivity(new Intent(this,uy.com.traslados.conductor.MainActivity.class));
+        if(conductorV0!=null){
+            boolean shift=getSharedPreferences("tracking_state",MODE_PRIVATE)
+                .getBoolean("shift_active",false);
+            conductorV0.open(shift);
+        }
     }
     private void promptDriverBinding(){
         if(!DriverIdentity.pin(this).isEmpty()){
@@ -1983,6 +2028,10 @@ public class MainActivity extends Activity {
         });
     }
     private void showInAppTransfer(){
+        // Intentionally never use an accept/reject map callout while foreground.
+        // New requests are shown by showIncomingRequestInConductor().
+        if(getSharedPreferences("bubble_state",MODE_PRIVATE).getBoolean("ui_visible",false))
+            return;
         if(rootFrame==null||quickActionsAnchor==null)return;
         hideInAppReminder(false);hideInAppTransfer(false);
         final JSONObject fixed=TransferAlerts.lastActionableFixed(this);
