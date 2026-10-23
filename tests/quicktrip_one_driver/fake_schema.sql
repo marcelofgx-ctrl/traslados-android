@@ -1,6 +1,7 @@
 -- Disposable local PostgreSQL only. Every reservation below is fictitious.
 CREATE TYPE public.reservation_status AS ENUM
-  ('PENDIENTE','ACEPTADA','EN_VIAJE','FINALIZADA','CANCELADA','RECHAZADA');
+  ('PENDIENTE','ACEPTADA','EN_VIAJE','FINALIZADA','CANCELADA','RECHAZADA',
+   'PRESUPUESTO_ENVIADO','ACEPTADA_CLIENTE','CONFIRMADA','RECHAZADA_CLIENTE');
 CREATE TABLE public.reservations (
   id uuid PRIMARY KEY,
   code text UNIQUE NOT NULL,
