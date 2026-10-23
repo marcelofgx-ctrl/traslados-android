@@ -1,7 +1,7 @@
-name: Mapa QT R25.37 - Conductor premium aislado firmado
+name: Mapa QT R25.38 - Solicitudes integradas firmado aislado
 on:
   push:
-    branches: [design/conductor-premium-r2537-visual-only-20261023]
+    branches: [feat/quicktrip-solicitudes-focus-y-estado-pasajero-20261023]
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,69 +12,87 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false, fetch-depth: 0}
-      - name: Comprobar alcance y sin segundo APK
+      - name: Proteger R25.37, motores originales y único APK Mapa QT
+        shell: bash
         run: |
           set -euo pipefail
-          git diff --name-only 2b44054094a961e638d85f544b13484888298aa4..HEAD > /tmp/scope.txt
           python3 - <<'PY'
-          from pathlib import Path
-          changed=set(Path('/tmp/scope.txt').read_text().splitlines())
           import subprocess
-          premium=set(subprocess.check_output([
-              'git','diff','--name-only',
-              'c609aacbe5e50c9d46a697920ce411c7e28ca7ea..HEAD'
-          ],text=True).splitlines())
-          expected_premium={
-              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
-              'mapatrayectos/build.gradle',
+          from pathlib import Path
+          base='a629002a5e5b794029a78d5d60254a1d461791a0'
+          changed=set(subprocess.check_output(
+              ['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          expected={
               '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
-              '.github/workflows/conductor-premium-source-only.yml',
+              '.github/workflows/quicktrip-request-flow-source-qa.yml',
+              'conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java',
+              'mapatrayectos/build.gradle',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorIncomingPolicy.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+              'mapatrayectos/tests/ConductorIncomingPolicyTest.java',
+              'web-pasajero/app.js',
+              'web-pasajero/index.html',
+              'web-pasajero/styles.css',
+              'web-pasajero/sw.js',
+              'web-pasajero/tests/account-summary-smoke.cjs',
+              'web-pasajero/tests/booking-finish-premium-smoke.cjs',
+              'web-pasajero/tests/customer-chat-v52-smoke.cjs',
+              'web-pasajero/tests/expired-quotes-v55-smoke.cjs',
+              'web-pasajero/tests/expired-urgent-v66-smoke.cjs',
+              'web-pasajero/tests/flexible-schedule-r1-smoke.cjs',
+              'web-pasajero/tests/guided-passenger-flow-v58-smoke.cjs',
+              'web-pasajero/tests/journey-composition-v57-smoke.cjs',
+              'web-pasajero/tests/mobile-overflow-v53-smoke.cjs',
+              'web-pasajero/tests/owned-pickup-v65-smoke.cjs',
+              'web-pasajero/tests/pickup-context-copy-v60-smoke.cjs',
+              'web-pasajero/tests/pickup-diagnostics-v70-smoke.cjs',
+              'web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs',
+              'web-pasajero/tests/pickup-expired-session-v71-smoke.cjs',
+              'web-pasajero/tests/pickup-health-v54-smoke.cjs',
+              'web-pasajero/tests/pickup-motion-v64-smoke.cjs',
+              'web-pasajero/tests/presence-honest-v48-smoke.cjs',
+              'web-pasajero/tests/public-config-v72-smoke.cjs',
+              'web-pasajero/tests/route-mockup-v46-smoke.cjs',
+              'web-pasajero/tests/route-premium-v45-smoke.cjs',
+              'web-pasajero/tests/route-selected-v47-smoke.cjs',
+              'web-pasajero/tests/service-art-v62-smoke.cjs',
+              'web-pasajero/tests/service-home-v61-smoke.cjs',
+              'web-pasajero/tests/trip-board-v50-smoke.cjs',
+              'web-pasajero/tests/trip-chat-live-v73-smoke.cjs',
+              'web-pasajero/tests/trip-decision-v76-smoke.cjs',
+              'web-pasajero/tests/trip-phase-v51-smoke.cjs',
+              'web-pasajero/tests/urgent-request-v49-smoke.cjs',
+              'web-pasajero/trip-board.js',
           }
-          assert premium==expected_premium,('UI-only build boundary violated',
-              premium-expected_premium,expected_premium-premium)
-          allowed={
-            '.github/workflows/conductor-premium-source-only.yml',
-            '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
-            '.github/workflows/validate-modular-mapa.yml',
-            'AGENTS.md',
-            'docs/MAPA_QT_CONDUCTOR_V0_20261022.md',
-            'mapatrayectos/build.gradle',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLivePolicy.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
-            'mapatrayectos/tests/ConductorLivePolicyTest.java',
-            'mapatrayectos/tests/ConductorOperationsPolicyTest.java',
-          }
-          assert changed==allowed,(changed-allowed,allowed-changed)
-          source=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java').read_text()
-          live=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java').read_text()
-          visual=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java').read_text()
-          assert 'new ConductorLiveController' in source
-          assert 'returnTab' not in source
-          assert 'sample-only' not in (live+visual+source)
-          assert 'TransferAlerts.decideFixed' in live
-          assert 'DriverIdentity.pin(activity)' in live
-          assert 'Api.listHistory' in live
-          assert 'Api.setPickupPhase' in live
-          assert 'ConductorLivePolicy.actionableFixed' in live
-          quote=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java').read_text()
-          trip=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java').read_text()
-          ops=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java').read_text()
-          assert 'Api.sendQuoteV107' in quote and 'Api.checkRouteFitV114' in quote
-          assert 'Api.setStatus' in trip and 'TripTelemetryService.ACTION_STOP' in trip
-          assert 'TripTelemetryService.ACTION_ABORT' in trip and 'Api.listActive' in trip
-          assert 'onPrepareQuote' in live and 'onFinishTrip' in live
-          assert 'boolean canQuote(' in ops
-          assert 'ConductorOperationsPolicy.canQuote(' in visual
-          assert 'versionCode 90' in Path('mapatrayectos/build.gradle').read_text()
-          assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
-          print('PASS Mapa QT authenticated Conductor UI; no second APK')
+          assert changed==expected,('Cambios fuera del alcance autorizado',
+                                    sorted(changed-expected),sorted(expected-changed))
+          for stable in (
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
+              'conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java',
+              'web-pasajero/rpc-client.js',
+              'web-pasajero/booking-contracts.js',
+          ):
+              assert stable not in changed,'Motor estable alterado: '+stable
+          gradle=Path('mapatrayectos/build.gradle').read_text()
+          assert "applicationId 'uy.com.mapatrayectos'" in gradle
+          assert 'versionCode 91' in gradle
+          assert "versionName 'MapaQT-0.1-R25.38'" in gradle
+          main=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java').read_text()
+          controller=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java').read_text()
+          tracker=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java').read_text()
+          assert 'showIncomingRequestInConductor();' in main
+          assert 'ConductorIncomingPolicy.incomingPattern()' in main
+          assert 'onNewIntent(Intent intent)' in main
+          assert 'if(onConfirmedImmediateDecision!=null)onConfirmedImmediateDecision.run()' in controller
+          assert 'TransferAlerts.decideFixed(activity,id,accepted' in controller
+          assert 'if(!appVisible&&bubbleView!=null)showTransferCallout();' in tracker
+          print('PASS versionCode 91: motores protegidos; APK Mapa QT única; despliegue NO')
           PY
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
@@ -115,7 +133,7 @@ jobs:
           test -s "$APK"
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='uy.com.mapatrayectos' versionCode='90'" /tmp/badging.txt
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='91'" /tmp/badging.txt
           grep -q "application-label:'Mapa QT'" /tmp/badging.txt
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/signing.txt
           grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/signing.txt
@@ -125,7 +143,7 @@ jobs:
       - name: Conservar un único APK firmado en Actions
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-QT-R25.37-Conductor-PREMIUM-SIGNADA
+          name: Mapa-QT-R25.38-CONDUCTOR-SOLICITUDES-SIGNADA
           path: |
             mapatrayectos/build/outputs/apk/release/*.apk
             mapatrayectos/build/outputs/apk/release/SIGNING.txt
