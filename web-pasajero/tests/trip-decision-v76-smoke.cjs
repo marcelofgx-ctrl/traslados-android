@@ -56,6 +56,11 @@ assert(css.includes('prefers-reduced-motion:reduce'),"Reduced-motion accessibili
 assert(css.includes('.trip-alert-overlay[data-outcome="rejected"]'),"Rejected notice style");
 assert(app.includes('overlay.dataset.outcome=decision?.result||"update"'),"Outcome grounded in server status");
 assert(app.includes('decision.title'),"No generic update title for a driver decision");
+assert(app.includes('pendingImmediateWatchCode=String(result.code)'),"New request enters short active watch");
+assert(app.includes('updates.unshift({kind:"decision",row:newlySent,decision})'),
+  "A rapid server decision before the first snapshot is still announced");
+assert(app.includes('pendingImmediateWatchCode?4000:activeTrip?8000:20000'),
+  "Temporary fast polling only for a just-submitted immediate request");
 assert(app.includes('typeof navigator.vibrate==="function"'),"Vibration optional / guarded");
 assert(app.includes('document.visibilityState!=="visible"'),"No forced foreground from background");
 assert(sw.includes("pwa-v76"),"PWA cache revision");
