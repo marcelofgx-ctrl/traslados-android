@@ -1,28 +1,55 @@
-# Auditoría de rutas de cambio de estado (lectura SQL, 23/10/2026)
+# Quick Trip — auditoría del bloqueo operativo único (23/10/2026)
 
-| RPC | Acepta o modifica | Riesgo / tratamiento |
-|---|---|---|
-| driver_decide_fixed_pickup_v1 | PENDIENTE -> ACEPTADA para tarifa fija | Ya tiene advisory lock de disponibilidad; necesita guardia de **servicio abierto**, no solo solapamiento horario |
-| driver_set_status_v2 | PENDIENTE -> ACEPTADA; ACEPTADA -> EN_VIAJE; EN_VIAJE -> FINALIZADA | No tiene advisory lock; ruta alternativa que puede aceptar un segundo servicio |
-| customer_quote_decision_v13 | Aceptación de presupuesto | Tiene advisory lock; preservar lógica de programados y no imponer bloqueo indiscriminado |
-| customer_quote_decision_v10 | Aceptación de presupuesto (legado) | Sin advisory lock; determinar si aún tiene GRANT público o cliente antes de despliegue |
-| driver_send_quote_v10 / v10_7 | Emite presupuesto, no aceptación directa | No bloquear presupuestos solo por estar ocupado; revalidar al aceptar |
-| driver_set_pickup_phase_v1 | EN_CAMINO / EN_PUNTO | No acepta otro servicio, pero debe conservar identidad de reserva |
-| customer_request_pickup_fixed_v1 | Crea solicitud PENDIENTE | No debe cambiarse: el pasajero puede solicitar; mostrar ocupación sin afirmar disponibilidad |
-| customer_cancel_reservation / cancel_reservation_by_token | Cancela | Permite liberar cupo únicamente con estado terminal confirmado |
-| customer_claim_reservation | Vincula reserva | Revisar si actualiza estado; no debe eludir trigger |
+**Estado:** diseño de QA en el PR #197. **NO es una migración aprobada ni instalada.** PostgreSQL usado en pruebas: `qt_capacity_test`, con datos ficticios. No ejecutar archivos de esta carpeta contra Supabase real.
 
-## Hallazgo crítico de diseño
-La propuesta inicial de trigger en `draft_atomic_guard.sql` usa `fare_mode='fixed'` como **aproximación** de servicio inmediato. **NO APTO PARA PRODUCCIÓN** hasta comprobar discriminador canónico de viaje programado vs inmediato y alcance de otros servicios abiertos. También requiere prueba real con dos conexiones PostgreSQL y revisión de locks / SECURITY DEFINER. Es borrador para análisis, no migración aprobada.
+## Identificar viajes
 
-## Política correcta a consolidar
-- La regla de un conductor bloquea un segundo **servicio inmediato** hasta FINALIZADA/CANCELADA/RECHAZADA, independientemente de duración estimada.
-- Conservar programados y presupuestos sin bloquearlos por error; cuando se vuelvan servicios activos, verificar compatibilidad real con el servicio inmediato actual.
-- La comprobación en UI es defensiva; el bloqueo debe ser servidor, transaccional y cubrir cualquier RPC, REST o cliente concurrente.
-- Si existen dos aceptadas antiguas, no borrarlas ni finalizarlas de oficio. El trigger debe bloquear nuevos inicios y dejar corregir estados antiguos de forma explícita.
+El cliente actual diferencia las modalidades con `pickup_mode`:
+- `now`: recogida inmediata.
+- Texto numérico entre `1` y `120`: recogida diferida en minutos, tratada operativamente como inmediata.
+- `schedule`: programada, no ocupa al conductor antes de iniciar la recogida.
+- Valores heredados o desconocidos: **se bloquean conservadoramente** al intentar entrar a estado operativo.
 
-## Rollback
-1. Respaldar previamente definición de funciones, triggers, grants, filas de QA y configuración de consentimiento; nunca respaldar secretos en Git.
-2. Para el guard propuesto: `rollback_atomic_guard.sql` quita trigger y función, **sin tocar reservas**.
-3. Verificar que RPCs anteriores sigan operativos y que no se alteró GPS, PWA ni historial.
-4. Cualquier migración definitiva requiere autorización separada, pruebas de concurrencia con 2 sesiones y plan de restauración.
+`fare_mode='fixed'` solo define cómo se cobra; **no** identifica una solicitud inmediata. La compatibilidad del campo y de todas las etiquetas de estados debe reconfirmarse contra el esquema real antes de desplegar.
+
+## Restricción propuesta: índice único parcial
+
+Archivo: [draft_atomic_guard.sql](draft_atomic_guard.sql).
+
+La versión inicial planteaba un trigger y un advisory lock. **Fue reemplazada** por una restricción nativa de PostgreSQL: índice único parcial `qt_one_active_service_uq` sobre una expresión booleana constante para reservas reales. No contiene funciones `SECURITY DEFINER`, triggers ni nuevos permisos de ejecución.
+
+Una reserva cuenta como **servicio operativo** si:
+- Estado `EN_VIAJE`, cualquiera sea su modalidad.
+- O un estado abierto (por ejemplo `ACEPTADA`, `CONFIRMADA`, `ACEPTADA_CLIENTE`) y la recogida NO es `schedule`.
+- O recogida `schedule` con fase `EN_CAMINO` o `EN_PUNTO`.
+
+`PENDIENTE`, `FINALIZADA`, `CANCELADA` y `RECHAZADA` no ocupan capacidad. El intervalo estimado de viaje no libera capacidad. Una `schedule` aceptada que todavía no arrancó sí puede permanecer en agenda. El índice protege TODAS las escrituras a la tabla, incluso desde distintas RPC o sesiones, y evita depender de que cada cliente compruebe disponibilidad.
+
+**Importante:** PostgreSQL devolverá `23505` / `qt_one_active_service_uq`. El Android y la web deberán convertirlo a «Conductor ocupado», preservando la respuesta original si hay otro error. El índice no sustituye la validación de horarios de reservas programadas.
+
+## Rutas a auditar antes de una eventual migración
+
+| RPC existente | Revisión necesaria |
+|---|---|
+| `driver_decide_fixed_pickup_v1` | Aceptación inmediata. Comprobar mensaje de `23505` y compatibilidad del bloqueo existente por horario |
+| `driver_set_status_v2` | Ruta alternativa que modifica ACEPTADA, EN_VIAJE, FINALIZADA. La restricción debe cubrirla |
+| `customer_quote_decision_v13` y `v10` | Aceptación de presupuestos. Mantener programadas sin ocupar capacidad antes de recogida |
+| `driver_set_pickup_phase_v1` | Al pasar una programada a EN_CAMINO o EN_PUNTO debe adquirir capacidad |
+| `customer_request_pickup_fixed_v1` | Solo crea PENDIENTE; no cambia disponibilidad ni obliga a aceptar |
+| Funciones antiguas de aceptación y cancelación | Revisar GRANT reales y estados terminales; no dejar rutas fuera del índice |
+
+## Concurrencia y rollback
+
+La suite de PostgreSQL 16 **local aislado** se ejecuta desde `.github/workflows/quicktrip-atomic-contracts-qa.yml`: dos conexiones `psql` intentan aceptar reservas ficticias a la vez. Se espera exactamente un commit exitoso y un error de unicidad. También se comprueba que iniciar recogida programada adquiere capacidad, que cerrar libera capacidad y que restaurar el índice falla de forma segura si hay duplicados históricos.
+
+El rollback está en [rollback_atomic_guard.sql](rollback_atomic_guard.sql): elimina **solo el índice**. Ningún dato de reserva se borra, cancela, finaliza o modifica. **No aplicar** rollback por defecto sin una autorización específica.
+
+## Bloqueos pendientes para producción
+
+1. Auditar esquema real, etiqueta de enum y valores históricos de `pickup_mode` sin efectuar cambios.
+2. Resolver explícitamente las dos reservas antiguas abiertas. **No** cerrarlas automáticamente para poder instalar el índice.
+3. Respaldar definiciones, permisos, registros necesarios para verificación y plan de restauración sin subir secretos.
+4. Probar rollback con el mismo esquema real replicado de manera aislada y revisar errores en Android/PWA.
+5. Solicitar autorización independiente antes de migrar Supabase o publicar aplicaciones.
+
+**Fuentes:** lógica del cliente `web-pasajero/trip-board.js` y `booking-contracts.js`; procedimientos de Supabase revisados antes de esta etapa; ensayos aislados sobre `qa_capacity.fake_reservations`.
