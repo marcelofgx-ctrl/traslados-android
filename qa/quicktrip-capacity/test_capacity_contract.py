@@ -4,12 +4,13 @@ class CapacityContractTests(unittest.TestCase):
     def test_sql_contract_and_rollback(self):
         sql=(ROOT/'draft_atomic_guard.sql').read_text()
         rollback=(ROOT/'rollback_atomic_guard.sql').read_text()
-        self.assertIn('pg_advisory_xact_lock',sql)
-        self.assertIn('FOR EACH ROW',sql)
-        self.assertIn('TG_OP',sql)
-        self.assertIn('QT_CONDUCTOR_OCUPADO',sql)
-        self.assertIn('DROP TRIGGER',rollback)
-        self.assertNotIn('DELETE FROM public.reservations',rollback.upper())
+        self.assertIn('CREATE UNIQUE INDEX qt_one_active_service_uq',sql)
+        self.assertIn('pickup_mode',sql)
+        self.assertIn('pickup_phase',sql)
+        self.assertIn('EN_VIAJE',sql)
+        self.assertIn('DROP INDEX',rollback)
+        self.assertIn('qt_one_active_service_uq',rollback)
+        self.assertNotIn('CREATE TRIGGER',sql)
     def test_fictitious_serialized_acceptance(self):
         # SQLite simulation only; NOT a PostgreSQL two-connection lock test.
         with tempfile.TemporaryDirectory() as d:
