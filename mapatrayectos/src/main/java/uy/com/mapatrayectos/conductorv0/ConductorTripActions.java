@@ -142,27 +142,59 @@ public final class ConductorTripActions {
     }
     private void sendStatus(String id,String credential,boolean finish){
         new Thread(()->{
-            boolean success=false;
+            String target=finish?"FINALIZADA":"EN_VIAJE";
+            String previous=finish?"EN_VIAJE":"ACEPTADA";
+            int outcome=0; // +1 server confirmed, -1 server confirmed unchanged, 0 uncertain
             String message="";
             try{
-                if(!credential.equals(DriverIdentity.pin(activity)))
+                if(!credential.equals(DriverIdentity.pin(activity))){
+                    outcome=-1;
                     throw new IllegalStateException("La vinculación cambió durante la operación.");
-                JSONObject result=Api.setStatus(credential,id,finish?"FINALIZADA":"EN_VIAJE");
-                success=(finish?"FINALIZADA":"EN_VIAJE").equals(result.optString("status"))
-                    && id.equals(result.optString("id"));
-                message=success?(finish?"Viaje finalizado y confirmado.":"Viaje iniciado y confirmado."):
-                    "El servidor no confirmó la transición.";
+                }
+                JSONObject result=Api.setStatus(credential,id,target);
+                if(id.equals(result.optString("id"))&&target.equals(result.optString("status")))
+                    outcome=1;
+                else message="El servidor no devolvió una confirmación inequívoca.";
             }catch(Exception ex){
                 message=ex instanceof IllegalStateException?ex.getMessage():Api.publicMessage("trip",ex);
             }
-            final boolean ok=success;final String resultMessage=message;
+            // A connection timeout may happen AFTER the server commits.
+            // Read back the authoritative status before considering a GPS abort.
+            if(outcome==0){
+                try{
+                    JSONArray active=Api.listActive(credential);
+                    for(int i=0;i<active.length();i++){
+                        JSONObject r=active.optJSONObject(i);
+                        if(r==null||!id.equals(r.optString("id")))continue;
+                        String status=r.optString("status");
+                        if(target.equals(status))outcome=1;
+                        else if(previous.equals(status))outcome=-1;
+                        break;
+                    }
+                    if(finish&&outcome==0){
+                        JSONArray historical=Api.listHistory(credential);
+                        for(int i=0;i<historical.length();i++){
+                            JSONObject r=historical.optJSONObject(i);
+                            if(r!=null&&id.equals(r.optString("id"))&&target.equals(r.optString("status"))){
+                                outcome=1;break;
+                            }
+                        }
+                    }
+                }catch(Exception ignored){ /* Unknown: preserve GPS trace. */ }
+            }
+            final int resultState=outcome;
+            final String resultMessage=outcome==1?
+                (finish?"Viaje finalizado y confirmado.":"Viaje iniciado y confirmado."):
+                outcome==0?
+                "Conexión interrumpida: no sabemos si el servidor confirmó. Se conserva el GPS. Actualizá la reserva antes de reintentar.":
+                (message.isEmpty()?"No se pudo cambiar el estado del viaje.":message);
             main.post(()->{
-                if(!ok && !finish)stopGps(id,TripTelemetryService.ACTION_ABORT);
-                if(ok && finish)stopGps(id,TripTelemetryService.ACTION_STOP);
+                if(resultState==-1&&!finish)stopGps(id,TripTelemetryService.ACTION_ABORT);
+                if(resultState==1&&finish)stopGps(id,TripTelemetryService.ACTION_STOP);
                 release();
                 if(!activity.isFinishing()&&!activity.isDestroyed()){
-                    callback.finished(ok,resultMessage);
-                    if(ok && !finish)verifyGps(id,0);
+                    callback.finished(resultState==1,resultMessage);
+                    if(resultState==1&&!finish)verifyGps(id,0);
                 }
                 TransferAlerts.refreshAsync(activity);
             });
