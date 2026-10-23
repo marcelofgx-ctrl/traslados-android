@@ -1,7 +1,7 @@
-name: Mapa QT R25.34 - Conductor real aislado firmado
+name: Mapa QT R25.35 - Conductor operacional firmado
 on:
   push:
-    branches: [feat/mapa-qt-conductor-live-r2534-20261022]
+    branches: [feat/mapa-qt-conductor-flujo-operativo-r2535-20261022]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,17 +20,22 @@ jobs:
           from pathlib import Path
           changed=set(Path('/tmp/scope.txt').read_text().splitlines())
           allowed={
-            'mapatrayectos/build.gradle',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLivePolicy.java',
-            'mapatrayectos/tests/ConductorLivePolicyTest.java',
-            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java',
             '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
             '.github/workflows/validate-modular-mapa.yml',
+            'AGENTS.md',
             'docs/MAPA_QT_CONDUCTOR_V0_20261022.md',
+            'mapatrayectos/build.gradle',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLivePolicy.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorSwipePolicy.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java',
+            'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+            'mapatrayectos/tests/ConductorLivePolicyTest.java',
+            'mapatrayectos/tests/ConductorOperationsPolicyTest.java',
           }
           assert changed==allowed,(changed-allowed,allowed-changed)
           source=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java').read_text()
@@ -44,6 +49,15 @@ jobs:
           assert 'Api.listHistory' in live
           assert 'Api.setPickupPhase' in live
           assert 'ConductorLivePolicy.actionableFixed' in live
+          quote=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java').read_text()
+          trip=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java').read_text()
+          ops=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java').read_text()
+          assert 'Api.sendQuoteV107' in quote and 'Api.checkRouteFitV114' in quote
+          assert 'Api.setStatus' in trip and 'TripTelemetryService.ACTION_STOP' in trip
+          assert 'TripTelemetryService.ACTION_ABORT' in trip and 'Api.listActive' in trip
+          assert 'onPrepareQuote' in live and 'onFinishTrip' in live
+          assert 'ConductorOperationsPolicy.canQuote' in ops
+          assert 'versionCode 88' in Path('mapatrayectos/build.gradle').read_text()
           assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
           print('PASS Mapa QT authenticated Conductor UI; no second APK')
           PY
@@ -86,7 +100,7 @@ jobs:
           test -s "$APK"
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='uy.com.mapatrayectos' versionCode='87'" /tmp/badging.txt
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='88'" /tmp/badging.txt
           grep -q "application-label:'Mapa QT'" /tmp/badging.txt
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/signing.txt
           grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/signing.txt
@@ -95,7 +109,7 @@ jobs:
       - name: Conservar un único APK firmado en Actions
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-QT-R25.34-Conductor-REAL-SIGNADA
+          name: Mapa-QT-R25.35-Conductor-OPERATIVO-SIGNADA
           path: |
             mapatrayectos/build/outputs/apk/release/*.apk
             mapatrayectos/build/outputs/apk/release/SIGNING.txt
