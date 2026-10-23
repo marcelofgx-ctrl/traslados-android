@@ -1,0 +1,96 @@
+name: Quick Trip PR194 public-site read-only verification and rollback archive
+on:
+  push:
+    branches: [qa/quicktrip-pr194-postdeploy-20261023]
+permissions:
+  contents: read
+jobs:
+  verify-live-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify rollback commit and isolate visual-only changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRE=c3614f62c9f9d14707b26dadacb311d10e834a1d
+          PUBLISHED=888d0696ebff98773e61039e3df6e46efd872317
+          test "$(git rev-parse "$PRE")" = "$PRE"
+          test "$(git rev-parse "$PUBLISHED")" = "$PUBLISHED"
+          git merge-base --is-ancestor "$PRE" "$PUBLISHED"
+          test "$(git rev-parse "$PUBLISHED^")" = "$PRE"
+          git diff --name-only "$PRE" "$PUBLISHED" > /tmp/qt-pr194-diff.txt
+          if grep -E '^(mapatrayectos|conductor|core-reservations|supabase|database|db)/|^web-pasajero/(route-engine|geo-search|rpc-client|booking-contracts|trip-board)\\.' /tmp/qt-pr194-diff.txt; then
+            echo 'Unexpected stable engine changed'; exit 1
+          fi
+          test "$(git diff --name-only "$PRE" "$PUBLISHED" | wc -l)" -eq 46
+          echo 'PASS: one visual-only commit; original engines unchanged'
+      - name: Check actual GitHub Pages HTTPS payloads, scripts, and cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero
+          mkdir -p /tmp/qt-public
+          for attempt in $(seq 1 10); do
+            curl -fsSL --max-time 25 -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' \
+              "$BASE/?postdeploy=888d0696-$attempt" -o /tmp/qt-public/index.html || true
+            if grep -q 'app.js?v=83' /tmp/qt-public/index.html; then
+              echo 'PASS: public HTML exposes Quick Trip visual bundle v83'; break
+            fi
+            echo "Public HTML not updated yet (attempt $attempt)"
+            sleep 5
+          done
+          grep -q 'app.js?v=83' /tmp/qt-public/index.html
+          grep -q 'styles.css?v=83' /tmp/qt-public/index.html
+          grep -q 'quicktrip-clean.css?v=7' /tmp/qt-public/index.html
+          grep -q 'quicktrip-clean.js?v=6' /tmp/qt-public/index.html
+          curl -fsSL --retry 3 --max-time 25 -H 'Cache-Control: no-cache' \
+            "$BASE/app.js?v=83&postdeploy=888d0696" -o /tmp/qt-public/app.js
+          curl -fsSL --retry 3 --max-time 25 -H 'Cache-Control: no-cache' \
+            "$BASE/styles.css?v=83&postdeploy=888d0696" -o /tmp/qt-public/styles.css
+          curl -fsSL --retry 3 --max-time 25 -H 'Cache-Control: no-cache' \
+            "$BASE/sw.js?postdeploy=888d0696" -o /tmp/qt-public/sw.js
+          curl -fsSL --retry 3 --max-time 25 -H 'Cache-Control: no-cache' \
+            "$BASE/quicktrip-clean.js?v=6&postdeploy=888d0696" -o /tmp/qt-public/quicktrip-clean.js
+          python3 - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          root=Path("/tmp/qt-public")
+          files={p.name:p.read_text(encoding="utf-8") for p in root.iterdir()}
+          html=files["index.html"];app=files["app.js"];css=files["styles.css"];sw=files["sw.js"];clean=files["quicktrip-clean.js"]
+          assert "app.js?v=83" in html and "styles.css?v=83" in html
+          assert "quicktrip-clean.css?v=7" in html and "quicktrip-clean.js?v=6" in html
+          assert "¡Tu viaje fue aceptado!" in app and "function tripNoticeAppearance(change)" in app
+          assert "Tu traslado se actualizó" not in app
+          assert "qt-trip-arrive" in css and "prefers-reduced-motion:reduce" in css
+          assert 'traslados-pwa-v82-quicktrip-warm-notice-v83-20261023' in sw
+          assert "function skinReady()" in clean and 'width="168" height="46"' in clean
+          assert "customer_create_reservation_v12" in app
+          for name,data in files.items():print(f"PUBLIC {name} bytes={len(data.encode('utf-8'))} sha256={sha256(data.encode('utf-8')).hexdigest()}")
+          print("PASS: PUBLIC SITE real HTTPS content, current CSS/JS, warm accepted-trip modal, PWA cache version, and unchanged booking RPC")
+          PY
+      - name: Create exact pre-PR194 rollback ZIP (not deployed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRE=c3614f62c9f9d14707b26dadacb311d10e834a1d
+          ARCHIVE=QuickTrip-Web-ROLLBACK-pre-PR194-20261023.zip
+          git archive --format=zip --output="$ARCHIVE" "$PRE" web-pasajero
+          unzip -t "$ARCHIVE" | tail -1
+          unzip -Z1 "$ARCHIVE" | grep -Fx 'web-pasajero/index.html'
+          unzip -Z1 "$ARCHIVE" | grep -Fx 'web-pasajero/app.js'
+          unzip -Z1 "$ARCHIVE" | grep -Fx 'web-pasajero/sw.js'
+          sha256sum "$ARCHIVE" > QuickTrip-Web-ROLLBACK-pre-PR194-20261023.SHA256
+          echo 'RESTORE COMMIT: c3614f62c9f9d14707b26dadacb311d10e834a1d' >> QuickTrip-Web-ROLLBACK-pre-PR194-20261023.SHA256
+          echo 'SAFE ROLLBACK BRANCH: backup/quicktrip-web-pre-pr194-20261023' >> QuickTrip-Web-ROLLBACK-pre-PR194-20261023.SHA256
+      - name: Retain rollback ZIP as protected build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Web-ROLLBACK-PR194-20261023
+          path: |
+            QuickTrip-Web-ROLLBACK-pre-PR194-20261023.zip
+            QuickTrip-Web-ROLLBACK-pre-PR194-20261023.SHA256
+          retention-days: 90
