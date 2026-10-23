@@ -350,6 +350,55 @@ async function main(){
   check(tripsStyle.columns===3,"Trips scopes stay compact in a three-column row");
   await snap("08-mis-traslados-v7.png");
 
+  // Presentation-only fixture: show the real visual dialog without requesting,
+  // creating, accepting or modifying ANY booking or Supabase data.
+  const acceptedNotice=await expression(function(){
+    showTripNotice({kind:"state",row:{
+      code:"QT-QA-VISUAL",status:"CONFIRMADA",
+      fare_mode:"fixed",quote_status:"PRECIO_FIJO",pickup_phase:""
+    }});
+    const q=selector=>document.querySelector(selector),
+          overlay=q("#trip-alert-overlay"),card=q(".trip-alert-card"),
+          icon=q("#trip-alert-symbol"),title=q("#trip-alert-title"),
+          button=q("#trip-alert-open");
+    const rect=card?.getBoundingClientRect(),iconRect=icon?.getBoundingClientRect();
+    return {
+      open:!overlay.hidden,
+      tone:overlay.dataset.tone,
+      title:title?.textContent||"",
+      body:q("#trip-alert-description")?.textContent||"",
+      action:button?.textContent||"",
+      eyebrow:q("#trip-alert-eyebrow")?.textContent||"",
+      icon:icon?.textContent||"",
+      cardWidth:rect?.width??0,
+      iconWidth:iconRect?.width??0,
+      x:rect?.left??-1,
+      pageWidth:document.documentElement.clientWidth,
+      horizontallyFits:rect&&rect.left>=0&&rect.right<=document.documentElement.clientWidth,
+      animation:getComputedStyle(card).animationName,
+      goldButton:getComputedStyle(button).backgroundImage
+    };
+  });
+  say("Passenger accepted notice: "+JSON.stringify(acceptedNotice));
+  check(acceptedNotice.open&&acceptedNotice.tone==="accepted"&&
+    acceptedNotice.title==="¡Tu viaje fue aceptado!"&&
+    acceptedNotice.eyebrow==="¡BUENAS NOTICIAS!"&&
+    acceptedNotice.body.includes("Tu conductor confirmó")&&
+    acceptedNotice.action.includes("VER MI VIAJE"),
+    "Warm acceptance notice uses actual accepted status, not technical update");
+  check(acceptedNotice.horizontallyFits&&acceptedNotice.cardWidth<=420&&
+    acceptedNotice.iconWidth>=62&&acceptedNotice.iconWidth<=70,
+    "Warm notice fits Samsung width with compact round confirmation");
+  check(acceptedNotice.animation.includes("qt-trip-arrive")&&
+    acceptedNotice.goldButton.includes("gradient"),
+    "Notice opens visibly and retains premium champagne button");
+  await pause(750);
+  await snap("10-confirmacion-viaje-aceptado-visual.png");
+  await expression(function(){
+    document.querySelector("#trip-alert-close").click();
+    return true;
+  });
+
   await expression(function(){
     document.querySelector('.tabs .tab[data-view="inicio"]').click();
     document.querySelector('[data-service="now"]').click();
