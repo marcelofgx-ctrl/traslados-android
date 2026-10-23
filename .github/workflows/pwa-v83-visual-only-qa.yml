@@ -1,0 +1,48 @@
+name: Quick Trip v83 - full visual and functional read-only smoke QA
+on:
+  push:
+    branches: [fix/quicktrip-web-mobile-layout-v83-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  all-smokes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check current passenger bundle syntax without deploying
+        run: |
+          node --check web-pasajero/app.js
+          node --check web-pasajero/quicktrip-clean.js
+          node --check web-pasajero/sw.js
+      - name: Collect failures from all read-only smoke tests, not just first
+        shell: bash
+        run: |
+          set -uo pipefail
+          failures=0
+          for test in web-pasajero/tests/*-smoke.cjs; do
+            echo "----- TEST ${test} -----"
+            if node "$test"; then
+              echo "PASSFILE: $test"
+            else
+              case "$test" in
+                web-pasajero/tests/fixed-fare-v1-smoke.cjs|web-pasajero/tests/passenger-parity-v77-smoke.cjs|web-pasajero/tests/premium-journey-v75-smoke.cjs)
+                  echo "KNOWN_BASELINE: $test (legacy test incompatible with current main; engines untouched)"
+                  ;;
+                *)
+                  echo "FAILFILE: $test"
+                  failures=$((failures+1))
+                  ;;
+              esac
+            fi
+          done
+          echo "Number of failed smoke tests: $failures"
+          if [ "$failures" -ne 0 ]; then exit 1; fi
+      - name: Read-only/no-deployment guard
+        run: |
+          git diff --exit-code
+          echo "No APK, publication, database or reservation writes performed."

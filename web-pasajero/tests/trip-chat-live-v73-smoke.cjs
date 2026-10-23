@@ -4,7 +4,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 const root=path.join(__dirname,"..");
 const read=name=>fs.readFileSync(path.join(root,name),"utf8");
 const js=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
-assert(html.includes('app.js?v=82')&&html.includes('styles.css?v=82'));
+assert(html.includes('app.js?v=83')&&html.includes('styles.css?v=83'));
 assert(sw.includes('traslados-pwa-v82'));
 const chat=js.slice(js.indexOf('function closeTripChat()'),js.indexOf('function armTripSound()'));
 assert(chat.includes('},6000);'),"Open conversation should poll every six seconds");

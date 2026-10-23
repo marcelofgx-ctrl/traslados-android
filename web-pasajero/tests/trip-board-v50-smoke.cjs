@@ -3,7 +3,10 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const win={};
-vm.runInNewContext(read("trip-board.js"),{window:win,Map,Set,Date,String,Array,Number});
+// Keep this fixed historical fixture independent of today's clock; the
+// production expiry logic is intentionally unchanged.
+class TestDate extends Date {static now(){return Date.parse("2026-10-20T12:00:00Z");}}
+vm.runInNewContext(read("trip-board.js"),{window:win,Map,Set,Date:TestDate,String,Array,Number});
 const board=win.TrasladosTripBoard;
 const rows=[
 {id:"a",code:"TR-A",pickup_date:"2026-10-23",pickup_time:"08:00:00",status:"PENDIENTE",quote_status:"SIN_PRESUPUESTO",created_at:"2026-10-01T12:00:00Z"},
@@ -43,7 +46,7 @@ assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
 assert(html.includes('src="./trip-board.js?v=7"'));
-assert(html.includes('app.js?v=82')&&html.includes('styles.css?v=82')&&sw.includes('traslados-pwa-v82'));
+assert(html.includes('app.js?v=83')&&html.includes('styles.css?v=83')&&sw.includes('traslados-pwa-v82'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
 assert(app.includes('customer_list_reservations_v16')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");

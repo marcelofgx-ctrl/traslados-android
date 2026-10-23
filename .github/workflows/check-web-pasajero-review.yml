@@ -124,7 +124,7 @@ jobs:
           assert 'CONFIRMAR SOLICITUD DE RESERVA' in html
           assert 'No se envían reservas offline' in Path('web-pasajero/offline.html').read_text()
           version=html.split('./app.js?v=')[1].split('"')[0]
-          assert version.isdigit() and (('traslados-cliente-pwa-v'+version) in sw or ('traslados-pwa-v'+version) in sw)
+          assert version.isdigit() and int(version)==83 and 'traslados-pwa-v82-quicktrip-warm-notice-v83-20261023' in sw
           assert 'address-engine.js' in html and 'address-engine.js' in sw
           assert 'route-engine.js' in html and 'route-engine.js' in sw
           assert 'eta-engine.js' in html and 'eta-engine.js' in sw

@@ -49,7 +49,7 @@ async function dispatch(type,request){
   assert.deepEqual(deleted,["traslados-pwa-v81-old"],
     "Activating this PWA must never purge unrelated origin apps");
 
-  const req={url:scope+"app.js?v=82",mode:"same-origin",method:"GET"};
+  const req={url:scope+"app.js?v=83",mode:"same-origin",method:"GET"};
   const offline=await dispatch("fetch",req);
   assert.equal((await offline).kind,"cached-versionless-app",
     "Offline request with ?v=82 must find the precached ./app.js");

@@ -109,6 +109,14 @@
       if(event.key==="Escape")closeHistory();
     });
   }
+  // The clean UI is an optional presentation. If its stylesheet is not
+  // loaded, fail closed to the original usable booking view instead of showing
+  // unstyled 720px SVGs, native white buttons, or overlapping layouts.
+  function skinReady(){
+    const link=doc.querySelector('link[href*="quicktrip-clean.css"]');
+    if(!link||!link.sheet)return false;
+    try{return link.sheet.cssRules.length>0;}catch{return false;}
+  }
   function build(){
     const screen=byId("view-viaje"),host=byId("journey-field-host");
     if(!screen||!host||!byId("origin-picker")?.querySelector(".location-widget")||
@@ -126,7 +134,7 @@
     shell=node("div","qtc-app");shell.id="qtc-app";
     shell.innerHTML=
       '<header class="qtc-header"><div class="qtc-brand"><div class="qtc-back-slot"></div>'+
-      '<img class="qtc-logo" src="./quicktrip-logo-contrast.svg?v=1" alt="QUICK TRIP">'+
+      '<img class="qtc-logo" src="./quicktrip-logo-contrast.svg?v=1" alt="QUICK TRIP" width="168" height="46" decoding="async">'+
       '</div><div class="qtc-header-copy"><small>TRASLADOS · URUGUAY</small>'+
       '<h1>Tu viaje</h1><p>Simple. Directo. A tu ritmo.</p></div></header>'+
       '<div class="qtc-content">'+
@@ -166,7 +174,13 @@
       '</nav>';
     host.prepend(shell);
     const back=screen.querySelector(".journey-back");
-    if(back)shell.querySelector(".qtc-back-slot").append(back);
+    if(back){
+      // Never put a long wrapping label inside a 34px navigation slot.
+      back.setAttribute("aria-label","Volver al inicio");
+      back.title="Volver al inicio";
+      back.textContent=""; // visual glyph belongs solely to CSS ::before
+      shell.querySelector(".qtc-back-slot").append(back);
+    }
     const time=screen.querySelector(".journey-when-compact");
     if(time)shell.querySelector(".qtc-schedule-slot").append(time);
     shell.querySelector('[data-qtc-nav="schedule"]').addEventListener("click",()=>{
@@ -324,7 +338,8 @@
   function reconcile(){
     if(!build())return;
     const active=byId("view-viaje")?.classList.contains("active");
-    doc.body.classList.toggle("qt-clean-active",Boolean(active));
+    doc.body.classList.toggle("qt-clean-active",
+      Boolean(active&&doc.body.classList.contains("journey-mode-quick")));
     if(!doc.body.classList.contains("journey-mode-quick")){
       // Retornar únicamente componentes visuales movidos, para preservar
       // también la pantalla independiente de viajes programados.
@@ -370,6 +385,12 @@
     if(wait&&recap)wait.hidden=!recap.hidden;
   }
   function boot(){
+    if(!skinReady()){
+      // The normal booking UI is still present, with all original actions.
+      // Do not inject partial visuals while the skin is unavailable.
+      doc.body.classList.remove("qt-clean","qt-clean-active");
+      return;
+    }
     if(!build())return;
     const host=byId("journey-field-host");
     new MutationObserver(reconcile).observe(host,{childList:true});

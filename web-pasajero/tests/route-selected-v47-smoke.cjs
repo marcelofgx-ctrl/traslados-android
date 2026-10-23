@@ -6,7 +6,7 @@ const fs=require("node:fs"),path=require("node:path");
 const root=path.join(__dirname,"..");
 const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const app=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
-assert(html.includes('app.js?v=82')&&html.includes('styles.css?v=82'));
+assert(html.includes('app.js?v=83')&&html.includes('styles.css?v=83'));
 assert(sw.includes('traslados-pwa-v82'));
 assert(css.includes('/* PWA v47 — corrección de la tarjeta consolidada A/B en Samsung.'),"Versioned visual correction");
 assert(css.includes('@media(hover:none)'),"Touch must clear sticky hover");

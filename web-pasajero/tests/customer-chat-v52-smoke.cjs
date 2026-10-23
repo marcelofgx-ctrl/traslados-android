@@ -14,7 +14,7 @@ assert.equal(model.notifications(ss,[base]).length,0,"Unchanged refresh must be 
 assert.equal(model.notifications(null,[next]).length,0,"Fresh load must be baseline");
 assert.equal(model.notifications(model.snapshot([next]),[next]).length,0,"Do not re-notify same message");
 assert(html.includes('id="trips-alert-sound"')&&html.includes('id="trips-alert-vibrate"'));
-assert(html.includes('trip-board.js?v=7')&&html.includes('app.js?v=82')&&html.includes('styles.css?v=82'));
+assert(html.includes('trip-board.js?v=7')&&html.includes('app.js?v=83')&&html.includes('styles.css?v=83'));
 assert(sw.includes("traslados-pwa-v82"));
 assert(app.includes('rpc("customer_list_reservations_v16"'));
 assert(app.includes('rpc("get_reservation_by_token_v5"'));
@@ -25,7 +25,8 @@ assert(app.includes('tripChatAttempts.set(key,{body,id:requestId})'));
 assert(app.includes('if(!response?.id)throw'));
 assert(app.includes('function playTripAlertSound()'));
 assert(app.includes('if(!$("trips-alert-sound").checked||!tripAlertAudio'));
-assert(app.includes('function showTripNotice(change)')&&app.includes('message?"Nuevo mensaje del conductor"'));
+assert(app.includes('function showTripNotice(change)')&&app.includes('title:"Tenés un mensaje nuevo"'),
+  "New messages keep their own dedicated warm notification");
 assert(app.includes('if($("trips-alert-vibrate").checked&&navigator.vibrate)'));
 assert(app.includes('text(bubble,"span",item.body||"")'),"No HTML injection in messages");
 assert(app.includes('id===activeTripChat.id'),"Chat survives background refresh without losing its reservation");

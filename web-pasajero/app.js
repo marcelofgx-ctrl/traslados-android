@@ -2071,16 +2071,77 @@ function closeTripNotice(){
   tripFocused=null;
   tripPreviouslyFocused?.focus?.();tripPreviouslyFocused=null;
 }
+// Presentation only. The existing TripBoard continues deciding WHEN to notify;
+// this copy just gives each real server-reported state a warm, human-readable voice.
+function tripNoticeAppearance(change){
+  const r=change.row,quote=change.kind==="quote",message=change.kind==="message";
+  const status=String(r.status||""),phase=String(r.pickup_phase||"");
+  const fixed=tripBoard.isFixedFare(r);
+  if(quote)return {
+    tone:"quote",icon:"✦",eyebrow:"UNA PROPUESTA PARA VOS",
+    title:"Tenés un presupuesto nuevo",
+    description:"Tu conductor preparó una propuesta para el traslado. Podés verla y responder con tranquilidad.",
+    action:"VER PRESUPUESTO"
+  };
+  if(message)return {
+    tone:"message",icon:"✉",eyebrow:"TU CONDUCTOR TE ESCRIBIÓ",
+    title:"Tenés un mensaje nuevo",
+    description:"Tu conductor te dejó un mensaje. Entrá cuando quieras para leerlo.",
+    action:"LEER MENSAJE"
+  };
+  if(phase==="EN_CAMINO"||status==="EN_CAMINO")return {
+    tone:"moving",icon:"➜",eyebrow:"YA ESTÁ EN CAMINO",
+    title:"Tu conductor va hacia vos",
+    description:"Ya salió hacia el punto de recogida. Podés seguir las novedades de tu viaje.",
+    action:"VER MI VIAJE"
+  };
+  if(phase==="EN_PUNTO"||status==="EN_PUNTO")return {
+    tone:"moving",icon:"✓",eyebrow:"¡YA LLEGÓ!",
+    title:"Tu conductor te espera",
+    description:"Está en el punto de recogida. ¡Buen viaje!",
+    action:"VER MI VIAJE"
+  };
+  if(status==="EN_VIAJE")return {
+    tone:"moving",icon:"➜",eyebrow:"EN VIAJE",
+    title:"¡Buen viaje!",
+    description:"Tu viaje ya comenzó. Podés consultar sus detalles cuando quieras.",
+    action:"VER MI VIAJE"
+  };
+  if(status==="FINALIZADA")return {
+    tone:"accepted",icon:"✓",eyebrow:"LLEGASTE A DESTINO",
+    title:"¡Gracias por viajar con nosotros!",
+    description:"Esperamos que hayas disfrutado tu traslado.",
+    action:"VER MI VIAJE"
+  };
+  if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(status))return {
+    tone:"accepted",icon:"✓",eyebrow:"¡BUENAS NOTICIAS!",
+    title:fixed?"¡Tu viaje fue aceptado!":"¡Tu traslado está confirmado!",
+    description:fixed
+      ?"Tu conductor confirmó tu solicitud. ¡Qué bueno que podamos acompañarte!"
+      :"Tu traslado está confirmado. Nos alegra acompañarte en tu próximo viaje.",
+    action:"VER MI VIAJE"
+  };
+  // Status changes unrelated to acceptance stay honest, without technical copy.
+  return {
+    tone:"update",icon:"✦",eyebrow:"TU VIAJE",
+    title:tripBoard.metadata(r).label,
+    description:"Tenés novedades sobre tu traslado. Podés revisar el detalle cuando quieras.",
+    action:"VER MI VIAJE"
+  };
+}
 function showTripNotice(change){
   if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden||
       !$("trip-chat-sheet").hidden)return;
-  const quote=change.kind==="quote",message=change.kind==="message";
+  const appearance=tripNoticeAppearance(change);
+  const overlay=$("trip-alert-overlay");
   tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
-  $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":message?"Nuevo mensaje del conductor":"Tu traslado se actualizó";
-  $("trip-alert-description").textContent=quote
-    ?"El conductor envió un presupuesto de "+tripMoney(Number(change.row.quote_final_total))+". Revisalo y respondé desde tu reserva."
-    :message?"El conductor escribió en la reserva "+change.row.code+". Entrá para leer y responder.":"El estado de "+change.row.code+" cambió a "+tripBoard.metadata(change.row).label+".";
-  $("trip-alert-overlay").hidden=false;$("trip-alert-close").focus();
+  overlay.dataset.tone=appearance.tone;
+  $("trip-alert-symbol").textContent=appearance.icon;
+  $("trip-alert-eyebrow").textContent=appearance.eyebrow;
+  $("trip-alert-title").textContent=appearance.title;
+  $("trip-alert-description").textContent=appearance.description;
+  $("trip-alert-open").textContent=appearance.action+"  →";
+  overlay.hidden=false;$("trip-alert-close").focus();
   if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
   playTripAlertSound();
 }

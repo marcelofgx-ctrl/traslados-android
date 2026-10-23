@@ -37,7 +37,7 @@ assert(css.includes(".gps-permission-help[hidden]"),"Help must stay hidden until
 const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
 const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
 assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
-assert(sw.includes("traslados-pwa-v"+appVersion),"Service Worker and UI release must match");
+assert(sw.includes("traslados-pwa-v82-quicktrip-warm-notice-v83-20261023")&&appVersion===83,"Visual release has a fresh worker cache without changing GPS permission engine");
 const {createContext,runInContext}=require("node:vm");
 const handlerStart=js.indexOf("  function showGpsPermissionHelp(errorCode){");
 const handlerEnd=js.indexOf("\n  if(name===\"stop\"&&record.stops[position])",handlerStart);

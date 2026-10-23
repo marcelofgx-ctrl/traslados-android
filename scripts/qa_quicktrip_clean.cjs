@@ -78,7 +78,8 @@ async function main(){
   await pause(900);
   const s=await expression(function(){
    const q=x=>document.querySelector(x),display=x=>q(x)&&getComputedStyle(q(x)).display;
-   const image=q(".qtc-logo");
+   const image=q(".qtc-logo"),back=q(".qtc-back-slot .journey-back"),
+         history=q(".qtc-history-button");
    return {
     view:!!q("#view-viaje.active"),origin:!!q(".qtc-places #origin-picker .location-widget"),
     destination:!!q(".qtc-places #destination-picker .location-widget"),
@@ -94,6 +95,14 @@ async function main(){
     history:!!q("#qtc-history-panel"),schedule:!!q(".qtc-schedule #journey-when-select"),
     contact:!!q(".qtc-contact #booking-step-passenger"),
     logo:!!image&&image.complete&&image.naturalWidth>0,
+    logoWidth:image?.getBoundingClientRect().width??0,
+    backWidth:back?.getBoundingClientRect().width??0,
+    backLabel:back?.getAttribute("aria-label"),
+    backText:back?.textContent?.trim(),
+    historyWidth:history?.getBoundingClientRect().width??0,
+    historyBackground:history?getComputedStyle(history).backgroundColor:"",
+    headerHidden:display("body.qt-clean.qt-clean-active>.header")==="none",
+    tabsHidden:display("body.qt-clean.qt-clean-active .shell>.tabs")==="none",
     width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
     manifest:q('link[rel="manifest"]')?.getAttribute("href")
    };
@@ -105,6 +114,15 @@ async function main(){
   check(s.oldHidden,"Old journey navigation and hero are hidden");
   check(s.history&&s.schedule&&s.contact,"Animated history, collapsible time and passenger fields");
   check(s.logo,"Brand Quick Trip logo loads");
+  check(s.logoWidth>=110&&s.logoWidth<=176,
+    "SVG logo bounded to mobile header, never intrinsic 720px");
+  check(s.backWidth>=28&&s.backWidth<=44&&s.backLabel==="Volver al inicio"&&!s.backText,
+    "Back control is compact and accessible, not stacked vertically");
+  check(s.historyWidth>=55&&s.historyWidth<185&&
+    !["","rgb(255, 255, 255)"].includes(s.historyBackground),
+    "Historial styled by active premium skin, not a white native button");
+  check(s.headerHidden&&s.tabsHidden,
+    "Legacy top navigation hidden while Quick Trip is mounted");
   const contrastLogo=await expression(function(){
    const im=document.querySelector(".qtc-logo");
    return im?.complete&&im?.naturalWidth>0&&im.currentSrc.includes("quicktrip-logo-contrast.svg");
@@ -331,6 +349,55 @@ async function main(){
   check(tripsStyle.nav==="fixed"&&tripsStyle.navBottom==="0px","Trips navigation uses V7 bottom bar");
   check(tripsStyle.columns===3,"Trips scopes stay compact in a three-column row");
   await snap("08-mis-traslados-v7.png");
+
+  // Presentation-only fixture: show the real visual dialog without requesting,
+  // creating, accepting or modifying ANY booking or Supabase data.
+  const acceptedNotice=await expression(function(){
+    showTripNotice({kind:"state",row:{
+      code:"QT-QA-VISUAL",status:"CONFIRMADA",
+      fare_mode:"fixed",quote_status:"PRECIO_FIJO",pickup_phase:""
+    }});
+    const q=selector=>document.querySelector(selector),
+          overlay=q("#trip-alert-overlay"),card=q(".trip-alert-card"),
+          icon=q("#trip-alert-symbol"),title=q("#trip-alert-title"),
+          button=q("#trip-alert-open");
+    const rect=card?.getBoundingClientRect(),iconRect=icon?.getBoundingClientRect();
+    return {
+      open:!overlay.hidden,
+      tone:overlay.dataset.tone,
+      title:title?.textContent||"",
+      body:q("#trip-alert-description")?.textContent||"",
+      action:button?.textContent||"",
+      eyebrow:q("#trip-alert-eyebrow")?.textContent||"",
+      icon:icon?.textContent||"",
+      cardWidth:rect?.width??0,
+      iconWidth:iconRect?.width??0,
+      x:rect?.left??-1,
+      pageWidth:document.documentElement.clientWidth,
+      horizontallyFits:rect&&rect.left>=0&&rect.right<=document.documentElement.clientWidth,
+      animation:getComputedStyle(card).animationName,
+      goldButton:getComputedStyle(button).backgroundImage
+    };
+  });
+  say("Passenger accepted notice: "+JSON.stringify(acceptedNotice));
+  check(acceptedNotice.open&&acceptedNotice.tone==="accepted"&&
+    acceptedNotice.title==="¡Tu viaje fue aceptado!"&&
+    acceptedNotice.eyebrow==="¡BUENAS NOTICIAS!"&&
+    acceptedNotice.body.includes("Tu conductor confirmó")&&
+    acceptedNotice.action.includes("VER MI VIAJE"),
+    "Warm acceptance notice uses actual accepted status, not technical update");
+  check(acceptedNotice.horizontallyFits&&acceptedNotice.cardWidth<=420&&
+    acceptedNotice.iconWidth>=58&&acceptedNotice.iconWidth<=70,
+    "Warm notice fits Samsung width with compact round confirmation");
+  check(acceptedNotice.animation.includes("qt-trip-arrive")&&
+    acceptedNotice.goldButton.includes("gradient"),
+    "Notice opens visibly and retains premium champagne button");
+  await pause(750);
+  await snap("10-confirmacion-viaje-aceptado-visual.png");
+  await expression(function(){
+    document.querySelector("#trip-alert-close").click();
+    return true;
+  });
 
   await expression(function(){
     document.querySelector('.tabs .tab[data-view="inicio"]').click();

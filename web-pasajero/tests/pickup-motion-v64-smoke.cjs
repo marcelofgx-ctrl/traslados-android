@@ -4,7 +4,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
 const root=path.join(__dirname,".."),read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const html=read("index.html"),css=read("styles.css"),app=read("app.js"),sw=read("sw.js");
-assert(html.includes('app.js?v=82')&&html.includes('styles.css?v=82'));
+assert(html.includes('app.js?v=83')&&html.includes('styles.css?v=83'));
 assert(sw.includes("traslados-pwa-v82"));
 assert(html.includes('id="pickup-route-animation"')&&html.includes('class="pickup-route-car"><svg'));
 assert(!html.includes('id="pickup-route-caption"'));

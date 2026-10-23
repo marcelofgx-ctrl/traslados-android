@@ -7,7 +7,7 @@ const path=require("node:path");
 const dir=path.resolve(__dirname,"..");
 const read=n=>fs.readFileSync(path.join(dir,n),"utf8");
 const js=read("app.js"),css=read("styles.css"),html=read("index.html"),sw=read("sw.js");
-assert(html.includes('src="./app.js?v=82"')&&html.includes('href="./styles.css?v=82"'));
+assert(html.includes('src="./app.js?v=83"')&&html.includes('href="./styles.css?v=83"'));
 assert(sw.includes("traslados-pwa-v82"));
 assert(js.includes('placeholder.textContent="Otros"'),"Native department select uses compact label");
 assert(js.includes('select.setAttribute("aria-label","Otros departamentos de Uruguay")'));
