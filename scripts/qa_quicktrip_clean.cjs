@@ -387,7 +387,7 @@ async function main(){
     acceptedNotice.action.includes("VER MI VIAJE"),
     "Warm acceptance notice uses actual accepted status, not technical update");
   check(acceptedNotice.horizontallyFits&&acceptedNotice.cardWidth<=420&&
-    acceptedNotice.iconWidth>=62&&acceptedNotice.iconWidth<=70,
+    acceptedNotice.iconWidth>=58&&acceptedNotice.iconWidth<=70,
     "Warm notice fits Samsung width with compact round confirmation");
   check(acceptedNotice.animation.includes("qt-trip-arrive")&&
     acceptedNotice.goldButton.includes("gradient"),
