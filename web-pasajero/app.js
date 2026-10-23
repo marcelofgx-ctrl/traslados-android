@@ -1719,14 +1719,43 @@ function closeTripNotice(){
 function showTripNotice(change){
   if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden||
       !$("trip-chat-sheet").hidden)return;
+  const row=change.row;
+  if(!row)return;
   const quote=change.kind==="quote",message=change.kind==="message";
-  tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
-  $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":message?"Nuevo mensaje del conductor":"Tu traslado se actualizó";
-  $("trip-alert-description").textContent=quote
-    ?"El conductor envió un presupuesto de "+tripMoney(Number(change.row.quote_final_total))+". Revisalo y respondé desde tu reserva."
-    :message?"El conductor escribió en la reserva "+change.row.code+". Entrá para leer y responder.":"El estado de "+change.row.code+" cambió a "+tripBoard.metadata(change.row).label+".";
-  $("trip-alert-overlay").hidden=false;$("trip-alert-close").focus();
-  if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
+  const decision=change.kind==="decision"?(change.decision||tripBoard.driverDecision(row)):null;
+  const overlay=$("trip-alert-overlay"),details=$("trip-alert-details");
+  tripFocused=row.code;tripPreviouslyFocused=document.activeElement;
+  overlay.dataset.outcome=decision?.result||"update";
+  // Show the actual reservation in the opening dialog, not a generic toast.
+  if(decision){
+    $("trip-alert-title").textContent=decision.title;
+    $("trip-alert-description").textContent=decision.description;
+    $("trip-alert-code").textContent="SOLICITUD · "+String(row.code||"");
+    $("trip-alert-origin").textContent=String(row.origin_text||"Origen sin especificar");
+    $("trip-alert-destination").textContent=String(row.destination_text||"Destino sin especificar");
+    const price=Number(row.quote_final_total);
+    const amount=$("trip-alert-amount");
+    amount.hidden=!(Number.isFinite(price)&&price>0);
+    amount.textContent=amount.hidden?"":"IMPORTE DEL VIAJE · "+tripMoney(price);
+    details.hidden=false;
+    $("trip-alert-open").textContent="VER SOLICITUD →";
+  }else{
+    details.hidden=true;
+    $("trip-alert-title").textContent=quote?"Tenés un presupuesto nuevo":
+      message?"Nuevo mensaje del conductor":tripBoard.metadata(row).label;
+    $("trip-alert-description").textContent=quote
+      ?"El conductor envió un presupuesto de "+tripMoney(Number(row.quote_final_total))+". Revisalo y respondé desde tu reserva."
+      :message?"El conductor escribió en la reserva "+row.code+". Entrá para leer y responder."
+      :tripBoard.guidance(row);
+    $("trip-alert-open").textContent=quote?"REVISAR PRESUPUESTO →":"VER SOLICITUD →";
+  }
+  overlay.hidden=false;
+  $("trip-alert-close").focus();
+  // Browser haptics only with passenger opt-in, visibility and API support.
+  // Some browsers ignore programmatic vibration; the dialog is always visible.
+  if($("trips-alert-vibrate").checked&&typeof navigator.vibrate==="function"){
+    try{navigator.vibrate(decision?[190,100,190]:[90,65,90]);}catch{}
+  }
   playTripAlertSound();
 }
 function renderTripsBoard({reset=false}={}){
