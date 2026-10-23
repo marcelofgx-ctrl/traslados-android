@@ -25,7 +25,7 @@ def verify_reason(obj,why):
 
 def run():
     assert scalar("SELECT current_database()")=="qt_capacity_test"
-    change("TRUNCATE qa_gps.position; TRUNCATE qa_gps.reservations; TRUNCATE qa_gps.presence;")
+    # Tables were created empty in the disposable CI Postgres service; no reset needed.
     change(f"""INSERT INTO qa_gps.reservations(id,public_token,status,pickup_phase)
         VALUES('{A}','{TOKEN}','ACEPTADA','EN_CAMINO'),
               ('{B}','{'B'*64}','PENDIENTE',NULL);
