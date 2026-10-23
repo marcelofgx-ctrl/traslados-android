@@ -160,7 +160,7 @@ public final class ConductorLiveView extends FrameLayout {
         renderActive();renderScheduled();renderHistory();
     }
     public void setListener(Listener next){listener=next;renderRequest();renderActive();}
-    public void setBusy(boolean next){busy=next;renderRequest();renderActive();}
+    public void setBusy(boolean next){busy=next;renderRequest();renderActive();renderScheduled();}
     public void setShiftActive(boolean active){
         shiftBadge.setText(active?"✓ Jornada activa":"○ Jornada detenida");
         shiftBadge.setTextColor(active?GREEN:MUTED);
