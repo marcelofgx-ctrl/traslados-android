@@ -190,6 +190,26 @@ public class MainActivity extends Activity {
             android.util.Log.w("QuickTripConductor","Haptic unavailable",ex);
         }
     }
+    /**
+     * Notification and background-bubble taps must land inside Mapa QT rather
+     * than launching the legacy driver Activity. A tap is an explicit user
+     * action, so even an expired request may open Conductor to inspect status.
+     */
+    private void openConductorFromIntent(){
+        Intent request=getIntent();
+        if(request==null||!request.getBooleanExtra("open_requests",false))return;
+        request.removeExtra("open_requests"); // consume once, including rotation/resume
+        if(DriverIdentity.pin(this).isEmpty())return;
+        uiHandler.postDelayed(()->{
+            if(!isFinishing()&&!isDestroyed())openIntegratedConductor();
+        },250L);
+    }
+    @Override protected void onNewIntent(Intent intent){
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if(getSharedPreferences("bubble_state",MODE_PRIVATE)
+            .getBoolean("ui_visible",false))openConductorFromIntent();
+    }
     private void openIntegratedConductor(){
         hideInAppTransfer(false);
         if(DriverIdentity.pin(this).isEmpty()){promptDriverBinding();return;}
@@ -2104,6 +2124,7 @@ public class MainActivity extends Activity {
         }
         updateTransferBadge();
         if(conductorV0!=null)conductorV0.onHostResume();
+        openConductorFromIntent();
         TransferAlerts.ensureMonitor(this);
         uiHandler.removeCallbacks(transferReceptionTick);
         uiHandler.post(transferReceptionTick);
