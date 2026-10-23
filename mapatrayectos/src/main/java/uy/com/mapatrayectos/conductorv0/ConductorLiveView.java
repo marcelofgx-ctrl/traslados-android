@@ -226,15 +226,15 @@ public final class ConductorLiveView extends FrameLayout {
         countAccepted.setText(number(accepted));
         countInJourney.setText(number(inJourney));
     }
-    public void setConnection(String status,boolean online){
-        connected=online;
+    public void setConnection(String status,boolean connected){
+        this.connected=connected;
         String label=s(status);
-        if(online && label.startsWith("Solicitudes reales · sincronizado hace ")){
+        if(connected && label.startsWith("Solicitudes reales · sincronizado hace ")){
             label="Conectado · hace "+label.substring("Solicitudes reales · sincronizado hace ".length());
         }
         connectionText.setText(label);
-        connectionText.setTextColor(online?GREEN:MUTED);
-        if(online && "Actualizando solicitudes…".contentEquals(feedbackText.getText()))
+        connectionText.setTextColor(connected?GREEN:MUTED);
+        if(connected && "Actualizando solicitudes…".contentEquals(feedbackText.getText()))
             setFeedback("",false);
     }
     public void setFeedback(String message,boolean positive){
