@@ -1,0 +1,94 @@
+name: Conductor Premium Visual - source-only QA (NO APK)
+on:
+  push:
+    branches: [design/conductor-premium-r2537-visual-only-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ui-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Proteger alcance visual y contrato de Conductor R25.36
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,re
+          base='c609aacbe5e50c9d46a697920ce411c7e28ca7ea'
+          target='mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java'
+          changes=set(subprocess.check_output(
+              ['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          expected={target,'.github/workflows/conductor-premium-source-only.yml'}
+          assert changes==expected, f'Cambios fuera de la capa visual: {changes^expected}'
+          previous=subprocess.check_output(
+              ['git','show',base+':'+target],text=True)
+          current=Path(target).read_text()
+          def block(content,anchor):
+              start=content.index(anchor)
+              begin=content.index('{',start)
+              depth=0
+              for index in range(begin,len(content)):
+                  if content[index]=='{': depth+=1
+                  elif content[index]=='}':
+                      depth-=1
+                      if depth==0: return content[start:index+1]
+              raise ValueError('Contrato sin cierre: '+anchor)
+          for name in ('public static final class Request',
+                       'public static final class Trip','public interface Listener'):
+              assert block(previous,name)==block(current,name),name
+          method=re.compile(r'^    public void (set\w+)\(([^)]*)\)',re.M)
+          assert method.findall(previous)==method.findall(current),'Cambio en setters'
+          assert current.count('new ScrollView(')==1,'Mas de un contenedor de scroll'
+          assert 'new FrameLayout(' not in current,'Prohibido introducir overlays'
+          assert not re.search(r'\b(Api|TransferAlerts|DriverIdentity)\.',current),'Motor en vista'
+          assert 'ConductorOperationsPolicy.canStart' in current
+          assert 'ConductorOperationsPolicy.canFinish' in current
+          assert 'ConductorOperationsPolicy.canQuote' in current
+          listeners=set(re.findall(r'void (on\w+)\(',block(previous,'public interface Listener')))
+          callbacks=set(re.findall(r'listener\.(on\w+)\(',current))
+          assert listeners==callbacks,(listeners-callbacks,callbacks-listeners)
+          assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
+          assert "versionCode 89" in Path('mapatrayectos/build.gradle').read_text()
+          print('PASS: solo vista, contrato R25.36 intacto, listeners intactos y sin overlays')
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar solo Android SDK para compilar clases Java (NO GRADLE / NO APK)
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$ANDROID_SDK_ROOT"
+          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="$ANDROID_HOME"; fi
+          if [ -z "$SDK_ROOT" ]; then SDK_ROOT="/usr/local/lib/android/sdk"; fi
+          if [ ! -s "$SDK_ROOT/platforms/android-35/android.jar" ]; then
+            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+            if [ ! -x "$SDKMANAGER" ]; then
+              SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"
+            fi
+            yes | "$SDKMANAGER" --licenses >/dev/null || true
+            "$SDKMANAGER" "platforms;android-35"
+          fi
+          test -s "$SDK_ROOT/platforms/android-35/android.jar"
+          echo "ANDROID_JAR=$SDK_ROOT/platforms/android-35/android.jar" >> "$GITHUB_ENV"
+      - name: Compilar unicamente clases Java de interfaz y politica
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quicktrip-ui-java
+          javac -source 8 -target 8 \
+            -cp "$ANDROID_JAR" -d /tmp/quicktrip-ui-java \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java
+          javac -cp /tmp/quicktrip-ui-java -d /tmp/quicktrip-ui-java \
+            mapatrayectos/tests/ConductorOperationsPolicyTest.java
+          java -cp /tmp/quicktrip-ui-java ConductorOperationsPolicyTest
+          echo 'PASS: clases Java verificadas; no se generó APK' >> "$GITHUB_STEP_SUMMARY"
