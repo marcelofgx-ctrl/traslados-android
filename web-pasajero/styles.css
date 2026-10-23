@@ -1180,6 +1180,70 @@ label{display:block;font-size:12px;color:#dddfd7;font-weight:700;margin:13px 0 6
 .trip-alert-card p:not(.trips-eyebrow){font-size:12px;color:#cee0d4;line-height:1.55}
 .trip-alert-card .primary{margin:19px 0 10px}
 .trip-alert-footnote{font-size:10px!important}
+
+/* Quick Trip — decisiones de conductor: aparición claramente perceptible. */
+.trip-alert-overlay:not([hidden]){animation:qtNoticeBackdrop .32s ease-out both}
+.trip-alert-overlay:not([hidden]) .trip-alert-card{
+  animation:qtNoticeArrival .62s cubic-bezier(.18,1.16,.32,1) both;
+  will-change:transform,opacity;
+}
+.trip-alert-card{
+  max-height:min(86dvh,700px);overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.trip-alert-overlay[data-outcome="accepted"] .trip-alert-card{
+  border-color:rgba(116,233,171,.79);
+  box-shadow:0 23px 80px rgba(0,0,0,.5),0 0 0 2px rgba(54,178,119,.13);
+}
+.trip-alert-overlay[data-outcome="rejected"] .trip-alert-card{
+  border-color:rgba(235,147,147,.75);
+  box-shadow:0 23px 80px rgba(0,0,0,.5),0 0 0 2px rgba(235,147,147,.11);
+}
+.trip-alert-overlay[data-outcome="accepted"] .trip-alert-symbol{color:#8be7b6}
+.trip-alert-overlay[data-outcome="rejected"] .trip-alert-symbol{color:#f3a7aa}
+.trip-alert-details{
+  display:grid;gap:13px;
+  padding:14px 15px;margin:17px 0 0;
+  border-radius:17px;text-align:left;
+  background:rgba(7,28,30,.64);
+  border:1px solid rgba(225,196,127,.27);
+}
+.trip-alert-details[hidden]{display:none!important}
+.trip-alert-card .trip-alert-details .trip-alert-code{
+  margin:0;color:#e4c98b;font-size:11px;font-weight:800;letter-spacing:.055em;
+  overflow-wrap:anywhere;
+}
+.trip-alert-stop{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.trip-alert-stop>div{min-width:0;display:grid;gap:4px}
+.trip-alert-stop-dot{
+  flex:0 0 11px;width:11px;height:11px;border-radius:50%;
+  margin-top:5px;box-shadow:0 0 0 4px rgba(98,213,157,.08);
+  background:#65daa7;
+}
+.trip-alert-stop-dot.destination{background:#e8c47e;box-shadow:0 0 0 4px rgba(232,196,126,.08)}
+.trip-alert-stop small{font-size:9px;font-weight:800;letter-spacing:.12em;color:#afc9bf}
+.trip-alert-stop strong{color:#f3f7f3;font-size:13px;line-height:1.38;overflow-wrap:anywhere}
+.trip-alert-amount{
+  color:#f4d795;text-align:right;font-size:15px;font-weight:850;
+  border-top:1px solid rgba(226,194,129,.21);padding-top:12px;
+}
+.trip-alert-amount[hidden]{display:none!important}
+.trip-alert-overlay[data-outcome="rejected"] .trip-alert-amount{opacity:.75}
+@keyframes qtNoticeBackdrop{
+  from{opacity:0;backdrop-filter:blur(0)}
+  to{opacity:1;backdrop-filter:blur(9px)}
+}
+@keyframes qtNoticeArrival{
+  0%{opacity:0;transform:translateY(52px) scale(.86);filter:blur(5px)}
+  68%{opacity:1;transform:translateY(-6px) scale(1.025);filter:blur(0)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .trip-alert-overlay:not([hidden]),.trip-alert-overlay:not([hidden]) .trip-alert-card{
+    animation:none!important;transition:none!important;will-change:auto!important;
+  }
+}
+
 @media(max-width:520px){
   #view-viajes .trips-board{padding:13px 11px}
   .trips-tabs{margin-top:13px;gap:5px}
