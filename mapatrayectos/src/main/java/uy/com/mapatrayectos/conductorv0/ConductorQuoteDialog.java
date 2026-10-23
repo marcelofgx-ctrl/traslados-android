@@ -161,7 +161,10 @@ public final class ConductorQuoteDialog {
                 .setPositiveButton("Enviar",(d,w)->{
                     if(sending)return;
                     sending=true;
+                    final String quoteDescription=includes.getText().toString().trim();
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
+                    dialog.setCancelable(false);
                     new Thread(()->{
                         boolean ok=false;String message="No se confirmó el presupuesto.";
                         try{
@@ -181,7 +184,7 @@ public final class ConductorQuoteDialog {
                             JSONObject sent=Api.sendQuoteV107(credential,id,distance,
                                 current.optInt("route_duration_min",0),tariff,minimum,countFinal,
                                 tollPrice,waiting,pickup,other,referenceTotal,total,
-                                includes.getText().toString().trim());
+                                quoteDescription);
                             ok=ConductorOperationsPolicy.quoteConfirmed(sent.optString("status"),
                                 sent.optString("quote_status"),sent.optBoolean("ok",false))
                                 && id.equals(sent.optString("id"));
@@ -196,13 +199,16 @@ public final class ConductorQuoteDialog {
                             sending=false;
                             if(activity.isFinishing()||activity.isDestroyed())return;
                             if(confirmed){dialog.dismiss();TransferAlerts.refreshAsync(activity);}
-                            else dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                            else{
+                                dialog.setCancelable(true);
+                                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(true);
+                                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                            }
                             callback.finished(confirmed,outcome);
                         });
                     },"quicktrip-quote-send").start();
                 }).show();
         }));
-        dialog.getWindow();
         dialog.show();
     }
     private EditText number(LinearLayout form,String label,String value){
