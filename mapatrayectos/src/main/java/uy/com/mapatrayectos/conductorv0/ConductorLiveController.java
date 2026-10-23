@@ -35,6 +35,10 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     private final ArrayList<JSONObject> pending=new ArrayList<>();
     private final HashSet<String> locallyConfirmed=new HashSet<>();
     private boolean open=false,hostResumed=false,receiverRegistered=false,busy=false,historyLoading=false;
+    private Runnable onConfirmedImmediateDecision;
+    public void setOnConfirmedImmediateDecision(Runnable action){
+        onConfirmedImmediateDecision=action;
+    }
     private String selection="",lastKey="";
     private final Runnable tick=new Runnable(){
         @Override public void run(){
@@ -254,6 +258,9 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
                 renderFromCache(true);
                 loadHistory();
                 TransferAlerts.refreshAsync(activity);
+                // The server has already confirmed the immediate decision.
+                // Return to Mapa without changing any reservation/GPS engine.
+                if(onConfirmedImmediateDecision!=null)onConfirmedImmediateDecision.run();
             }else{TransferAlerts.refreshAsync(activity);}
         });
     }
