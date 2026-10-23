@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -14,16 +15,34 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/** Native Quick Trip driver surface. Only displays authorized server snapshots. */
+/**
+ * Quick Trip visual surface, rebuilt as ONE clean hierarchy in Mapa QT.
+ * This is presentation only. Authentication, reservation transitions, GPS,
+ * prices, notifications, and server state remain owned by the existing controller.
+ *
+ * Public constructor, Request/Trip types, Listener, and setters intentionally
+ * match R25.35 so the stable controller and navigation require NO modifications.
+ */
 public final class ConductorLiveView extends FrameLayout {
-    private static final int BLACK=Color.BLACK, PANEL=Color.rgb(37,37,37);
-    private static final int WHITE=Color.WHITE, MUTED=Color.rgb(175,175,175);
-    private static final int GREEN=Color.rgb(0,166,89), RED=Color.rgb(218,62,67);
-    private static final int ACCEPT=Color.rgb(0,120,89), REJECT=Color.rgb(47,47,47);
+    private static final int BACKGROUND=Color.rgb(8,12,12);
+    private static final int SHELL=Color.rgb(23,28,28);
+    private static final int CARD=Color.rgb(10,15,15);
+    private static final int UTILITY=Color.rgb(39,51,49);
+    private static final int DIVIDER=Color.rgb(44,59,55);
+    private static final int WHITE=Color.rgb(242,248,246);
+    private static final int MUTED=Color.rgb(165,181,175);
+    private static final int GOLD=Color.rgb(214,186,121);
+    private static final int GREEN=Color.rgb(101,199,165);
+    private static final int PRIMARY=Color.rgb(7,111,87);
+    private static final int RED=Color.rgb(235,145,145);
+
     public static final class Request {
         public final String id,code,origin,destination,distance,duration,amount,customer;
         public Request(String id,String code,String origin,String destination,String distance,
@@ -32,6 +51,7 @@ public final class ConductorLiveView extends FrameLayout {
             this.distance=s(distance);this.duration=s(duration);this.amount=s(amount);this.customer=s(customer);
         }
     }
+
     public static final class Trip {
         public final String id,code,customer,phone,origin,destination,status,phase,time,amount;
         public final String pickupMode,fareMode,quoteStatus;
@@ -47,6 +67,7 @@ public final class ConductorLiveView extends FrameLayout {
             this.routeKm=routeKm;this.routeMinutes=routeMinutes;
         }
     }
+
     public interface Listener {
         void onAccept(String id);
         void onReject(String id);
@@ -62,6 +83,7 @@ public final class ConductorLiveView extends FrameLayout {
         void onStartTrip(String id);
         void onFinishTrip(String id);
     }
+
     private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,feedbackText;
     private final TextView historyToggle,activeToggle,scheduledToggle;
     private final LinearLayout requestBody,historyBody,activeBody,scheduledBody;
@@ -71,11 +93,12 @@ public final class ConductorLiveView extends FrameLayout {
     private Listener listener;
     private Request request;
     private int index=0,total=0;
+
     private static String s(String v){return v==null?"":v.trim();}
 
     public ConductorLiveView(Context c){
         super(c);
-        setBackgroundColor(BLACK);
+        setBackgroundColor(BACKGROUND);
         setClickable(true);
         setContentDescription("Quick Trip. Conductor integrado en Mapa QT");
         setOnApplyWindowInsetsListener((v,insets)->{
@@ -83,310 +106,548 @@ public final class ConductorLiveView extends FrameLayout {
             if(Build.VERSION.SDK_INT>=30){
                 android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());
                 top=bars.top;bottom=bars.bottom;
-            }else{top=insets.getSystemWindowInsetTop();bottom=insets.getSystemWindowInsetBottom();}
-            v.setPadding(0,top,0,bottom);return insets;
+            }else{
+                top=insets.getSystemWindowInsetTop();
+                bottom=insets.getSystemWindowInsetBottom();
+            }
+            v.setPadding(0,top,0,bottom);
+            return insets;
         });
+
+        // Single hierarchy: FrameLayout -> ScrollView -> panel -> sections.
+        // No absolute-positioned buttons, negative margins, or nested overlay.
         ScrollView scroll=new ScrollView(c);
         scroll.setFillViewport(false);
         scroll.setVerticalScrollBarEnabled(false);
         scroll.setClipToPadding(false);
-        scroll.setPadding(dp(16),dp(12),dp(16),dp(26));
+        scroll.setPadding(dp(13),dp(12),dp(13),dp(24));
         addView(scroll,new FrameLayout.LayoutParams(-1,-1));
+
         LinearLayout panel=col();
-        panel.setPadding(dp(14),dp(20),dp(14),dp(20));
-        panel.setBackground(bg(PANEL,24));
+        panel.setPadding(dp(17),dp(20),dp(17),dp(19));
+        panel.setBackground(surface(SHELL,26));
         scroll.addView(panel,new ScrollView.LayoutParams(-1,-2));
 
         LinearLayout header=row();
-        LinearLayout title=col();
-        title.addView(text("QUICK TRIP",13,MUTED,false));
-        gap(title,7);
-        title.addView(text("Conductor",29,WHITE,true));
-        header.addView(title,new LinearLayout.LayoutParams(0,-2,1));
-        shiftBadge=text("Jornada detenida",12,MUTED,false);
-        shiftBadge.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
-        shiftBadge.setPadding(dp(4),dp(8),0,0);
-        header.addView(shiftBadge,new LinearLayout.LayoutParams(dp(120),dp(64)));
-        panel.addView(header,mb(16));
+        LinearLayout branding=col();
+        TextView brand=text("QUICK TRIP",12,GOLD,true);
+        brand.setLetterSpacing(.13f);
+        branding.addView(brand,mb(8));
+        branding.addView(text("Conductor",27,WHITE,true));
+        header.addView(branding,new LinearLayout.LayoutParams(0,-2,1));
+        shiftBadge=text("○ Jornada detenida",11,MUTED,false);
+        shiftBadge.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        shiftBadge.setMaxLines(2);
+        shiftBadge.setPadding(dp(5),dp(8),0,0);
+        header.addView(shiftBadge,new LinearLayout.LayoutParams(dp(132),dp(60)));
+        panel.addView(header,mb(18));
 
-        LinearLayout counters=row();
-        countNew=counter(counters,"Nuevas");
-        countAccepted=counter(counters,"Aceptadas");
-        countInJourney=counter(counters,"En viaje");
-        panel.addView(counters,mb(10));
+        LinearLayout statistics=row();
+        countNew=counter(statistics,"Nuevas");
+        countAccepted=counter(statistics,"Aceptadas");
+        countInJourney=counter(statistics,"En viaje");
+        panel.addView(statistics,mb(12));
 
+        LinearLayout connectivity=row();
+        TextView onlineDot=text("●",11,GREEN,true);
+        onlineDot.setContentDescription("Estado de conexión");
+        connectivity.addView(onlineDot,new LinearLayout.LayoutParams(dp(17),-2));
         connectionText=text("Consultando solicitudes…",12,MUTED,false);
-        connectionText.setGravity(Gravity.CENTER);
-        connectionText.setPadding(dp(5),dp(7),dp(5),dp(7));
-        panel.addView(connectionText,mb(12));
+        connectionText.setMaxLines(2);
+        connectivity.addView(connectionText,new LinearLayout.LayoutParams(0,-2,1));
+        panel.addView(connectivity,mb(14));
 
         requestBody=col();
-        requestBody.setPadding(dp(14),dp(19),dp(14),dp(20));
-        requestBody.setMinimumHeight(dp(250));
-        requestBody.setBackground(bg(BLACK,20));
-        panel.addView(requestBody,mb(12));
+        requestBody.setPadding(dp(15),dp(15),dp(15),dp(15));
+        requestBody.setBackground(surface(CARD,19));
+        panel.addView(requestBody,mb(9));
 
-        feedbackText=text("",14,WHITE,true);
+        feedbackText=text("",12,MUTED,true);
         feedbackText.setGravity(Gravity.CENTER);
+        feedbackText.setPadding(dp(12),dp(10),dp(12),dp(10));
+        feedbackText.setBackground(surface(UTILITY,13));
         feedbackText.setVisibility(View.GONE);
-        panel.addView(feedbackText,mb(10));
+        panel.addView(feedbackText,mb(9));
 
-        Button refresh=button("↻  Actualizar solicitudes",REJECT);
-        refresh.setTextSize(13);
+        Button refresh=button("↻  Actualizar solicitudes",Style.UTILITY);
         refresh.setOnClickListener(v->{if(listener!=null)listener.onRefresh();});
         panel.addView(refresh,new LinearLayout.LayoutParams(-1,dp(46)));
-        gap(panel,12);
+        gap(panel,14);
 
-        activeToggle=toggle("Aceptadas y en curso",activeOpen,()->{activeOpen=!activeOpen;renderActive();});
-        panel.addView(activeToggle,mb(5));
+        activeToggle=toggle(()->{activeOpen=!activeOpen;renderActive();});
+        panel.addView(activeToggle,mb(6));
         activeBody=col();
         panel.addView(activeBody,mb(12));
 
-        scheduledToggle=toggle("Programadas / presupuesto",scheduledOpen,()->{scheduledOpen=!scheduledOpen;renderScheduled();});
-        panel.addView(scheduledToggle,mb(5));
+        scheduledToggle=toggle(()->{scheduledOpen=!scheduledOpen;renderScheduled();});
+        panel.addView(scheduledToggle,mb(6));
         scheduledBody=col();
         panel.addView(scheduledBody,mb(12));
 
-        historyToggle=toggle("Histórico",historyOpen,()->{historyOpen=!historyOpen;renderHistory();});
-        panel.addView(historyToggle,mb(5));
+        historyToggle=toggle(()->{historyOpen=!historyOpen;renderHistory();});
+        panel.addView(historyToggle,mb(6));
         historyBody=col();
-        panel.addView(historyBody,mb(14));
-        TextView hint=text("Deslizá a la derecha para volver a Mapa",12,MUTED,false);
-        hint.setGravity(Gravity.CENTER);
-        panel.addView(hint);
+        panel.addView(historyBody,mb(12));
+
+        TextView gesture=text("Deslizá a la derecha para volver a Mapa",11,MUTED,false);
+        gesture.setGravity(Gravity.CENTER);
+        gesture.setPadding(0,dp(5),0,dp(5));
+        panel.addView(gesture);
 
         setShiftActive(false);
         setCounters(null,null,null);
         setPendingRequest(null,0,0);
-        renderActive();renderScheduled();renderHistory();
+        renderActive();
+        renderScheduled();
+        renderHistory();
     }
-    public void setListener(Listener next){listener=next;renderRequest();renderActive();}
-    public void setBusy(boolean next){busy=next;renderRequest();renderActive();renderScheduled();}
-    public void setShiftActive(boolean active){
-        shiftBadge.setText(active?"✓ Jornada activa":"○ Jornada detenida");
-        shiftBadge.setTextColor(active?GREEN:MUTED);
+
+    // The controller-facing contract is preserved exactly.
+    public void setListener(Listener next){
+        listener=next;
+        renderRequest();
+        renderActive();
+        renderScheduled();
+    }
+    public void setBusy(boolean next){
+        busy=next;
+        renderRequest();
+        renderActive();
+        renderScheduled();
+    }
+    public void setShiftActive(boolean isActive){
+        shiftBadge.setText(isActive?"✓ Jornada activa":"○ Jornada detenida");
+        shiftBadge.setTextColor(isActive?GREEN:MUTED);
     }
     public void setCounters(Integer fresh,Integer accepted,Integer inJourney){
-        countNew.setText(number(fresh));countAccepted.setText(number(accepted));
+        countNew.setText(number(fresh));
+        countAccepted.setText(number(accepted));
         countInJourney.setText(number(inJourney));
     }
     public void setConnection(String status,boolean connected){
-        connectionText.setText(status);
+        String label=s(status);
+        if(connected && label.startsWith("Solicitudes reales · sincronizado hace ")){
+            label="Conectado · hace "+label.substring("Solicitudes reales · sincronizado hace ".length());
+        }
+        connectionText.setText(label);
         connectionText.setTextColor(connected?GREEN:MUTED);
+        // A successful refresh clears ONLY the old transient refresh caption.
+        // Errors and confirmations remain visible until the controller changes them.
+        if(connected && "Actualizando solicitudes…".contentEquals(feedbackText.getText())){
+            setFeedback("",false);
+        }
     }
     public void setFeedback(String message,boolean positive){
-        feedbackText.setText(s(message));
+        String shown=s(message);
+        feedbackText.setText(shown);
         feedbackText.setTextColor(positive?GREEN:MUTED);
-        feedbackText.setVisibility(s(message).isEmpty()?View.GONE:View.VISIBLE);
+        feedbackText.setVisibility(shown.isEmpty()?View.GONE:View.VISIBLE);
     }
     public void setPendingRequest(Request next,int currentIndex,int totalCount){
-        request=next;index=currentIndex;total=totalCount;renderRequest();
+        request=next;
+        index=currentIndex;
+        total=totalCount;
+        renderRequest();
     }
-    public void setActiveTrips(List<Trip> rows){active.clear();if(rows!=null)active.addAll(rows);renderActive();}
-    public void setScheduledTrips(List<Trip> rows){scheduled.clear();if(rows!=null)scheduled.addAll(rows);renderScheduled();}
-    public void setHistory(List<String> rows){history.clear();if(rows!=null)history.addAll(rows);renderHistory();}
+    public void setActiveTrips(List<Trip> rows){
+        active.clear();
+        if(rows!=null)active.addAll(rows);
+        renderActive();
+    }
+    public void setScheduledTrips(List<Trip> rows){
+        scheduled.clear();
+        if(rows!=null)scheduled.addAll(rows);
+        renderScheduled();
+    }
+    public void setHistory(List<String> rows){
+        history.clear();
+        if(rows!=null)history.addAll(rows);
+        renderHistory();
+    }
 
     private void renderRequest(){
         requestBody.removeAllViews();
         if(request==null){
-            requestBody.addView(text("Sin solicitudes inmediatas",21,WHITE,true),mb(15));
-            requestBody.addView(text("Las peticiones de Tu Viaje aparecerán acá cuando estén pendientes. Los viajes programados figuran en su sección.",14,MUTED,false));
+            LinearLayout line=row();
+            TextView symbol=text("◉",19,GOLD,true);
+            line.addView(symbol,new LinearLayout.LayoutParams(dp(27),-2));
+            line.addView(text("Sin solicitudes nuevas",16,WHITE,true),
+                    new LinearLayout.LayoutParams(0,-2,1));
+            requestBody.addView(line,mb(5));
+            TextView note=text("Te avisaremos cuando llegue una petición.",12,MUTED,false);
+            note.setPadding(dp(27),0,0,0);
+            requestBody.addView(note);
             return;
         }
         final Request r=request;
-        LinearLayout top=row();
-        top.addView(text("Nueva solicitud",22,WHITE,true),new LinearLayout.LayoutParams(0,-2,1));
-        TextView sequence=text(total>1?(index+1)+" / "+total:"Tu Viaje",12,MUTED,false);
-        sequence.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
-        top.addView(sequence,new LinearLayout.LayoutParams(-2,-1));
-        requestBody.addView(top,mb(15));
-        if(!r.code.isEmpty())requestBody.addView(text("Pedido "+r.code,12,MUTED,false),mb(12));
-        routeLine(requestBody,"ORIGEN",r.origin,GREEN);
-        requestBody.addView(text("│",17,MUTED,false),mb(1));
-        routeLine(requestBody,"DESTINO",r.destination,RED);
-        View rule=new View(getContext());rule.setBackgroundColor(Color.rgb(48,48,48));
-        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(1));
-        rp.setMargins(0,dp(17),0,dp(17));requestBody.addView(rule,rp);
-        LinearLayout totals=row();
-        metric(totals,"DISTANCIA",r.distance);
-        metric(totals,"DURACIÓN",r.duration);
-        metric(totals,"IMPORTE",r.amount);
-        requestBody.addView(totals,mb(17));
-        if(!r.customer.isEmpty())requestBody.addView(text("Pasajero: "+r.customer,12,MUTED,false),mb(10));
-        LinearLayout buttons=row();
-        Button reject=button(busy?"Procesando…":"Rechazar",REJECT);
-        Button accept=button(busy?"Procesando…":"Aceptar",ACCEPT);
-        boolean enabled=listener!=null&&!busy;
-        reject.setEnabled(enabled);accept.setEnabled(enabled);
-        reject.setOnClickListener(v->{if(listener!=null)listener.onReject(r.id);});
+        LinearLayout heading=row();
+        TextView h=text("Nueva solicitud",19,WHITE,true);
+        heading.addView(h,new LinearLayout.LayoutParams(0,-2,1));
+        TextView sequence=text(total>1?(index+1)+" de "+total:"Tu Viaje",11,GOLD,true);
+        sequence.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        heading.addView(sequence,new LinearLayout.LayoutParams(-2,dp(32)));
+        requestBody.addView(heading,mb(8));
+        if(!r.code.isEmpty())requestBody.addView(text("Pedido "+r.code,11,MUTED,false),mb(12));
+        routeLine(requestBody,"ORIGEN",r.origin,GREEN,16);
+        connector(requestBody);
+        routeLine(requestBody,"DESTINO",r.destination,RED,16);
+        rule(requestBody,15,13);
+        LinearLayout metrics=row();
+        metric(metrics,"DISTANCIA",r.distance);
+        metric(metrics,"DURACIÓN",r.duration);
+        metric(metrics,"IMPORTE",r.amount);
+        requestBody.addView(metrics,mb(14));
+        if(!r.customer.isEmpty())requestBody.addView(text("Pasajero · "+r.customer,12,MUTED,false),mb(12));
+        LinearLayout actions=row();
+        Button decline=button(busy?"Procesando…":"Rechazar",Style.SECONDARY);
+        Button accept=button(busy?"Procesando…":"Aceptar",Style.PRIMARY);
+        decline.setEnabled(listener!=null&&!busy);
+        accept.setEnabled(listener!=null&&!busy);
+        decline.setOnClickListener(v->{if(listener!=null)listener.onReject(r.id);});
         accept.setOnClickListener(v->{if(listener!=null)listener.onAccept(r.id);});
-        LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,dp(55),1);
-        left.rightMargin=dp(4);
-        LinearLayout.LayoutParams right=new LinearLayout.LayoutParams(0,dp(55),1);
-        right.leftMargin=dp(4);
-        buttons.addView(reject,left);buttons.addView(accept,right);
-        requestBody.addView(buttons);
+        addEqual(actions,decline,56,0,5);
+        addEqual(actions,accept,56,5,0);
+        requestBody.addView(actions);
         if(total>1){
-            LinearLayout nav=row();
-            Button previous=button("‹ Anterior",REJECT),next=button("Siguiente ›",REJECT);
-            previous.setTextSize(13);next.setTextSize(13);
-            previous.setOnClickListener(v->{if(listener!=null)listener.onPrevious();});
+            LinearLayout pager=row();
+            Button prev=button("‹ Anterior",Style.UTILITY);
+            Button next=button("Siguiente ›",Style.UTILITY);
+            prev.setEnabled(listener!=null&&!busy);
+            next.setEnabled(listener!=null&&!busy);
+            prev.setOnClickListener(v->{if(listener!=null)listener.onPrevious();});
             next.setOnClickListener(v->{if(listener!=null)listener.onNext();});
-            nav.addView(previous,new LinearLayout.LayoutParams(0,dp(42),1));
-            nav.addView(next,new LinearLayout.LayoutParams(0,dp(42),1));
-            requestBody.addView(nav,mt(9));
+            addEqual(pager,prev,46,0,5);
+            addEqual(pager,next,46,5,0);
+            requestBody.addView(pager,mt(9));
         }
     }
 
     private void renderActive(){
-        activeToggle.setText("Aceptadas y en curso ("+active.size()+") "+(activeOpen?"▴":"▾"));
+        setToggle(activeToggle,"Aceptadas y en curso",active.size(),activeOpen);
         activeBody.removeAllViews();
         activeBody.setVisibility(activeOpen?View.VISIBLE:View.GONE);
         if(!activeOpen)return;
-        if(active.isEmpty()){activeBody.addView(text("Sin viajes aceptados o en curso.",13,MUTED,false));return;}
+        if(active.isEmpty()){
+            emptySection(activeBody,"Sin viajes aceptados ni en curso.");
+            return;
+        }
         for(Trip t:active){
             LinearLayout card=tripCard(t);
-            LinearLayout quick=row();
+            LinearLayout utilities=row();
             if(!t.phone.isEmpty()){
-                Button call=button("Llamar",REJECT),wa=button("WhatsApp",REJECT);
-                call.setTextSize(12);wa.setTextSize(12);
-                call.setOnClickListener(v->{if(listener!=null)listener.onCall(t.phone);});
-                wa.setOnClickListener(v->{if(listener!=null)listener.onWhatsApp(t.phone);});
-                quick.addView(call,new LinearLayout.LayoutParams(0,dp(42),1));
-                quick.addView(wa,new LinearLayout.LayoutParams(0,dp(42),1));
+                Button phone=button("☎  Llamar",Style.UTILITY);
+                Button whatsapp=button("◌  WhatsApp",Style.UTILITY);
+                phone.setOnClickListener(v->{if(listener!=null)listener.onCall(t.phone);});
+                whatsapp.setOnClickListener(v->{if(listener!=null)listener.onWhatsApp(t.phone);});
+                addEqual(utilities,phone,46,0,4);
+                addEqual(utilities,whatsapp,46,4,4);
             }
-            Button route=button("Ruta",REJECT);route.setTextSize(12);
+            Button route=button("➤  Ruta",Style.UTILITY);
             route.setOnClickListener(v->{if(listener!=null)listener.onRoute(t.origin);});
-            quick.addView(route,new LinearLayout.LayoutParams(0,dp(42),1));
-            card.addView(quick,mt(8));
+            addEqual(utilities,route,46,t.phone.isEmpty()?0:4,0);
+            card.addView(utilities,mt(13));
+
             if("ACEPTADA".equals(t.status)){
-                String nextPhase="SIN_INICIAR".equals(t.phase)||t.phase.isEmpty()?"EN_CAMINO":
-                    "EN_CAMINO".equals(t.phase)?"EN_PUNTO":"";
-                if(!nextPhase.isEmpty()){
-                    Button state=button("EN_CAMINO".equals(nextPhase)?"Voy en camino":"Llegué al origen",ACCEPT);
-                    state.setTextSize(13);state.setEnabled(!busy);
-                    state.setOnClickListener(v->{if(listener!=null)listener.onPickupPhase(t.id,nextPhase);});
-                    card.addView(state,new LinearLayout.LayoutParams(-1,dp(47)));
+                String phase="SIN_INICIAR".equals(t.phase)||t.phase.isEmpty()?
+                        "EN_CAMINO":"EN_CAMINO".equals(t.phase)?"EN_PUNTO":"";
+                if(!phase.isEmpty()){
+                    Button pickup=button("EN_CAMINO".equals(phase)?
+                            "Voy en camino":"Llegué al origen",Style.PRIMARY);
+                    pickup.setEnabled(listener!=null&&!busy);
+                    pickup.setOnClickListener(v->{if(listener!=null)listener.onPickupPhase(t.id,phase);});
+                    card.addView(pickup,fullButton(50,10));
                 }
             }
-            if(ConductorOperationsPolicy.canStart(t.status)) {
-                Button start=button("Iniciar viaje",ACCEPT);
-                start.setTextSize(13);
-                start.setEnabled(!busy);
+            if(ConductorOperationsPolicy.canStart(t.status)){
+                Button start=button("Iniciar viaje",Style.OUTLINE);
+                start.setEnabled(listener!=null&&!busy);
                 start.setOnClickListener(v->{if(listener!=null)listener.onStartTrip(t.id);});
-                // The controller requires explicit confirmation plus GPS preflight.
-                card.addView(start,new LinearLayout.LayoutParams(-1,dp(48)));
+                card.addView(start,fullButton(50,9));
             }else if(ConductorOperationsPolicy.canFinish(t.status)){
-                Button finish=button("Finalizar viaje",REJECT);
-                finish.setTextSize(13);
-                finish.setEnabled(!busy);
+                Button finish=button("Finalizar viaje",Style.DANGER);
+                finish.setEnabled(listener!=null&&!busy);
                 finish.setOnClickListener(v->{if(listener!=null)listener.onFinishTrip(t.id);});
-                card.addView(finish,new LinearLayout.LayoutParams(-1,dp(48)));
+                card.addView(finish,fullButton(50,9));
             }
-            activeBody.addView(card,mb(7));
+            activeBody.addView(card,mb(9));
         }
     }
+
     private void renderScheduled(){
-        scheduledToggle.setText("Programadas / presupuesto ("+scheduled.size()+") "+(scheduledOpen?"▴":"▾"));
+        setToggle(scheduledToggle,"Programadas / presupuesto",scheduled.size(),scheduledOpen);
         scheduledBody.removeAllViews();
         scheduledBody.setVisibility(scheduledOpen?View.VISIBLE:View.GONE);
         if(!scheduledOpen)return;
-        if(scheduled.isEmpty()){scheduledBody.addView(text("Sin solicitudes programadas pendientes.",13,MUTED,false));return;}
-        scheduledBody.addView(text("Requieren el proceso de presupuesto y agenda. No se aceptan como Tu Viaje inmediato.",12,MUTED,false),mb(8));
-        for(Trip t:scheduled) {
+        if(scheduled.isEmpty()){
+            emptySection(scheduledBody,"Sin solicitudes programadas pendientes.");
+            return;
+        }
+        TextView note=text("Presupuestos y agenda · flujo separado del viaje inmediato",11,MUTED,false);
+        scheduledBody.addView(note,mb(8));
+        for(Trip t:scheduled){
             LinearLayout card=tripCard(t);
-            if(ConductorOperationsPolicy.canQuote(t.status,t.pickupMode,t.fareMode)) {
+            if(ConductorOperationsPolicy.canQuote(t.status,t.pickupMode,t.fareMode)){
                 Button quote=button("ENVIADO".equals(t.quoteStatus)?
-                        "Editar presupuesto":"Preparar presupuesto",ACCEPT);
-                quote.setTextSize(13);quote.setEnabled(!busy);
+                        "Editar presupuesto":"Preparar presupuesto",Style.PRIMARY);
+                quote.setEnabled(listener!=null&&!busy);
                 quote.setOnClickListener(v->{if(listener!=null)listener.onPrepareQuote(t.id);});
-                card.addView(quote,new LinearLayout.LayoutParams(-1,dp(49)));
+                card.addView(quote,fullButton(50,12));
             }else if("PENDIENTE".equals(t.status)){
-                card.addView(text("Esta solicitud requiere revisión del estado o precio.",12,MUTED,false));
+                card.addView(text("Esta solicitud requiere revisar su estado o precio.",12,MUTED,false),
+                        mt(10));
             }
             if("PENDIENTE".equals(t.status) && "schedule".equals(t.pickupMode)){
-                Button reject=button("Rechazar solicitud programada",REJECT);
-                reject.setTextSize(12);reject.setEnabled(!busy);
+                Button reject=button("Rechazar solicitud programada",Style.OUTLINE);
+                reject.setEnabled(listener!=null&&!busy);
                 reject.setOnClickListener(v->{if(listener!=null)listener.onRejectScheduled(t.id);});
-                card.addView(reject,new LinearLayout.LayoutParams(-1,dp(46)));
+                card.addView(reject,fullButton(48,9));
             }
-            scheduledBody.addView(card,mb(7));
+            scheduledBody.addView(card,mb(9));
         }
     }
+
     private void renderHistory(){
-        historyToggle.setText("Histórico de peticiones ("+history.size()+") "+(historyOpen?"▴":"▾"));
+        setToggle(historyToggle,"Histórico de peticiones",history.size(),historyOpen);
         historyBody.removeAllViews();
         historyBody.setVisibility(historyOpen?View.VISIBLE:View.GONE);
         if(!historyOpen)return;
-        if(history.isEmpty()){historyBody.addView(text("Sin movimientos registrados por el servidor.",13,MUTED,false));return;}
-        for(int i=0;i<Math.min(history.size(),40);i++){
-            TextView item=text(history.get(i),13,WHITE,false);
-            item.setBackground(bg(BLACK,12));
-            item.setPadding(dp(12),dp(12),dp(12),dp(12));
-            historyBody.addView(item,mb(5));
+        if(history.isEmpty()){
+            emptySection(historyBody,"No hay movimientos registrados por el servidor.");
+            return;
+        }
+        for(int i=0;i<Math.min(40,history.size());i++){
+            TextView entry=text(history.get(i),12,WHITE,false);
+            entry.setLineSpacing(dp(3),1f);
+            entry.setBackground(surface(CARD,13));
+            entry.setPadding(dp(13),dp(12),dp(13),dp(12));
+            historyBody.addView(entry,mb(7));
         }
     }
+
     private LinearLayout tripCard(Trip t){
-        LinearLayout box=col();
-        box.setBackground(bg(BLACK,16));
-        box.setPadding(dp(12),dp(12),dp(12),dp(12));
-        box.addView(text(t.code.isEmpty()?t.status:t.code+"  ·  "+t.status,15,WHITE,true),mb(7));
-        if(!t.time.isEmpty())box.addView(text(t.time,12,MUTED,false),mb(6));
-        if(!t.customer.isEmpty())box.addView(text(t.customer,13,WHITE,false),mb(5));
-        box.addView(text(t.origin+" → "+t.destination,13,MUTED,false),mb(7));
-        if(!t.amount.isEmpty())box.addView(text(t.amount,14,GREEN,true));
-        if("ENVIADO".equals(t.quoteStatus))box.addView(text("Presupuesto enviado al pasajero",12,MUTED,false));
-        if("EN_VIAJE".equals(t.status))box.addView(text("Seguimiento GPS del viaje en curso",12,GREEN,false));
-        return box;
+        LinearLayout card=col();
+        card.setBackground(surface(CARD,19));
+        card.setPadding(dp(15),dp(14),dp(15),dp(15));
+
+        LinearLayout header=row();
+        TextView code=text(t.code.isEmpty()?"Traslado":t.code,14,WHITE,true);
+        code.setSingleLine(true);
+        code.setEllipsize(TextUtils.TruncateAt.END);
+        header.addView(code,new LinearLayout.LayoutParams(0,-2,1));
+        TextView status=text(prettyStatus(t.status),10,
+                "EN_VIAJE".equals(t.status)?GOLD:GREEN,true);
+        status.setGravity(Gravity.CENTER);
+        status.setPadding(dp(10),dp(6),dp(10),dp(6));
+        status.setBackground(outlineSurface(UTILITY,13,0));
+        header.addView(status,new LinearLayout.LayoutParams(-2,-2));
+        card.addView(header,mb(5));
+
+        if(!t.time.isEmpty())card.addView(text(displayWhen(t.time),11,MUTED,false),mb(12));
+        if(!t.customer.isEmpty()){
+            TextView customer=text(t.customer,13,WHITE,true);
+            card.addView(customer,mb(12));
+        }
+        routeLine(card,"ORIGEN",t.origin,GREEN,14);
+        connector(card);
+        routeLine(card,"DESTINO",t.destination,RED,14);
+
+        if(!t.amount.isEmpty()){
+            rule(card,13,10);
+            LinearLayout total=row();
+            total.addView(text("IMPORTE",10,MUTED,true),new LinearLayout.LayoutParams(0,-2,1));
+            TextView amount=text(t.amount,17,GOLD,true);
+            amount.setGravity(Gravity.END);
+            total.addView(amount,new LinearLayout.LayoutParams(-2,-2));
+            card.addView(total);
+        }
+        if("ENVIADO".equals(t.quoteStatus)){
+            TextView sent=text("Presupuesto enviado al pasajero",11,GREEN,false);
+            card.addView(sent,mt(9));
+        }
+        if("EN_VIAJE".equals(t.status)){
+            TextView tracking=text("●  Seguimiento GPS del viaje en curso",11,GREEN,false);
+            card.addView(tracking,mt(9));
+        }
+        return card;
     }
-    private TextView toggle(String value,boolean open,Runnable click){
-        TextView t=text(value+(open?" ▴":" ▾"),14,WHITE,true);
-        t.setBackground(bg(BLACK,13));
-        t.setPadding(dp(12),dp(13),dp(12),dp(13));
-        t.setOnClickListener(v->click.run());return t;
-    }
-    private TextView counter(LinearLayout strip,String name){
-        LinearLayout tile=col();
-        tile.setGravity(Gravity.CENTER);tile.setBackground(bg(BLACK,15));
-        TextView value=text("—",30,WHITE,true);value.setGravity(Gravity.CENTER);tile.addView(value);
-        TextView title=text(name,13,MUTED,false);title.setGravity(Gravity.CENTER);tile.addView(title);
-        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(91),1);
-        p.setMargins(dp(3),0,dp(3),0);strip.addView(tile,p);return value;
-    }
-    private void routeLine(LinearLayout body,String title,String address,int color){
-        LinearLayout r=row();TextView dot=text("●",18,color,true);
-        r.addView(dot,new LinearLayout.LayoutParams(dp(26),-2));
-        LinearLayout details=col();details.addView(text(title,12,MUTED,false),mb(4));
-        details.addView(text(address.isEmpty()?"Dirección pendiente":address,18,WHITE,true));
-        r.addView(details,new LinearLayout.LayoutParams(0,-2,1));
-        body.addView(r);
-    }
-    private void metric(LinearLayout parent,String title,String value){
-        LinearLayout block=col();block.addView(text(title,11,MUTED,false),mb(6));
-        TextView v=text(value.isEmpty()?"—":value,18,WHITE,true);v.setMaxLines(2);
-        block.addView(v);parent.addView(block,new LinearLayout.LayoutParams(0,-2,1));
-    }
-    private Button button(String title,int color){
-        Button b=new Button(getContext());b.setText(title);b.setAllCaps(false);
-        b.setTextColor(WHITE);b.setTextSize(TypedValue.COMPLEX_UNIT_SP,16);
+
+    private enum Style {PRIMARY, SECONDARY, UTILITY, OUTLINE, DANGER}
+
+    private Button button(String label,Style style){
+        Button b=new Button(getContext());
+        b.setAllCaps(false);
+        b.setText(label);
+        b.setSingleLine(true);
+        b.setEllipsize(TextUtils.TruncateAt.END);
         b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-        b.setBackground(bg(color,15));b.setMinHeight(0);b.setMinimumHeight(0);
+        b.setTextSize(TypedValue.COMPLEX_UNIT_SP,13);
+        b.setTextColor(style==Style.DANGER?RED:WHITE);
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
+        b.setMinWidth(0);
+        b.setMinimumWidth(0);
+        b.setPadding(dp(7),0,dp(7),0);
+        b.setBackground(style==Style.PRIMARY?
+                outlineSurface(PRIMARY,14,0):
+                style==Style.OUTLINE?outlineSurface(SHELL,14,Color.rgb(76,114,101)):
+                style==Style.DANGER?outlineSurface(UTILITY,14,Color.rgb(122,70,72)):
+                outlineSurface(UTILITY,14,0));
+        b.setElevation(0f);
         return b;
     }
-    private static String number(Integer n){return n==null||n<0?"—":String.format(Locale.ROOT,"%02d",n);}
+
+    private TextView counter(LinearLayout row,String label){
+        LinearLayout tile=col();
+        tile.setGravity(Gravity.CENTER);
+        tile.setBackground(surface(CARD,15));
+        TextView value=text("—",27,WHITE,true);
+        value.setGravity(Gravity.CENTER);
+        value.setIncludeFontPadding(false);
+        tile.addView(value,mb(8));
+        TextView caption=text(label,11,MUTED,false);
+        caption.setGravity(Gravity.CENTER);
+        tile.addView(caption);
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(86),1);
+        p.setMargins(dp(3),0,dp(3),0);
+        row.addView(tile,p);
+        return value;
+    }
+
+    private TextView toggle(Runnable action){
+        TextView t=text("",14,WHITE,true);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setMinHeight(dp(54));
+        t.setPadding(dp(14),dp(9),dp(14),dp(9));
+        t.setBackground(surface(CARD,15));
+        t.setOnClickListener(v->action.run());
+        t.setFocusable(true);
+        return t;
+    }
+    private void setToggle(TextView t,String label,int count,boolean expanded){
+        t.setText(label+"  ("+count+")  "+(expanded?"⌃":"⌄"));
+        t.setContentDescription(label+", "+count+
+                (count==1?" elemento":" elementos")+", "+(expanded?"contraer":"desplegar"));
+    }
+    private void emptySection(LinearLayout parent,String caption){
+        TextView empty=text(caption,12,MUTED,false);
+        empty.setPadding(dp(13),dp(11),dp(13),dp(11));
+        parent.addView(empty);
+    }
+    private void routeLine(LinearLayout parent,String label,String address,int marker,int size){
+        LinearLayout row=row();
+        TextView dot=text("●",15,marker,true);
+        dot.setGravity(Gravity.TOP);
+        row.addView(dot,new LinearLayout.LayoutParams(dp(25),-2));
+        LinearLayout info=col();
+        TextView name=text(label,10,MUTED,true);
+        name.setLetterSpacing(.06f);
+        info.addView(name,mb(3));
+        TextView place=text(address.isEmpty()?"Dirección pendiente":address,size,WHITE,true);
+        place.setLineSpacing(dp(2),1f);
+        info.addView(place);
+        row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+        parent.addView(row);
+    }
+    private void connector(LinearLayout parent){
+        TextView stem=text("│",13,MUTED,false);
+        stem.setPadding(dp(3),dp(1),0,dp(1));
+        parent.addView(stem);
+    }
+    private void metric(LinearLayout row,String name,String value){
+        LinearLayout box=col();
+        TextView label=text(name,10,MUTED,true);
+        box.addView(label,mb(5));
+        TextView number=text(value.isEmpty()?"—":value,16,WHITE,true);
+        number.setMaxLines(2);
+        box.addView(number);
+        row.addView(box,new LinearLayout.LayoutParams(0,-2,1));
+    }
+    private void rule(LinearLayout parent,int above,int below){
+        View line=new View(getContext());
+        line.setBackgroundColor(DIVIDER);
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,dp(1));
+        params.topMargin=dp(above);
+        params.bottomMargin=dp(below);
+        parent.addView(line,params);
+    }
+    private String prettyStatus(String value){
+        if("ACEPTADA".equals(value))return "ACEPTADA";
+        if("EN_VIAJE".equals(value))return "EN VIAJE";
+        if("CONFIRMADA".equals(value))return "CONFIRMADA";
+        if("PENDIENTE".equals(value))return "PENDIENTE";
+        return s(value).replace('_',' ');
+    }
+    private String displayWhen(String value){
+        String clean=s(value);
+        if(clean.length()>=16 && clean.charAt(4)=='-' && clean.charAt(7)=='-'){
+            String day=clean.substring(0,10),hour=clean.substring(11,16);
+            SimpleDateFormat iso=new SimpleDateFormat("yyyy-MM-dd",Locale.ROOT);
+            if(day.equals(iso.format(new Date())))return "Hoy · "+hour;
+            Calendar yesterday=Calendar.getInstance();
+            yesterday.add(Calendar.DAY_OF_YEAR,-1);
+            if(day.equals(iso.format(yesterday.getTime())))return "Ayer · "+hour;
+            return day.substring(8,10)+"/"+day.substring(5,7)+"/"+day.substring(0,4)+" · "+hour;
+        }
+        return clean;
+    }
+    private static String number(Integer n){
+        return n==null||n<0?"—":String.format(Locale.ROOT,"%02d",n);
+    }
+
+    private GradientDrawable surface(int color,int radius){
+        return outlineSurface(color,radius,0);
+    }
+    private GradientDrawable outlineSurface(int color,int radius,int stroke){
+        GradientDrawable d=new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(dp(radius));
+        if(stroke!=0)d.setStroke(dp(1),stroke);
+        return d;
+    }
     private TextView text(String value,int size,int color,boolean bold){
-        TextView t=new TextView(getContext());
-        t.setText(value);t.setTextColor(color);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP,size);
-        if(bold)t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);return t;
+        TextView text=new TextView(getContext());
+        text.setText(value);
+        text.setTextColor(color);
+        text.setTextSize(TypedValue.COMPLEX_UNIT_SP,size);
+        if(bold)text.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+        return text;
     }
-    private LinearLayout col(){LinearLayout v=new LinearLayout(getContext());v.setOrientation(LinearLayout.VERTICAL);return v;}
-    private LinearLayout row(){LinearLayout v=new LinearLayout(getContext());v.setOrientation(LinearLayout.HORIZONTAL);v.setGravity(Gravity.CENTER_VERTICAL);return v;}
-    private GradientDrawable bg(int fill,int radius){
-        GradientDrawable b=new GradientDrawable();b.setColor(fill);b.setCornerRadius(dp(radius));return b;
+    private LinearLayout row(){
+        LinearLayout layout=new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+        layout.setGravity(Gravity.CENTER_VERTICAL);
+        return layout;
     }
-    private LinearLayout.LayoutParams mb(int d){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(d);return p;}
-    private LinearLayout.LayoutParams mt(int d){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(d);return p;}
-    private void gap(LinearLayout parent,int height){parent.addView(new View(getContext()),new LinearLayout.LayoutParams(1,dp(height)));}
-    private int dp(float v){return (int)(getResources().getDisplayMetrics().density*v+0.5f);}
+    private LinearLayout col(){
+        LinearLayout layout=new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        return layout;
+    }
+    private void addEqual(LinearLayout parent,Button button,int height,int start,int end){
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(height),1);
+        p.setMarginStart(dp(start));
+        p.setMarginEnd(dp(end));
+        parent.addView(button,p);
+    }
+    private LinearLayout.LayoutParams fullButton(int height,int top){
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(height));
+        p.topMargin=dp(top);
+        return p;
+    }
+    private LinearLayout.LayoutParams mt(int top){
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
+        p.topMargin=dp(top);
+        return p;
+    }
+    private LinearLayout.LayoutParams mb(int bottom){
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
+        p.bottomMargin=dp(bottom);
+        return p;
+    }
+    private void gap(LinearLayout parent,int height){
+        parent.addView(new View(getContext()),new LinearLayout.LayoutParams(1,dp(height)));
+    }
+    private int dp(float n){
+        return (int)(getResources().getDisplayMetrics().density*n+.5f);
+    }
 }
