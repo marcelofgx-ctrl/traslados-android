@@ -1306,6 +1306,12 @@ function renderBookingSuccess(result,mode="schedule"){
       :"Recogida solicitada para "+result.pickup_time+" h del "+result.pickup_date+".");
   }
   text(box,"p","Podés seguir el estado en Mis traslados. No se realiza ningún cobro al enviar.");
+  if(urgent&&result.code){
+    // Track only this newly created real request: its server decision may
+    // arrive before the first list snapshot, which must not swallow the alert.
+    pendingImmediateWatchCode=String(result.code);
+    void loadTrips({background:true});
+  }
   button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
   for(const id of ["booking-preview","booking-final","review-booking","submit-actions","urgent-actions"])
     $(id).hidden=true;
@@ -1395,6 +1401,7 @@ async function submitBooking(){
 
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null;
+let pendingImmediateWatchCode=null;
 let tripQueryEpoch=0,tripRenderedSignature=null;
 // A 20-second response may arrive after logout/login: discard that old account's result.
 function tripDisplayKey(rows){
@@ -1821,6 +1828,20 @@ async function loadTrips({background=false}={}){
     const nextRenderKey=tripDisplayKey(rows);
     const needsRender=!tripLoaded||nextRenderKey!==tripRenderedSignature;
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
+    if(pendingImmediateWatchCode){
+      const newlySent=rows.find(r=>String(r.code||"")===pendingImmediateWatchCode);
+      if(newlySent){
+        const decision=tripBoard.driverDecision(newlySent);
+        if(decision){
+          // Real response is visible, even if the first poll already sees it.
+          if(!updates.some(x=>x.kind==="decision"&&x.row.id===newlySent.id))
+            updates.unshift({kind:"decision",row:newlySent,decision});
+          pendingImmediateWatchCode=null;
+        }else if(!["PENDIENTE","ACEPTADA","CONFIRMADA"].includes(newlySent.status)){
+          pendingImmediateWatchCode=null;
+        }
+      }
+    }
     tripRows=rows;tripLoaded=true;tripSnap=tripBoard.snapshot(rows);
     tripRenderedSignature=nextRenderKey;
     if(!tripsScopeChosen&&rows.length){
@@ -2196,7 +2217,7 @@ function init(){
     if(!tripLoaded||navigator.onLine===false||document.visibilityState!=="visible")return;
     const inTrips=$("view-viajes")?.classList.contains("active");
     const activeTrip=inTrips&&tripRows.some(r=>!tripBoard.isHistory(r));
-    const cadence=activeTrip?8000:20000;
+    const cadence=pendingImmediateWatchCode?4000:activeTrip?8000:20000;
     if(Date.now()-lastBackgroundTripsCheck<cadence)return;
     lastBackgroundTripsCheck=Date.now();
     void loadTrips({background:true});
