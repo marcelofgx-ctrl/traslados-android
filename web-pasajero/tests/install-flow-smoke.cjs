@@ -15,8 +15,8 @@ assert(!js.slice(start,end).includes("apkLink"));
 assert(!js.slice(start,end).includes("clientApkUrl"));
 assert(html.includes('id="install-guide"')&&html.includes('id="install-copy-link"'));
 const v=Number(html.match(/\.\/app\.js\?v=(\d+)/)?.[1]);
-assert.equal(v,82);
-assert(sw.includes("traslados-pwa-v"+v),"PWA cache matches frontend version");
+assert.equal(v,83);
+assert(sw.includes("traslados-pwa-v82-quicktrip-warm-notice-v83-20261023"),"PWA cache changes with UI while retaining original booking engine");
 function setup({standalone=false,agent="Mozilla/5.0 (Linux; Android 16) Chrome/140"}={}){
   const events={},el={},steps=[];
   let copied="",view="",downloads=0;
