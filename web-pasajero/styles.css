@@ -2351,3 +2351,66 @@ body.trip-chat-modal-open{overflow:hidden}
   #booking-success.success{padding:18px 13px}
   #booking-success.success .success-receipt{padding:13px}
 }
+
+
+/* V83: structural fallback for Quick Trip V7 on a mobile PWA.
+   These rules do NOT depend on body.qt-clean and prevent enormous
+   intrinsic SVGs, native unstyled history and a word-by-word back button.
+   quicktrip-clean.css loads after this file and remains the design owner. */
+#view-viaje .qtc-app,
+#view-viaje .qtc-app .qtc-header,
+#view-viaje .qtc-app .qtc-brand,
+#view-viaje .qtc-app .qtc-content{
+  min-width:0;max-width:100%;box-sizing:border-box;
+}
+#view-viaje .qtc-app .qtc-brand{
+  display:flex;align-items:center;gap:10px;
+}
+#view-viaje .qtc-app .qtc-back-slot{
+  flex:0 0 38px;width:38px;min-width:38px;max-width:38px;
+}
+#view-viaje .qtc-app .qtc-back-slot .journey-back{
+  display:grid;place-items:center;
+  width:38px;min-width:38px;max-width:38px;height:38px;min-height:38px;
+  padding:0;overflow:hidden;white-space:nowrap;
+  border-radius:11px;font-size:0;line-height:1;
+  border:1px solid rgba(236,209,153,.5);
+  background:#123e45;color:#f0d293;
+}
+#view-viaje .qtc-app .qtc-back-slot .journey-back::before{
+  content:"‹";font:normal 27px/1 system-ui,sans-serif;
+}
+#view-viaje .qtc-app img.qtc-logo{
+  display:block;flex:0 1 168px;
+  width:168px;max-width:calc(100% - 48px);
+  height:46px;max-height:46px;object-fit:contain;
+  object-position:left center;
+}
+#view-viaje .qtc-app .qtc-history-button{
+  appearance:none;display:inline-flex;align-items:center;gap:5px;
+  min-width:0;max-width:calc(100% - 48px);width:auto;min-height:29px;
+  padding:4px 10px;margin:3px 0 5px;
+  border:1px solid rgba(236,209,153,.68);border-radius:18px;
+  background:#10363c;color:#f1d49f;
+  font-size:11px;line-height:1.2;font-weight:700;white-space:nowrap;
+  box-shadow:none;
+}
+#view-viaje .qtc-app .qtc-history-panel[hidden]{display:none!important}
+body.qt-clean.qt-clean-active #view-viaje .qtc-app{
+  width:100%;max-width:620px;margin:0 auto;
+}
+body.qt-clean.qt-clean-active #view-viaje>.journey-hero,
+body.qt-clean.qt-clean-active #view-viaje>.journey-when-compact{
+  display:none!important;
+}
+body.qt-clean.qt-clean-active>.header,
+body.qt-clean.qt-clean-active .shell>.tabs{
+  display:none!important;
+}
+@media(max-width:520px){
+  #view-viaje .qtc-app .qtc-header{min-width:0;overflow:hidden}
+  #view-viaje .qtc-app .qtc-places,
+  #view-viaje .qtc-app .qtc-places .booking-step-card{
+    min-width:0;max-width:100%;
+  }
+}
