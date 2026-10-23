@@ -122,6 +122,20 @@ jobs:
           grep -q 'TransferAlerts.decideFixed' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
           grep -q 'Api.listHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
           ! grep -q 'sample-only' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
+      - name: Conductor R25.35 scheduled quote and trip operations regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mapa-conductor-operations
+          javac -d /tmp/mapa-conductor-operations \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorOperationsPolicy.java \
+            mapatrayectos/tests/ConductorOperationsPolicyTest.java
+          java -cp /tmp/mapa-conductor-operations ConductorOperationsPolicyTest
+          grep -q 'Api.sendQuoteV107' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java
+          grep -q 'Api.checkRouteFitV114' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorQuoteDialog.java
+          grep -q 'Api.setStatus' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java
+          grep -q 'TripTelemetryService.ACTION_ABORT' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java
+          grep -q 'TripTelemetryService.ACTION_STOP' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java
       - name: Passenger chat integration regression
         shell: bash
         run: |

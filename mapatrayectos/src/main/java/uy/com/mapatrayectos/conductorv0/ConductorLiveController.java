@@ -29,6 +29,8 @@ import uy.com.mapatrayectos.TransferAlerts;
 public final class ConductorLiveController implements ConductorLiveView.Listener {
     private final Activity activity;
     private final ConductorLiveView view;
+    private final ConductorTripActions trips;
+    private final ConductorQuoteDialog quotes;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ArrayList<JSONObject> pending=new ArrayList<>();
     private final HashSet<String> locallyConfirmed=new HashSet<>();
@@ -48,6 +50,24 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     };
     public ConductorLiveController(Activity a,ConductorLiveView v){
         activity=a;view=v;view.setListener(this);
+        trips=new ConductorTripActions(a,new ConductorTripActions.Callback(){
+            @Override public void working(boolean active){
+                busy=active;
+                view.setBusy(active);
+            }
+            @Override public void finished(boolean success,String message){
+                view.setFeedback(message,success);
+                if(success) {
+                    playTone(true);
+                    TransferAlerts.refreshAsync(activity);
+                    loadHistory();
+                }
+            }
+        });
+        quotes=new ConductorQuoteDialog(a,(success,message)->{
+            if(message!=null&&!message.isEmpty())view.setFeedback(message,success);
+            if(success){playTone(true);TransferAlerts.refreshAsync(activity);}
+        });
     }
     public void open(boolean shiftActive){
         open=true;
@@ -181,7 +201,10 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
             r.optString("origin_text"),r.optString("destination_text"),
             r.optString("status"),r.optString("pickup_phase"),
             r.optString("pickup_date")+" "+r.optString("pickup_time"),
-            amount>0?String.format(Locale.US,"$ %.0f UYU",amount):"");
+            amount>0?String.format(Locale.US,"$ %.0f UYU",amount):"",
+            r.optString("pickup_mode"),r.optString("fare_mode"),
+            r.optString("quote_status"),r.optDouble("route_distance_km",0),
+            r.optInt("route_duration_min",0));
     }
     private void loadHistory(){
         if(historyLoading||!open)return;
@@ -277,6 +300,65 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
                 if(done){playTone(true);TransferAlerts.refreshAsync(activity);}
             });
         },"quicktrip-live-pickup").start();
+    }
+    @Override public void onPrepareQuote(String id){
+        if(busy)return;
+        quotes.show(id);
+    }
+    @Override public void onRejectScheduled(String id){
+        if(busy||!ConductorLivePolicy.safeId(id))return;
+        new android.app.AlertDialog.Builder(activity)
+            .setTitle("Rechazar viaje programado")
+            .setMessage("¿Confirmás que querés rechazar esta solicitud? El pasajero verá el estado actualizado.")
+            .setNegativeButton("Volver",null)
+            .setPositiveButton("Rechazar",(d,w)->{
+                if(busy)return;
+                final String credential=DriverIdentity.pin(activity);
+                if(credential.isEmpty()){
+                    view.setFeedback("Conductor sin vinculación.",false);return;
+                }
+                busy=true;view.setBusy(true);
+                new Thread(()->{
+                    boolean confirmed=false;
+                    String response="El servidor no confirmó el rechazo.";
+                    try{
+                        JSONArray live=uy.com.traslados.conductor.Api.listActive(credential);
+                        JSONObject booking=null;
+                        for(int i=0;i<live.length();i++){
+                            JSONObject row=live.optJSONObject(i);
+                            if(row!=null && id.equals(row.optString("id"))){booking=row;break;}
+                        }
+                        if(booking==null || !"PENDIENTE".equals(booking.optString("status")) ||
+                            !"schedule".equals(booking.optString("pickup_mode")))
+                            throw new IllegalStateException("La solicitud ya no está pendiente.");
+                        JSONObject reply=uy.com.traslados.conductor.Api.setStatus(credential,id,"RECHAZADA");
+                        confirmed=id.equals(reply.optString("id")) &&
+                            "RECHAZADA".equals(reply.optString("status"));
+                        if(confirmed)response="Solicitud programada rechazada y confirmada.";
+                    }catch(Exception error){
+                        response=error instanceof IllegalStateException?error.getMessage():
+                            uy.com.traslados.conductor.Api.publicMessage("reject",error);
+                    }
+                    final boolean success=confirmed;
+                    final String message=response;
+                    main.post(()->{
+                        busy=false;view.setBusy(false);
+                        if(!activity.isFinishing()&&!activity.isDestroyed()){
+                            view.setFeedback(message,success);
+                            if(success){playTone(false);loadHistory();}
+                        }
+                        TransferAlerts.refreshAsync(activity);
+                    });
+                },"quicktrip-reject-schedule").start();
+            }).show();
+    }
+    @Override public void onStartTrip(String id){
+        if(busy)return;
+        trips.request(id,false);
+    }
+    @Override public void onFinishTrip(String id){
+        if(busy)return;
+        trips.request(id,true);
     }
     @Override public void onCall(String phone){
         if(phone==null||phone.isEmpty())return;
