@@ -153,11 +153,13 @@ public class MainActivity extends Activity {
      */
     private void showIncomingRequestInConductor(){
         if(conductorV0==null||isFinishing()||isDestroyed())return;
-        if(!getSharedPreferences("bubble_state",MODE_PRIVATE).getBoolean("ui_visible",false))return;
-        if(DriverIdentity.pin(this).isEmpty())return;
-        // Scheduled quotes have their own workflow; auto-focus only immediate fixed fare.
-        if(TransferAlerts.lastActionableFixed(this)==null){
-            TransferAlerts.refreshAsync(this);
+        boolean visible=getSharedPreferences("bubble_state",MODE_PRIVATE)
+            .getBoolean("ui_visible",false);
+        boolean linked=!DriverIdentity.pin(this).isEmpty();
+        boolean immediate=TransferAlerts.lastActionableFixed(this)!=null;
+        if(!uy.com.mapatrayectos.conductorv0.ConductorIncomingPolicy
+            .openForegroundPanel(visible,linked,immediate)){
+            if(visible&&linked&&!immediate)TransferAlerts.refreshAsync(this);
             return;
         }
         hideInAppTransfer(false);
@@ -177,9 +179,10 @@ public class MainActivity extends Activity {
             android.os.Vibrator vibrator=
                 (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
             if(vibrator==null||!vibrator.hasVibrator())return;
-            // Three prolonged, separated pulses. One ACTION_NEW is deduplicated
-            // per reservation in TransferAlerts.reportNew.
-            long[] pattern=new long[]{0,360,180,360,180,360};
+            // Three prolonged pulses, tested separately and deduplicated by
+            // TransferAlerts.reportNew once per reservation.
+            long[] pattern=uy.com.mapatrayectos.conductorv0
+                .ConductorIncomingPolicy.incomingPattern();
             if(Build.VERSION.SDK_INT>=26)
                 vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern,-1));
             else vibrator.vibrate(pattern,-1);
