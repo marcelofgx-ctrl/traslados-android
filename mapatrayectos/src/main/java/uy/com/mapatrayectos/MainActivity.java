@@ -2051,6 +2051,7 @@ public class MainActivity extends Activity {
             registerReceiver(transferReceiver,transfers);
         }
         updateTransferBadge();
+        if(conductorV0!=null)conductorV0.onHostResume();
         TransferAlerts.ensureMonitor(this);
         uiHandler.removeCallbacks(transferReceptionTick);
         uiHandler.post(transferReceptionTick);
@@ -2063,7 +2064,7 @@ public class MainActivity extends Activity {
         else stopService(new Intent(this,TrackingService.class));
         startPreview();}if(historyOpen&&historySheet!=null)historySheet.reload();refreshPlatformBadge();updateUi();
         scheduleBubblePermissionCheck();}
-    @Override protected void onPause(){uiHandler.removeCallbacks(offerDriverLinkOnce);uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
+    @Override protected void onPause(){if(conductorV0!=null)conductorV0.onHostPause();uiHandler.removeCallbacks(offerDriverLinkOnce);uiHandler.removeCallbacks(transferReceptionTick);uiHandler.removeCallbacks(checkBubblePermission);getSharedPreferences("bubble_state",MODE_PRIVATE).edit().putBoolean("ui_visible",false).apply();if(!mapCloseRequested)sendUiSignal(TrackingService.ACTION_UI_HIDDEN);try{unregisterReceiver(stateReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(reminderReceiver);}catch(Exception ignored){}
         try{unregisterReceiver(transferReceiver);}catch(Exception ignored){}
         hideInAppReminder(false);hideInAppTransfer(false);
@@ -2071,7 +2072,7 @@ public class MainActivity extends Activity {
     @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
-    @Override protected void onDestroy(){uiHandler.removeCallbacksAndMessages(null);if(mapView!=null)mapView.onDestroy();super.onDestroy();}
+    @Override protected void onDestroy(){if(conductorV0!=null)conductorV0.dispose();uiHandler.removeCallbacksAndMessages(null);if(mapView!=null)mapView.onDestroy();super.onDestroy();}
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);}
     @Override public void onBackPressed(){if(conductorV0!=null&&conductorV0.handleBack())return;super.onBackPressed();}
 
