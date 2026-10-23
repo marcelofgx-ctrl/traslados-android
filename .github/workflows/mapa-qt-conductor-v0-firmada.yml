@@ -56,7 +56,8 @@ jobs:
           assert 'Api.setStatus' in trip and 'TripTelemetryService.ACTION_STOP' in trip
           assert 'TripTelemetryService.ACTION_ABORT' in trip and 'Api.listActive' in trip
           assert 'onPrepareQuote' in live and 'onFinishTrip' in live
-          assert 'ConductorOperationsPolicy.canQuote' in ops
+          assert 'boolean canQuote(' in ops
+          assert 'ConductorOperationsPolicy.canQuote(' in visual
           assert 'versionCode 88' in Path('mapatrayectos/build.gradle').read_text()
           assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
           print('PASS Mapa QT authenticated Conductor UI; no second APK')
