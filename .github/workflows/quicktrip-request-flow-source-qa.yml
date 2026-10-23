@@ -40,11 +40,14 @@ jobs:
           }
           unexpected=changed-allowed
           assert allowed.issubset(changed),('expected files missing',allowed-changed)
-          assert all(p.startswith('web-pasajero/tests/') and p.endswith('-smoke.cjs')
-                     for p in unexpected),('unexpected changes outside QA',unexpected)
+          assert all(
+              p in ('mapatrayectos/build.gradle',
+                    '.github/workflows/mapa-qt-conductor-v0-firmada.yml')
+              or (p.startswith('web-pasajero/tests/') and p.endswith('-smoke.cjs'))
+              for p in unexpected),('unexpected changes outside QA',unexpected)
           gradle=Path('mapatrayectos/build.gradle').read_text()
           assert "applicationId 'uy.com.mapatrayectos'" in gradle
-          assert 'versionCode 90' in gradle
+          assert 'versionCode 91' in gradle
           alert=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java').read_text()
           assert 'showIncomingRequestInConductor();' in alert
           assert 'ConductorIncomingPolicy.incomingPattern()' in alert
@@ -65,7 +68,7 @@ jobs:
                          'mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java',
                          'web-pasajero/rpc-client.js','web-pasajero/booking-contracts.js']:
               assert stable not in changed,'Stable engine changed '+stable
-          print('PASS: signed version unchanged; only delivery and UI; stable engines preserved')
+          print('PASS: R25.38 version 91; delivery/UI changes only; stable engines preserved')
           PY
       - uses: actions/setup-node@v4
         with:
