@@ -3,7 +3,10 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const root=path.join(__dirname,"..");
 const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const win={};
-vm.runInNewContext(read("trip-board.js"),{window:win,Map,Set,Date,String,Array,Number});
+// Keep this fixed historical fixture independent of today's clock; the
+// production expiry logic is intentionally unchanged.
+class TestDate extends Date {static now(){return Date.parse("2026-10-20T12:00:00Z");}}
+vm.runInNewContext(read("trip-board.js"),{window:win,Map,Set,Date:TestDate,String,Array,Number});
 const board=win.TrasladosTripBoard;
 const rows=[
 {id:"a",code:"TR-A",pickup_date:"2026-10-23",pickup_time:"08:00:00",status:"PENDIENTE",quote_status:"SIN_PRESUPUESTO",created_at:"2026-10-01T12:00:00Z"},
