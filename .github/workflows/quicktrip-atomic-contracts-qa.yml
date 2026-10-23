@@ -1,0 +1,29 @@
+name: Quick Trip - Atomic Capacity Draft QA (NO APK NO DB)
+on:
+  push:
+    branches: [feat/quicktrip-capacidad-atomica-gps-contratos-qa-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify strict scope, no APK or production changes
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          base='fix/conductor-capacidad-compacta-qa-20261023'
+          changed=set(subprocess.check_output(['git','diff','--name-only','origin/'+base+'...HEAD'],text=True).splitlines())
+          assert changed and all(x.startswith('qa/quicktrip-capacity/') or x=='.github/workflows/quicktrip-atomic-contracts-qa.yml' for x in changed), changed
+          assert not any(x.endswith(('.apk','.aab')) for x in changed)
+          print('PASS: only isolated fictitious tests, drafts, GPS contract and rollback')
+          PY
+      - name: Run fictitious serialized acceptance simulation
+        run: python3 -m unittest discover -s qa/quicktrip-capacity -p 'test_*.py' -v
+      - name: Ensure migration is NOT applied
+        run: |
+          echo 'No Supabase connection. No PostgreSQL DDL. No APK. No merge or deployment.' >> "$GITHUB_STEP_SUMMARY"
