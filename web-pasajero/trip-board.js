@@ -152,10 +152,16 @@
       result:"rejected",title:"Tu solicitud fue rechazada",
       label:"RECHAZADA",description:"El conductor rechazó esta solicitud."
     };
-    if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(s))return {
-      result:"accepted",title:"¡Tu solicitud fue aceptada!",
-      label:"ACEPTADA",description:"El conductor aceptó el viaje solicitado."
-    };
+    if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(s)){
+      const immediate=isImmediateRequest(row);
+      return {
+        result:"accepted",
+        title:immediate?"¡Tu solicitud fue aceptada!":"Tu traslado está confirmado",
+        label:immediate?"ACEPTADA":"CONFIRMADA",
+        description:immediate?"El conductor aceptó el viaje solicitado.":
+          "La reserva fue confirmada. Consultá los detalles del traslado."
+      };
+    }
     return null;
   }
   function notifications(previous,items){
@@ -170,7 +176,7 @@
       // Decisions take precedence over chat/phase notifications so passengers
       // immediately see ACCEPTED vs REJECTED, not a generic status update.
       const decision=driverDecision(r);
-      if(decision&&p.status!==r.status){
+      if(decision&&p.status==="PENDIENTE"&&r.status!=="PENDIENTE"){
         changed.push({kind:"decision",row:r,decision});
         continue;
       }
