@@ -129,7 +129,7 @@ public final class ConductorLiveView extends FrameLayout {
         LinearLayout brand=col();
         TextView kicker=text("QUICK TRIP",11,GOLD,true);
         kicker.setLetterSpacing(.19f);
-        brand.addView(kicker,mb(5));
+        brand.addView(kicker,bottom(5));
         brand.addView(text("Conductor",27,WHITE,true));
         brandRow.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
         shiftBadge=text("●  Jornada detenida",11,MUTED,true);
@@ -138,14 +138,14 @@ public final class ConductorLiveView extends FrameLayout {
         shiftBadge.setPadding(dp(11),dp(8),dp(11),dp(8));
         shiftBadge.setBackground(shape(CARD_DEEP,50,STROKE));
         brandRow.addView(shiftBadge,new LinearLayout.LayoutParams(-2,-2));
-        root.addView(brandRow,mb(21));
+        root.addView(brandRow,bottom(21));
 
         // Three small stats, never fabricated earnings or fake trip counts.
         LinearLayout stats=row();
         countNew=stat(stats,"NUEVAS");
         countAccepted=stat(stats,"ACEPTADAS");
         countInJourney=stat(stats,"EN VIAJE");
-        root.addView(stats,mb(16));
+        root.addView(stats,bottom(16));
 
         LinearLayout monitor=row();
         TextView dot=text("●",13,GREEN,true);
@@ -161,40 +161,40 @@ public final class ConductorLiveView extends FrameLayout {
         LinearLayout.LayoutParams refreshLp=new LinearLayout.LayoutParams(dp(44),dp(40));
         refreshLp.leftMargin=dp(8);
         monitor.addView(refresh,refreshLp);
-        root.addView(monitor,mb(16));
+        root.addView(monitor,bottom(16));
 
         requestBody=col();
         requestBody.setPadding(dp(16),dp(16),dp(16),dp(16));
         requestBody.setBackground(shape(CARD,20,STROKE));
-        root.addView(requestBody,mb(12));
+        root.addView(requestBody,bottom(12));
 
         feedbackText=text("",12,WHITE,true);
         feedbackText.setGravity(Gravity.CENTER_VERTICAL);
         feedbackText.setPadding(dp(13),dp(11),dp(13),dp(11));
         feedbackText.setBackground(shape(CARD_DEEP,12,STROKE));
         feedbackText.setVisibility(View.GONE);
-        root.addView(feedbackText,mb(11));
+        root.addView(feedbackText,bottom(11));
 
         activeToggle=section("Aceptadas y en curso",()->{
             activeOpen=!activeOpen;renderActive();
         });
-        root.addView(activeToggle,mb(7));
+        root.addView(activeToggle,bottom(7));
         activeBody=col();
-        root.addView(activeBody,mb(13));
+        root.addView(activeBody,bottom(13));
 
         scheduledToggle=section("Programadas / presupuesto",()->{
             scheduledOpen=!scheduledOpen;renderScheduled();
         });
-        root.addView(scheduledToggle,mb(7));
+        root.addView(scheduledToggle,bottom(7));
         scheduledBody=col();
-        root.addView(scheduledBody,mb(13));
+        root.addView(scheduledBody,bottom(13));
 
         historyToggle=section("Histórico de peticiones",()->{
             historyOpen=!historyOpen;renderHistory();
         });
-        root.addView(historyToggle,mb(7));
+        root.addView(historyToggle,bottom(7));
         historyBody=col();
-        root.addView(historyBody,mb(10));
+        root.addView(historyBody,bottom(10));
 
         TextView gesture=text("Deslizá a la derecha para volver a Mapa",11,MUTED,false);
         gesture.setGravity(Gravity.CENTER);
@@ -264,7 +264,7 @@ public final class ConductorLiveView extends FrameLayout {
             heading.addView(icon,new LinearLayout.LayoutParams(dp(30),-2));
             heading.addView(text("Todo al día",16,WHITE,true),
                     new LinearLayout.LayoutParams(0,-2,1));
-            requestBody.addView(heading,mb(4));
+            requestBody.addView(heading,bottom(4));
             TextView note=text("Sin solicitudes inmediatas por atender.",12,MUTED,false);
             note.setPadding(dp(30),0,0,0);
             requestBody.addView(note);
@@ -276,9 +276,9 @@ public final class ConductorLiveView extends FrameLayout {
         header.addView(label,new LinearLayout.LayoutParams(0,-2,1));
         header.addView(pill(total>1?(index+1)+" DE "+total:"INMEDIATO",
                 GREEN,Color.rgb(28,65,53)),new LinearLayout.LayoutParams(-2,-2));
-        requestBody.addView(header,mb(8));
+        requestBody.addView(header,bottom(8));
         if(!r.code.isEmpty())
-            requestBody.addView(text(r.code,11,GOLD,true),mb(11));
+            requestBody.addView(text(r.code,11,GOLD,true),bottom(11));
         route(requestBody,"RECOGIDA",r.origin,GREEN,16);
         rail(requestBody);
         route(requestBody,"DESTINO",r.destination,GOLD,16);
@@ -288,9 +288,9 @@ public final class ConductorLiveView extends FrameLayout {
         metric(metrics,"DISTANCIA",r.distance);
         metric(metrics,"TIEMPO",r.duration);
         metric(metrics,"PRECIO",r.amount);
-        requestBody.addView(metrics,mb(13));
+        requestBody.addView(metrics,bottom(13));
         if(!r.customer.isEmpty())
-            requestBody.addView(text("Pasajero · "+r.customer,12,MUTED,false),mb(12));
+            requestBody.addView(text("Pasajero · "+r.customer,12,MUTED,false),bottom(12));
 
         LinearLayout decisions=row();
         Button reject=button(busy?"Procesando…":"Rechazar",Action.OUTLINE);
