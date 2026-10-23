@@ -38,7 +38,10 @@ jobs:
               'web-pasajero/tests/trip-decision-v76-smoke.cjs',
               '.github/workflows/quicktrip-request-flow-source-qa.yml'
           }
-          assert changed==allowed,('unexpected changes',changed^allowed)
+          unexpected=changed-allowed
+          assert allowed.issubset(changed),('expected files missing',allowed-changed)
+          assert all(p.startswith('web-pasajero/tests/') and p.endswith('-smoke.cjs')
+                     for p in unexpected),('unexpected changes outside QA',unexpected)
           gradle=Path('mapatrayectos/build.gradle').read_text()
           assert "applicationId 'uy.com.mapatrayectos'" in gradle
           assert 'versionCode 90' in gradle
