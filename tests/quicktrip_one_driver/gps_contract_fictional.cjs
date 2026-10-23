@@ -22,6 +22,9 @@ function deny(fn,ctx,position,reason){
 }
 assert.equal(active("ACEPTADA","EN_CAMINO"),true);
 assert.equal(active("ACEPTADA","EN_PUNTO"),true);
+assert.equal(active("ACEPTADA_CLIENTE","EN_CAMINO"),true);
+assert.equal(active("CONFIRMADA","EN_PUNTO"),true);
+assert.equal(active("CONFIRMADA","SIN_INICIAR"),false);
 assert.equal(active("EN_VIAJE","SIN_INICIAR"),true);
 assert.equal(active("ACEPTADA","SIN_INICIAR"),false);
 assert.equal(active("FINALIZADA","EN_CAMINO"),false);

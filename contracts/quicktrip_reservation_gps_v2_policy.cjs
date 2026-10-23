@@ -5,7 +5,8 @@
  * Real authorization must happen in Postgres, not in browser or Android JS.
  */
 const active=(status,phase)=>status==="EN_VIAJE"||
-  (status==="ACEPTADA"&&["EN_CAMINO","EN_PUNTO"].includes(phase));
+  (["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA"].includes(status)&&
+   ["EN_CAMINO","EN_PUNTO"].includes(phase));
 const invalid=(reason,phase)=>Object.freeze({
   available:false,reason,...(phase?{phase}:{})
 });

@@ -34,6 +34,8 @@ expect_unique_error "UPDATE public.reservations SET status='ACEPTADA' WHERE code
 wait "$first_pid" || { cat /tmp/qt_first.log; exit 4; }
 check "SELECT count(*) FROM public.reservations WHERE pickup_mode='now' AND status='ACEPTADA';" "1"
 check "SELECT status::text FROM public.reservations WHERE code='FAKE-IMMEDIATE-B';" "PENDIENTE"
+expect_unique_error "UPDATE public.reservations SET status='CONFIRMADA' WHERE code='FAKE-IMMEDIATE-B';"
+expect_unique_error "UPDATE public.reservations SET status='ACEPTADA_CLIENTE' WHERE code='FAKE-IMMEDIATE-B';"
 
 # Idempotence: re-confirming the same accepted row does not occupy a new slot.
 run "UPDATE public.reservations SET status='ACEPTADA' WHERE code='FAKE-IMMEDIATE-A';" >/dev/null
