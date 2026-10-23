@@ -110,7 +110,7 @@ def rollback_test():
     update(22,"status='FINALIZADA'")   # fictitious data only
     execute(draft)
     assert scalar("SELECT to_regclass('qa_capacity.qt_one_active_service_uq') IS NOT NULL")=="t"
-    assert scalar(f"SELECT count(*) FROM {SCHEMA}")==initial+"".join([]) if False else True
+    assert scalar(f"SELECT count(*) FROM {SCHEMA}")=="2", "Rollback/reinstall must preserve all synthetic rows"
     print("PASS: no-data-loss rollback, duplicate detection, safe index restoration")
 
 if __name__=="__main__":
