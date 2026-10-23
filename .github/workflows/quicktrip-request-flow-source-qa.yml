@@ -1,0 +1,96 @@
+name: Quick Trip Request Focus and Passenger Decision - source-only QA (NO APK)
+on:
+  push:
+    branches: [feat/quicktrip-solicitudes-focus-y-estado-pasajero-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Protect engine boundary, release identity and foreground contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base='a629002a5e5b794029a78d5d60254a1d461791a0'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+              'conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorIncomingPolicy.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java',
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java',
+              'mapatrayectos/tests/ConductorIncomingPolicyTest.java',
+              'web-pasajero/app.js','web-pasajero/index.html','web-pasajero/styles.css',
+              'web-pasajero/sw.js','web-pasajero/trip-board.js',
+              'web-pasajero/tests/trip-board-v50-smoke.cjs',
+              'web-pasajero/tests/trip-phase-v51-smoke.cjs',
+              'web-pasajero/tests/trip-decision-v76-smoke.cjs',
+              '.github/workflows/quicktrip-request-flow-source-qa.yml'
+          }
+          assert changed==allowed,('unexpected changes',changed^allowed)
+          gradle=Path('mapatrayectos/build.gradle').read_text()
+          assert "applicationId 'uy.com.mapatrayectos'" in gradle
+          assert 'versionCode 90' in gradle
+          alert=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java').read_text()
+          assert 'showIncomingRequestInConductor();' in alert
+          assert 'ConductorIncomingPolicy.incomingPattern()' in alert
+          assert 'onNewIntent(Intent intent)' in alert
+          assert 'showInAppTransfer();' not in alert,'No foreground map decision overlay'
+          controller=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java').read_text()
+          assert 'if(onConfirmedImmediateDecision!=null)onConfirmedImmediateDecision.run()' in controller
+          assert 'TransferAlerts.decideFixed(activity,id,accepted' in controller
+          nav=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java').read_text()
+          assert 'live.setOnConfirmedImmediateDecision(this::close)' in nav
+          tracking=Path('mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java').read_text()
+          assert 'if(!appVisible&&bubbleView!=null)showTransferCallout();' in tracking
+          assert 'if(appVisible||getSharedPreferences("bubble_state",MODE_PRIVATE)' in tracking
+          driver=Path('conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java').read_text()
+          assert 'new Intent(this,uy.com.mapatrayectos.MainActivity.class)' in driver
+          for stable in ['mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java',
+                         'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorTripActions.java',
+                         'mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java',
+                         'web-pasajero/rpc-client.js','web-pasajero/booking-contracts.js']:
+              assert stable not in changed,'Stable engine changed '+stable
+          print('PASS: signed version unchanged; only delivery and UI; stable engines preserved')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/trip-board.js
+          node --check web-pasajero/app.js
+          node --check web-pasajero/sw.js
+      - name: All passenger web smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in web-pasajero/tests/*.cjs; do
+            echo "TEST $script"
+            node "$script"
+          done
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Foreground, haptics, and server-confirmed decision Java regression only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qt-incoming-policy
+          javac -d /tmp/qt-incoming-policy             mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorIncomingPolicy.java             mapatrayectos/tests/ConductorIncomingPolicyTest.java
+          java -cp /tmp/qt-incoming-policy ConductorIncomingPolicyTest
+          echo 'PASS: source-only QA. No debug or signed APK was built.' >> "$GITHUB_STEP_SUMMARY"
