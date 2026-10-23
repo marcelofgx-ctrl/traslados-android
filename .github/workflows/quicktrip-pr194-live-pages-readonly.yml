@@ -1,0 +1,56 @@
+name: Quick Trip PR194 - verify actual public GitHub Pages (READ ONLY)
+on:
+  push:
+    branches: [qa/quicktrip-pr194-live-pages-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch production URLs until GitHub Pages propagates, no writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero"
+          mkdir -p /tmp/pr194-live
+          for attempt in $(seq 1 18); do
+            echo "Public read-only HTTP check: attempt ${attempt}"
+            ok=1
+            for path in index.html app.js styles.css sw.js quicktrip-clean.js; do
+              if ! curl --fail --silent --show-error --location --max-time 16 \
+                 --header 'Cache-Control: no-cache' \
+                 "${BASE}/${path}?pr194check=${GITHUB_RUN_ID}-${attempt}" \
+                 -o "/tmp/pr194-live/${path}"; then
+                ok=0
+                break
+              fi
+            done
+            if [[ "$ok" == 1 ]] &&
+               grep -Fq 'app.js?v=83' /tmp/pr194-live/index.html &&
+               grep -Fq 'styles.css?v=83' /tmp/pr194-live/index.html &&
+               grep -Fq 'id="trip-alert-eyebrow"' /tmp/pr194-live/index.html &&
+               grep -Fq 'traslados-pwa-v82-quicktrip-warm-notice-v83-20261023' /tmp/pr194-live/sw.js &&
+               grep -Fq '¡Tu viaje fue aceptado!' /tmp/pr194-live/app.js &&
+               grep -Fq 'function tripNoticeAppearance(change)' /tmp/pr194-live/app.js &&
+               grep -Fq '@keyframes qt-trip-arrive' /tmp/pr194-live/styles.css &&
+               grep -Fq 'width="168" height="46"' /tmp/pr194-live/quicktrip-clean.js &&
+               grep -Fq 'customer_create_reservation_v12' /tmp/pr194-live/app.js; then
+              echo "PASS public URL serves PR194 live visual + warm notice, v83 cache, and unchanged booking contract"
+              sha256sum /tmp/pr194-live/{index.html,app.js,styles.css,sw.js,quicktrip-clean.js}
+              curl --fail --silent --show-error --location --max-time 16 \
+                "${BASE}/?pr194check=${GITHUB_RUN_ID}-final" -o /tmp/pr194-live/public-root.html
+              grep -Fq 'app.js?v=83' /tmp/pr194-live/public-root.html
+              echo "PASS canonical passenger root is also updated"
+              exit 0
+            fi
+            if [ "$attempt" -ne 18 ]; then sleep 12; fi
+          done
+          echo "::error::GitHub Pages did not serve the published PR194 release with coherent assets in the verification window"
+          exit 1
+      - name: Verification scope guard
+        shell: bash
+        run: |
+          echo "READ ONLY. No database access, booking requests, APKs, commits to main, or mail cleanup."
