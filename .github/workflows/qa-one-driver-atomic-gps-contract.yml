@@ -1,0 +1,64 @@
+name: Quick Trip - Atomic Single Driver and GPS Contract Offline QA
+on:
+  push:
+    branches: [feat/quicktrip-one-driver-atomic-gps-contract-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fictional-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: qt_fictional
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: offline_dummy_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d qt_fictional"
+          --health-interval 5s --health-timeout 4s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: offline_dummy_only
+      PGDATABASE: qt_fictional
+      QT_EPHEMERAL_POSTGRES_ONLY: YES_FAKE_DATA
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enforce source-only branch scope
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          names=subprocess.check_output(['git','diff','--name-only',
+            'origin/fix/conductor-capacidad-compacta-qa-20261023..HEAD'],text=True).splitlines()
+          assert all(x.startswith(('proposals/quicktrip_single_driver_v1/',
+                                   'contracts/','tests/quicktrip_one_driver/'))
+                  or x in ('.github/workflows/qa-one-driver-atomic-gps-contract.yml',
+                           'DRAFT_QUICKTRIP_ONE_DRIVER.md') for x in names),names
+          print('PASS: only offline SQL proposals and fictional tests')
+          PY
+      - name: Run PostgreSQL 16 fictional race and rollback
+        run: |
+          set -euo pipefail
+          command -v psql || (sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client)
+          bash tests/quicktrip_one_driver/run_postgres_fictional.sh
+      - name: Run fictional GPS privacy tests
+        run: |
+          node --check contracts/quicktrip_reservation_gps_v2_policy.cjs
+          node tests/quicktrip_one_driver/gps_contract_fictional.cjs
+      - name: Verify no APK or deployment was produced
+        run: |
+          git diff --exit-code
+          echo "PASS: fictional DB only. No APK, merge, Supabase deployment, or web publication."
