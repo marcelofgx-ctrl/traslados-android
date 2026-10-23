@@ -44,3 +44,9 @@ El control de solo lectura confirmó dos viajes con `pickup_mode='now'`, `status
 - Proyecto actual: **un** conductor. Si se suman conductores, el índice global no sirve; deberá existir una clave de conductor inmutable, siempre presente y validada (hoy `driver_id` puede ser NULL). No cambiar ese modelo ahora.
 - Los RPC SECURITY DEFINER requieren control explícito de permisos: no crear funciones expuestas nuevas para saltar RLS. No cambiar grants en producción sin auditoría.
 - Probar el mapeo de `23505` a un motivo entendible antes de instalar el índice; no reemplazarlo por “revisá la conexión”.
+
+
+## Auditoría de permisos (solo lectura; 23/10/2026)
+`has_function_privilege` confirma que tanto `anon` como `authenticated` pueden invocar las versiones actuales `driver_decide_fixed_pickup_v1`, `driver_set_status_v2`, `driver_set_pickup_phase_v1`, `customer_quote_decision_v13`, `mapa_reservation_position_v1` y `customer_reservation_position_v1`. Todas figuran como `SECURITY DEFINER`; también `driver_pin_valid` está expuesta a EXECUTE. **Esto no demuestra por sí solo acceso no autorizado:** las funciones verifican PIN, dispositivo o sesión internamente. Sí exige revisión de grants y protección contra uso abusivo antes de incorporar nuevos endpoints. No revocar permisos de producción sin auditar la PWA y el APK existentes, porque podría interrumpirse el servicio.
+
+Un RPC v2 nuevo debe preferir privilegios mínimos, revocar ejecución a `PUBLIC` y entregar solo los permisos estrictamente necesarios. La firma de la API actual no se modifica en esta etapa.
