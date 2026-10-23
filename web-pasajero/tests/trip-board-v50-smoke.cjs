@@ -42,8 +42,8 @@ const html=read("index.html"),app=read("app.js"),styles=read("styles.css"),sw=re
 assert(html.includes('id="trips-group-by"')&&html.includes('value="month"'));
 assert(html.includes('id="trips-status-filter"')&&html.includes('data-trips-scope="attention"'));
 assert(html.includes('id="trips-alert-vibrate"')&&html.includes('id="trip-alert-overlay"'));
-assert(html.includes('src="./trip-board.js?v=6"'));
-assert(html.includes('app.js?v=75')&&html.includes('styles.css?v=75')&&sw.includes('traslados-cliente-pwa-v75'));
+assert(html.includes('src="./trip-board.js?v=7"'));
+assert(html.includes('app.js?v=76')&&html.includes('styles.css?v=76')&&sw.includes('traslados-cliente-pwa-v76'));
 assert(sw.includes("./trip-board.js"),"New module precached for offline view");
 assert(app.includes('customer_list_reservations_v15')&&app.includes('get_reservation_by_token'));
 assert(app.includes('customer_quote_decision_v13'),"Real acceptance backend");
@@ -51,7 +51,7 @@ assert(app.includes('tripBoard.notifications(tripSnap,rows)'),"Change-based aler
 assert(app.includes('document.visibilityState==="visible"'),"No polling while hidden");
 assert(app.includes('const cadence=activeTrip?8000:20000;'),"Fast foreground status polling only with active reservations");
 assert(app.includes('document.visibilityState!=="visible"'),"Suspended background updates");
-assert(app.includes('if($("trips-alert-vibrate").checked&&navigator.vibrate)'),"Opt-in vibration only");
+assert(app.includes('if($("trips-alert-vibrate").checked&&typeof navigator.vibrate==="function")'),"Opt-in vibration only");
 assert(app.includes('tripRows=[];tripLoaded=false;tripSnap=null'),"Account switch resets sensitive display data");
 assert(!app.includes('navigator.serviceWorker.ready.then(reg=>reg.pushManager.subscribe'),"No fake background push");
 assert(styles.includes('.trip-card[data-tone="moving"] .trip-status-dot'));
