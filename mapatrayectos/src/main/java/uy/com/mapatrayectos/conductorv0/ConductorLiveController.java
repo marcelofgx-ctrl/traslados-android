@@ -305,6 +305,53 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         if(busy)return;
         quotes.show(id);
     }
+    @Override public void onRejectScheduled(String id){
+        if(busy||!ConductorLivePolicy.safeId(id))return;
+        new android.app.AlertDialog.Builder(activity)
+            .setTitle("Rechazar viaje programado")
+            .setMessage("¿Confirmás que querés rechazar esta solicitud? El pasajero verá el estado actualizado.")
+            .setNegativeButton("Volver",null)
+            .setPositiveButton("Rechazar",(d,w)->{
+                if(busy)return;
+                final String credential=DriverIdentity.pin(activity);
+                if(credential.isEmpty()){
+                    view.setFeedback("Conductor sin vinculación.",false);return;
+                }
+                busy=true;view.setBusy(true);
+                new Thread(()->{
+                    boolean confirmed=false;
+                    String response="El servidor no confirmó el rechazo.";
+                    try{
+                        JSONArray live=uy.com.traslados.conductor.Api.listActive(credential);
+                        JSONObject booking=null;
+                        for(int i=0;i<live.length();i++){
+                            JSONObject row=live.optJSONObject(i);
+                            if(row!=null && id.equals(row.optString("id"))){booking=row;break;}
+                        }
+                        if(booking==null || !"PENDIENTE".equals(booking.optString("status")) ||
+                            !"schedule".equals(booking.optString("pickup_mode")))
+                            throw new IllegalStateException("La solicitud ya no está pendiente.");
+                        JSONObject reply=uy.com.traslados.conductor.Api.setStatus(credential,id,"RECHAZADA");
+                        confirmed=id.equals(reply.optString("id")) &&
+                            "RECHAZADA".equals(reply.optString("status"));
+                        if(confirmed)response="Solicitud programada rechazada y confirmada.";
+                    }catch(Exception error){
+                        response=error instanceof IllegalStateException?error.getMessage():
+                            uy.com.traslados.conductor.Api.publicMessage("reject",error);
+                    }
+                    final boolean success=confirmed;
+                    final String message=response;
+                    main.post(()->{
+                        busy=false;view.setBusy(false);
+                        if(!activity.isFinishing()&&!activity.isDestroyed()){
+                            view.setFeedback(message,success);
+                            if(success){playTone(false);loadHistory();}
+                        }
+                        TransferAlerts.refreshAsync(activity);
+                    });
+                },"quicktrip-reject-schedule").start();
+            }).show();
+    }
     @Override public void onStartTrip(String id){
         if(busy)return;
         trips.request(id,false);
