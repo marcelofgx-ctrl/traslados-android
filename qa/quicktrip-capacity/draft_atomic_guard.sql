@@ -1,51 +1,57 @@
--- DRAFT ONLY — NEVER execute on live Supabase without separate approval.
--- A database trigger covers ALL RPC/REST acceptance paths, not just one function.
--- It serializes acceptance for the single Quick Trip driver via a transaction advisory lock.
--- Existing open reservations are never silently closed or modified.
-CREATE OR REPLACE FUNCTION public.qt_guard_one_immediate_open_v1()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
-SET search_path TO 'public','pg_temp' AS $$
-DECLARE
-  v_open boolean;
-BEGIN
-  -- Do not restrict programmed/budget reservations; their schedule logic remains intact.
-  -- Confirm actual enum and fare_mode values before executing migration.
-  IF NEW.is_demo IS DISTINCT FROM false
-     OR NEW.fare_mode IS DISTINCT FROM 'fixed'
-     OR NEW.status::text NOT IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA','EN_VIAJE')
-  THEN RETURN NEW; END IF;
+-- DRAFT V2 — ATOMIC CONSTRAINT, NEVER APPLY TO REAL SUPABASE YET.
+-- Explicit authorization in this stage permits ONLY local, fictitious PostgreSQL.
+--
+-- CANONICAL BOOKING DISCRIMINATOR (web-pasajero/trip-board.js):
+--   pickup_mode = 'now' or numeric 1..120 => immediate/deferred minutes
+--   pickup_mode = 'schedule'          => programmed (may be fare_mode='fixed')
+-- fare_mode='fixed' does NOT mean an immediate request.
+--
+-- Single-driver capacity is an OPERATIONAL state, NOT a time-window forecast.
+-- Bookings reserved for a future scheduled time do not occupy the physical
+-- vehicle until pickup_phase EN_CAMINO / EN_PUNTO or status EN_VIAJE.
+-- Any other/legacy/unrecognized pickup_mode is treated conservatively as
+-- immediate for capacity purposes: do not silently bypass the guard.
+--
+-- A PostgreSQL unique partial index is stronger and simpler than a row trigger
+-- taking an advisory lock AFTER other RPCs may have locked reservation rows.
+-- The old trigger proposal could deadlock against lock-first RPCs. The UNIQUE
+-- check is engine-managed and prevents two concurrent transactions even if
+-- they invoke different RPCs, direct SQL, or older clients.
+--
+-- IMPORTANT BEFORE ANY FUTURE PRODUCTION MIGRATION:
+-- 1) Read-only audit status enum values, pickup_mode counts and grants.
+-- 2) Check for pre-existing duplicate active services. The CREATE UNIQUE INDEX
+--    MUST fail closed if duplicates exist: NEVER silently delete/finish them.
+-- 3) Back up schema/functions and validate RPC exception mapping (SQLSTATE
+--    23505 + name qt_one_active_service_uq => user message "Conductor ocupado").
+-- 4) For public.reservations.status enum, the terminal labels below must exist
+--    (observed in driver_set_status_v2). Review extra statuses before rollout.
+-- 5) Separately review scheduled availability conflicts; this index does NOT
+--    replace the existing time-window availability RPCs.
+--
+-- This version intentionally has NO CREATE FUNCTION, SECURITY DEFINER, trigger,
+-- or GRANT. No new SQL callable as anon/authenticated.
+--
+-- Use CREATE UNIQUE INDEX (not CONCURRENTLY) in a controlled maintenance
+-- transaction once there are no duplicates; PostgreSQL test demonstrates
+-- second concurrent acceptance fails with unique_violation / SQLSTATE 23505.
+-- The indexed boolean expression has the same value (false) for every
+-- non-demo service, allowing exactly ONE row inside this partial predicate.
+CREATE UNIQUE INDEX qt_one_active_service_uq
+ON public.reservations ((coalesce(is_demo,false)))
+WHERE coalesce(is_demo,false)=false
+  AND (
+       status = 'EN_VIAJE'
+       OR (
+         status NOT IN ('PENDIENTE','FINALIZADA','CANCELADA','RECHAZADA')
+         AND (
+           coalesce(pickup_mode,'') <> 'schedule'
+           OR pickup_phase IN ('EN_CAMINO','EN_PUNTO')
+         )
+       )
+  );
 
-  -- Only guard the transition into an open immediate service, not unrelated edits
-  -- to an already accepted row (e.g. pickup phase or timestamps).
-  IF TG_OP='UPDATE' AND OLD.status::text IN
-      ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA','EN_VIAJE') THEN
-    RETURN NEW;
-  END IF;
-
-  -- Same lock key as driver_decide_fixed_pickup_v1 and customer_quote_decision_v13.
-  -- Concurrent attempts serialize; second sees committed first reservation.
-  PERFORM pg_advisory_xact_lock(hashtextextended('traslados_availability',0));
-
-  SELECT EXISTS(
-    SELECT 1 FROM public.reservations r
-    WHERE r.id IS DISTINCT FROM NEW.id
-      AND coalesce(r.is_demo,false)=false
-      AND r.fare_mode='fixed'
-      AND r.status::text IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA','EN_VIAJE')
-  ) INTO v_open;
-  IF v_open THEN
-    RAISE EXCEPTION 'QT_CONDUCTOR_OCUPADO'
-      USING ERRCODE='P0001', DETAIL='ONE_IMMEDIATE_SERVICE_OPEN';
-  END IF;
-  RETURN NEW;
-END $$;
-
-DROP TRIGGER IF EXISTS qt_guard_one_immediate_open_v1 ON public.reservations;
-CREATE TRIGGER qt_guard_one_immediate_open_v1
-BEFORE INSERT OR UPDATE OF status ON public.reservations
-FOR EACH ROW EXECUTE FUNCTION public.qt_guard_one_immediate_open_v1();
-
--- IMPORTANT: audit actual pickup_mode field semantics. 'fixed' is fare_mode,
--- not necessarily 'immediate'; if scheduled trips can use fixed fares, use
--- the canonical immediate discriminator instead BEFORE this is deployed.
--- Verify all acceptance paths and deadlock lock order before production.
+-- Capacity guard is independent of planned end time and fare_mode.
+-- Rollback: DROP INDEX IF EXISTS public.qt_one_active_service_uq;
+-- NOTE: deploying this index requires resolving existing duplicate occupied
+-- rows by EXPLICIT authorized workflow. It is intentionally not installed.
