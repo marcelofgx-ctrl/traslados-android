@@ -87,7 +87,7 @@ public class TrackingService extends Service implements LocationListener {
         @Override public void onReceive(Context c,Intent i){
             if(bubbleView!=null)bubbleView.invalidate();
             if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
-                if(bubbleView!=null)showTransferCallout();
+                if(!appVisible&&bubbleView!=null)showTransferCallout();
             }else if(TransferAlerts.pendingCount(TrackingService.this)==0)
                 hideTransferCallout();
         }
@@ -602,6 +602,9 @@ public class TrackingService extends Service implements LocationListener {
     }
     private void showTransferCallout(){
         hideTransferCallout();
+        // Foreground requests must appear only on the integrated Conductor panel.
+        if(appVisible||getSharedPreferences("bubble_state",MODE_PRIVATE)
+            .getBoolean("ui_visible",false))return;
         if(bubbleWm==null||bubbleView==null||bubbleLp==null)return;
         final org.json.JSONObject fixed=TransferAlerts.lastActionableFixed(this);
         final String fixedId=fixed==null?"":fixed.optString("id","");
