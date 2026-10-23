@@ -182,6 +182,8 @@ public final class ConductorLiveView extends FrameLayout {
         root.addView(feedbackText,bottom(7));
 
         activeToggle=section("Aceptadas y en curso",()->{
+            android.transition.TransitionManager.beginDelayedTransition(
+                activeBody,new android.transition.AutoTransition());
             activeOpen=!activeOpen;renderActive();
         });
         root.addView(activeToggle,bottom(7));
@@ -349,8 +351,35 @@ public final class ConductorLiveView extends FrameLayout {
     private void renderActive(){
         updateSection(activeToggle,"Aceptadas y en curso",active.size(),activeOpen);
         activeBody.removeAllViews();
-        activeBody.setVisibility(activeOpen?View.VISIBLE:View.GONE);
-        if(!activeOpen||active.isEmpty())return; // No dead empty-state vertical area.
+        activeBody.setVisibility(active.isEmpty()?View.GONE:View.VISIBLE);
+        if(active.isEmpty())return;
+        if(!activeOpen){
+            // One compact, tappable summary replaces several tall full cards.
+            // All operational buttons remain in the expanded native cards.
+            Trip current=active.get(0);
+            LinearLayout summary=col();
+            summary.setPadding(dp(14),dp(12),dp(14),dp(12));
+            summary.setBackground(shape(CARD,16,STROKE));
+            String person=current.customer.isEmpty()?"Pasajero por confirmar":current.customer;
+            summary.addView(text(person+"  ·  "+prettyStatus(current.status),14,WHITE,true),bottom(5));
+            TextView itinerary=text(current.origin+" → "+current.destination,11,MUTED,false);
+            itinerary.setSingleLine(true);
+            itinerary.setEllipsize(TextUtils.TruncateAt.END);
+            summary.addView(itinerary,bottom(4));
+            summary.addView(text("Ver acciones y recorrido  ▾"+
+                (active.size()>1?"   ·   +"+(active.size()-1)+" servicio(s)":""),11,GOLD,true));
+            summary.setContentDescription("Servicio activo de "+person+
+                ". Toque para ampliar acciones y ver "+active.size()+" servicio(s).");
+            summary.setClickable(true);
+            summary.setFocusable(true);
+            summary.setOnClickListener(v->{
+                android.transition.TransitionManager.beginDelayedTransition(
+                    activeBody,new android.transition.AutoTransition());
+                activeOpen=true;renderActive();
+            });
+            activeBody.addView(summary,bottom(8));
+            return;
+        }
         for(Trip t:active){
             LinearLayout card=tripCard(t);
 
