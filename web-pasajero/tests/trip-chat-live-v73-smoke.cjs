@@ -15,7 +15,7 @@ assert(chat.includes('String(activeTripChat?.id)!==String(r.id)'),"Discard previ
 assert(chat.includes('if(feed.dataset.signature===signature)return;'),"No repaint when no new messages");
 assert(chat.includes('if(initial||following)feed.scrollTop=feed.scrollHeight;'),"Don't drag reader away from earlier messages");
 assert(chat.includes('if(feed.isConnected&&!feed.dataset.signature)'),"Do not delete existing chat on temporary failures");
-assert(js.includes('const cadence=activeTrip?8000:20000;'),"Faster status refresh only for relevant foreground reservations");
+assert(js.includes('const cadence=pendingImmediateWatchCode?4000:activeTrip?8000:20000;'),"Faster status refresh for recent immediate bookings and foreground reservations");
 assert(js.includes('live.dataset.stage=onBoard?"trip":arrived?"arrived":"approach";'));
 assert(js.includes('live.setAttribute("role","status")'),"Accessible status for screen readers");
 assert(css.includes(".trip-live-spotlight")&&css.includes('.trip-live-copy strong'));
