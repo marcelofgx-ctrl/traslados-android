@@ -64,6 +64,7 @@ public final class ConductorV0Navigator {
         host=new SwipeHost(activity,this::close);
         conductor=new ConductorLiveView(activity);
         live=new ConductorLiveController(activity,conductor);
+        live.setOnConfirmedImmediateDecision(this::close);
         host.addView(conductor,new FrameLayout.LayoutParams(-1,-1));
         host.setVisibility(View.GONE);
         host.setElevation(dp(64));
