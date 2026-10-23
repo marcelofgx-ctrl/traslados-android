@@ -110,17 +110,18 @@ jobs:
           grep -q 'public_app_config_v1' mapatrayectos/src/main/java/uy/com/mapatrayectos/RemoteAppConfig.java
           grep -q 'RemoteAppConfig.refreshIfStale(this)' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
           grep -q 'ShareLinkPolicy.resolve(key,current,proposed,previouslyPublished)' mapatrayectos/src/main/java/uy/com/mapatrayectos/QuickActionsMenu.java
-      - name: Conductor V0 local demo actions regression
+      - name: Conductor live real request eligibility regression
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/mapa-conductor-demo
-          javac -d /tmp/mapa-conductor-demo \
-            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0DemoState.java \
-            mapatrayectos/tests/ConductorV0DemoStateTest.java
-          java -cp /tmp/mapa-conductor-demo ConductorV0DemoStateTest
-          grep -q 'TONE_PROP_ACK' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java
-          grep -q 'TONE_PROP_NACK' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java
+          mkdir -p /tmp/mapa-conductor-live
+          javac -d /tmp/mapa-conductor-live \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLivePolicy.java \
+            mapatrayectos/tests/ConductorLivePolicyTest.java
+          java -cp /tmp/mapa-conductor-live ConductorLivePolicyTest
+          grep -q 'TransferAlerts.decideFixed' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
+          grep -q 'Api.listHistory' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
+          ! grep -q 'sample-only' mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java
       - name: Passenger chat integration regression
         shell: bash
         run: |
