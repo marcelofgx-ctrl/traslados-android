@@ -29,6 +29,8 @@ import uy.com.mapatrayectos.TransferAlerts;
 public final class ConductorLiveController implements ConductorLiveView.Listener {
     private final Activity activity;
     private final ConductorLiveView view;
+    private final ConductorTripActions trips;
+    private final ConductorQuoteDialog quotes;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ArrayList<JSONObject> pending=new ArrayList<>();
     private final HashSet<String> locallyConfirmed=new HashSet<>();
@@ -48,6 +50,24 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     };
     public ConductorLiveController(Activity a,ConductorLiveView v){
         activity=a;view=v;view.setListener(this);
+        trips=new ConductorTripActions(a,new ConductorTripActions.Callback(){
+            @Override public void working(boolean active){
+                busy=active;
+                view.setBusy(active);
+            }
+            @Override public void finished(boolean success,String message){
+                view.setFeedback(message,success);
+                if(success) {
+                    playTone(true);
+                    TransferAlerts.refreshAsync(activity);
+                    loadHistory();
+                }
+            }
+        });
+        quotes=new ConductorQuoteDialog(a,(success,message)->{
+            if(message!=null&&!message.isEmpty())view.setFeedback(message,success);
+            if(success){playTone(true);TransferAlerts.refreshAsync(activity);}
+        });
     }
     public void open(boolean shiftActive){
         open=true;
@@ -181,7 +201,10 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
             r.optString("origin_text"),r.optString("destination_text"),
             r.optString("status"),r.optString("pickup_phase"),
             r.optString("pickup_date")+" "+r.optString("pickup_time"),
-            amount>0?String.format(Locale.US,"$ %.0f UYU",amount):"");
+            amount>0?String.format(Locale.US,"$ %.0f UYU",amount):"",
+            r.optString("pickup_mode"),r.optString("fare_mode"),
+            r.optString("quote_status"),r.optDouble("route_distance_km",0),
+            r.optInt("route_duration_min",0));
     }
     private void loadHistory(){
         if(historyLoading||!open)return;
@@ -277,6 +300,18 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
                 if(done){playTone(true);TransferAlerts.refreshAsync(activity);}
             });
         },"quicktrip-live-pickup").start();
+    }
+    @Override public void onPrepareQuote(String id){
+        if(busy)return;
+        quotes.show(id);
+    }
+    @Override public void onStartTrip(String id){
+        if(busy)return;
+        trips.request(id,false);
+    }
+    @Override public void onFinishTrip(String id){
+        if(busy)return;
+        trips.request(id,true);
     }
     @Override public void onCall(String phone){
         if(phone==null||phone.isEmpty())return;
