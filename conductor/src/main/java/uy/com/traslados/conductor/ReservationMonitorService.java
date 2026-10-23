@@ -157,7 +157,7 @@ public class ReservationMonitorService extends Service {
         driverBubbleMarkNew(r);
         driverNewReservationCueOnce(r);
 
-        Intent open=new Intent(this,MainActivity.class);open.putExtra("open_requests",true);open.putExtra("reservation_id",r.optString("id",""));open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Intent open=new Intent(this,uy.com.mapatrayectos.MainActivity.class);open.putExtra("open_requests",true);open.putExtra("reservation_id",r.optString("id",""));open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         int requestCode=1100+Math.abs(r.optString("id",r.optString("code","")).hashCode()%7000);PendingIntent pi=PendingIntent.getActivity(this,requestCode,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         String text=r.optString("customer_name")+" · "+shortText(r.optString("origin_text"))+" → "+shortText(r.optString("destination_text"));
         Notification n=new Notification.Builder(this,CHANNEL_NEW)
@@ -380,7 +380,7 @@ running=false;if(worker!=null)worker.interrupt();super.onDestroy();}
 
     private void driverBubbleOpenApp(){
         android.content.SharedPreferences p=driverBubblePrefs();String id=p.getString("last_reservation_id","");p.edit().putInt("unread",0).putBoolean("app_foreground",true).apply();driverBubbleUpdateBadge(0);driverBubbleHide();
-        android.content.Intent i=new android.content.Intent(this,MainActivity.class);i.putExtra("open_requests",true);i.putExtra("reservation_id",id);i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK|android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP|android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);startActivity(i);
+        android.content.Intent i=new android.content.Intent(this,uy.com.mapatrayectos.MainActivity.class);i.putExtra("open_requests",true);i.putExtra("reservation_id",id);i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK|android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP|android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);startActivity(i);
     }
 
     private android.content.SharedPreferences driverTripReminderPrefs(){return getSharedPreferences("driver_trip_reminder",MODE_PRIVATE);}
