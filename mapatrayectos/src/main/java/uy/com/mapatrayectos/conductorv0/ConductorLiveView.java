@@ -58,6 +58,7 @@ public final class ConductorLiveView extends FrameLayout {
         void onRoute(String address);
         void onPickupPhase(String id,String phase);
         void onPrepareQuote(String id);
+        void onRejectScheduled(String id);
         void onStartTrip(String id);
         void onFinishTrip(String id);
     }
@@ -302,6 +303,12 @@ public final class ConductorLiveView extends FrameLayout {
                 card.addView(quote,new LinearLayout.LayoutParams(-1,dp(49)));
             }else if("PENDIENTE".equals(t.status)){
                 card.addView(text("Esta solicitud requiere revisión del estado o precio.",12,MUTED,false));
+            }
+            if("PENDIENTE".equals(t.status) && "schedule".equals(t.pickupMode)){
+                Button reject=button("Rechazar solicitud programada",REJECT);
+                reject.setTextSize(12);reject.setEnabled(!busy);
+                reject.setOnClickListener(v->{if(listener!=null)listener.onRejectScheduled(t.id);});
+                card.addView(reject,new LinearLayout.LayoutParams(-1,dp(46)));
             }
             scheduledBody.addView(card,mb(7));
         }
