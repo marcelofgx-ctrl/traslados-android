@@ -83,7 +83,7 @@ public final class ConductorLiveView extends FrameLayout {
         void onFinishTrip(String id);
     }
 
-    private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,feedbackText;
+    private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,connectionDot,feedbackText;
     private final TextView historyToggle,activeToggle,scheduledToggle;
     private final LinearLayout requestBody,historyBody,activeBody,scheduledBody;
     private final List<String> history=new ArrayList<>();
@@ -148,9 +148,9 @@ public final class ConductorLiveView extends FrameLayout {
         root.addView(stats,bottom(16));
 
         LinearLayout monitor=row();
-        TextView dot=text("●",13,GREEN,true);
-        dot.setGravity(Gravity.CENTER_VERTICAL);
-        monitor.addView(dot,new LinearLayout.LayoutParams(dp(17),dp(32)));
+        connectionDot=text("●",13,MUTED,true);
+        connectionDot.setGravity(Gravity.CENTER_VERTICAL);
+        monitor.addView(connectionDot,new LinearLayout.LayoutParams(dp(17),dp(32)));
         connectionText=text("Consultando solicitudes…",11,MUTED,false);
         connectionText.setMaxLines(2);
         monitor.addView(connectionText,new LinearLayout.LayoutParams(0,-2,1));
@@ -227,7 +227,9 @@ public final class ConductorLiveView extends FrameLayout {
         countInJourney.setText(number(inJourney));
     }
     public void setConnection(String status,boolean connected){
+        boolean connectionChanged=this.connected!=connected;
         this.connected=connected;
+        connectionDot.setTextColor(connected?GREEN:RED);
         String label=s(status);
         if(connected && label.startsWith("Solicitudes reales · sincronizado hace ")){
             label="Conectado · hace "+label.substring("Solicitudes reales · sincronizado hace ".length());
@@ -236,6 +238,7 @@ public final class ConductorLiveView extends FrameLayout {
         connectionText.setTextColor(connected?GREEN:MUTED);
         if(connected && "Actualizando solicitudes…".contentEquals(feedbackText.getText()))
             setFeedback("",false);
+        if(connectionChanged && request==null)renderRequest();
     }
     public void setFeedback(String message,boolean positive){
         String m=s(message);
@@ -260,12 +263,14 @@ public final class ConductorLiveView extends FrameLayout {
         requestBody.removeAllViews();
         if(request==null){
             LinearLayout heading=row();
-            TextView icon=text("◉",18,GOLD,true);
+            TextView icon=text(connected?"◉":"○",18,connected?GOLD:MUTED,true);
             heading.addView(icon,new LinearLayout.LayoutParams(dp(30),-2));
-            heading.addView(text("Todo al día",16,WHITE,true),
+            heading.addView(text(connected?"Todo al día":"Esperando conexión",16,WHITE,true),
                     new LinearLayout.LayoutParams(0,-2,1));
             requestBody.addView(heading,bottom(4));
-            TextView note=text("Sin solicitudes inmediatas por atender.",12,MUTED,false);
+            TextView note=text(connected?
+                "Sin solicitudes inmediatas por atender.":
+                "No se puede confirmar si hay solicitudes nuevas.",12,MUTED,false);
             note.setPadding(dp(30),0,0,0);
             requestBody.addView(note);
             return;
