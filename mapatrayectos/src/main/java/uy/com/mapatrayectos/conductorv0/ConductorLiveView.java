@@ -34,11 +34,17 @@ public final class ConductorLiveView extends FrameLayout {
     }
     public static final class Trip {
         public final String id,code,customer,phone,origin,destination,status,phase,time,amount;
+        public final String pickupMode,fareMode,quoteStatus;
+        public final double routeKm;
+        public final int routeMinutes;
         public Trip(String id,String code,String customer,String phone,String origin,String destination,
-                    String status,String phase,String time,String amount) {
+                    String status,String phase,String time,String amount,String pickupMode,
+                    String fareMode,String quoteStatus,double routeKm,int routeMinutes) {
             this.id=s(id);this.code=s(code);this.customer=s(customer);this.phone=s(phone);
             this.origin=s(origin);this.destination=s(destination);this.status=s(status);
             this.phase=s(phase);this.time=s(time);this.amount=s(amount);
+            this.pickupMode=s(pickupMode);this.fareMode=s(fareMode);this.quoteStatus=s(quoteStatus);
+            this.routeKm=routeKm;this.routeMinutes=routeMinutes;
         }
     }
     public interface Listener {
@@ -51,6 +57,9 @@ public final class ConductorLiveView extends FrameLayout {
         void onWhatsApp(String phone);
         void onRoute(String address);
         void onPickupPhase(String id,String phase);
+        void onPrepareQuote(String id);
+        void onStartTrip(String id);
+        void onFinishTrip(String id);
     }
     private final TextView shiftBadge,countNew,countAccepted,countInJourney,connectionText,feedbackText;
     private final TextView historyToggle,activeToggle,scheduledToggle;
@@ -259,6 +268,20 @@ public final class ConductorLiveView extends FrameLayout {
                     card.addView(state,new LinearLayout.LayoutParams(-1,dp(47)));
                 }
             }
+            if(ConductorOperationsPolicy.canStart(t.status)) {
+                Button start=button("Deslizar para iniciar viaje  →",ACCEPT);
+                start.setTextSize(13);
+                start.setEnabled(!busy);
+                start.setOnClickListener(v->{if(listener!=null)listener.onStartTrip(t.id);});
+                // The controller requires explicit confirmation plus GPS preflight.
+                card.addView(start,new LinearLayout.LayoutParams(-1,dp(48)));
+            }else if(ConductorOperationsPolicy.canFinish(t.status)){
+                Button finish=button("Deslizar para finalizar viaje  →",REJECT);
+                finish.setTextSize(13);
+                finish.setEnabled(!busy);
+                finish.setOnClickListener(v->{if(listener!=null)listener.onFinishTrip(t.id);});
+                card.addView(finish,new LinearLayout.LayoutParams(-1,dp(48)));
+            }
             activeBody.addView(card,mb(7));
         }
     }
@@ -269,7 +292,19 @@ public final class ConductorLiveView extends FrameLayout {
         if(!scheduledOpen)return;
         if(scheduled.isEmpty()){scheduledBody.addView(text("Sin solicitudes programadas pendientes.",13,MUTED,false));return;}
         scheduledBody.addView(text("Requieren el proceso de presupuesto y agenda. No se aceptan como Tu Viaje inmediato.",12,MUTED,false),mb(8));
-        for(Trip t:scheduled)scheduledBody.addView(tripCard(t),mb(7));
+        for(Trip t:scheduled) {
+            LinearLayout card=tripCard(t);
+            if(ConductorOperationsPolicy.canQuote(t.status,t.pickupMode,t.fareMode)) {
+                Button quote=button("ENVIADO".equals(t.quoteStatus)?
+                        "Editar presupuesto":"Preparar presupuesto",ACCEPT);
+                quote.setTextSize(13);quote.setEnabled(!busy);
+                quote.setOnClickListener(v->{if(listener!=null)listener.onPrepareQuote(t.id);});
+                card.addView(quote,new LinearLayout.LayoutParams(-1,dp(49)));
+            }else if("PENDIENTE".equals(t.status)){
+                card.addView(text("Esta solicitud requiere revisión del estado o precio.",12,MUTED,false));
+            }
+            scheduledBody.addView(card,mb(7));
+        }
     }
     private void renderHistory(){
         historyToggle.setText("Histórico de peticiones ("+history.size()+") "+(historyOpen?"▴":"▾"));
@@ -293,6 +328,8 @@ public final class ConductorLiveView extends FrameLayout {
         if(!t.customer.isEmpty())box.addView(text(t.customer,13,WHITE,false),mb(5));
         box.addView(text(t.origin+" → "+t.destination,13,MUTED,false),mb(7));
         if(!t.amount.isEmpty())box.addView(text(t.amount,14,GREEN,true));
+        if("ENVIADO".equals(t.quoteStatus))box.addView(text("Presupuesto enviado al pasajero",12,MUTED,false));
+        if("EN_VIAJE".equals(t.status))box.addView(text("Seguimiento GPS del viaje en curso",12,GREEN,false));
         return box;
     }
     private TextView toggle(String value,boolean open,Runnable click){
