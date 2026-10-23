@@ -49,7 +49,11 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     };
     private final BroadcastReceiver updates=new BroadcastReceiver(){
         @Override public void onReceive(Context c,Intent i){
-            if(open && i!=null)renderFromCache(false);
+            if(open&&i!=null){
+                if(TransferAlerts.ACTION_NEW.equals(i.getAction()))
+                    view.setFeedback("",false); // no stale accepted/rejected label under a new request
+                renderFromCache(false);
+            }
         }
     };
     public ConductorLiveController(Activity a,ConductorLiveView v){
@@ -75,6 +79,7 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     }
     public void open(boolean shiftActive){
         open=true;
+        view.setFeedback("",false);
         view.setShiftActive(shiftActive);
         renderFromCache(true);
         if(!DriverIdentity.pin(activity).isEmpty()){
