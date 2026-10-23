@@ -24,6 +24,6 @@ public final class ConductorCapacityPolicy {
         if(openImmediateCount > 0)
             return "Conductor ocupado · "+openImmediateCount+
                 (openImmediateCount==1?" servicio sin cerrar":" servicios sin cerrar");
-        return "Disponible para una recogida inmediata";
+        return "Sin recogida abierta · verificá jornada y GPS";
     }
 }
