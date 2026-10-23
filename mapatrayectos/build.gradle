@@ -16,8 +16,8 @@ android {
         applicationId 'uy.com.mapatrayectos'
         minSdk 26
         targetSdk 35
-        versionCode 87
-        versionName 'MapaQT-0.1-R25.34'
+        versionCode 88
+        versionName 'MapaQT-0.1-R25.35'
     }
 
     signingConfigs {
