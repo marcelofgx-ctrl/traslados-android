@@ -25,7 +25,7 @@ jobs:
           target='mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java'
           changes=set(subprocess.check_output(
               ['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
-          expected={target,'.github/workflows/conductor-premium-source-only.yml'}
+          expected={target,'mapatrayectos/build.gradle','.github/workflows/conductor-premium-source-only.yml'}
           assert changes==expected, f'Cambios fuera de la capa visual: {changes^expected}'
           previous=subprocess.check_output(
               ['git','show',base+':'+target],text=True)
@@ -55,7 +55,7 @@ jobs:
           callbacks=set(re.findall(r'listener\.(on\w+)\(',current))
           assert listeners==callbacks,(listeners-callbacks,callbacks-listeners)
           assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
-          assert "versionCode 89" in Path('mapatrayectos/build.gradle').read_text()
+          assert "versionCode 90" in Path('mapatrayectos/build.gradle').read_text()
           print('PASS: solo vista, contrato R25.36 intacto, listeners intactos y sin overlays')
           PY
       - uses: actions/setup-java@v4
