@@ -25,7 +25,8 @@ assert(app.includes('tripChatAttempts.set(key,{body,id:requestId})'));
 assert(app.includes('if(!response?.id)throw'));
 assert(app.includes('function playTripAlertSound()'));
 assert(app.includes('if(!$("trips-alert-sound").checked||!tripAlertAudio'));
-assert(app.includes('function showTripNotice(change)')&&app.includes('message?"Nuevo mensaje del conductor"'));
+assert(app.includes('function showTripNotice(change)')&&app.includes('title:"Tenés un mensaje nuevo"'),
+  "New messages keep their own dedicated warm notification");
 assert(app.includes('if($("trips-alert-vibrate").checked&&navigator.vibrate)'));
 assert(app.includes('text(bubble,"span",item.body||"")'),"No HTML injection in messages");
 assert(app.includes('id===activeTripChat.id'),"Chat survives background refresh without losing its reservation");
