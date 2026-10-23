@@ -1,4 +1,4 @@
-const CACHE="traslados-cliente-pwa-v75-ide-addresses-20261016";
+const CACHE="traslados-cliente-pwa-v76-decision-notice-20261023";
 const files=["./","./offline.html","./styles.css","./app.js","./public-config.js","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-observability.js","./trip-board.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(files)).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
