@@ -105,4 +105,34 @@ jobs:
           mkdir -p /tmp/qt-incoming-policy
           javac -d /tmp/qt-incoming-policy             mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorIncomingPolicy.java             mapatrayectos/tests/ConductorIncomingPolicyTest.java
           java -cp /tmp/qt-incoming-policy ConductorIncomingPolicyTest
-          echo 'PASS: source-only QA. No debug or signed APK was built.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PASS: pure-Java foreground policy. No APK built.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Gradle 8.9 build cache for class-only Android integration
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare existing native offline assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw
+          base64 --decode mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          base64 --decode mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+      - name: Android 35 SDK setup (no packaging)
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Compile Android Java integration classes only - no APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :core-reservations:classes :mapatrayectos:compileDebugJavaWithJavac --build-cache --no-daemon --console=plain
+          test ! -e mapatrayectos/build/outputs/apk/debug/mapatrayectos-debug.apk
+          test ! -e mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk
+          echo 'PASS: compiled Android Java integration classes only. NO APK generated.' >> "$GITHUB_STEP_SUMMARY"
