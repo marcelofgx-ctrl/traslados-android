@@ -15,6 +15,7 @@ public class ConductorCapacityPolicyTest {
         require(!ConductorCapacityPolicy.mayAcceptImmediate(true,2),"two from screenshots");
         require(!ConductorCapacityPolicy.mayAcceptImmediate(false,0),"offline fails closed");
         require(ConductorCapacityPolicy.occupancyLabel(true,2).contains("2 servicios sin cerrar"),"honest occupied label");
+        require(!ConductorCapacityPolicy.occupancyLabel(true,0).contains("Disponible"),"fresh booking snapshot is NOT proof of GPS/jornada availability");
         System.out.println("PASS: single-driver immediate capacity UI policy, no engine writes");
     }
 }
