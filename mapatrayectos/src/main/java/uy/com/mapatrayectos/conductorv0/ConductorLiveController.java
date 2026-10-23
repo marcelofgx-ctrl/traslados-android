@@ -141,6 +141,8 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         String error=TransferAlerts.syncError(activity);
         boolean fresh=synced>0 && now>=synced && now-synced<=45000L;
         if(!fresh){
+            capacityFresh=false;unclosedImmediate=0;
+            view.setCapacity(false,0);
             view.setConnection(synced<=0?"Conectando con solicitudes reales…":
                 "Sin actualización reciente · revisá la conexión"+(error.isEmpty()?"":" ("+error+")"),false);
             view.setCounters(null,null,null);
