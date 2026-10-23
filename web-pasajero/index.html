@@ -437,9 +437,15 @@
       <button type="button" id="trip-alert-close" class="trip-alert-close" aria-label="Cerrar aviso">×</button>
       <div class="trip-alert-symbol" aria-hidden="true">✦</div>
       <p class="trips-eyebrow">NOVEDAD EN TU TRASLADO</p>
-      <h2 id="trip-alert-title">Tu reserva se actualizó</h2>
-      <p id="trip-alert-description">Tenés una nueva actualización.</p>
-      <button id="trip-alert-open" type="button" class="primary full">VER MI TRASLADO →</button>
+      <h2 id="trip-alert-title">Estado de tu solicitud</h2>
+      <p id="trip-alert-description">Consultando el estado confirmado del traslado.</p>
+      <div id="trip-alert-details" class="trip-alert-details" hidden>
+        <p id="trip-alert-code" class="trip-alert-code"></p>
+        <div class="trip-alert-stop"><span class="trip-alert-stop-dot pickup" aria-hidden="true"></span><div><small>RECOGIDA</small><strong id="trip-alert-origin"></strong></div></div>
+        <div class="trip-alert-stop"><span class="trip-alert-stop-dot destination" aria-hidden="true"></span><div><small>DESTINO</small><strong id="trip-alert-destination"></strong></div></div>
+        <div id="trip-alert-amount" class="trip-alert-amount" hidden></div>
+      </div>
+      <button id="trip-alert-open" type="button" class="primary full">VER SOLICITUD →</button>
       <p class="trip-alert-footnote">También podés consultarlo desde Mis traslados.</p>
     </div>
   </div>
@@ -462,10 +468,10 @@
   <script src="./booking-steps.js?v=1" defer></script>
   <script src="./pickup-observability.js?v=2" defer></script>
   <script src="./pickup-cadence.js?v=1" defer></script>
-  <script src="./trip-board.js?v=6" defer></script>
+  <script src="./trip-board.js?v=7" defer></script>
   <script src="./service-home.js?v=3" defer></script>
   <script src="./owned-pickup.js?v=1" defer></script>
   <script src="./public-config.js?v=1" defer></script>
-  <script src="./app.js?v=75" defer></script>
+  <script src="./app.js?v=76" defer></script>
 </body>
 </html>
