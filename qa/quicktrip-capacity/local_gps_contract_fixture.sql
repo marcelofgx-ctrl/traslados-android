@@ -48,7 +48,7 @@ BEGIN
  THEN RETURN jsonb_build_object('ok',false,'reason','gps_unavailable'); END IF;
  IF p_gps < now()-interval '75 seconds' OR p_gps > now()+interval '10 seconds'
  THEN RETURN jsonb_build_object('ok',false,'reason','stale_gps'); END IF;
- SELECT count(*),min(id) INTO n,v_id FROM (
+ SELECT count(*),min(id::text)::uuid INTO n,v_id FROM (
    SELECT id FROM qa_gps.reservations
    WHERE status='EN_VIAJE' OR
      (status IN ('ACEPTADA','CONFIRMADA','ACEPTADA_CLIENTE')
