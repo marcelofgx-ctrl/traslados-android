@@ -78,7 +78,8 @@ async function main(){
   await pause(900);
   const s=await expression(function(){
    const q=x=>document.querySelector(x),display=x=>q(x)&&getComputedStyle(q(x)).display;
-   const image=q(".qtc-logo");
+   const image=q(".qtc-logo"),back=q(".qtc-back-slot .journey-back"),
+         history=q(".qtc-history-button");
    return {
     view:!!q("#view-viaje.active"),origin:!!q(".qtc-places #origin-picker .location-widget"),
     destination:!!q(".qtc-places #destination-picker .location-widget"),
@@ -94,6 +95,14 @@ async function main(){
     history:!!q("#qtc-history-panel"),schedule:!!q(".qtc-schedule #journey-when-select"),
     contact:!!q(".qtc-contact #booking-step-passenger"),
     logo:!!image&&image.complete&&image.naturalWidth>0,
+    logoWidth:image?.getBoundingClientRect().width??0,
+    backWidth:back?.getBoundingClientRect().width??0,
+    backLabel:back?.getAttribute("aria-label"),
+    backText:back?.textContent?.trim(),
+    historyWidth:history?.getBoundingClientRect().width??0,
+    historyBackground:history?getComputedStyle(history).backgroundColor:"",
+    headerHidden:display("body.qt-clean.qt-clean-active>.header")==="none",
+    tabsHidden:display("body.qt-clean.qt-clean-active .shell>.tabs")==="none",
     width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
     manifest:q('link[rel="manifest"]')?.getAttribute("href")
    };
@@ -105,6 +114,15 @@ async function main(){
   check(s.oldHidden,"Old journey navigation and hero are hidden");
   check(s.history&&s.schedule&&s.contact,"Animated history, collapsible time and passenger fields");
   check(s.logo,"Brand Quick Trip logo loads");
+  check(s.logoWidth>=110&&s.logoWidth<=176,
+    "SVG logo bounded to mobile header, never intrinsic 720px");
+  check(s.backWidth>=28&&s.backWidth<=44&&s.backLabel==="Volver al inicio"&&!s.backText,
+    "Back control is compact and accessible, not stacked vertically");
+  check(s.historyWidth>=55&&s.historyWidth<185&&
+    !["","rgb(255, 255, 255)"].includes(s.historyBackground),
+    "Historial styled by active premium skin, not a white native button");
+  check(s.headerHidden&&s.tabsHidden,
+    "Legacy top navigation hidden while Quick Trip is mounted");
   const contrastLogo=await expression(function(){
    const im=document.querySelector(".qtc-logo");
    return im?.complete&&im?.naturalWidth>0&&im.currentSrc.includes("quicktrip-logo-contrast.svg");
