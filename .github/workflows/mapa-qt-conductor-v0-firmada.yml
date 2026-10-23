@@ -1,7 +1,7 @@
-name: Mapa QT R25.35 - Conductor operacional firmado
+name: Mapa QT R25.36 - Conductor Premium UI aislado y firmado
 on:
   push:
-    branches: [feat/mapa-qt-conductor-flujo-operativo-r2535-20261022]
+    branches: [design/conductor-premium-clean-ui-20261023]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +19,18 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           changed=set(Path('/tmp/scope.txt').read_text().splitlines())
+          import subprocess
+          premium=set(subprocess.check_output([
+              'git','diff','--name-only',
+              'e94f29e11c6b56b6bfa6ecc463d61f0639635c73..HEAD'
+          ],text=True).splitlines())
+          expected_premium={
+              'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveView.java',
+              'mapatrayectos/build.gradle',
+              '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
+          }
+          assert premium==expected_premium,('UI-only build boundary violated',
+              premium-expected_premium,expected_premium-premium)
           allowed={
             '.github/workflows/mapa-qt-conductor-v0-firmada.yml',
             '.github/workflows/validate-modular-mapa.yml',
@@ -58,7 +70,7 @@ jobs:
           assert 'onPrepareQuote' in live and 'onFinishTrip' in live
           assert 'boolean canQuote(' in ops
           assert 'ConductorOperationsPolicy.canQuote(' in visual
-          assert 'versionCode 88' in Path('mapatrayectos/build.gradle').read_text()
+          assert 'versionCode 89' in Path('mapatrayectos/build.gradle').read_text()
           assert "applicationId 'uy.com.mapatrayectos'" in Path('mapatrayectos/build.gradle').read_text()
           print('PASS Mapa QT authenticated Conductor UI; no second APK')
           PY
@@ -101,7 +113,7 @@ jobs:
           test -s "$APK"
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
           "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='uy.com.mapatrayectos' versionCode='88'" /tmp/badging.txt
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='89'" /tmp/badging.txt
           grep -q "application-label:'Mapa QT'" /tmp/badging.txt
           "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/signing.txt
           grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' /tmp/signing.txt
@@ -110,7 +122,7 @@ jobs:
       - name: Conservar un único APK firmado en Actions
         uses: actions/upload-artifact@v4
         with:
-          name: Mapa-QT-R25.35-Conductor-OPERATIVO-SIGNADA
+          name: Mapa-QT-R25.36-Conductor-PREMIUM-SIGNADA
           path: |
             mapatrayectos/build/outputs/apk/release/*.apk
             mapatrayectos/build/outputs/apk/release/SIGNING.txt
