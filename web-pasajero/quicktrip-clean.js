@@ -178,7 +178,7 @@
       // Never put a long wrapping label inside a 34px navigation slot.
       back.setAttribute("aria-label","Volver al inicio");
       back.title="Volver al inicio";
-      back.textContent="←";
+      back.textContent=""; // visual glyph belongs solely to CSS ::before
       shell.querySelector(".qtc-back-slot").append(back);
     }
     const time=screen.querySelector(".journey-when-compact");
