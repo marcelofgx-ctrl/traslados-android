@@ -190,10 +190,12 @@ public final class ConductorTripActions {
                 (message.isEmpty()?"No se pudo cambiar el estado del viaje.":message);
             main.post(()->{
                 if(resultState==-1&&!finish)stopGps(id,TripTelemetryService.ACTION_ABORT);
-                if(resultState==1&&finish)stopGps(id,TripTelemetryService.ACTION_STOP);
+                boolean gpsStopOk=resultState!=1||!finish||
+                    stopGps(id,TripTelemetryService.ACTION_STOP);
                 release();
                 if(!activity.isFinishing()&&!activity.isDestroyed()){
-                    callback.finished(resultState==1,resultMessage);
+                    callback.finished(resultState==1,
+                        resultMessage+(gpsStopOk?"":" Atención: Android no pudo detener el GPS."));
                     if(resultState==1&&!finish)verifyGps(id,0);
                 }
                 TransferAlerts.refreshAsync(activity);
@@ -216,15 +218,12 @@ public final class ConductorTripActions {
             return false;
         }
     }
-    private void stopGps(String id,String action){
+    private boolean stopGps(String id,String action){
         try{
             Intent intent=new Intent(activity,TripTelemetryService.class);
             intent.setAction(action);intent.putExtra("reservation_id",id);
-            activity.startService(intent);
-        }catch(Exception ignored){
-            if(TripTelemetryService.ACTION_STOP.equals(action))
-                callback.finished(false,"El viaje finalizó, pero Android no pudo detener el GPS.");
-        }
+            activity.startService(intent);return true;
+        }catch(Exception ignored){return false;}
     }
     private void verifyGps(String id,int attempt){
         main.postDelayed(()->{
@@ -232,7 +231,8 @@ public final class ConductorTripActions {
             JSONObject summary=TripTelemetryService.summary(activity,id);
             if(TripTelemetryService.STATE_ACTIVE.equals(summary.optString("state")) &&
                 summary.optBoolean("active",false))return;
-            if(attempt<2 && TripTelemetryService.STATE_STARTING.equals(summary.optString("state"))){
+            String gpsState=summary.optString("state");
+            if(attempt<2 && (TripTelemetryService.STATE_STARTING.equals(gpsState)||gpsState.isEmpty())){
                 verifyGps(id,attempt+1);return;
             }
             new AlertDialog.Builder(activity)
