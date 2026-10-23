@@ -269,14 +269,14 @@ public final class ConductorLiveView extends FrameLayout {
                 }
             }
             if(ConductorOperationsPolicy.canStart(t.status)) {
-                Button start=button("Deslizar para iniciar viaje  →",ACCEPT);
+                Button start=button("Iniciar viaje",ACCEPT);
                 start.setTextSize(13);
                 start.setEnabled(!busy);
                 start.setOnClickListener(v->{if(listener!=null)listener.onStartTrip(t.id);});
                 // The controller requires explicit confirmation plus GPS preflight.
                 card.addView(start,new LinearLayout.LayoutParams(-1,dp(48)));
             }else if(ConductorOperationsPolicy.canFinish(t.status)){
-                Button finish=button("Deslizar para finalizar viaje  →",REJECT);
+                Button finish=button("Finalizar viaje",REJECT);
                 finish.setTextSize(13);
                 finish.setEnabled(!busy);
                 finish.setOnClickListener(v->{if(listener!=null)listener.onFinishTrip(t.id);});
