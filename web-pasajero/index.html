@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-UY">
+<html lang="es-UY" data-qt-contract="v1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -9,24 +9,29 @@
   <meta name="apple-mobile-web-app-title" content="Traslados">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'self' https://zetaudvvutlouiqxopvg.supabase.co https://direcciones.ide.uy https://traslados-web.marcelof-gx.workers.dev; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <meta name="traslados-preview" content="read-only">
+  <meta name="quicktrip-qa-isolation" content="v86-canonical-webpwa-readonly">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'none'; img-src 'self' data: blob: https://raw.githubusercontent.com https://tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; object-src 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
   <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css?v=83">
     <link rel="stylesheet" href="./premium-route.css?v=2">
-  <link rel="stylesheet" href="./quicktrip-clean.css?v=7">
-  <title>Quick Trip · Tu viaje y reservas</title>
+  <link rel="stylesheet" href="./quicktrip-canonical-v86.css?v=86">
+  <title>Quick Trip · Web/PWA v86 · Candidata QA aislada</title>
 </head>
-<body>
+<body class="qt-approved-qa-v85">
+  <div id="qt-public-qa-banner" role="status" style="position:sticky;top:0;z-index:999999;background:#3c1730;color:#fff7dd;border-bottom:2px solid #e9b868;padding:9px 13px;text-align:center;font-size:13px;font-family:Arial,sans-serif;font-weight:800">
+    QUICK TRIP v86 · PRUEBA AISLADA · SIN SUPABASE · NO ENVIAR DATOS REALES
+  </div>
   <div id="offline-band" class="offline-band" hidden>Sin conexión. Ninguna reserva será enviada hasta recuperar Internet.</div>
   <header class="header">
     <div class="header-inner">
-      <a class="identity" href="./" aria-label="Quick Trip · inicio">
+      <a class="identity" href="./index.html" aria-label="Quick Trip · inicio">
         <img class="quicktrip-page-logo" src="./quicktrip-logo-contrast.svg?v=1" alt="Quick Trip" width="158" height="46">
         <span><small>TRASLADOS · URUGUAY</small></span>
       </a>
-      <a class="tel" href="tel:+59897228175" aria-label="Llamar al conductor">☎ <span>097 228 175</span></a>
+      <span class="tel" aria-label="Llamadas desactivadas en QA">☎ <span>Desactivado en QA</span></span>
     </div>
   </header>
   <main class="shell">
@@ -38,7 +43,7 @@
     </nav>
 
     <section id="view-inicio" class="view active home-screen" aria-labelledby="home-title">
-      <div class="home-hero">
+      <div class="home-hero" data-qt-component="city-hero">
         <p class="eyebrow"><span class="star" aria-hidden="true">✦</span> TRASLADOS CON RESERVA · URUGUAY</p>
         <h1 id="home-title">Tu próximo viaje<br><em>empieza acá</em></h1>
         <p>Reservá, coordiná y seguí tu servicio con atención personal en Uruguay.</p>
@@ -48,7 +53,7 @@
         <p>Elegí tu servicio para continuar.</p>
       </div>
       <div class="service-list" aria-label="Servicios de Traslados">
-        <button type="button" class="service-card service-card-featured" data-service="now" aria-label="Tu viaje. Viajar ahora o en diez minutos, sujeto a disponibilidad">
+        <button type="button" class="service-card service-card-featured" data-service="now" data-qt-service="tu-viaje" data-qt-shape="circular" aria-label="Tu viaje. Solicitá una recogida y esperá la respuesta del conductor">
           <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-journey" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
               <defs><path id="service-arc-journey" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
               <circle cx="52" cy="52" r="48" class="emblem-outer"/>
@@ -64,33 +69,12 @@
           <span class="service-card-body">
             <span class="service-card-kicker">RECOGIDAS A PEDIDO</span>
             <strong class="service-card-name">Tu <em>viaje</em></strong>
-            <small class="service-card-description">Viajá ahora o en 10 minutos, con atención directa.</small>
+            <small class="service-card-description">Elegí tu recorrido y recibí una respuesta directa.</small>
             <span class="service-card-action">Solicitar viaje <span aria-hidden="true">↗</span></span>
           </span>
           <span class="service-card-arrow" aria-hidden="true">→</span>
         </button>
-        <button type="button" class="service-card service-card-scheduled" data-service="schedule" aria-label="Tu reserva. Programar un viaje para la fecha y hora que elijas">
-          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-calendar" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
-              <defs><path id="service-arc-calendar" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
-              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
-              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
-              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
-              <text class="emblem-lettering"><textPath href="#service-arc-calendar" startOffset="50%" text-anchor="middle">TU RESERVA</textPath></text>
-              <rect x="35" y="42" width="34" height="30" rx="5" class="emblem-drawing"/>
-              <path d="M35 51H69M43 37v9M61 37v9" class="emblem-drawing"/>
-              <circle cx="54" cy="61" r="7" class="emblem-clock"/>
-              <path d="M54 57v4l3 2" class="emblem-drawing"/>
-              <circle cx="77" cy="72" r="2.3" class="emblem-glint"/>
-            </svg></span>
-          <span class="service-card-body">
-            <span class="service-card-kicker">PLANIFICÁ CON TIEMPO</span>
-            <strong class="service-card-name">Tu <em>reserva</em></strong>
-            <small class="service-card-description">Aeropuerto, eventos y puerta a puerta, a tu ritmo.</small>
-            <span class="service-card-action">Programar viaje <span aria-hidden="true">↗</span></span>
-          </span>
-          <span class="service-card-arrow" aria-hidden="true">→</span>
-        </button>
-        <button type="button" class="service-card service-card-soon" data-service="delivery" aria-controls="service-coming-soon" aria-expanded="false" aria-label="Tu paquete. Mensajería y paquetería próximamente">
+        <button type="button" class="service-card service-card-soon" data-service="delivery" data-qt-service="tu-paquete" data-qt-shape="circular" aria-controls="service-coming-soon" aria-expanded="false" aria-label="Tu paquete. Mensajería y paquetería próximamente">
           <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-parcel" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
               <defs><path id="service-arc-parcel" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
               <circle cx="52" cy="52" r="48" class="emblem-outer"/>
@@ -109,8 +93,29 @@
           </span>
           <span class="service-card-arrow" aria-hidden="true">＋</span>
         </button>
-      </div>
       <p id="service-coming-soon" class="service-coming-soon" role="status" aria-live="polite" hidden>Estamos preparando el servicio de mensajería y paquetería. Todavía no se pueden solicitar envíos.</p>
+        <button type="button" class="service-card service-card-scheduled" data-service="schedule" data-qt-service="tu-viaje-programado" data-qt-shape="circular" aria-label="Tu viaje programado. Elegí una fecha y un horario para solicitar el traslado">
+          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-calendar" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs><path id="service-arc-calendar" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
+              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
+              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
+              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
+              <text class="emblem-lettering"><textPath href="#service-arc-calendar" startOffset="50%" text-anchor="middle">PROGRAMADO</textPath></text>
+              <rect x="35" y="42" width="34" height="30" rx="5" class="emblem-drawing"/>
+              <path d="M35 51H69M43 37v9M61 37v9" class="emblem-drawing"/>
+              <circle cx="54" cy="61" r="7" class="emblem-clock"/>
+              <path d="M54 57v4l3 2" class="emblem-drawing"/>
+              <circle cx="77" cy="72" r="2.3" class="emblem-glint"/>
+            </svg></span>
+          <span class="service-card-body">
+            <span class="service-card-kicker">PLANIFICÁ CON TIEMPO</span>
+            <strong class="service-card-name">Tu viaje <em>programado</em></strong>
+            <small class="service-card-description">Elegí el día y la hora para tu traslado.</small>
+            <span class="service-card-action">Programar mi viaje <span aria-hidden="true">↗</span></span>
+          </span>
+          <span class="service-card-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
       <div class="home-quick-links">
         <button type="button" data-open-view="viajes"><span aria-hidden="true">◷</span> Seguir mis traslados <span aria-hidden="true">→</span></button>
         <button type="button" data-open-view="instalar"><span aria-hidden="true">↓</span> Instalar la app <span aria-hidden="true">→</span></button>
@@ -118,7 +123,7 @@
       <p class="home-assurance">Atención directa con tu conductor · Uruguay</p>
     </section>
 
-    <section id="view-viaje" class="view quick-journey-screen" aria-labelledby="journey-title">
+    <section id="view-viaje" class="view quick-journey-screen" data-qt-component="tu-viaje-compacto" aria-labelledby="journey-title">
       <button type="button" class="booking-back-services journey-back" data-open-view="inicio">← Volver al inicio</button>
       <div class="journey-hero">
         <div class="journey-halo" aria-hidden="true">
@@ -196,7 +201,7 @@
           <div id="stops"></div>
         </div>
         <div id="destination-picker" class="location-pane"></div>
-        <section id="route-overview" class="route-overview" hidden aria-live="polite"></section>
+        <section data-qt-component="route-map" id="route-overview" class="route-overview" hidden aria-live="polite"></section>
         <div id="login-for-stops" class="stops-signin-hint">＋ ¿Necesitás paradas? <button type="button" data-open-login="1" class="text-button">Iniciá sesión</button> para agregarlas.</div>
         </div>
       </div>
@@ -322,7 +327,7 @@
           </span>
         </div>
         <p id="urgent-send-error" class="booking-send-error" role="alert" hidden></p>
-        <button id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
+        <button data-qt-cta="solicitar-viaje" data-qt-cta-source="original" id="urgent-send" type="button" class="primary full booking-main-cta"><span class="booking-cta-label">SOLICITAR VIAJE</span><span class="booking-cta-arrow" aria-hidden="true">→</span></button>
         <p class="booking-final-note">Sin pago anticipado · Sujeto a confirmación del conductor</p>
       </div>
       <div id="submit-actions" hidden>
@@ -344,7 +349,7 @@
       <div id="premium-tracking-content" aria-live="polite"></div>
     </section>
 
-    <section id="view-viajes" class="view" aria-labelledby="mis-title">
+    <section data-qt-component="collapsible-history" id="view-viajes" class="view" aria-labelledby="mis-title">
       <div class="section-heading trip-intro"><h2 id="mis-title">Mis traslados</h2></div>
       <div class="card trips-board">
         <div class="trips-board-heading">
@@ -432,7 +437,7 @@
 
     <footer class="footer">
       <strong>QUICK TRIP</strong><p>Traslados · Uruguay · Atención personal</p>
-      <div><a href="tel:+59897228175">☎ +598 97 228 175</a></div>
+      <div><span aria-label="Contacto desactivado en esta prueba">☎ Desactivado en QA</span></div>
       <small>© 2026 · Uruguay · Servicio privado de traslados</small>
     </footer>
   </main>
@@ -477,6 +482,8 @@
   <script src="./pickup-origin-drift.js?v=1" defer></script>
   <script src="./journey-compat-v7.js?v=1" defer></script>
   <script src="./app.js?v=83" defer></script>
-      <script src="./quicktrip-clean.js?v=6" defer></script>
+      <script src="./quicktrip-clean.js?v=7" defer></script>
+  <script src="./quicktrip-v85-resilience.js?v=1" defer></script>
+  <script src="./quicktrip-approved-v85-qa.js?v=1" defer></script>
 </body>
 </html>
