@@ -19,6 +19,7 @@ function storage(name){
   return {
     async addAll(files){for(const f of files)map.set(urlOf(f),response("PRECACHE:"+f));},
     async put(r,res){map.set(urlOf(r),res.clone());},
+    async keys(){return [...map.keys()].map(url=>({url}));},
     async match(r,opt={}){
       const exact=map.get(urlOf(r));
       if(exact)return exact;
