@@ -1,5 +1,5 @@
 name: Quick Trip Web/PWA v86 - CANDIDATA QA SIN DEPLOY
-# QA visual diagnostic rerun after browser navigation trace
+# Fix skinReady: detectar CSS canónico, sin motores modificados.
 on:
   push:
     branches:
