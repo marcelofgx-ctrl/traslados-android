@@ -1,4 +1,5 @@
 name: Quick Trip v85 - QA funcional aislado (NO DEPLOY / NO SUPABASE)
+# Pase 2: las búsquedas compactas usan Enter real en el campo.
 on:
   push:
     branches:
