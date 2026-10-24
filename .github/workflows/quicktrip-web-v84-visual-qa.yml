@@ -1,4 +1,5 @@
 name: Quick Trip PWA v84 - Tres servicios visual QA (SIN DEPLOY)
+# Segundo pase: el aviso de Tu Paquete se despliega junto a su tarjeta.
 on:
   push:
     branches:
