@@ -51,8 +51,8 @@
     return {version:1,at:Date.now(),owner:owner(),origin,destination,
       passengers,comments,mode:/^(now|10|15|20|30|45|60)$/.test(mode)?mode:"now"};
   }
-  function saveDraft(){
-    if(!readyToSave||restoring||finished||currentView()!=="viaje"||
+  function saveDraft(force=false){
+    if(!readyToSave||restoring||finished||(!force&&currentView()!=="viaje")||
       !el("booking-success")?.hidden)return;
     const data=snapshot();
     if(!data)return;
@@ -113,6 +113,7 @@
   function onViewChanged(){
     const view=currentView();
     if(view===lastView)return;
+    if(lastView==="viaje"&&view!=="viaje")saveDraft(true);
     lastView=view;
     if(view==="viaje"){finished=false;restoreDraft();}
     if(!handlingPop&&ALLOWED.has(view)){
