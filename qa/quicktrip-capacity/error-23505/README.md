@@ -27,3 +27,13 @@ Un error se clasifica como **CONDUCTOR_OCUPADO** exclusivamente si:
 **PASS en CI** significa: **referencia de contrato comprobada** + **comportamiento ACTUAL de los clientes medido y brechas reproducidas**. **NO significa que Android o PWA estén arreglados ni que el APK instalado muestre el nuevo mensaje.** No se compila el Android ni se valida interfaz real. El contrato candidato solo puede integrarse en una etapa posterior con autorización distinta; después sería necesaria validación con errores estructurados y regresiones de cliente Android/PWA, preservando idempotencia, horarios y mensajes de red.
 
 La rama no crea acciones que publiquen cambios. PR #195 y #197 deben seguir sin fusionar. Última referencia del índice: `qa/quicktrip-capacity/draft_atomic_guard.sql` (V3).
+
+## Etapa de integración aislada de mensajes — 24/10/2026
+
+**Rama:** `feat/quicktrip-23505-ui-errors-isolated-20261024` (basada en `200ee63eb127a0b882e9b4aba20837d077a6142a`). El contrato ya no es solo referencia: **se aplicó exclusivamente en las rutas de presentación/transporte de errores en una rama NO fusionada**.
+
+- **Android:** `conductor/Api.java` traduce a "Conductor ocupado" solo el SQLSTATE `23505` con `constraint "qt_one_active_service_uq"` o `index "qt_one_active_service_uq"` en `backendMessage`. Respeta mensajes existentes de PIN, horario y red. El callback existente de `TransferAlerts` no se modifica y reutiliza `Api.publicMessage`. Ninguna APK fue compilada.
+- **PWA:** `web-pasajero/rpc-client.js` conserva `parsed.code` como `Error.code`; `web-pasajero/app.js` usa el código estructurado más nombre exacto para informar al pasajero que el conductor está ocupado. No cambia la URL ni el POST, la gestión de sesión, el tiempo de espera ni las reglas de reintento.
+- Los tests de JavaScript cargan **archivos reales de la rama aislada** en VM, con respuestas HTTP ficticias y las 14 filas de la matriz, y verifican que un timeout no reenvía solicitudes. Los tests de Android **extraen y compilan solo el método `publicMessage` real** en un harness JDK ficticio; no compilan `Api.java` con Android ni APK.
+- El CI nuevo `.github/workflows/quicktrip-error-integration-isolated.yml` comprueba exactamente los siete archivos autorizados frente a `200ee63eb127a0b882e9b4aba20837d077a6142a`. Se prohíben cambios a `mapatrayectos/`, `supabase/`, módulos de reserva/disponibilidad, GPS o workflows de despliegue.
+- **Limitaciones:** es una integración en código aislado, no integrada a PR #195/#197 ni publicada. No se ensaya un dispositivo Samsung, backend PostgreSQL real o PWA instalada. Cualquier decisión de integrar/compilar/publicar requiere una autorización posterior y separada.

@@ -29,12 +29,30 @@ public final class ActualAndroidMessageHarness {
     Exception conflict=new ApiException("23505",
       "duplicate key value violates unique constraint \\"qt_one_active_service_uq\\"");
     String actual=publicMessage("fixed",conflict);
-    if(!"No pudimos completar la operación. Intentá nuevamente.".equals(actual))
-      throw new AssertionError("Current Android behavior changed: "+actual);
+    if(!actual.startsWith("Conductor ocupado:"))
+      throw new AssertionError("Capacity error was not mapped: "+actual);
     Exception schedule=new ApiException("P0001","HORARIO_YA_NO_DISPONIBLE");
     if(!publicMessage("fixed",schedule).contains("horario ya no está disponible"))
       throw new AssertionError("Schedule error regression");
-    System.out.println("PASS ANDROID CURRENT: real extracted publicMessage lacks distinct 23505 message; schedule preserved");
+    java.util.List<String> cases=java.nio.file.Files.readAllLines(java.nio.file.Path.of(args[0]));
+    int count=0;
+    for(String line:cases){
+      if(line.isBlank()||line.startsWith("#"))continue;
+      String[] fields=line.split("\\t",3);
+      if(fields.length!=3)throw new AssertionError("Malformed fixture: "+line);
+      String code=fields[0].equals("-")?null:fields[0];
+      String mapped=publicMessage("fixed",new ApiException(code,fields[1]));
+      boolean busy=mapped.startsWith("Conductor ocupado:");
+      if(busy!=fields[2].equals("BUSY"))
+        throw new AssertionError("Misclassified: "+line+" -> "+mapped);
+      count++;
+    }
+    if(count!=14)throw new AssertionError("Fixture drift: "+count);
+    if(publicMessage("fixed",new java.net.SocketTimeoutException("timed out")).startsWith("Conductor ocupado:"))
+      throw new AssertionError("Network timeout must not become occupancy");
+    if(!publicMessage("fixed",new java.net.SocketTimeoutException("timed out")).contains("Revisá Internet"))
+      throw new AssertionError("Network timeout regression");
+    System.out.println("PASS ANDROID INTEGRATED: "+count+" fixtures through real extracted publicMessage; schedule/network intact");
   }
 }`;
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"qt-android-error-"));
@@ -42,5 +60,6 @@ try{
   const filename=path.join(temp,"ActualAndroidMessageHarness.java");
   fs.writeFileSync(filename,java);
   execFileSync("javac",["-encoding","UTF-8","-d",temp,filename],{stdio:"inherit"});
-  execFileSync("java",["-cp",temp,"ActualAndroidMessageHarness"],{stdio:"inherit"});
+  execFileSync("java",["-cp",temp,"ActualAndroidMessageHarness",
+    path.join(__dirname,"cases.tsv")],{stdio:"inherit"});
 }finally{fs.rmSync(temp,{recursive:true,force:true});}

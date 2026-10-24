@@ -16,7 +16,13 @@
       });
       const content=await res.text();let parsed;
       try{parsed=content?JSON.parse(content):null;}catch{parsed=content;}
-      if(!res.ok)throw new Error(parsed?.message||parsed?.error||"Servicio temporalmente no disponible");
+      if(!res.ok){
+        const error=new Error(parsed?.message||parsed?.error||"Servicio temporalmente no disponible");
+        // Preserve PostgREST SQLSTATE for an exact, user-facing classification.
+        // Do not retry booking writes: a timeout may happen after a server commit.
+        if(parsed && typeof parsed==="object" && typeof parsed.code==="string")error.code=parsed.code;
+        throw error;
+      }
       return parsed;
     }catch(e){
       if(e?.name==="AbortError")throw new Error("La conexión tardó demasiado. Revisá Mis traslados antes de volver a enviar para evitar duplicados.");

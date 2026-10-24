@@ -133,6 +133,16 @@ public final class Api {
 
     public static String publicMessage(String operation,Exception e){
         String technical=e==null?"":String.valueOf(e.getMessage());String backend=e instanceof ApiException?((ApiException)e).backendMessage:technical;String m=(backend+" "+technical).toLowerCase(Locale.ROOT);
+        // Only this exact PostgreSQL uniqueness conflict means one active driver service.
+        // Other 23505 indexes, HTTP 409, schedule failures and network errors are distinct.
+        if(e instanceof ApiException){
+            ApiException server=(ApiException)e;
+            String constraint=server.backendMessage==null?"":server.backendMessage.toLowerCase(Locale.ROOT);
+            if("23505".equals(server.backendCode) &&
+                (constraint.contains("constraint \"qt_one_active_service_uq\"") ||
+                 constraint.contains("index \"qt_one_active_service_uq\"")))
+                return "Conductor ocupado: terminá o cancelá el servicio anterior antes de aceptar otro.";
+        }
         if(m.contains("pin incorrecto"))return "PIN incorrecto. Revisalo e intentá nuevamente.";
         if(m.contains("conductor ya está configurado"))return "El conductor ya está configurado en este sistema.";
         if(m.contains("sesión inválida")||m.contains("sesion invalida"))return "La sesión venció. Ingresá nuevamente.";

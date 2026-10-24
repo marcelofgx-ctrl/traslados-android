@@ -140,7 +140,11 @@ function clear(n){n.replaceChildren();}
 function tell(message){const el=$("toast");clearTimeout(toastHandle);el.textContent=message;el.hidden=false;toastHandle=setTimeout(()=>el.hidden=true,5500);}
 function showError(e,fallback="No se pudo completar la acción"){
   let msg=e instanceof Error?e.message:fallback;
-  if(/gen_random_bytes|function .*does not exist|SQLSTATE|permission denied for schema/i.test(msg))
+  // A 23505 from any other unique index is NOT evidence of an occupied driver.
+  if(e instanceof Error && e.code==="23505" &&
+     /(?:constraint|index)\s+"qt_one_active_service_uq"/i.test(msg))
+    msg="Conductor ocupado: hay un traslado en curso. No se confirmó esta operación. Revisá Mis traslados antes de volver a intentar.";
+  else if(/gen_random_bytes|function .*does not exist|SQLSTATE|permission denied for schema/i.test(msg))
     msg="No pudimos registrar la solicitud por un problema técnico. Revisá Mis traslados antes de volver a enviarla.";
   else if(/HORARIO_YA_NO_DISPONIBLE|HORARIO_NO_DISPONIBLE/i.test(msg))
     msg="Ese horario ya no está disponible. Elegí una nueva fecha y hora para solicitar el traslado.";
