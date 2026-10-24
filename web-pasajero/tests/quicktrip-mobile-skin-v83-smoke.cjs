@@ -8,9 +8,9 @@ const html=read("index.html"),script=read("quicktrip-clean.js"),
   css=read("styles.css"),skin=read("quicktrip-clean.css"),sw=read("sw.js");
 assert(html.includes('styles.css?v=83'),"Load coherent updated base CSS");
 assert(html.includes('quicktrip-clean.css?v=7'),"Load updated clean skin");
-assert(html.includes('quicktrip-clean.js?v=6'),"Load updated clean UI script");
+assert(html.includes('quicktrip-clean.js?v=7'),"Load updated clean UI script");
 assert(html.includes('app.js?v=83'),"Do not change the working booking engine");
-assert(sw.includes('traslados-pwa-v82-quicktrip-warm-notice-v83-20261023'),
+assert(sw.includes('traslados-pwa-v82-quicktrip-three-services-v84-20261024'),
   "Invalidate stale UI assets without changing the functional engine");
 assert(sw.includes('"./quicktrip-clean.css"')&&sw.includes('"./quicktrip-clean.js"'));
 assert(script.includes("function skinReady()"),"Guard against partial clean UI");
