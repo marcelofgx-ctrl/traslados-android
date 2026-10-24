@@ -1,5 +1,5 @@
 name: Quick Trip v85 - Verificar CDN rawgit net solo QA
-# Quinto pase: manifest comprobado sin fetch, para respetar connect-src none.
+# Sexto pase: diagnosticar archivos 4xx y timeout de interfaz CDN.
 on:
   push:
     branches:
