@@ -11,7 +11,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="traslados-preview" content="read-only">
   <meta name="quicktrip-qa-isolation" content="v85-samsung-no-backend">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; object-src 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; connect-src 'none'; img-src 'self' data: blob: https://raw.githubusercontent.com; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self'; object-src 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
   <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -19,9 +19,10 @@
     <link rel="stylesheet" href="./premium-route.css?v=2">
   <link rel="stylesheet" href="./quicktrip-clean.css?v=85">
   <link rel="stylesheet" href="./quicktrip-home-qa.css?v=84">
-  <title>Quick Trip · QA v85 · SIN RESERVAS</title>
+  <link rel="stylesheet" href="./quicktrip-approved-v85-qa.css?v=1">
+  <title>Quick Trip · Diseño V6 · QA v85</title>
 </head>
-<body>
+<body class="qt-approved-qa-v85">
   <div id="qt-public-qa-banner" role="status" style="position:sticky;top:0;z-index:999999;background:#3c1730;color:#fff7dd;border-bottom:2px solid #e9b868;padding:9px 13px;text-align:center;font-size:13px;font-family:Arial,sans-serif;font-weight:800">
     QUICK TRIP v85 · PRUEBA AISLADA · SIN SUPABASE · NO ENVIAR DATOS REALES
   </div>
@@ -485,5 +486,6 @@
   <script src="./app.js?v=83" defer></script>
       <script src="./quicktrip-clean.js?v=7" defer></script>
   <script src="./quicktrip-v85-resilience.js?v=1" defer></script>
+  <script src="./quicktrip-approved-v85-qa.js?v=1" defer></script>
 </body>
 </html>
