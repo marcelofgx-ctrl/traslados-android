@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./styles.css?v=83">
     <link rel="stylesheet" href="./premium-route.css?v=2">
   <link rel="stylesheet" href="./quicktrip-clean.css?v=7">
+  <link rel="stylesheet" href="./quicktrip-home-qa.css?v=84">
   <title>Quick Trip · Tu viaje y reservas</title>
 </head>
 <body>
@@ -48,7 +49,7 @@
         <p>Elegí tu servicio para continuar.</p>
       </div>
       <div class="service-list" aria-label="Servicios de Traslados">
-        <button type="button" class="service-card service-card-featured" data-service="now" aria-label="Tu viaje. Viajar ahora o en diez minutos, sujeto a disponibilidad">
+        <button type="button" class="service-card service-card-featured" data-service="now" aria-label="Tu viaje. Solicitá una recogida y esperá la respuesta del conductor">
           <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-journey" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
               <defs><path id="service-arc-journey" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
               <circle cx="52" cy="52" r="48" class="emblem-outer"/>
@@ -64,29 +65,8 @@
           <span class="service-card-body">
             <span class="service-card-kicker">RECOGIDAS A PEDIDO</span>
             <strong class="service-card-name">Tu <em>viaje</em></strong>
-            <small class="service-card-description">Viajá ahora o en 10 minutos, con atención directa.</small>
+            <small class="service-card-description">Elegí tu recorrido y recibí una respuesta directa.</small>
             <span class="service-card-action">Solicitar viaje <span aria-hidden="true">↗</span></span>
-          </span>
-          <span class="service-card-arrow" aria-hidden="true">→</span>
-        </button>
-        <button type="button" class="service-card service-card-scheduled" data-service="schedule" aria-label="Tu reserva. Programar un viaje para la fecha y hora que elijas">
-          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-calendar" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
-              <defs><path id="service-arc-calendar" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
-              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
-              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
-              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
-              <text class="emblem-lettering"><textPath href="#service-arc-calendar" startOffset="50%" text-anchor="middle">TU RESERVA</textPath></text>
-              <rect x="35" y="42" width="34" height="30" rx="5" class="emblem-drawing"/>
-              <path d="M35 51H69M43 37v9M61 37v9" class="emblem-drawing"/>
-              <circle cx="54" cy="61" r="7" class="emblem-clock"/>
-              <path d="M54 57v4l3 2" class="emblem-drawing"/>
-              <circle cx="77" cy="72" r="2.3" class="emblem-glint"/>
-            </svg></span>
-          <span class="service-card-body">
-            <span class="service-card-kicker">PLANIFICÁ CON TIEMPO</span>
-            <strong class="service-card-name">Tu <em>reserva</em></strong>
-            <small class="service-card-description">Aeropuerto, eventos y puerta a puerta, a tu ritmo.</small>
-            <span class="service-card-action">Programar viaje <span aria-hidden="true">↗</span></span>
           </span>
           <span class="service-card-arrow" aria-hidden="true">→</span>
         </button>
@@ -108,6 +88,27 @@
             <span class="service-card-tag service-tag-soon">PRÓXIMAMENTE</span>
           </span>
           <span class="service-card-arrow" aria-hidden="true">＋</span>
+        </button>
+        <button type="button" class="service-card service-card-scheduled" data-service="schedule" aria-label="Tu viaje programado. Elegí una fecha y un horario para solicitar el traslado">
+          <span class="service-card-icon" aria-hidden="true"><svg class="service-emblem service-emblem-calendar" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs><path id="service-arc-calendar" d="M 14 52 A 38 38 0 0 1 90 52"/></defs>
+              <circle cx="52" cy="52" r="48" class="emblem-outer"/>
+              <circle cx="52" cy="52" r="40" class="emblem-dashed"/>
+              <circle cx="52" cy="54" r="28" class="emblem-inner"/>
+              <text class="emblem-lettering"><textPath href="#service-arc-calendar" startOffset="50%" text-anchor="middle">PROGRAMADO</textPath></text>
+              <rect x="35" y="42" width="34" height="30" rx="5" class="emblem-drawing"/>
+              <path d="M35 51H69M43 37v9M61 37v9" class="emblem-drawing"/>
+              <circle cx="54" cy="61" r="7" class="emblem-clock"/>
+              <path d="M54 57v4l3 2" class="emblem-drawing"/>
+              <circle cx="77" cy="72" r="2.3" class="emblem-glint"/>
+            </svg></span>
+          <span class="service-card-body">
+            <span class="service-card-kicker">PLANIFICÁ CON TIEMPO</span>
+            <strong class="service-card-name">Tu viaje <em>programado</em></strong>
+            <small class="service-card-description">Elegí el día y la hora para tu traslado.</small>
+            <span class="service-card-action">Programar mi viaje <span aria-hidden="true">↗</span></span>
+          </span>
+          <span class="service-card-arrow" aria-hidden="true">→</span>
         </button>
       </div>
       <p id="service-coming-soon" class="service-coming-soon" role="status" aria-live="polite" hidden>Estamos preparando el servicio de mensajería y paquetería. Todavía no se pueden solicitar envíos.</p>
@@ -477,6 +478,6 @@
   <script src="./pickup-origin-drift.js?v=1" defer></script>
   <script src="./journey-compat-v7.js?v=1" defer></script>
   <script src="./app.js?v=83" defer></script>
-      <script src="./quicktrip-clean.js?v=6" defer></script>
+      <script src="./quicktrip-clean.js?v=7" defer></script>
 </body>
 </html>
