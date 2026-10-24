@@ -161,6 +161,10 @@
       if(field){field.addEventListener("input",scheduleSave);
         field.addEventListener("change",scheduleSave);}
     }
+    // Recanalizar cambios que ocurren justo antes de recargar/cerrar; no esperar
+    // al debounce de 150 ms para no perder un borrador recién editado.
+    win.addEventListener("pagehide",()=>saveDraft(true));
+    win.addEventListener("beforeunload",()=>saveDraft(true));
     // Si el pasajero llega directamente a Tu Viaje vía historial del navegador.
     if(lastView==="viaje")restoreDraft();
     win.QuickTripResilience=Object.freeze({
