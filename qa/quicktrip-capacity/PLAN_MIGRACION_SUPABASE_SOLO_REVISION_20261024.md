@@ -5,7 +5,8 @@
 **Repositorio:** https://github.com/marcelofgx-ctrl/traslados-android  
 **PR de código:** https://github.com/marcelofgx-ctrl/traslados-android/pull/197 (abierto, borrador, no fusionado)  
 **Base congelada de este plan:** b912768eb38cd2d6963b586fe8a89b2dd517e687  
-**Último CI aislado aprobado:** https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40058257833  
+**CI de PostgreSQL 16 aprobado:** https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40058257833  
+**CI de PostgreSQL 17 aprobado:** https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40059052425 (commit 0c9c0774540ca8752d11e439b22cdae83e9163e1; pruebas ficticias de contratos y RPC representativas)  
 
 > **Restricción estricta:** este archivo es una propuesta de operación FUTURA. No autoriza ni realiza DDL, DML, copias de datos reales, cierres/cancelaciones de reservas, cambios de roles, RPC, web, Android, GPS, CI productivo, fusiones o despliegues. Toda ejecución requiere una aprobación nueva y específica. No subir volcados, PIN, tokens, claves ni teléfonos al repositorio.
 
@@ -19,12 +20,12 @@ Quedan **fuera**: GPS privado, presencia pública, pantalla Conductor, PWA, camb
 
 ## 2. Inventario observado en Supabase REAL — lecturas únicamente
 
-Consultas al catálogo y tablas el 24/10/2026, **no es una instantánea inmutable**:
+Consultas al catálogo y tablas el 24/10/2026, **no es una instantánea inmutable**. La verificación de las **03:39 UTC** constató 24 reservas, **0 servicios operativos**, 63 eventos y ausencia del índice propuesto:
 
 | Dato | Observado |
 |---|---|
 | Proyecto | ACTIVE_HEALTHY, PostgreSQL **17.11** (rama GA 17) |
-| Base de QA previa | PostgreSQL **16**, contenedor descartable; necesita repetición en PG **17** |
+| Pruebas de QA | PostgreSQL **16 y 17** en contenedores descartables, ambos con CI SUCCESS; **NO** ensayan toda la configuración Supabase real |
 | public.reservations | **24** filas; RLS activo |
 | Estados reservation_status | PENDIENTE, ACEPTADA, EN_VIAJE, FINALIZADA, CANCELADA, RECHAZADA, PRESUPUESTO_ENVIADO, ACEPTADA_CLIENTE, CONFIRMADA, RECHAZADA_CLIENTE |
 | Modos de recogida | now, schedule y valores numéricos de 1 a 120, con restricción CHECK en producción |
@@ -32,7 +33,7 @@ Consultas al catálogo y tablas el 24/10/2026, **no es una instantánea inmutabl
 | Índice qt_one_active_service_uq | **NO existe** en producción |
 | Servicios reales que satisfacen el predicado | **2 en la lectura inicial; 0 en la verificación posterior** (ver apartado 2.1) |
 | GPS privado en reservation_live_position | 0 posiciones; NO es criterio para instalar la restricción |
-| Eventos históricos reservation_events | 59 filas |
+| Eventos históricos reservation_events | 59 en la primera lectura; **63** en la lectura posterior del 24/10 a las **03:39 UTC** |
 | Triggers en reservations | reservation_schedule_request_policy_v1, reservations_event_insert, reservations_event_update, reservations_fixed_fare_guard_v1 |
 
 **Dos reservas inicialmente abiertas (esta auditoría no las modificó):**
@@ -104,7 +105,7 @@ AND (
 
 **P4. Respaldo VALIDADO (no consta respaldo realizado en esta etapa):** confirmar en Dashboard > Database > Backups la retención y disponibilidad real de respaldos/PITR; tomar o confirmar punto de recuperación adecuado según el plan del proyecto. Además guardar una exportación segura (fuera de GitHub) de esquema, índices, restricciones, triggers, funciones, políticas, GRANT y manifiesto/versiones de migraciones; capturar copia protegida y cifrada de reservas/eventos y otras tablas relacionadas SOLO con autorización para respaldo real. Registrar checksums, responsable y procedimiento de restauración; ensayar restauración en un ambiente SEPARADO. Sin evidencia de restauración posible, NO APLICAR.
 
-**P5. Ensayo representativo:** restaurar esquema compatible y datos FICTICIOS/anonimizados en PostgreSQL **17**, nunca en producción. Repetir pruebas del PR #197 y demostrar: (a) duplicados hacen fallar la instalación sin cambiar datos; (b) cero operativos permite instalar; (c) dos aceptaciones concurrentes devuelven una confirmación y un 23505; (d) inicio de recogida programada adquiere capacidad; (e) cierre libera; (f) rollback conserva filas; (g) triggers y RPC representativos mantienen sus contratos. No utilizar tokens, PIN o datos reales sin nueva autorización.
+**P5. Ensayo representativo — PARCIALMENTE CUMPLIDO:** se ejecutaron contra PostgreSQL **17-alpine** pruebas ficticias de predicado, 10 estados, solicitudes programadas, duplicados, dos conexiones, SQLSTATE **23505**, rollback y cinco RPC **simuladas parcialmente** (workflow #40059052425: SUCCESS). Esto **no** ejecuta las RPC originales ni sus autenticaciones, permisos, disponibilidad y triggers reales. Falta un ensayo de integración con esquema equivalente al real, catálogo de funciones/triggers/RLS/GRANT sin secretos, compatibilidad de errores Android/PWA y restauración verificada. Nunca utilizar PIN, sesiones, tokens ni datos personales de producción sin autorización específica.
 
 **P6. Ventana y rollback aprobados:** detener temporalmente escrituras/solicitudes de reserva de forma controlada y verificable, sin dar por cerrados servicios. Fijar operador y responsable de decisión, acceso a respaldo, procedimiento de abortar y plan de observación. No habilitar proceso automático que cambie reservas previas.
 
@@ -125,6 +126,41 @@ AND (
 | Triggers de eventos / schedule | Verificar que se sigan grabando eventos válidos y aplicando la política schedule. |
 
 **Acceso:** las ocho RPC seleccionadas revisadas exponen EXECUTE a anon y authenticated y usan SECURITY DEFINER con validaciones propias. No retirar privilegios sin estudio de dependencias. public.reservations tiene RLS; la política UPDATE para authenticated permite al conductor identificado por is_driver(auth.uid()), sin restringir individualmente cambios a status, pickup_mode, pickup_phase o is_demo. Las concesiones SQL de UPDATE son amplias; RLS sigue limitando qué usuarios pueden modificar filas. **Riesgo:** un acceso legítimo de conductor o una rutina privilegiada podría alterar is_demo para eludir la restricción; endurecer controles requiere propuesta y aprobación independientes. El índice no es un reemplazo de autorización ni de transiciones válidas.
+
+
+## 5.1. Hallazgos complementarios verificados por lectura — 24/10/2026
+
+**Base y permisos:** proyecto \`zetaudvvutlouiqxopvg\` ACTIVE_HEALTHY, PostgreSQL 17.11. Hay 24 reservas, 63 eventos tras el cambio histórico ya documentado y cero servicios operativos en la lectura 03:39 UTC. \`qt_one_active_service_uq\` aún NO existe. RLS está habilitado en \`public.reservations\`; la política \`drivers update reservations\` (rol authenticated) comprueba \`is_driver(auth.uid())\` en USING y WITH CHECK. Existe GRANT amplio UPDATE para authenticated y privilegio de columna \`is_demo\`; esto **no significa acceso libre para usuarios anónimos**, ya que RLS también aplica a DML directo, pero sí obliga a revisar a los usuarios que califican como conductor. Los GRANT SQL para anon/authenticated/service_role son amplios y no reemplazan RLS ni controles internos de funciones SECURITY DEFINER.
+
+**RPC concretas:** se verificaron las firmas de \`driver_decide_fixed_pickup_v1\`, \`driver_set_status_v2\`, \`driver_set_pickup_phase_v1\`, \`customer_quote_decision_v10\`, \`customer_quote_decision_v13\`, \`customer_request_pickup_fixed_v1\` y \`customer_request_pickup_v1\`. Todas las examinadas tienen SECURITY DEFINER y EXECUTE efectivo para anon/authenticated, por lo que su seguridad depende de las validaciones internas. \`driver_decide_fixed_pickup_v1\` y \`customer_quote_decision_v13\` poseen advisory lock, FOR UPDATE y chequeo de disponibilidad; \`driver_set_status_v2\` y \`driver_set_pickup_phase_v1\` usan FOR UPDATE, no advisory lock; \`customer_quote_decision_v10\` no usa advisory lock, FOR UPDATE ni availability_route_check_v11_4. El índice evitaría dos ocupaciones simultáneas por cualquiera de ellas, pero **no corrige agenda programada superpuesta** de rutas legacy.
+
+**Clientes existentes (lectura del código en base del PR #197):**
+- Android \`conductor/Api.java\` conserva \`ApiException.backendCode\` y respuesta JSON del servidor; \`publicMessage()\` distingue el error horario y fallos de red, pero **no** transforma aún \`23505\` + nombre del índice en texto específico de ocupación.
+- PWA \`web-pasajero/rpc-client.js\` conserva solo \`parsed.message\` cuando falla un RPC y **descarta \`parsed.code\`**; \`app.js/showError()\` no distingue el \`23505\` de este índice. Tampoco todas las versiones instaladas de los clientes están auditadas.
+- Exigir una comprobación de extremo a extremo: error con \`code=23505\` y constraint \`qt_one_active_service_uq\` → "Conductor ocupado", **sin** atribuirlo a Internet. Cualquier otro 23505 debe retener su diagnóstico propio, y timeout sin confirmación obliga a releer estado antes de reenviar.
+
+**Cobertura real de pruebas:**
+- PG16: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40058257833 (success).
+- PG17: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40059052425 (success, commit \`0c9c0774540ca8752d11e439b22cdae83e9163e1\`). El test verificó simultaneidad de dos RPC *simuladas* de conductor y cliente legacy, exactamente un commit y una unicidad \`23505\`, las 10 etiquetas de estado, \`schedule\`, retirada/reinstalación del índice y cero pérdidas de filas ficticias.
+- **Fuera de cobertura**: ejecución de funciones auténticas con autenticación y disponibilidad, seguridad bajo RLS y GRANT reales, pruebas integradas de las cuatro triggers, mensajes del Samsung/PWA instalada y restauración del respaldo.
+
+## 9.1. Matriz de autorización futura — compuertas independientes
+
+| Compuerta | Evidencia actual | Criterio de aprobación separado |
+|---|---|---|
+| G1 — Preflight operativo | 24 reservas, **0 operativas** en lectura 03:39 UTC; 2 cambios de cierre históricos con autor no identificado | Nueva consulta idéntica durante mantenimiento, ocupación=0, legitimidad de cierres verificada; no alterar reservas para cumplirla |
+| G2 — Respaldo y restauración | **NO VERIFICADO:** las herramientas de lectura disponibles no exponen inventario de backups, PITR, fecha válida ni prueba de restauración | Responsable confirma en Dashboard > Database > Backups existencia/retención, fecha, procedimiento y **restauración probada en ambiente separado**; copia privada y checksums con autorización distinta |
+| G3 — RPC y agenda heredada | PG17 replicas PASS; \`customer_quote_decision_v10\` sigue ejecutable y no hace availability_route_check_v11_4 | Inventario de clientes/versiones activas, prueba RPC real en entorno aislado equivalente; decisión explícita sobre compatibilidad v10 sin revocar nada automáticamente |
+| G4 — Seguridad | RLS activo; UPDATE amplio para conductor autenticado; \`is_demo\` excluye índice | Prueba de que ningún escritor autorizado puede eludir capacidad cambiando \`is_demo\`, ni modificar indiscriminadamente \`pickup_mode/status\`; revisión del mínimo privilegio |
+| G5 — Manejo de error y UX | PostgreSQL emite 23505 y HTTP PostgREST 409 documentado; Android/PWA no distinguen estrictamente este índice | Matriz de códigos y constraint en versiones instaladas, sin regresión; autorización independiente para cambios del cliente si se requieren |
+| G6 — Aplicación/rollback | Índice y rollback solo ensayados con fixtures | Ventana de mantenimiento, responsable de recuperación, límites de lock, monitoreo, SQL/commit congelado y autorización expresa para DDL real |
+| G7 — Publicación | No autorizada y no necesaria para esta documentación | Aprobación independiente posterior para APK o PWA, nunca implícita por instalar índice |
+
+**Dictamen:** **NO-GO / pendiente de G1–G6**. G1 tiene fotografía favorable pero no decisión definitiva; PG17 sintético aprobado reduce riesgo técnico, sin cerrar G2–G5. El equipo no debe tratar un botón de aprobación documental como autorización para modificar Supabase real.
+
+**Respaldo:** la documentación de Supabase explica respaldos automáticos según plan y PITR opcional, pero **no se conoce el plan de este proyecto ni su inventario de backups**. No inferir que exista copia restaurable a partir del estado ACTIVE_HEALTHY ni del plan de suscripción ChatGPT. Consultar https://supabase.com/docs/guides/platform/backups.
+
+**Errores:** Supabase/PostgREST documenta la violación \`23505\` como HTTP \`409\`, pero el mapeo al nombre exacto del índice y el mensaje del cliente no se han ensayado con las RPC reales. Referencia https://supabase.com/docs/guides/api/rest/postgrest-error-codes.
 
 ## 6. Errores, UI y contratos de retorno (sin modificar apps ahora)
 
@@ -165,17 +201,20 @@ AND (
 | Severidad | Riesgo | Bloqueo o mitigación antes de producción |
 |---|---|---|
 | BLOQUEANTE HASTA REVALIDAR | Dos servicios estuvieron abiertos, luego se marcaron FINALIZADA durante la auditoría | Confirmar legitimidad y trazabilidad de los cierres; volver a verificar ocupación=0 inmediatamente antes de un despliegue futuro, sin modificar reservas |
-| BLOQUEANTE | No hay prueba PG17 ni recuperación validada | QA en PG17 con esquema representativo, backup disponible y restauración ensayada |
+| BLOQUEANTE | Pruebas PG17 sintéticas aprobadas, **pero NO existe evidencia de recuperación validada ni integración completa** | Validar respaldo + restauración realista y compatibilidad de RPC/triggers/RLS/GRANT sin tocar reservas |
 | ALTA | RPC v10 aún habilitada y sin disponibilidad moderna | Auditar llamadas activas y decidir mantener, adaptar o revocar solo en etapa aparte |
 | ALTA | Posible bypass is_demo / UPDATE directo de conductor | Revisar GRANT, RLS, columnas y rutas que escriben is_demo; demostrar que no se elude |
 | ALTA | UI atribuye 23505 a red u otro fallo | Pruebas de mapeo estricto por índice y reconciliación de respuesta |
 | MEDIA | Escrituras concurrentes durante CREATE INDEX normal | Ventana de mantenimiento, lock/statement timeouts y abortar si no hay exclusividad |
-| MEDIA | Diferencia PG16 de CI y PG17 real | Repetir integración/rollback en PG17 antes del cambio |
+| MEDIA | PG17 de CI no equivale a Supabase 17.11 con funciones/triggers y configuración real | Validar esquema y funciones equivalentes en PostgreSQL 17 separado, manteniendo QA aislado |
 | MEDIA | Estados enum nuevos, agenda programada o heredados | Reauditar enum, CHECK, flujos y preflight; conservar calendario independiente |
 
 **Responsabilidad actual:** esta etapa solo permite preparar y revisar la documentación. **Próxima decisión futura:** autorizar por separado (1) saneamiento manual de reservas (si corresponde), (2) entorno de QA PG17 y respaldo verificable si genera costo/acceso, (3) correcciones de RPC/permisos/clientes si se aprueban, (4) ejecución de la migración real. No agrupar autorizaciones como si fueran una sola.
 
 ## 10. Evidencias y enlaces
+- CI PostgreSQL 17 aislado: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40059052425 (SUCCESS)
+- Rama QA PG17: https://github.com/marcelofgx-ctrl/traslados-android/tree/qa/quicktrip-capacidad-pg17-20261024
+
 
 - Rama base de contratos aprobados por CI: https://github.com/marcelofgx-ctrl/traslados-android/commit/b912768eb38cd2d6963b586fe8a89b2dd517e687
 - Prueba de concurrencia y rollback PG16 ficticio: https://github.com/marcelofgx-ctrl/traslados-android/actions/runs/40058257833
@@ -185,4 +224,4 @@ AND (
 - Supabase Database Backups: https://supabase.com/docs/guides/platform/backups
 - Supabase PostgREST Error Codes: https://supabase.com/docs/guides/api/rest/postgrest-error-codes
 
-**Resultado de esta fase:** plan verificable, sin migración SQL aplicada ni datos productivos modificados POR ESTE TRABAJO. **Se observaron modificaciones de reservas por un actor externo no identificado durante la auditoría**; se documentan sin atribuirlas. El estado sigue **NO-GO para ejecutar** por PG17, respaldo y compatibilidad pendientes, aun con 0 operativos en la última lectura.
+**Resultado de esta fase:** plan verificado y actualizado con PG17 exitoso, sin migración SQL aplicada ni datos productivos modificados POR ESTE TRABAJO. Las reservas cambiadas externamente conservan autor **no determinado**. El estado sigue **NO-GO para ejecutar**, ahora por ausencia de evidencia de respaldo restaurable, compatibilidad RPC/cliente y seguridad del campo `is_demo`, además del ensayo integral del esquema y la aprobación específica. Cero operativos es condición necesaria del preflight conservador, nunca autorización suficiente.
