@@ -17,6 +17,7 @@ function storage(name){
   if(!stores.has(name))stores.set(name,new Map());
   const map=stores.get(name);
   return {
+    async keys(){return [...map.keys()].map(url=>({url}));},
     async addAll(files){for(const f of files)map.set(urlOf(f),response("PRECACHE:"+f));},
     async put(r,res){map.set(urlOf(r),res.clone());},
     async match(r,opt={}){
