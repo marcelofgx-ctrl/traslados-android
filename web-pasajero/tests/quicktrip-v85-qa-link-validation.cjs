@@ -1,0 +1,103 @@
+"use strict";
+/* Valida visualmente la URL real proporcionada por GitHub Actions,
+   el CSP no-backend y el modo de sólo lectura.
+   Sólo recursos estáticos públicos del CDN, jamás Supabase. */
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const {chromium}=require("playwright-core");
+const qaDir=process.env.QA_DIR||"quicktrip-v85-link-qa";
+fs.mkdirSync(qaDir,{recursive:true});
+const url=process.env.QA_PREVIEW_URL;
+if(!url||!url.startsWith("https://raw.githack.com/marcelofgx-ctrl/traslados-android/"))throw Error("Invalid URL under QA");
+const report={
+  exactPreviewUrl:url,backend:"CSP connect-src none; preview read-only",
+  onlineValidation:"PENDING",browser: "Chromium Android device emulation",
+  actualSupabaseRequestsCompleted:0,remoteBookingWrites:0,
+  navigatedToProd:false,images:[],checks:[],unexpected:[],blocked:[],
+  screenshot:null
+};
+const must=(ok,label,detail)=>{report.checks.push({label,pass:!!ok,detail});assert(ok,label+": "+String(detail||""))};
+async function main(){
+ let browser;
+ try {
+  browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage"]});
+  const context=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:3,isMobile:true,hasTouch:true,
+    userAgent:"Mozilla/5.0 (Linux; Android 16; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36",
+    locale:"es-UY",serviceWorkers:"block",reducedMotion:"reduce"});
+  const page=await context.newPage();
+  let anyExternal=0,realSupabaseSuccess=0;
+  page.on("request",req=>{
+    if(/supabase\.co|direcciones\.ide\.uy|workers\.dev|tile\.openstreetmap\.org/.test(req.url())){
+      report.blocked.push({url:new URL(req.url()).hostname,method:req.method(),type:req.resourceType()});
+    }
+    if(!req.url().startsWith("https://raw.githack.com/"))anyExternal++;
+  });
+  page.on("response",response=>{
+    if(/supabase\.co|direcciones\.ide\.uy|workers\.dev/.test(response.url()))realSupabaseSuccess++;
+  });
+  page.on("pageerror",e=>report.unexpected.push("PAGE "+e.message));
+  const res=await page.goto(url,{waitUntil:"domcontentloaded",timeout:45000});
+  must(res&&res.status()===200,"HTTP 200 en enlace QA",res?.status());
+  let visible=await page.locator("#qt-public-qa-banner").count();
+  // Some HTML raw proxies ask for a one-time confirmation page before entering.
+  if(!visible){
+    const text=await page.locator("body").innerText();
+    report.unexpected.push("FIRST PAGE NOT QA: "+text.slice(0,240));
+    throw Error("QA banner missing, possible provider interstitial");
+  }
+  must(await page.locator("#qt-public-qa-banner").isVisible(),"Banner visible",url);
+  const guards=await page.evaluate(()=>({
+    preview:Boolean(document.querySelector('meta[name="traslados-preview"]')),
+    csp:document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content||"",
+    title:document.title,
+    registerScript:Boolean(document.querySelector('script[src*="quicktrip-v85-resilience.js"]')),
+    urgentCount:document.querySelectorAll("#urgent-send").length,
+    externalScripts:[...document.scripts].map(x=>x.src).filter(x=>x&&!x.startsWith(location.origin)),
+    manifest:document.querySelector('link[rel="manifest"]')?.getAttribute("href")
+  }));
+  must(guards.preview,"Modo readonly activo",guards);
+  must(guards.csp.includes("connect-src 'none'"),"CSP bloquea llamadas externas",guards.csp);
+  must(guards.csp.includes("form-action 'none'"),"CSP bloquea envio de formularios",guards.csp);
+  must(guards.title.includes("QA"),"Titulo identifica QA",guards.title);
+  must(guards.registerScript,"Resiliencia v85 cargada en el documento",guards.registerScript);
+  must(!guards.externalScripts.length,"Scripts sólo del origen QA",guards.externalScripts);
+  must(guards.urgentCount===1,"Un único CTA original",guards.urgentCount);
+  await page.locator('#view-inicio.active [data-service="now"]').click({timeout:16000});
+  await page.locator('#view-viaje.active .qtc-app').waitFor({state:"visible",timeout:16000});
+  await page.waitForFunction(()=>history.state?.quickTripV85View==="viaje",null,{timeout:8000});
+  const state=await page.evaluate(()=>({view:document.querySelector(".view.active")?.id,
+    ctaDisabled:document.querySelector("#urgent-send")?.disabled,
+    logo:Boolean(document.querySelector(".qtc-brand"))}));
+  must(state.ctaDisabled===true,"Solicitud de viaje deshabilitada",state);
+  await page.screenshot({path:path.join(qaDir,"01-preview-qa-samsung-real-browser.png"),fullPage:true,animations:"disabled"});
+  report.screenshot="01-preview-qa-samsung-real-browser.png";
+  await page.goBack({waitUntil:"domcontentloaded",timeout:15000});
+  must(await page.locator("#view-inicio.active").count()===1,"Atrás vuelve a portada",page.url());
+  await page.screenshot({path:path.join(qaDir,"02-preview-qa-samsung-inicio.png"),fullPage:true,animations:"disabled"});
+  report.images.push("02-preview-qa-samsung-inicio.png");
+  const manifest=await page.evaluate(async()=>{
+    try{
+      const r=await fetch("./manifest.webmanifest");
+      return await r.json();
+    }catch(e){return{error:String(e)}}
+  });
+  must(String(manifest.name).includes("QA"),"Manifest instalación diferenciado",manifest.name);
+  must(manifest.start_url==="./index.html","Inicio instalable al HTML QA",manifest.start_url);
+  must(realSupabaseSuccess===0,"0 respuestas reales de Supabase",realSupabaseSuccess);
+  report.actualSupabaseRequestsCompleted=realSupabaseSuccess;
+  report.unexpectedNetworkRequests=anyExternal;
+  report.onlineValidation="PASS";
+  console.log("PASS QA URL VERIFICADA "+JSON.stringify(report,null,2));
+  await context.close();
+ }catch(e){
+  report.onlineValidation="FAIL";
+  report.failure=String(e.stack||e);
+  console.error("FAIL QA LINK VALIDATION "+report.failure);
+  process.exitCode=1;
+ }finally{
+  if(browser)await browser.close();
+  fs.writeFileSync(path.join(qaDir,"RESULTADOS-ENLACE-QA-v85.json"),JSON.stringify(report,null,2)+"\n");
+ }
+}
+main();
