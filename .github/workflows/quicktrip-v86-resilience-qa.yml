@@ -1,0 +1,92 @@
+name: Quick Trip v86 - Tres reparaciones QA aisladas SIN DEPLOY
+on:
+  push:
+    branches:
+      - qa/quicktrip-v86-resiliencia-tres-fixes-20261024
+    paths:
+      - .github/workflows/quicktrip-v86-resilience-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-chromium-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: "Blindaje: ningun motor, GPS, tarifa, reserva, Android ni base tocados"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='04ef4fc5f91c6a75364dd2595167bd05a285c403'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/quicktrip-resilience.js',
+            'web-pasajero/sw.js',
+            'web-pasajero/index.html',
+            'web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs',
+            '.github/workflows/quicktrip-v86-resilience-qa.yml'
+          }
+          assert changed==allowed,('Unexpected',sorted(changed-allowed),'Missing',sorted(allowed-changed))
+          for banned in ['app.js','route-engine.js','address-engine.js','eta-engine.js',
+              'booking-contracts.js','rpc-client.js','reservation-live.js','quicktrip-clean.js']:
+            assert not any(x.endswith('/'+banned) for x in changed),banned
+          print('PASS: solamente modulo resiliencia, ServiceWorker, HTML y test. Backend/Android intactos.')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Sintaxis y regresiones anteriores preservadas"
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-resilience.js
+          node --check web-pasajero/sw.js
+          node --check web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/urgent-request-v49-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/address-picker-regression-v82-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node web-pasajero/tests/quicktrip-three-services-v84-smoke.cjs
+          node web-pasajero/tests/quicktrip-mobile-skin-v83-smoke.cjs
+      - name: "Probar lógica SW CACHE real en simulación sin red"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-resilience-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs
+      - name: "Configurar Chromium oficial del runner"
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v86-resilience --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v86-resilience/node_modules" >> "$GITHUB_ENV"
+      - name: "Navegación Atrás, recuperación borrador, desconexión, UUID, envíos simulados"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-resilience-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs
+      - name: "Service Worker REAL en Chromium: versión CSS offline más reciente"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-resilience-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
+      - name: "Guardado de reportes y capturas reales; sin publicar ni desplegar"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v86-Resiliencia-QA-Capturas-Reales-NoPublicadas
+          path: quicktrip-v86-resilience-evidence/
+          if-no-files-found: warn
+          retention-days: 14
