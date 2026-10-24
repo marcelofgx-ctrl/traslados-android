@@ -150,7 +150,16 @@ async function main(){
   const preservedOk=preserved.origin===origin.text&&preserved.dest===dest.text &&
     preserved.passengers==="2"&&preserved.comments==="Indicaciones ficticias persistentes";
   record("Volver al Inicio y reabrir sin perder borrador",preservedOk,preserved);
+  await draft.page.waitForTimeout(250);
+  const savedBeforeReload=await draft.page.evaluate(()=>({
+    resilience:window.QuickTripResilience?.status?.()||null,
+    draft:(()=>{try{return JSON.parse(localStorage.getItem(window.QuickTripResilience?.storageKey));}catch{return null;}})()
+  }));
   await draft.page.reload({waitUntil:"load"});
+  const savedAfterReload=await draft.page.evaluate(()=>({
+    resilience:window.QuickTripResilience?.status?.()||null,
+    draft:(()=>{try{return JSON.parse(localStorage.getItem(window.QuickTripResilience?.storageKey));}catch{return null;}})()
+  }));
   await draft.page.locator('#view-inicio [data-service="now"]').click();
   await draft.page.locator("#view-viaje.active").waitFor({state:"visible"});
   try{await draft.page.waitForFunction(()=>record.origin?.text==="Aeropuerto QA"&&
@@ -163,7 +172,7 @@ async function main(){
   const recovered=afterReload.origin===origin.text && afterReload.dest===dest.text &&
     afterReload.comments==="Indicaciones ficticias persistentes";
   record("Recuperar borrador tras recarga completa",recovered,{
-   before:preserved,after:afterReload,
+   before:preserved,after:afterReload,savedBeforeReload,savedAfterReload,
    expected:"Recorrido y observaciones recuperados, sin nueva reserva",
    observed:recovered?"Recuperado":"Borrador reiniciado; la cuenta permanece"
   });
