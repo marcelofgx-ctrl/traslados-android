@@ -7,7 +7,7 @@ const read=n=>fs.readFileSync(path.join(root,n),"utf8");
 const html=read("index.html"),script=read("quicktrip-clean.js"),
   css=read("styles.css"),skin=read("quicktrip-clean.css"),sw=read("sw.js");
 assert(html.includes('styles.css?v=83'),"Load coherent updated base CSS");
-assert(html.includes('quicktrip-clean.css?v=7'),"Load updated clean skin");
+assert(html.includes('quicktrip-clean.css?v=85'),"Load updated clean skin");
 assert(html.includes('quicktrip-clean.js?v=7'),"Load updated clean UI script");
 assert(html.includes('app.js?v=83'),"Do not change the working booking engine");
 assert(sw.includes('traslados-pwa-v82-quicktrip-three-services-v84-20261024'),
