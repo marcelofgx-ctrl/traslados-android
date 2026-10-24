@@ -57,6 +57,10 @@ async function run(){
   report.checks.push({name:"Real Chromium stores unversioned precache + updated CSS query",status:"PASS",...seeded});
 
   await ctx.setOffline(true);
+  // El flag de Playwright no siempre desconecta el fetch() del Worker:
+  // detener también el servidor local prueba una pérdida de red real.
+  server.kill("SIGTERM");
+  await new Promise(ok=>setTimeout(ok,300));
   let offlineResult;
   try{
    offlineResult=await page.evaluate(async()=>{
