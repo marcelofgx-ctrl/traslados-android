@@ -90,5 +90,6 @@ jobs:
           path: |
             quicktrip-samsung-v85-qa/
             docs/QA_SAMSUNG_QUICKTRIP_v85_20261024.md
+            web-pasajero/tests/quicktrip-v85-samsung-local-preview.py
           if-no-files-found: warn
           retention-days: 14
