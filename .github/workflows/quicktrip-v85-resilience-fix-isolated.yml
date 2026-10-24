@@ -1,5 +1,5 @@
 name: Quick Trip v85 - Resiliencia post-fix Atras Borrador Cache (SOLO QA)
-# Pase 2: cache simulator conforms to CacheStorage.keys().
+# Pase 3: verificación offline real apaga HTTP localhost antes de consultar cache.
 on:
   push:
     branches:
@@ -32,6 +32,7 @@ jobs:
            'web-pasajero/quicktrip-v85-resilience.js',
            'web-pasajero/tests/quicktrip-v85-resilience-after-browser.cjs',
            'web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs',
+           'web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs',
            '.github/workflows/quicktrip-v85-resilience-fix-isolated.yml'
           }
           assert changed==allowed,('Extra',sorted(changed-allowed),'Missing',sorted(allowed-changed))
