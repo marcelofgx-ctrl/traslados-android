@@ -1,5 +1,5 @@
 name: Quick Trip v85 - QA Casos Limite (SIN DEPLOY / SIN SUPABASE)
-# Segundo pase: registrar diferencias de cache sin alterar codigo de la PWA.
+# Tercer pase: confirmar riesgo cache offline con ServiceWorker Chromium real.
 on:
   push:
     branches:
@@ -29,6 +29,7 @@ jobs:
           approved={
              'web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs',
              'web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs',
+             'web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs',
              '.github/workflows/quicktrip-v85-edge-isolated-qa.yml'
           }
           assert changed==approved,('Unexpected changes',sorted(changed-approved),'Missing',sorted(approved-changed))
@@ -43,6 +44,7 @@ jobs:
           set -euo pipefail
           node --check web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs
           node --check web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs
+          node --check web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
           node web-pasajero/tests/urgent-request-v49-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
@@ -72,6 +74,12 @@ jobs:
         run: |
           set -euo pipefail
           node web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs
+      - name: CacheStorage y Service Worker originales ejecutados en Chromium real
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-edge-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
       - name: Adjuntar hallazgos y capturas - JAMAS PUBLICAR
         if: always()
         uses: actions/upload-artifact@v4
