@@ -1,4 +1,5 @@
 name: Quick Trip v85 - QA Casos Limite (SIN DEPLOY / SIN SUPABASE)
+# Segundo pase: registrar diferencias de cache sin alterar codigo de la PWA.
 on:
   push:
     branches:
