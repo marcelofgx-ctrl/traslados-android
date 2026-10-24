@@ -12,7 +12,12 @@ assert os.environ.get("PGDATABASE") == "qt_capacity_test"
 assert os.environ.get("PGHOST") in ("127.0.0.1", "localhost")
 assert os.environ.get("PGPORT") == "5432"
 
-from test_postgres_capacity import execute, seed, update, scalar, ident, expect_unique, SCHEMA
+from test_postgres_capacity import execute as _base_execute, seed, update, scalar, ident, expect_unique, SCHEMA
+
+def execute(sql, ok=True, timeout=24):
+    # psql's default error output omits SQLSTATE, even on genuine unique_violation.
+    # Verbose mode is a client presentation setting, never a DB/production change.
+    return _base_execute("\\set VERBOSITY verbose\n" + sql, ok=ok, timeout=timeout)
 
 def rpc(name, i, arg, ok=True):
     bool_or_text = ("true" if arg else "false") if isinstance(arg, bool) else f"'{arg}'"
