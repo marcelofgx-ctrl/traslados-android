@@ -1,5 +1,5 @@
 name: Quick Trip v86 - Tres reparaciones QA aisladas SIN DEPLOY
-# Cuarto pase: recarga guarda antes de cerrar y cache evita HTTP cache; mediciones reales.
+# Quinto pase: Chromium SW offline con servidor local efectivamente detenido.
 on:
   push:
     branches:
@@ -32,6 +32,7 @@ jobs:
             'web-pasajero/index.html',
             'web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs',
             'web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs',
+            'web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs',
             '.github/workflows/quicktrip-v86-resilience-qa.yml'
           }
           assert changed==allowed,('Unexpected',sorted(changed-allowed),'Missing',sorted(allowed-changed))
