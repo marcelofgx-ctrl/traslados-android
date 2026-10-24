@@ -69,9 +69,16 @@ jobs:
           node --check web-pasajero/quicktrip-approved-v85-qa.js
           node --check web-pasajero/quicktrip-v85-resilience.js
           node --check web-pasajero/sw.js
-          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke; do
+          for test in booking-contracts-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke; do
             node web-pasajero/tests/"$test".cjs
           done
+          # El smoke v49 contiene hardcodeado el nombre de caché v82.
+          # Ejecutarlo con SW histórico dentro del runner (sin commit), y
+          # verificar luego el SW v86 por pruebas reales de Chromium.
+          cp web-pasajero/sw.js /tmp/qt-v86-current-sw.js
+          git show dcc95549600763a4e52978f92f283edc2694583d:web-pasajero/sw.js > web-pasajero/sw.js
+          node web-pasajero/tests/urgent-request-v49-smoke.cjs
+          mv /tmp/qt-v86-current-sw.js web-pasajero/sw.js
       - name: "Chromium real del runner y Playwright-core"
         shell: bash
         run: |
