@@ -10,6 +10,7 @@ assert.equal((html.match(/class="service-card service-card-/g)||[]).length,3);
 assert(html.includes("Tu viaje <em>programado</em>"),"Nombre correcto de programados");
 assert(html.includes("Tu <em>paquete</em>")&&html.includes("PRÓXIMAMENTE"));
 assert(html.includes("aria-controls=\"service-coming-soon\""),"Paquetería informa sin abrir reservas");
+assert(html.indexOf('data-service="delivery"') < html.indexOf('id="service-coming-soon"') && html.indexOf('id="service-coming-soon"') < html.indexOf('data-service="schedule"'),"El mensaje de Tu Paquete debe estar bajo su tarjeta");
 assert(home.includes('if(kind==="delivery")')&&home.includes("return;"),"Paquete no solicita viaje");
 assert(!clean.includes("open.click()"),"No debe abrir Tu Viaje automáticamente");
 assert(clean.includes("reconcile();"),"Conservar la preparación visual original");
