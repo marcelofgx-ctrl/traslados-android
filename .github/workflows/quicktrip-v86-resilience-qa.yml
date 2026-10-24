@@ -1,5 +1,5 @@
 name: Quick Trip v86 - Tres reparaciones QA aisladas SIN DEPLOY
-# Segundo pase: validar capturas Back sin errores de sintaxis.
+# Tercer pase: mock CacheStorage incluye keys como Chromium real.
 on:
   push:
     branches:
@@ -31,6 +31,7 @@ jobs:
             'web-pasajero/sw.js',
             'web-pasajero/index.html',
             'web-pasajero/tests/quicktrip-v85-browser-edge-isolated.cjs',
+            'web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs',
             '.github/workflows/quicktrip-v86-resilience-qa.yml'
           }
           assert changed==allowed,('Unexpected',sorted(changed-allowed),'Missing',sorted(allowed-changed))
