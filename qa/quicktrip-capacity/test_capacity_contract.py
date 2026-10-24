@@ -8,6 +8,8 @@ class CapacityContractTests(unittest.TestCase):
         self.assertIn('pickup_mode',sql)
         self.assertIn('pickup_phase',sql)
         self.assertIn('EN_VIAJE',sql)
+        self.assertIn("status IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA')",sql)
+        self.assertNotIn("status NOT IN (",sql)
         self.assertIn('DROP INDEX',rollback)
         self.assertIn('qt_one_active_service_uq',rollback)
         self.assertNotIn('CREATE TRIGGER',sql)

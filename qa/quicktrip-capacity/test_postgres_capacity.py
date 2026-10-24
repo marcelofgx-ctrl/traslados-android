@@ -68,6 +68,40 @@ def legacy_and_demo_tests():
     update(2,"status='ACEPTADA'")
     print("PASS: unrecognized legacy mode fails closed; demo excluded")
 
+
+def explicit_status_matrix_tests():
+    """All 10 production enum labels, using only disposable text fixture rows.
+
+    Non-operational rows (even with an inconsistent pickup phase) cannot block
+    an accepted service; only known operational states may consume capacity.
+    """
+    inactive = ('PENDIENTE', 'PRESUPUESTO_ENVIADO', 'RECHAZADA_CLIENTE',
+                'RECHAZADA', 'CANCELADA', 'FINALIZADA')
+    for state in inactive:
+        for mode in ('now', 'schedule', 'legacy_unknown'):
+            seed([(1,mode,state,'EN_PUNTO'),(2,'now','PENDIENTE',None)])
+            update(2,"status='ACEPTADA'")
+            assert scalar(f"SELECT count(*) FROM {SCHEMA} WHERE id='{ident(2)}' AND status='ACEPTADA'")=='1', (state,mode)
+    print("PASS: all 6 non-operational enum states excluded, including rejected customer / proposal")
+
+    for state in ('ACEPTADA', 'ACEPTADA_CLIENTE', 'CONFIRMADA', 'EN_VIAJE'):
+        seed([(1,'now',state,None),(2,'now','PENDIENTE',None)])
+        expect_unique(update(2,"status='ACEPTADA'",ok=False),
+                      f"operational status {state} blocks concurrent immediate acceptance")
+
+    for state in ('ACEPTADA', 'ACEPTADA_CLIENTE', 'CONFIRMADA'):
+        seed([(1,'schedule',state,'SIN_INICIAR'),
+              (2,'now','PENDIENTE',None)])
+        update(2,"status='ACEPTADA'")  # Future program stays on the calendar
+        expect_unique(update(1,"pickup_phase='EN_CAMINO'",ok=False),
+                      f"scheduled {state} acquires capacity on pickup start")
+        expect_unique(update(1,"pickup_phase='EN_PUNTO'",ok=False),
+                      f"scheduled {state} acquires capacity when at pickup")
+    seed([(1,'schedule','EN_VIAJE',None),(2,'now','PENDIENTE',None)])
+    expect_unique(update(2,"status='ACEPTADA'",ok=False),
+                  "scheduled EN_VIAJE consumes capacity without pickup_phase")
+    print("PASS: exactly 4 operational states, scheduled transition and EN_VIAJE")
+
 def concurrent_test():
     seed([(11,"now","PENDIENTE",None),(12,"20","PENDIENTE",None)])
     barrier=threading.Barrier(2)
@@ -118,6 +152,7 @@ if __name__=="__main__":
     assert scalar("SELECT to_regclass('qa_capacity.qt_one_active_service_uq') IS NOT NULL")=="t"
     ordinary_tests()
     legacy_and_demo_tests()
+    explicit_status_matrix_tests()
     concurrent_test()
     rollback_test()
     print("PASS all real local PostgreSQL isolated capacity checks")

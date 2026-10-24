@@ -1,4 +1,4 @@
--- DRAFT V2 — ATOMIC CONSTRAINT, NEVER APPLY TO REAL SUPABASE YET.
+-- DRAFT V3 — ATOMIC CONSTRAINT, NEVER APPLY TO REAL SUPABASE YET.
 -- Explicit authorization in this stage permits ONLY local, fictitious PostgreSQL.
 --
 -- CANONICAL BOOKING DISCRIMINATOR (web-pasajero/trip-board.js):
@@ -10,7 +10,14 @@
 -- Bookings reserved for a future scheduled time do not occupy the physical
 -- vehicle until pickup_phase EN_CAMINO / EN_PUNTO or status EN_VIAJE.
 -- Any other/legacy/unrecognized pickup_mode is treated conservatively as
--- immediate for capacity purposes: do not silently bypass the guard.
+-- immediate *only after* a reservation reaches an explicitly operational
+-- status; unknown pickup modes must not let accepted rides bypass the guard.
+-- Real reservation_status enum checked read-only on 2026-10-24:
+--   OPERATIONAL: ACEPTADA, ACEPTADA_CLIENTE, CONFIRMADA, EN_VIAJE.
+--   NON-OPERATIONAL: PENDIENTE, PRESUPUESTO_ENVIADO, RECHAZADA_CLIENTE,
+--                    RECHAZADA, CANCELADA, FINALIZADA.
+-- NEVER count unknown/future status enum labels automatically; any new
+-- operational status must receive a reviewed index update before use.
 --
 -- A PostgreSQL unique partial index is stronger and simpler than a row trigger
 -- taking an advisory lock AFTER other RPCs may have locked reservation rows.
@@ -24,8 +31,9 @@
 --    MUST fail closed if duplicates exist: NEVER silently delete/finish them.
 -- 3) Back up schema/functions and validate RPC exception mapping (SQLSTATE
 --    23505 + name qt_one_active_service_uq => user message "Conductor ocupado").
--- 4) For public.reservations.status enum, the terminal labels below must exist
---    (observed in driver_set_status_v2). Review extra statuses before rollout.
+-- 4) Reconfirm ALL public.reservations.status enum labels and each RPC path;
+--    add a reviewed status predicate for any NEW operational enum label.
+--    A broad status NOT IN predicate can wrongly count rejected proposals.
 -- 5) Separately review scheduled availability conflicts; this index does NOT
 --    replace the existing time-window availability RPCs.
 --
@@ -43,7 +51,7 @@ WHERE coalesce(is_demo,false)=false
   AND (
        status = 'EN_VIAJE'
        OR (
-         status NOT IN ('PENDIENTE','FINALIZADA','CANCELADA','RECHAZADA')
+         status IN ('ACEPTADA','ACEPTADA_CLIENTE','CONFIRMADA')
          AND (
            coalesce(pickup_mode,'') <> 'schedule'
            OR pickup_phase IN ('EN_CAMINO','EN_PUNTO')
