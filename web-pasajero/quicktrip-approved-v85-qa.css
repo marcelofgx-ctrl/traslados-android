@@ -159,3 +159,11 @@ body.qt-approved-qa-v85 .qt-qa-gps-details .gps-permission-help[hidden]{display:
 @media(prefers-reduced-motion:reduce){
   body.qt-approved-qa-v85 .service-card-icon{transition:none!important}
 }
+
+/* La navegación heredada no forma parte de las 3 superficies oficiales.
+   Forzar ocultación incluso si el skin base la reactivó después. */
+html body.qt-approved-qa-v85 main.shell>nav.tabs,
+html body.qt-approved-qa-v85 nav.tabs{
+  display:none!important;visibility:hidden!important;
+  max-height:0!important;overflow:hidden!important;
+}
