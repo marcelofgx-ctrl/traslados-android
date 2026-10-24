@@ -1003,3 +1003,28 @@ body.qt-clean #view-instalar .section-heading{
     width:19px;height:19px;flex-basis:19px;
   }
 }
+
+/* QA v85.1: controles secundarios en una fila; al abrirse ocupan la fila
+   completa. El botón NATIVO de solicitar queda antes de la barra inferior
+   en la pantalla Samsung 393x852, sin atajos en la validación del motor. */
+@media (max-width:479px){
+  body.qt-clean.qt-clean-active .qtc-app .qtc-content{
+    grid-template-columns:repeat(2,minmax(0,1fr));column-gap:7px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-places,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-driver,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-submit-region,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-success-slot{
+    grid-column:1 / -1;min-width:0;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact{grid-column:auto;min-width:0}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule[open],
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact[open]{grid-column:1 / -1}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary small{display:none}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-chevron{margin-left:auto}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule>summary,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary{
+    padding:7px 8px;gap:6px;
+  }
+}
