@@ -40,7 +40,7 @@ async function main(){
       await page.route("**/*",async route=>{
         const url=new URL(route.request().url());
         if(url.hostname==="tile.openstreetmap.org"&&route.request().method()==="GET"&&
-           /^\\/\\d+\\/\\d+\\/\\d+\\.png$/.test(url.pathname))return route.continue();
+           url.pathname.endsWith(".png")&&url.pathname.split("/").length===4)return route.continue();
         if(url.hostname!=="127.0.0.1")return route.abort();
         if(url.pathname==="/web-pasajero/"||url.pathname==="/web-pasajero/index.html"){
           const response=await route.fetch();
