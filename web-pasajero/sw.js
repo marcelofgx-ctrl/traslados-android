@@ -47,6 +47,6 @@ self.addEventListener("fetch",e=>{
 self.addEventListener("push",e=>{
   let p={};try{p=e.data?.json()||{};}catch{}
   if(!p.title||!p.body)return;
-  e.waitUntil(self.registration.showNotification(String(p.title),{body:String(p.body),icon:"./icons/icon-192.png",data:{url:"./"},tag:"traslados-update"}));
+  e.waitUntil(self.registration.showNotification(String(p.title),{body:String(p.body),icon:"./icons/icon-192.png",data:{url:"./index.html"},tag:"traslados-update"}));
 });
 self.addEventListener("notificationclick",e=>{e.notification.close();e.waitUntil(self.clients.openWindow("./index.html"));});
