@@ -46,9 +46,7 @@ async function run(){
   const seeded=await page.evaluate(async(name)=>{
     const cache=await caches.open(name);
     const first=await cache.match("./quicktrip-clean.css");
-    assert: {
-      if(!first)throw new Error("Original CSS absent from actual precache");
-    }
+    if(!first)throw new Error("Original CSS absent from actual precache");
     const latest=new Request(new URL("./quicktrip-clean.css?v=85",location.href));
     await cache.put(latest,new Response("QA_LAST_GOOD_CSS_v85",{
       status:200,headers:{"Content-Type":"text/css"}
