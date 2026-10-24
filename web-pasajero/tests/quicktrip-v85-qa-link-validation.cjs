@@ -25,6 +25,10 @@ async function main(){
   const context=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:3,isMobile:true,hasTouch:true,
     userAgent:"Mozilla/5.0 (Linux; Android 16; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36",
     locale:"es-UY",serviceWorkers:"block",reducedMotion:"reduce"});
+  // rawgit.net muestra una confirmación de terceros antes del HTML;
+  // validamos explícitamente el documento final sin modificar el sitio.
+  await context.addCookies([{name:"__Http-phish",value:"1",url:"https://rawgit.net/",
+    httpOnly:true,secure:true,sameSite:"Lax"}]);
   const page=await context.newPage();
   let anyExternal=0,realSupabaseSuccess=0;
   page.on("request",req=>{
@@ -43,7 +47,8 @@ async function main(){
   // Some HTML raw proxies ask for a one-time confirmation page before entering.
   if(!visible){
     const text=await page.locator("body").innerText();
-    report.unexpected.push("FIRST PAGE NOT QA: "+text.slice(0,240));
+    report.unexpected.push("FIRST PAGE NOT QA: "+text.slice(0,300));
+    report.unexpected.push("INTERSTITIAL CONTROLS: "+JSON.stringify(await page.locator("a,button").evaluateAll(nodes=>nodes.map(n=>({text:n.innerText,href:n.href})).slice(0,8))));
     throw Error("QA banner missing, possible provider interstitial");
   }
   must(await page.locator("#qt-public-qa-banner").isVisible(),"Banner visible",url);
