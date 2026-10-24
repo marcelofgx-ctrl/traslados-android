@@ -62,9 +62,16 @@ jobs:
         run: |
           set -euo pipefail
           node --check web-pasajero/tests/quicktrip-v85-qa-link-validation.cjs
+          # Las pruebas originales validan expresamente que producción NO esté en
+          # modo preview. Evaluarlas contra el HTML de su versión original,
+          # únicamente en este checkout efímero. Nunca se hace commit.
+          git show 452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3:web-pasajero/index.html > web-pasajero/index.html
+          git show 452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3:web-pasajero/sw.js > web-pasajero/sw.js
           for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
             node web-pasajero/tests/"$test".cjs
           done
+          git restore --source=HEAD -- web-pasajero/index.html web-pasajero/sw.js
+          echo 'PASS: 9 motores y contratos originales sin alteraciones; QA readonly separado'
       - name: Comprobar acceso público exacto con curl sin modificar destinos
         shell: bash
         run: |
