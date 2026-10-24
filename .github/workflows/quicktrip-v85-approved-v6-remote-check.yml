@@ -1,0 +1,61 @@
+name: Quick Trip v85 V6 círculos - QA REMOTO SOLO LECTURA
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-visual-v6-circulos-samsung-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-approved-v6-remote-check.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-cdn-mobile-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Aislamiento del codigo QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          approved={'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/quicktrip-approved-v85-qa.css','web-pasajero/quicktrip-approved-v85-qa.js','web-pasajero/tests/quicktrip-v85-approved-circles-browser.cjs','web-pasajero/tests/quicktrip-v85-v6-remote-samsung-check.cjs','.github/workflows/quicktrip-v85-approved-v6-visual-qa.yml','.github/workflows/quicktrip-v85-approved-v6-remote-check.yml'}
+          assert changed==approved,('Forbidden files',sorted(changed-approved),'Missing',sorted(approved-changed))
+          print('PASS isolated diff: presentation, tests, and CI only')
+          PY
+          grep -q "connect-src 'none'" web-pasajero/index.html
+          grep -q "traslados-preview" web-pasajero/index.html
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Chromium del runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/qt85-v6-remote --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/qt85-v6-remote/node_modules" >> "$GITHUB_ENV"
+      - name: QA navegador movil contra enlace remoto exacto sin produccion
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-qa-circles-remote
+        shell: bash
+        run: |
+          set -euo pipefail
+          export QA_PREVIEW_URL="https://rawgit.net/marcelofgx-ctrl/traslados-android/${GITHUB_SHA}/web-pasajero/index.html"
+          node web-pasajero/tests/quicktrip-v85-v6-remote-samsung-check.cjs
+      - name: Evidencias de pantalla real de QA remoto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-V6-Circulos-ENLACE-REMOTO-QA
+          path: quicktrip-v85-qa-circles-remote/
+          retention-days: 14
+          if-no-files-found: warn
