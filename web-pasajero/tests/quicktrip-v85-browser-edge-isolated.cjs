@@ -131,7 +131,7 @@ async function main(){
     expected:"Inicio Quick Trip; no abandonar la PWA",
     observed:wentHome?"Volvió Inicio":"Salió al documento previo del historial Chrome"
   });
-  await shot(nav,wentHome?"01-browser-atras-corregido-393.png":"01-browser-atras-fuera-de-pwa.png"');
+  await shot(nav,wentHome?"01-browser-atras-corregido-393.png":"01-browser-atras-fuera-de-pwa.png");
   await nav.ctx.close();
 
   // B. Preserving the draft when leaving via the INTERNAL button; reload/kill-recovery separate.
