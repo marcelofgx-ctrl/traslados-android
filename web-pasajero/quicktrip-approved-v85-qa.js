@@ -2,6 +2,14 @@
 /* QA VISUAL solamente. Dom nativo y listeners originales intactos. */
 (function(win,doc){
  const begin=()=>{
+   const legacyTabs=doc.querySelector(".shell>.tabs");
+   if(legacyTabs){
+     // JS compensates inherited styles that still re-enable the 4-item
+     // navigation on some devices; tab listeners remain available to app.js.
+     legacyTabs.hidden=true;
+     legacyTabs.style.setProperty("display","none","important");
+     legacyTabs.style.setProperty("visibility","hidden","important");
+   }
    const root=doc.getElementById("view-inicio");
    const hero=root?.querySelector(".home-hero");
    const title=hero?.querySelector("h1");
