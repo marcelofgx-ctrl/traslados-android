@@ -1,9 +1,9 @@
 {
-  "name": "Quick Trip · Tu viaje",
-  "short_name": "Quick Trip",
-  "description": "Tu viaje directo o programado. Solicitudes, estado del conductor y seguimiento desde la web.",
-  "id": "./",
-  "start_url": "./",
+  "name": "Quick Trip Web/PWA v86 — QA",
+  "short_name": "QT v86 QA",
+  "description": "Candidata aislada de visualización; sin Supabase, sin envío de viajes",
+  "id": "./index.html#qa-canonica-v86",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": [
@@ -11,7 +11,7 @@
     "minimal-ui"
   ],
   "orientation": "portrait",
-  "theme_color": "#092830",
+  "theme_color": "#3c1730",
   "background_color": "#092830",
   "lang": "es-UY",
   "categories": [
