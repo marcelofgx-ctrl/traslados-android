@@ -48,8 +48,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git show 0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9:web-pasajero/index.html > web-pasajero/index.html
-          git show 0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9:web-pasajero/sw.js > web-pasajero/sw.js
+          git show 452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3:web-pasajero/index.html > web-pasajero/index.html
+          git show 452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3:web-pasajero/sw.js > web-pasajero/sw.js
           for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
             node web-pasajero/tests/"$test".cjs
           done
