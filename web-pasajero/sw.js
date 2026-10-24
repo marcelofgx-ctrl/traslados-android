@@ -1,7 +1,7 @@
-const CACHE="traslados-pwa-v82-quicktrip-three-services-v84-20261024-tu-viaje-compacto-v85";
+const CACHE="traslados-pwa-v82-quicktrip-three-services-v84-20261024-tu-viaje-compacto-v85-resilience-v86";
 const CACHE_PREFIX="traslados-cliente-pwa-";
 const CURRENT_PREFIX="traslados-pwa-";
-const files=["./","./offline.html","./styles.css","./app.js","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-origin-drift.js","./pickup-observability.js","./trip-board.js","./reservation-live.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js","./journey-compat-v7.js","./quicktrip-clean.js","./quicktrip-clean.css","./quicktrip-home-qa.css","./quicktrip-logo-contrast.svg"];
+const files=["./","./offline.html","./styles.css","./app.js","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-origin-drift.js","./pickup-observability.js","./trip-board.js","./reservation-live.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js","./journey-compat-v7.js","./quicktrip-clean.js","./quicktrip-clean.css","./quicktrip-resilience.js","./quicktrip-home-qa.css","./quicktrip-logo-contrast.svg"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(files)).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&(k.startsWith(CACHE_PREFIX)||k.startsWith(CURRENT_PREFIX))).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener("fetch",e=>{
@@ -19,7 +19,22 @@ self.addEventListener("fetch",e=>{
         e.waitUntil(caches.open(CACHE).then(c=>c.put(r,copy)));
       }
       return response;
-    }).catch(()=>caches.open(CACHE).then(c=>c.match(r).then(hit=>hit||c.match(r,{ignoreSearch:true})))));return;
+    }).catch(async()=>{
+      const c=await caches.open(CACHE);
+      const exact=await c.match(r);
+      if(exact)return exact;
+      // El precache sin ?v= es la versión BASE. Si existe una hoja
+      // versionada recibida después por red, elegirla antes del precache.
+      const requests=await c.keys(),wanted=new URL(r.url);
+      for(let i=requests.length-1;i>=0;i--){
+        const candidate=new URL(requests[i].url);
+        if(candidate.pathname===wanted.pathname&&candidate.search){
+          const hit=await c.match(requests[i]);
+          if(hit)return hit;
+        }
+      }
+      return c.match(r,{ignoreSearch:true});
+    }));return;
   }
 });
 // A passenger must never receive fabricated push or create bookings offline.
