@@ -1,7 +1,7 @@
 "use strict";
 /*
  * QA visual REAL, rama aislada: Chromium abre el HTML operativo (sin mocks
- * de precio, GPS ni disponibilidad). Se bloquea cualquier tráfico externo.
+ * de precio, GPS ni disponibilidad). Sólo admite tiles OSM de lectura.
  * Las capturas nunca representan una reserva creada ni Supabase validado.
  */
 const assert=require("node:assert/strict");
@@ -39,6 +39,8 @@ async function main(){
       page.on("pageerror",error=>errors.push(width+": "+error.message));
       await page.route("**/*",async route=>{
         const url=new URL(route.request().url());
+        if(url.hostname==="tile.openstreetmap.org"&&route.request().method()==="GET"&&
+           /^\\/\\d+\\/\\d+\\/\\d+\\.png$/.test(url.pathname))return route.continue();
         if(url.hostname!=="127.0.0.1")return route.abort();
         if(url.pathname==="/web-pasajero/"||url.pathname==="/web-pasajero/index.html"){
           const response=await route.fetch();
@@ -53,6 +55,8 @@ async function main(){
       await page.locator("#view-inicio.active").waitFor({state:"visible"});
       await page.locator('#view-inicio [data-service="now"]').click();
       await page.locator("#view-viaje.active .qtc-app").waitFor({state:"visible",timeout:10000});
+      // Imágenes de calles públicas: las reservas, RPC y GPS permanecen desconectados.
+      await page.waitForTimeout(600);
       const state=await page.evaluate(()=>{
         const rect=selector=>{
           const element=document.querySelector(selector);
@@ -135,7 +139,7 @@ async function main(){
       results,javaScriptErrors:errors};
     fs.writeFileSync(path.join(output,"QA-RESULTADOS-v85.json"),
       JSON.stringify(manifest,null,2)+"\n");
-    console.log("PASS Tu Viaje compacto v85, 8 capturas reales Chromium, sin red externa");
+    console.log("PASS Tu Viaje compacto v85, 8 capturas Chromium, sin backend; tiles OSM públicos permitidos");
     console.log(JSON.stringify(results,null,2));
   }finally{
     if(browser)await browser.close();
