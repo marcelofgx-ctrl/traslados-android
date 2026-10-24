@@ -38,6 +38,13 @@ await page.getByText("Continue to this repository",{exact:true}).click();
 await page.locator("#qt-public-qa-banner").waitFor({state:"visible",timeout:18000});
 }
 await page.locator("#view-inicio.active .service-card").first().waitFor({state:"visible",timeout:15000});
+/* The hosting gateway returns DOMContentLoaded before deferred external
+ * script finishes on a cold cache. Validate after the visual layer settles. */
+await page.waitForFunction(
+  ()=>document.querySelector("#home-title")?.textContent.trim()==="Elegí cómo viajar" &&
+     document.body.classList.contains("qt-approved-qa-v85"),
+  null,{timeout:20000}
+);
 const home=await page.evaluate(()=>{
  const icon=s=>{const el=document.querySelector(s),r=el.getBoundingClientRect(),cs=getComputedStyle(el);return{w:Math.round(r.width),radius:cs.borderRadius}};
  return {
