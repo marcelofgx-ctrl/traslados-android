@@ -131,7 +131,7 @@ async function main(){
     expected:"Inicio Quick Trip; no abandonar la PWA",
     observed:wentHome?"Volvió Inicio":"Salió al documento previo del historial Chrome"
   });
-  if(!wentHome)await shot(nav,"01-browser-atras-fuera-de-pwa.png");
+  await shot(nav,wentHome?"01-browser-atras-corregido-393.png":"01-browser-atras-fuera-de-pwa.png"');
   await nav.ctx.close();
 
   // B. Preserving the draft when leaving via the INTERNAL button; reload/kill-recovery separate.
@@ -153,6 +153,8 @@ async function main(){
   await draft.page.reload({waitUntil:"load"});
   await draft.page.locator('#view-inicio [data-service="now"]').click();
   await draft.page.locator("#view-viaje.active").waitFor({state:"visible"});
+  try{await draft.page.waitForFunction(()=>record.origin?.text==="Aeropuerto QA"&&
+    record.destination?.text==="Destino QA Montevideo",null,{timeout:5000});}catch{}
   const afterReload=await draft.page.evaluate(()=>({
     origin:record.origin?.text||null,dest:record.destination?.text||null,
     passengers:$("passengers").value,comments:$("comments").value,
@@ -167,7 +169,7 @@ async function main(){
   });
   assert.equal(afterReload.token,account.token,"Local account session should survive reload");
   record("Sesión del pasajero sobrevive la recarga",true,{fixtureSessionPersisted:true});
-  if(!recovered)await shot(draft,"02-borrador-tras-recarga.png");
+  await shot(draft,recovered?"02-borrador-recuperado-393.png":"02-borrador-tras-recarga.png");
   await draft.ctx.close();
 
   // C. Offline behavior: disabled send, no bookings, connection restores.
@@ -246,10 +248,10 @@ async function main(){
   report.totals={pass:report.tests.filter(x=>x.status==="PASS").length,
     defects:report.tests.filter(x=>x.status==="DEFECT").length,
     total:report.tests.length};
-  report.status="COMPLETED_WITH_FINDINGS";
+  report.status=report.totals.defects===0?"PASS":"COMPLETED_WITH_FINDINGS";
   fs.writeFileSync(path.join(output,"BROWSER-CASOS-LIMITE-v85.json"),
    JSON.stringify(report,null,2)+"\n");
-  console.log("FINISHED Quick Trip v85 edge real browser: "+report.totals.pass+" PASS, "+
+  console.log("FINISHED Quick Trip v86 corrected browser: "+report.totals.pass+" PASS, "+
    report.totals.defects+" DEFECT\n"+JSON.stringify(report,null,2));
  }catch(e){
   report.status="HARNESS_FAILURE";report.failure=String(e.stack||e);
