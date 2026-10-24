@@ -407,9 +407,8 @@
     doc.addEventListener("traslados:route-updated",updateSummary);
     installVisualObservers();
     reconcile();
-    // Abrir el servicio NATIVO por su acción ya registrada. Sin llamadas RPC.
-    const open=doc.querySelector('[data-service="now"]');
-    if(open&&!byId("view-viaje")?.classList.contains("active"))open.click();
+    // La portada de los tres servicios es el punto de entrada: no abrir
+    // Tu Viaje sin la elección explícita del pasajero. Navegación nativa intacta.
     win.requestAnimationFrame(reconcile);
   }
   if(doc.readyState==="complete")boot();
