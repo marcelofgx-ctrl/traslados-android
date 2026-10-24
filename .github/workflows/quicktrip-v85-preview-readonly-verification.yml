@@ -1,5 +1,5 @@
 name: Quick Trip v85 - Verificar enlace temporal QA SIN PRODUCCION
-# QA v85 test: enlaces telefonicos desactivados en toda la vista.
+# QA v85 third pass: SW notifications stay inside exact QA index.
 on:
   push:
     branches:
