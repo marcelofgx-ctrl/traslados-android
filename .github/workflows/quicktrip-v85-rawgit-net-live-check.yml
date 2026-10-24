@@ -1,5 +1,5 @@
 name: Quick Trip v85 - Verificar CDN rawgit net solo QA
-# Tercer pase: tocar Continuar en aviso del host y validar QA real sin backend.
+# Cuarto pase: verificar CSP bloquea telemetria agregada por proveedor.
 on:
   push:
     branches:
