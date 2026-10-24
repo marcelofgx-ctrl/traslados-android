@@ -1,4 +1,5 @@
 name: Quick Trip Web/PWA v86 - CANDIDATA QA SIN DEPLOY
+# QA visual diagnostic rerun after browser navigation trace
 on:
   push:
     branches:
