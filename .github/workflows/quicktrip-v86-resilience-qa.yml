@@ -1,5 +1,5 @@
 name: Quick Trip v86 - Tres reparaciones QA aisladas SIN DEPLOY
-# Tercer pase: mock CacheStorage incluye keys como Chromium real.
+# Cuarto pase: recarga guarda antes de cerrar y cache evita HTTP cache; mediciones reales.
 on:
   push:
     branches:
