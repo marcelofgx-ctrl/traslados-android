@@ -30,7 +30,7 @@ async function main(){
   await context.addCookies([{name:"__Http-phish",value:"1",url:"https://rawgit.net/",
     httpOnly:true,secure:true,sameSite:"Lax"}]);
   const page=await context.newPage();
-  let anyExternal=0,realSupabaseSuccess=0;
+  let anyExternal=0,realSupabaseSuccess=0;const externalCompleted=[];
   page.on("request",req=>{
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev|tile\.openstreetmap\.org/.test(req.url())){
       report.blocked.push({url:new URL(req.url()).hostname,method:req.method(),type:req.resourceType()});
@@ -38,6 +38,7 @@ async function main(){
     if(!req.url().startsWith("https://rawgit.net/"))anyExternal++;
   });
   page.on("response",response=>{
+    if(!response.url().startsWith("https://rawgit.net/"))externalCompleted.push(response.url());
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev/.test(response.url()))realSupabaseSuccess++;
   });
   page.on("pageerror",e=>report.unexpected.push("PAGE "+e.message));
@@ -73,7 +74,12 @@ async function main(){
   must(guards.csp.includes("form-action 'none'"),"CSP bloquea envio de formularios",guards.csp);
   must(guards.title.includes("QA"),"Titulo identifica QA",guards.title);
   must(guards.registerScript,"Resiliencia v85 cargada en el documento",guards.registerScript);
-  must(!guards.externalScripts.length,"Scripts sólo del origen QA",guards.externalScripts);
+  // rawgit.net inyecta en el HTML una etiqueta de analítica Cloudflare.
+  // Está FUERA de la política script-src 'self': nunca debe cargar realmente.
+  must(guards.externalScripts.every(src=>src.startsWith("https://static.cloudflareinsights.com/beacon.min.js/")),
+    "Única etiqueta extra es telemetría del alojamiento bloqueada por CSP",guards.externalScripts);
+  must(guards.csp.includes("script-src 'self'"),"Scripts ajenos bloqueados por CSP",guards.csp);
+  must(externalCompleted.length===0,"Cero respuestas de scripts/servicios externos",externalCompleted);
   must(guards.urgentCount===1,"Un único CTA original",guards.urgentCount);
   await page.locator('#view-inicio.active [data-service="now"]').click({timeout:16000});
   await page.locator('#view-viaje.active .qtc-app').waitFor({state:"visible",timeout:16000});
