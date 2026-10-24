@@ -1,5 +1,5 @@
 name: Quick Trip PWA v85 - Tu Viaje compacto QA (SIN DEPLOY)
-# Pase 2: bloqueo obligatorio de CTA solapado en Samsung 393x852.
+# Pase 3: CTA sin solapamiento y teselas públicas OSM de solo lectura (sin Supabase).
 on:
   push:
     branches:
