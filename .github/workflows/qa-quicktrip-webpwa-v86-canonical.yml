@@ -1,0 +1,139 @@
+name: Quick Trip Web/PWA v86 - CANDIDATA QA SIN DEPLOY
+on:
+  push:
+    branches:
+      - qa/quicktrip-webpwa-canonica-v86-20261024
+    paths:
+      - .github/workflows/qa-quicktrip-webpwa-v86-canonical.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-webpwa-v86:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: "Contrato y motores: bloqueo obligatorio de alcance"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,json
+          base='dcc95549600763a4e52978f92f283edc2694583d'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/manifest.webmanifest',
+            'web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-canonical-v86.css',
+            'web-pasajero/quicktrip-approved-v85-qa.js','web-pasajero/quicktrip-v85-resilience.js',
+            'web-pasajero/tests/quicktrip-v86-canonical-visual-browser.cjs',
+            'web-pasajero/tests/quicktrip-v86-canonical-functional-browser.cjs',
+            'web-pasajero/tests/quicktrip-v86-canonical-resilience-browser.cjs',
+            'web-pasajero/tests/quicktrip-v86-canonical-pwa-cache.cjs',
+            'docs/QUICK_TRIP_WEBPWA_V86_QA_CANDIDATA_20261024.md',
+            '.github/workflows/qa-quicktrip-webpwa-v86-canonical.yml'
+          }
+          assert changed==allowed,('SCOPE FAILED',sorted(changed-allowed),'Missing',sorted(allowed-changed))
+          c=json.load(open('docs/quicktrip-canonical-contract.json'))
+          from sys import path
+          path.insert(0,'scripts')
+          from qa_quicktrip_phase1_guard import contract_guard
+          contract_guard(c)
+          for name,expected in c['protected_blobs'].items():
+            actual=subprocess.check_output(['git','rev-parse','HEAD:'+name],text=True).strip()
+            assert actual==expected,('ENGINE CHANGED',name,actual,expected)
+          h=open('web-pasajero/index.html').read()
+          assert 'traslados-preview' in h
+          assert "connect-src 'none'" in h and "form-action 'none'" in h
+          assert h.count('quicktrip-canonical-v86.css')==1
+          assert 'quicktrip-home-qa.css' not in h and 'quicktrip-approved-v85-qa.css' not in h
+          assert h.count('data-qt-service=')==3
+          assert h.count('id="urgent-send"')==1
+          sw=open('web-pasajero/sw.js').read()
+          assert 'traslados-pwa-qa-canonica-v86-20261024' in sw
+          assert '"./quicktrip-canonical-v86.css"' in sw
+          assert 'quicktrip-approved-v85-qa.css' not in sw
+          print('PASS: 13 ONLY QA files, 7 protected blob SHAs, 3 services, readonly CSP, one skin CSS')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Contratos funcionales originales: 7 suites sin red"
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-clean.js
+          node --check web-pasajero/quicktrip-approved-v85-qa.js
+          node --check web-pasajero/quicktrip-v85-resilience.js
+          node --check web-pasajero/sw.js
+          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke; do
+            node web-pasajero/tests/"$test".cjs
+          done
+      - name: "Chromium real del runner y Playwright-core"
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-qa-v86 --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-qa-v86/node_modules" >> "$GITHUB_ENV"
+      - name: "Visual Samsung 393 y 360; tres circulos, compacto y tema claro/oscuro"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-evidence/visual
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v86-canonical-visual-browser.cjs
+      - name: "Flujo funcional con mock total de backend; sin Supabase real"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-evidence/functional
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v86-canonical-functional-browser.cjs
+      - name: "Atras, borrador, offline, 504 y doble peticion simulada"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-evidence/resilience
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v86-canonical-resilience-browser.cjs
+      - name: "Service Worker real en Chromium y caché con red cortada"
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v86-evidence/cache
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v86-canonical-pwa-cache.cjs
+          node - <<'NODE'
+          const r=require('./quicktrip-v86-evidence/cache/CHROMIUM-CACHE-REAL-v85.json')
+          if(r.findings.length)throw Error('PWA cache defective: '+JSON.stringify(r.findings))
+          console.log('PASS: real Chromium SW, newest CSS offline')
+          NODE
+      - name: "Empaquetar una sola Web/PWA completa y checksum, sin publicarla"
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile, pathlib,hashlib,json
+          root=pathlib.Path('web-pasajero')
+          out=pathlib.Path('quicktrip-v86-evidence/dist')
+          out.mkdir(parents=True,exist_ok=True)
+          dst=out/'QuickTrip-Web-PWA-v86-QA.zip'
+          with zipfile.ZipFile(dst,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+            for p in sorted(root.rglob('*')):
+              if p.is_file() and not any(x in ('tests','pruebas') for x in p.parts):
+                z.write(p,p.relative_to(root))
+          sha=hashlib.sha256(dst.read_bytes()).hexdigest()
+          (out/'SHA256SUMS.txt').write_text(sha+'  '+dst.name+'\n')
+          print('PASS: QA Web/PWA ZIP '+str(dst)+' SHA256 '+sha+' bytes '+str(dst.stat().st_size))
+          PY
+      - name: "Evidencia de todas las pruebas - nunca desplegar"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-WebPWA-v86-QA-Capturas-y-Reportes
+          path: quicktrip-v86-evidence/
+          retention-days: 14
+          if-no-files-found: warn
