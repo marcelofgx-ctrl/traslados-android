@@ -1,0 +1,55 @@
+name: Quick Trip Phase 1 - canonical contract and negative gate (QA only)
+on:
+  push:
+    branches:
+      - qa/quicktrip-blindaje-fase1-canonico-20261024
+    paths:
+      - '.github/workflows/qa-quicktrip-phase1-canonical.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  contract-only:
+    name: Phase 1 policy and red-green self-tests (NO APK / NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout exact isolated commit, read-only
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact canonical branch and authorized base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "qa/quicktrip-blindaje-fase1-canonico-20261024"
+          BASE="888d0696ebff98773e61039e3df6e46efd872317"
+          test "$(git rev-parse "$BASE^{commit}")" = "$BASE"
+          git merge-base --is-ancestor "$BASE" HEAD
+          echo "PASS only isolated QA branch; original main/base unchanged"
+
+      - name: Validate docs, exact 6-file scope and original protected Git blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/qa_quicktrip_phase1_guard.py scripts/test_quicktrip_phase1_guard.py
+          python3 scripts/qa_quicktrip_phase1_guard.py verify
+          echo "PASS canonical manifest and all original protected source hashes"
+
+      - name: Positive and deliberate negative regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_quicktrip_phase1_guard.py' -v
+          echo "PASS green fixtures, expected-red tests, and fail-closed release evidence"
+
+      - name: Human-readable completion gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PASSED: policy/schema/scope/source-protection verified at exact Git SHA"
+          echo "BLOCKED BY DESIGN: visual approval, physical Samsung, merge, production"
+          echo "No service containers, network probes, Gradle builds, Supabase credentials, Pages or deployment are used."
