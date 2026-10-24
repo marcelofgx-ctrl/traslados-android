@@ -1,0 +1,100 @@
+name: Quick Trip v85 - Resiliencia post-fix Atras Borrador Cache (SOLO QA)
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-resiliencia-fix-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-resilience-fix-isolated.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa-post-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: "Blindaje de alcance: ningun motor, Android, Supabase ni backend modificado"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='04ef4fc5f91c6a75364dd2595167bd05a285c403'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+           'web-pasajero/index.html',
+           'web-pasajero/sw.js',
+           'web-pasajero/quicktrip-v85-resilience.js',
+           'web-pasajero/tests/quicktrip-v85-resilience-after-browser.cjs',
+           '.github/workflows/quicktrip-v85-resilience-fix-isolated.yml'
+          }
+          assert changed==allowed,('Extra',sorted(changed-allowed),'Missing',sorted(allowed-changed))
+          for path in ['web-pasajero/app.js','web-pasajero/route-engine.js',
+            'web-pasajero/address-engine.js','web-pasajero/eta-engine.js',
+            'web-pasajero/booking-contracts.js','web-pasajero/rpc-client.js',
+            'web-pasajero/reservation-live.js','web-pasajero/quicktrip-clean.js']:
+            subprocess.run(['git','diff','--exit-code',base+'..HEAD','--',path],check=True)
+          print('PASS QA alcance protegido: solo navegacion/caché/test')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contratos y regresiones existentes sin red
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/sw.js
+          node --check web-pasajero/quicktrip-v85-resilience.js
+          node --check web-pasajero/tests/quicktrip-v85-resilience-after-browser.cjs
+          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
+            node web-pasajero/tests/"$test".cjs
+          done
+      - name: ServiceWorker original con CacheStorage simulado
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-resilience-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-rollback-isolated.cjs
+          node - <<'NODE'
+          const data=require("./quicktrip-v85-resilience-qa/CACHE-REAL-SW.json");
+          if(data.findings.length)throw Error("Cache de memoria tiene defectos: "+JSON.stringify(data.findings));
+          console.log("PASS post-fix cache in-memory: 0 defects");
+          NODE
+      - name: Chromium del runner sin Internet
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v85-resilience --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v85-resilience/node_modules" >> "$GITHUB_ENV"
+      - name: Post-fix Chromium - back draft offline 504 duplicate booking
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-resilience-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-resilience-after-browser.cjs
+      - name: Post-fix Chromium ServiceWorker REAL y recuperación CSS más reciente
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-resilience-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
+          node - <<'NODE'
+          const data=require("./quicktrip-v85-resilience-qa/CHROMIUM-CACHE-REAL-v85.json");
+          if(data.findings.length)throw Error("ServiceWorker Chromium aún defectuoso: "+JSON.stringify(data.findings));
+          console.log("PASS post-fix REAL Chromium SW: latest offline CSS survives");
+          NODE
+      - name: Evidencia real QA - NO DEPLOY
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-Resiliencia-Corregida-Capturas-QA-SIN-PUBLICAR
+          path: quicktrip-v85-resilience-qa/
+          retention-days: 14
+          if-no-files-found: warn
