@@ -1,4 +1,5 @@
 name: Quick Trip v86 - Tres reparaciones QA aisladas SIN DEPLOY
+# Segundo pase: validar capturas Back sin errores de sintaxis.
 on:
   push:
     branches:
