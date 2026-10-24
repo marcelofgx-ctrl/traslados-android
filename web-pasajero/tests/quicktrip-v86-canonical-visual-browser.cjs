@@ -46,6 +46,7 @@ try{
  await toggle.click();
  test("Dark theme returns "+width,!(await page.evaluate(()=>document.body.classList.contains("qt-v86-light"))));
  await page.locator('#view-inicio [data-service="now"]').click();
+ console.log("QA VIEW AFTER CLICK",JSON.stringify({v:await page.evaluate(()=>document.querySelector(".view.active")?.id),errors:report.pageErrors,hasQtc:await page.locator("#view-viaje .qtc-app").count()}));
  await page.locator("#view-viaje.active .qtc-app").waitFor({state:"visible",timeout:12000});
  await page.locator(".qt-qa-gps-details summary").waitFor({state:"attached",timeout:10000});
  const trip=await page.evaluate(()=>{
