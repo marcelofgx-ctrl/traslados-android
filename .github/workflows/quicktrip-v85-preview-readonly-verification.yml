@@ -1,4 +1,5 @@
 name: Quick Trip v85 - Verificar enlace temporal QA SIN PRODUCCION
+# QA v85 test: enlaces telefonicos desactivados en toda la vista.
 on:
   push:
     branches:
