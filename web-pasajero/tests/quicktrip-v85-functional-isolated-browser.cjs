@@ -113,11 +113,11 @@ async function main(){
 
   // The REAL address picker handles these keyboard searches and selects QA-only results.
   await page.locator('#origin-picker input[type="search"]').fill("Aeropuerto");
-  await page.locator("#origin-picker .location-search-action").click();
+  await page.locator('#origin-picker input[type="search"]').press("Enter");
   await page.locator("#origin-picker button.result").filter({hasText:"Aeropuerto"}).first().click({timeout:10000});
   await page.waitForFunction(()=>record.origin?.text?.includes("Aeropuerto"));
   await page.locator('#destination-picker input[type="search"]').fill("Arenal Grande 2274");
-  await page.locator("#destination-picker .location-search-action").click();
+  await page.locator('#destination-picker input[type="search"]').press("Enter");
   await page.locator("#destination-picker button.result").filter({hasText:"Arenal Grande 2274"}).first().click({timeout:10000});
   await page.waitForFunction(()=>record.destination?.text==="Arenal Grande 2274, Montevideo");
   await page.waitForFunction(()=>latestRoad?.data?.referenceFareUyu===256,{timeout:15000});
