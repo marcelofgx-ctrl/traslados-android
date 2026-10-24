@@ -13,7 +13,7 @@ self.addEventListener("fetch",e=>{
   if(files.some(path=>new URL(path,self.registration.scope).pathname===u.pathname)){
     // Network first for code and styles. New deployments must not stay stuck
     // behind the previous PWA cache when a passenger is trying to book.
-    e.respondWith(fetch(r).then(response=>{
+    e.respondWith(fetch(r,{cache:"no-store"}).then(response=>{
       if(response.ok){
         const copy=response.clone();
         e.waitUntil(caches.open(CACHE).then(c=>c.put(r,copy)));
