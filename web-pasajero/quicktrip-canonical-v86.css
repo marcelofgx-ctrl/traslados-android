@@ -1256,3 +1256,20 @@ html body.qt-approved-qa-v85 nav.tabs{
   display:none!important;visibility:hidden!important;
   max-height:0!important;overflow:hidden!important;
 }
+
+/* v86 QA: selector de tema visible; no afecta motores */
+body.qt-approved-qa-v85 .qt-v86-theme-toggle{
+  appearance:none;display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;
+  padding:8px 10px;border:1px solid #e8c785;border-radius:999px;background:#103b42;
+  color:#ffe3a7;font:750 12px/1.1 Manrope,Arial,sans-serif;min-height:38px;cursor:pointer;
+}
+body.qt-approved-qa-v85.qt-v86-light{background:#e7f3f0;color:#163c40}
+body.qt-approved-qa-v85.qt-v86-light>.header{background:#f6faf8;border-color:#b69a64}
+body.qt-approved-qa-v85.qt-v86-light .qt-v86-theme-toggle{background:#f6f0dc;color:#1e4345;border-color:#ad8b5a}
+body.qt-approved-qa-v85.qt-v86-light #view-inicio.home-screen{background:#d9ede7;color:#194849}
+body.qt-approved-qa-v85.qt-v86-light #view-inicio .home-hero{
+  background-image:linear-gradient(180deg,rgba(244,252,248,.15),rgba(227,246,239,.42),rgba(217,237,231,.95)),url("./premium-montevideo.webp")!important;
+}
+body.qt-approved-qa-v85.qt-v86-light #view-inicio .home-hero h1{color:#173e42;text-shadow:0 1px 7px #ffffff}
+body.qt-approved-qa-v85.qt-v86-light #view-inicio .service-card-name{color:#275456!important}
+body.qt-approved-qa-v85.qt-v86-light #view-inicio .service-card-description{color:#2b5a5c!important}
