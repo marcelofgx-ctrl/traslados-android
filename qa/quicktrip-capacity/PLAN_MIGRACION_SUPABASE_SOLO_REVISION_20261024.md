@@ -30,17 +30,28 @@ Consultas al catálogo y tablas el 24/10/2026, **no es una instantánea inmutabl
 | Modos de recogida | now, schedule y valores numéricos de 1 a 120, con restricción CHECK en producción |
 | is_demo | falso en las 24 filas observadas |
 | Índice qt_one_active_service_uq | **NO existe** en producción |
-| Servicios reales que satisfacen el predicado | **2** (bloqueo actual) |
+| Servicios reales que satisfacen el predicado | **2 en la lectura inicial; 0 en la verificación posterior** (ver apartado 2.1) |
 | GPS privado en reservation_live_position | 0 posiciones; NO es criterio para instalar la restricción |
 | Eventos históricos reservation_events | 59 filas |
 | Triggers en reservations | reservation_schedule_request_policy_v1, reservations_event_insert, reservations_event_update, reservations_fixed_fare_guard_v1 |
 
-**Dos reservas que NO se pueden alterar sin decisión separada:**
+**Dos reservas inicialmente abiertas (esta auditoría no las modificó):**
 
 - TR-261023-529FD: ACEPTADA / EN_PUNTO / now.
 - TR-261023-9BD22: ACEPTADA / EN_PUNTO / now.
 
-**Resultado lógico si se intentara aplicar ahora:** falla CREATE UNIQUE INDEX porque las dos filas reales comparten la misma clave booleana del índice parcial. NO proceder. No resolver duplicados cambiando estados, fechas, pickup_mode, is_demo ni eliminando filas. No adjudicar cuál traslado ocurrió realmente: eso requiere prueba operativa y autorización del usuario.
+**Resultado al corte inicial:** CREATE UNIQUE INDEX habría fallado porque dos filas reales compartían la clave booleana del índice parcial. **Ese bloqueo concreto dejó de observarse luego de un cambio externo durante la auditoría.** La migración sigue **NO-GO** por el resto de gates. No resolver duplicados cambiando estados, fechas, pickup_mode, is_demo ni eliminando filas. No adjudicar cuál traslado ocurrió realmente: eso requiere evidencia operativa y autorización del usuario.
+
+### 2.1 Cambio concurrente detectado durante esta documentación (solo lectura)
+
+En una consulta posterior del **24/10/2026, alrededor de 03:32 UTC**, se observó:
+
+| Reserva | Estado inicial observado | Estado en última consulta | Eventos persistidos (UTC) |
+|---|---|---|---|
+| TR-261023-9BD22 | ACEPTADA / EN_PUNTO | **FINALIZADA** | ACEPTADA→EN_VIAJE: 03:31:21; EN_VIAJE→FINALIZADA: 03:31:23 |
+| TR-261023-529FD | ACEPTADA / EN_PUNTO | **FINALIZADA** | ACEPTADA→EN_VIAJE: 03:31:27; EN_VIAJE→FINALIZADA: 03:31:29 |
+
+En esa misma consulta hubo **24 reservas y 0 servicios operativos**; el índice continuaba ausente. Esta etapa usó únicamente SELECT y herramientas de lectura: **no cerró, canceló, modificó ni tocó reservas**. No se atribuye la acción a una persona o sistema concreto. Antes de cualquier decisión de producción, confirmar externamente la legitimidad de los cierres y repetir los preflights en ese instante. El cambio histórico no significa autorización para instalar el índice.
 
 ## 3. Contrato inmutable que debe mantenerse
 
@@ -87,7 +98,7 @@ AND (
 );
 ~~~
 
-**Condición estricta para proceder:** se RECOMIENDA cero servicios operativos durante ventana de mantenimiento (técnicamente una fila no contradice unicidad, pero el plan conservador exige cero y actividad detenida). Si el resultado es distinto de cero, DETENER. La foto actual es 2. Nunca modificar reservas como parte del preflight.
+**Condición estricta para proceder:** se RECOMIENDA cero servicios operativos durante ventana de mantenimiento (técnicamente una fila no contradice unicidad, pero el plan conservador exige cero y actividad detenida). Si el resultado es distinto de cero, DETENER. **Cronología:** en la primera lectura hubo 2; en la segunda hubo **0**, después de que terceros/otro proceso (autor no determinado) registraran cierres alrededor de 03:31 UTC. Nunca modificar reservas como parte del preflight; una nueva lectura siempre prevalece sobre esta cronología.
 
 **P3. Inventario de superficie RPC, triggers, permisos y RLS:** volver a consultar pg_proc / pg_get_functiondef, pg_trigger, pg_policies, pg_indexes, roles y privilegios por columna. Comparar con manifiesto de respaldo. Verificar escritura por rutas conocidas y versiones heredadas. Confirmar ausencia de procedimientos/columnas nuevos entre el corte de auditoría y el despliegue.
 
@@ -153,7 +164,7 @@ AND (
 
 | Severidad | Riesgo | Bloqueo o mitigación antes de producción |
 |---|---|---|
-| BLOQUEANTE | Dos servicios abiertos reales | Resolución separada autorizada por el usuario, con evidencia de viaje; revalidar ocupación=0 |
+| BLOQUEANTE HASTA REVALIDAR | Dos servicios estuvieron abiertos, luego se marcaron FINALIZADA durante la auditoría | Confirmar legitimidad y trazabilidad de los cierres; volver a verificar ocupación=0 inmediatamente antes de un despliegue futuro, sin modificar reservas |
 | BLOQUEANTE | No hay prueba PG17 ni recuperación validada | QA en PG17 con esquema representativo, backup disponible y restauración ensayada |
 | ALTA | RPC v10 aún habilitada y sin disponibilidad moderna | Auditar llamadas activas y decidir mantener, adaptar o revocar solo en etapa aparte |
 | ALTA | Posible bypass is_demo / UPDATE directo de conductor | Revisar GRANT, RLS, columnas y rutas que escriben is_demo; demostrar que no se elude |
@@ -174,4 +185,4 @@ AND (
 - Supabase Database Backups: https://supabase.com/docs/guides/platform/backups
 - Supabase PostgREST Error Codes: https://supabase.com/docs/guides/api/rest/postgrest-error-codes
 
-**Resultado de esta fase:** plan verificable, sin migración SQL aplicada ni datos productivos modificados. El estado es **NO-GO para ejecutar** hasta resolver todos los gates bloqueantes con aprobación posterior.
+**Resultado de esta fase:** plan verificable, sin migración SQL aplicada ni datos productivos modificados POR ESTE TRABAJO. **Se observaron modificaciones de reservas por un actor externo no identificado durante la auditoría**; se documentan sin atribuirlas. El estado sigue **NO-GO para ejecutar** por PG17, respaldo y compatibilidad pendientes, aun con 0 operativos en la última lectura.
