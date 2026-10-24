@@ -56,6 +56,14 @@ async function run(){
   assert(seeded.precachePresent);
   report.checks.push({name:"Real Chromium stores unversioned precache + updated CSS query",status:"PASS",...seeded});
 
+  // Detener el HTTP local además de poner offline el navegador: en Chromium
+  // el proceso ServiceWorker puede seguir viendo un servidor localhost activo.
+  // Así probamos CACHE REAL, no una respuesta 200 de red sin darnos cuenta.
+  server.kill("SIGTERM");
+  await new Promise(resolve=>{
+    if(server.exitCode!==null||server.signalCode!==null)resolve();
+    else server.once("exit",resolve);
+  });
   await ctx.setOffline(true);
   let offlineResult;
   try{
