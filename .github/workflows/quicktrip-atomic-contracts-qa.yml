@@ -1,0 +1,81 @@
+name: Quick Trip Atomic Capacity + GPS Contract (LOCAL PG ONLY)
+on:
+  push:
+    branches: [feat/quicktrip-capacidad-atomica-gps-contratos-qa-20261023]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: qt_fixture
+          POSTGRES_PASSWORD: qt_fixture_only
+          POSTGRES_DB: qt_capacity_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qt_fixture -d qt_capacity_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: qt_fixture
+      PGPASSWORD: qt_fixture_only
+      PGDATABASE: qt_capacity_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Strict file scope and immutable runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='fix/conductor-capacidad-compacta-qa-20261023'
+          diff=set(subprocess.check_output(['git','diff','--name-only','origin/'+base+'...HEAD'],text=True).splitlines())
+          assert diff, 'No isolated changes'
+          assert all(f.startswith('qa/quicktrip-capacity/') or
+            f=='.github/workflows/quicktrip-atomic-contracts-qa.yml' for f in diff), diff
+          assert not any(f.endswith(('.apk','.aab')) for f in diff)
+          print('PASS: isolated files only; no Android, PWA, GPS engine or SQL migration modifications')
+          PY
+      - name: Prepare disposable PostgreSQL 16 test database
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          test "$(psql -X -At -c 'SELECT current_database()')" = "qt_capacity_test"
+          psql -X -v ON_ERROR_STOP=1 -f qa/quicktrip-capacity/local_pg_fixture.sql
+          sed 's/public\.reservations/qa_capacity.fake_reservations/g' \
+            qa/quicktrip-capacity/draft_atomic_guard.sql > /tmp/qt_capacity_local.sql
+          grep -F 'ON qa_capacity.fake_reservations' /tmp/qt_capacity_local.sql
+          psql -X -v ON_ERROR_STOP=1 -f /tmp/qt_capacity_local.sql
+          psql -X -v ON_ERROR_STOP=1 -f qa/quicktrip-capacity/local_gps_contract_fixture.sql
+      - name: Run actual PostgreSQL two-session concurrency, lifecycle and rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qa/quicktrip-capacity/test_postgres_capacity.py
+      - name: Validate private GPS session / token / stale location and ambiguity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qa/quicktrip-capacity/test_postgres_gps.py
+      - name: Pure contract regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s qa/quicktrip-capacity -p test_capacity_contract.py -v
+          echo 'PASS: isolated local PostgreSQL, synthetic data. No Supabase, APK, merge or production deployment.' >> "$GITHUB_STEP_SUMMARY"
