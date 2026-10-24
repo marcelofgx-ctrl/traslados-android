@@ -37,6 +37,14 @@ try{
  test("City image loaded "+width,image>0,{naturalWidth:image});
  let filename="01-circulos-v6-qa-"+width+".png";
  await page.screenshot({path:path.join(dir,filename),fullPage:true,animations:"disabled"});report.screenshots.push(filename);
+ const toggle=page.locator('[data-qt-component="theme-toggle"]');
+ await toggle.waitFor({state:"visible",timeout:5000});
+ await toggle.click();
+ test("Light theme visible and active "+width,await page.evaluate(()=>document.body.classList.contains("qt-v86-light")));
+ filename="03-claro-qa-"+width+".png";
+ await page.screenshot({path:path.join(dir,filename),fullPage:true,animations:"disabled"});report.screenshots.push(filename);
+ await toggle.click();
+ test("Dark theme returns "+width,!(await page.evaluate(()=>document.body.classList.contains("qt-v86-light"))));
  await page.locator('#view-inicio [data-service="now"]').click();
  await page.locator("#view-viaje.active .qtc-app").waitFor({state:"visible",timeout:12000});
  await page.locator(".qt-qa-gps-details summary").waitFor({state:"attached",timeout:10000});
