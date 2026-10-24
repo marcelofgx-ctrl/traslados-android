@@ -1,0 +1,68 @@
+name: Quick Trip 23505 Android + PWA Error Contract (ISOLATED)
+on:
+  push:
+    branches:
+      - qa/quicktrip-23505-android-pwa-contratos-20261024
+permissions:
+  contents: read
+jobs:
+  isolated-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Guard exact QA scope - forbid production file changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='ada167bd7cf6f98e036694648285b74178af5098'
+          actual=set(subprocess.check_output(['git','diff','--name-only',base+'...HEAD'],text=True).splitlines())
+          allowed={
+            '.github/workflows/quicktrip-error-contract-isolated.yml',
+            'qa/quicktrip-capacity/error-23505/cases.tsv',
+            'qa/quicktrip-capacity/error-23505/CapacityErrorContract.java',
+            'qa/quicktrip-capacity/error-23505/CapacityErrorContractTest.java',
+            'qa/quicktrip-capacity/error-23505/capacity-error-contract.js',
+            'qa/quicktrip-capacity/error-23505/test_pwa_contract.cjs',
+            'qa/quicktrip-capacity/error-23505/test_android_existing.cjs',
+            'qa/quicktrip-capacity/error-23505/README.md',
+          }
+          assert actual == allowed, 'QA-only scope violation: '+str(sorted(actual^allowed))
+          print('PASS SCOPE: exactly eight isolated files; no Android/PWA backend changes')
+          PY
+      - name: Check independent runtime only (NO Gradle, APK, or network)
+        shell: bash
+        run: |
+          node --version
+          javac -version
+          test -f qa/quicktrip-capacity/error-23505/cases.tsv
+          echo 'PASS RUNTIME: isolated Node and JDK only'
+      - name: PWA reference classification and actual transport with fake HTTP
+        shell: bash
+        run: |
+          set -euo pipefail
+          node qa/quicktrip-capacity/error-23505/test_pwa_contract.cjs
+      - name: Android reference classification using pure Java JDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/quicktrip-error-classes"
+          javac -encoding UTF-8 -d "$RUNNER_TEMP/quicktrip-error-classes" \
+            qa/quicktrip-capacity/error-23505/CapacityErrorContract.java \
+            qa/quicktrip-capacity/error-23505/CapacityErrorContractTest.java
+          java -cp "$RUNNER_TEMP/quicktrip-error-classes" qt.qa.errors.CapacityErrorContractTest \
+            qa/quicktrip-capacity/error-23505/cases.tsv
+      - name: Extract and execute real Android publicMessage in a fake JDK harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          node qa/quicktrip-capacity/error-23505/test_android_existing.cjs
+      - name: Publish QA conclusion summary (not web/Android)
+        shell: bash
+        run: |
+          echo 'SUCCESS means QA policy works in standalone references; existing Android/PWA are NOT changed.' >> "$GITHUB_STEP_SUMMARY"

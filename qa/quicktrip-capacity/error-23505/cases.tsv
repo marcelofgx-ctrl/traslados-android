@@ -1,0 +1,15 @@
+# code<TAB>PostgreSQL/PostgREST message<TAB>expected classification
+23505	duplicate key value violates unique constraint "qt_one_active_service_uq"	BUSY
+23505	duplicate key value violates unique constraint "reservations_code_key"	OTHER
+23505	duplicate key value violates unique constraint "reservations_public_token_key"	OTHER
+23505	duplicate key value violates unique constraint "reservations_urgent_request_id_idx"	OTHER
+23505	duplicate key value violates unique constraint "qt_one_active_service_uq_old"	OTHER
+23505	duplicate key value violates unique constraint "not_qt_one_active_service_uq"	OTHER
+23505	duplicate key value violates unique constraint qt_one_active_service_uq	OTHER
+23505	could not create unique index "qt_one_active_service_uq"	BUSY
+23505	HORARIO_YA_NO_DISPONIBLE	OTHER
+42501	duplicate key value violates unique constraint "qt_one_active_service_uq"	OTHER
+23503	duplicate key value violates unique constraint "qt_one_active_service_uq"	OTHER
+-	duplicate key value violates unique constraint "qt_one_active_service_uq"	OTHER
+23505	Generic duplicate-key error	OTHER
+23505	exception qt_one_active_service_uq but no constraint name	OTHER
