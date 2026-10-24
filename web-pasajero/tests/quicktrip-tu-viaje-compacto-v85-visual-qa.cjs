@@ -81,6 +81,7 @@ async function main(){
           pageHeight:document.documentElement.scrollHeight,
           overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),
           mapIsSameNativeNode:Boolean(map&&document.querySelectorAll(".premium-route-canvas").length===1),
+          loadedOSMTiles:Array.from(app?.querySelectorAll(".premium-map-tiles img")||[]).filter(img=>img.complete&&img.naturalWidth>0).length,
           buttonWithinOriginalAction:Boolean(button?.closest("#urgent-actions")&&button.closest(".qtc-action-slot")),
           sourceText:document.querySelector("#qtc-summary-wait")?.textContent?.trim()||""
         };
