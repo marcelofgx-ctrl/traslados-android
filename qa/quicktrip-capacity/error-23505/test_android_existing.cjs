@@ -25,7 +25,7 @@ public final class ActualAndroidMessageHarness {
     }
   }
   ${method}
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     Exception conflict=new ApiException("23505",
       "duplicate key value violates unique constraint \\"qt_one_active_service_uq\\"");
     String actual=publicMessage("fixed",conflict);
