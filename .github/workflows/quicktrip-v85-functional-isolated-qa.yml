@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Blindaje de diff: 0 cambios en producción, Android o motores
+      - name: "Blindaje de diff: 0 cambios en producción, Android o motores"
         shell: bash
         run: |
           set -euo pipefail
