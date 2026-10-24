@@ -31,7 +31,7 @@ self.addEventListener("fetch",e=>{
       }).sort((a,b)=>{
         const version=request=>{
           const raw=new URL(request.url).searchParams.get("v");
-          return /^\\d+$/.test(raw||"")?Number(raw):-1;
+          return /^\d+$/.test(raw||"")?Number(raw):-1;
         };
         return version(b)-version(a);
       });
