@@ -1,0 +1,86 @@
+name: Quick Trip Capacity PG17 Disposable RPC QA (NO PRODUCTION)
+on:
+  push:
+    branches:
+      - qa/quicktrip-capacidad-pg17-20261024
+permissions:
+  contents: read
+jobs:
+  pg17-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: qt_fixture
+          POSTGRES_PASSWORD: qt_fixture_only
+          POSTGRES_DB: qt_capacity_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qt_fixture -d qt_capacity_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: qt_fixture
+      PGPASSWORD: qt_fixture_only
+      PGDATABASE: qt_capacity_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Enforce strictly isolated PG17 QA file scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='b5c83f4514d7fb322eccb97ca7cddb824caa2bf5'
+          actual=set(subprocess.check_output(['git','diff','--name-only',base+'...HEAD'],text=True).splitlines())
+          allowed={
+           '.github/workflows/quicktrip-capacity-pg17-disposable.yml',
+           'qa/quicktrip-capacity/local_rpc_pg17_fixture.sql',
+           'qa/quicktrip-capacity/test_postgres_rpc_pg17.py',
+           'qa/quicktrip-capacity/PLAN_QA_PG17_SOLO_FICTICIO.md',
+          }
+          assert actual==allowed, f"unexpected files: {sorted(actual^allowed)}"
+          assert not any(name.startswith(('supabase/','web-pasajero/','mapatrayectos/')) for name in actual)
+          print('PASS PG17: exact 4 QA files, no production changes')
+          PY
+      - name: Assert local disposable PostgreSQL 17 and install synthetic index
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          test "$(psql -X -At -c 'SELECT current_database()')" = "qt_capacity_test"
+          psql -X -At -c "SELECT current_setting('server_version_num')::integer BETWEEN 170000 AND 179999" | grep -qx t
+          psql -X -v ON_ERROR_STOP=1 -f qa/quicktrip-capacity/local_pg_fixture.sql
+          sed 's/public\.reservations/qa_capacity.fake_reservations/g' \
+            qa/quicktrip-capacity/draft_atomic_guard.sql > /tmp/qt_index_pg17_only.sql
+          grep -F 'ON qa_capacity.fake_reservations' /tmp/qt_index_pg17_only.sql
+          psql -X -v ON_ERROR_STOP=1 -f /tmp/qt_index_pg17_only.sql
+          psql -X -v ON_ERROR_STOP=1 -f qa/quicktrip-capacity/local_rpc_pg17_fixture.sql
+      - name: PG17 original capacity state matrix and two-session concurrency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qa/quicktrip-capacity/test_postgres_capacity.py
+      - name: PG17 representative RPC compatibility race and rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qa/quicktrip-capacity/test_postgres_rpc_pg17.py
+      - name: Pure predicate and rollback contract regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s qa/quicktrip-capacity -p test_capacity_contract.py -v
+          echo 'PG17 disposable fictitious QA only; no Supabase access, Android build, merge or deployment.' >> "$GITHUB_STEP_SUMMARY"
