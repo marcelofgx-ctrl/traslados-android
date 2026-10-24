@@ -1,0 +1,75 @@
+name: Quick Trip v85 - Samsung SM-S918B QA simulado SIN DEPLOY
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-samsung-pwa-validation-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-samsung-simulation-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  samsung-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verificar alcance aislado
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          approved={'.github/workflows/quicktrip-v85-samsung-simulation-qa.yml','web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs','docs/QA_SAMSUNG_QUICKTRIP_v85_20261024.md'}
+          assert changed<=approved,('Unauthorized changes',sorted(changed-approved))
+          assert 'web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs' in changed
+          print('PASS: unchanged engines, Android, Supabase and production')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revisar contratos originales
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs
+          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
+            node web-pasajero/tests/"$test".cjs
+          done
+      - name: Instalar Playwright Core con Chromium del runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v85-samsungqa --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v85-samsungqa/node_modules" >> "$GITHUB_ENV"
+      - name: Simular Samsung y guardar capturas reales Chromium
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-samsung-v85-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs
+      - name: Verificar ServiceWorker real y caché con HTTP apagado
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-samsung-v85-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
+          node -e "const r=require('./quicktrip-samsung-v85-qa/CHROMIUM-CACHE-REAL-v85.json'); if(r.findings.length)process.exit(1); console.log('PASS cache Chromium real offline');"
+      - name: Guardar evidencias y procedimiento sin publicar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-Samsung-Simulado-QA-Capturas-y-Protocolo
+          path: |
+            quicktrip-samsung-v85-qa/
+            docs/QA_SAMSUNG_QUICKTRIP_v85_20261024.md
+          if-no-files-found: warn
+          retention-days: 14
