@@ -10,6 +10,26 @@
      legacyTabs.style.setProperty("display","none","important");
      legacyTabs.style.setProperty("visibility","hidden","important");
    }
+   // Tema visible de la candidata, estrictamente local sin llamadas RPC.
+   const header=doc.querySelector(".header .header-inner");
+   if(header&&!doc.querySelector('[data-qt-component="theme-toggle"]')){
+     const button=doc.createElement("button");
+     button.type="button";
+     button.className="qt-v86-theme-toggle";
+     button.setAttribute("data-qt-component","theme-toggle");
+     button.setAttribute("aria-label","Cambiar modo claro u oscuro");
+     let saved="dark";
+     try{saved=win.localStorage.getItem("qt.v86.theme")==="light"?"light":"dark"}catch{}
+     const setTheme=theme=>{
+       doc.body.classList.toggle("qt-v86-light",theme==="light");
+       button.textContent=theme==="light"?"☾ Oscuro":"☼ Claro";
+       button.setAttribute("aria-pressed",String(theme==="light"));
+       try{win.localStorage.setItem("qt.v86.theme",theme)}catch{}
+     };
+     setTheme(saved);
+     button.addEventListener("click",()=>setTheme(doc.body.classList.contains("qt-v86-light")?"dark":"light"));
+     header.append(button);
+   }
    const root=doc.getElementById("view-inicio");
    const hero=root?.querySelector(".home-hero");
    const title=hero?.querySelector("h1");
