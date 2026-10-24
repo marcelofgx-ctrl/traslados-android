@@ -1,0 +1,82 @@
+name: Quick Trip PWA v84 - Tres servicios visual QA (SIN DEPLOY)
+on:
+  push:
+    branches:
+      - qa/quicktrip-web-tres-servicios-v84-20261024
+    paths:
+      - .github/workflows/quicktrip-web-v84-visual-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  three-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verificar rama QA y motores conservados
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='888d0696ebff98773e61039e3df6e46efd872317'
+          changes=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/index.html',
+            'web-pasajero/quicktrip-clean.js',
+            'web-pasajero/quicktrip-home-qa.css',
+            'web-pasajero/sw.js',
+            'web-pasajero/tests/quicktrip-mobile-skin-v83-smoke.cjs',
+            'web-pasajero/tests/quicktrip-three-services-v84-smoke.cjs',
+            'web-pasajero/tests/quicktrip-three-services-visual-qa.cjs',
+            '.github/workflows/quicktrip-web-v84-visual-qa.yml',
+          }
+          assert changes==allowed,('Cambio no autorizado',sorted(changes-allowed),sorted(allowed-changes))
+          print('PASS: alcance exclusivo de UI, cache, pruebas y workflow; cero motores/backend')
+          PY
+          git diff --quiet 888d0696ebff98773e61039e3df6e46efd872317..HEAD -- \
+            web-pasajero/app.js web-pasajero/service-home.js \
+            web-pasajero/booking-contracts.js web-pasajero/rpc-client.js \
+            web-pasajero/geo-search.js web-pasajero/address-engine.js \
+            web-pasajero/route-engine.js web-pasajero/eta-engine.js \
+            web-pasajero/quicktrip-clean.css mapatrayectos conductor supabase migrations
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probar contratos locales sin red
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-clean.js
+          node --check web-pasajero/tests/quicktrip-three-services-visual-qa.cjs
+          node web-pasajero/tests/quicktrip-three-services-v84-smoke.cjs
+          node web-pasajero/tests/quicktrip-mobile-skin-v83-smoke.cjs
+          node web-pasajero/tests/service-home-v61-smoke.cjs
+      - name: Preparar Chromium disponible en runner y Playwright QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH" || { echo "Chrome no disponible en runner: QA visual no verificado"; exit 1; }
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-web-v84 --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-web-v84/node_modules" >> "$GITHUB_ENV"
+      - name: Abrir los tres servicios en Chromium y generar capturas reales
+        shell: bash
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-web-qa-screenshots
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-three-services-visual-qa.cjs
+      - name: Guardar solo capturas y evidencias QA; sin publicar Pages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Web-v84-Capturas-QA-NoPublicadas
+          path: quicktrip-web-qa-screenshots/
+          if-no-files-found: warn
+          retention-days: 14
