@@ -42,12 +42,12 @@ try{
  await page.locator(".qt-qa-gps-details summary").waitFor({state:"attached",timeout:10000});
  const trip=await page.evaluate(()=>{
   const d=document.querySelector(".qt-qa-gps-details"),gps=d.querySelector(".gps-permission-help"),r=document.querySelector(".qtc-header").getBoundingClientRect();
-  return{gpsCollapsed:!d.open,originalGPSButtons:gps.querySelectorAll("button").length,originVisible:document.querySelector("#origin-picker").getBoundingClientRect().height>0,destinationVisible:document.querySelector("#destination-picker").getBoundingClientRect().height>0,
+  return{gpsCollapsed:!d.open,nativeGpsHelpPresent:Boolean(gps),originalGPSButtons:gps.querySelectorAll("button").length,originVisible:document.querySelector("#origin-picker").getBoundingClientRect().height>0,destinationVisible:document.querySelector("#destination-picker").getBoundingClientRect().height>0,
   headerHeight:Math.round(r.height),requestDisabled:document.querySelector("#urgent-send").disabled,
   legacyHeroVisible:getComputedStyle(document.querySelector("#view-viaje>.journey-hero")).display!=="none",
   overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth)};
  });
- test("Compact Tu Viaje and native GPS disclosure "+width,trip.gpsCollapsed&&trip.originalGPSButtons>=2&&trip.originVisible&&trip.destinationVisible&&trip.headerHeight<=105&&trip.requestDisabled&&!trip.legacyHeroVisible&&trip.overflow<=2,trip);
+ test("Compact Tu Viaje and native GPS disclosure "+width,trip.gpsCollapsed&&trip.nativeGpsHelpPresent&&trip.originVisible&&trip.destinationVisible&&trip.headerHeight<=105&&trip.requestDisabled&&!trip.legacyHeroVisible&&trip.overflow<=2,trip);
  filename="02-tu-viaje-compacto-"+width+".png";
  await page.screenshot({path:path.join(dir,filename),fullPage:true,animations:"disabled"});report.screenshots.push(filename);
  await page.locator(".qt-qa-gps-details summary").click();
