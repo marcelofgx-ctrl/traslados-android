@@ -1,4 +1,5 @@
 name: Quick Trip v85 - Verificar CDN rawgit net solo QA
+# Segundo pase: comprobar detrás del aviso de tercero sin habilitar ningún backend.
 on:
   push:
     branches:
