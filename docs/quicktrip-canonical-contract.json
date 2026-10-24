@@ -1,0 +1,104 @@
+{
+  "schema": "quicktrip.phase1.visual-and-scope.v1",
+  "base_commit": "888d0696ebff98773e61039e3df6e46efd872317",
+  "protected_backup": "backup/continuidad-20261024-main",
+  "branch": "qa/quicktrip-blindaje-fase1-canonico-20261024",
+  "surfaces": [
+    "public_website",
+    "passenger_web_pwa",
+    "single_mapa_android_with_integrated_conductor"
+  ],
+  "design": {
+    "brand": "Quick Trip",
+    "go_accent": "small_superscript",
+    "theme_modes": [
+      "dark",
+      "light"
+    ],
+    "home": {
+      "hero": "city_background",
+      "service_shape": "circular",
+      "services": [
+        "Tu Viaje",
+        "Tu Paquete",
+        "Tu Viaje Programado"
+      ],
+      "deprecated_services": [
+        "Viajar ahora"
+      ]
+    },
+    "immediate_trip": {
+      "screen": "single_compact_screen",
+      "header": "Quick Trip",
+      "required_components": [
+        "origin",
+        "destination",
+        "verified_map",
+        "verified_distance",
+        "verified_price",
+        "pickup_eta_if_available",
+        "collapsible_history",
+        "single_request_cta"
+      ],
+      "driver_decision": [
+        "accept",
+        "reject"
+      ],
+      "uses_original_engines": true
+    },
+    "scheduled_trip": {
+      "flow": "separate_from_immediate",
+      "uses_original_engines": true
+    },
+    "visual_owner": {
+      "target": "one_active_stylesheet",
+      "current_main": "web-pasajero/quicktrip-clean.css",
+      "status": "requires_future_reconciliation"
+    }
+  },
+  "historical_priority": [
+    {
+      "date": "2026-10-19",
+      "source": "docs/CONTRATO_VISUAL_TU_VIAJE_4_PANTALLAS_20261019.md",
+      "scope": "historical_four_step_flow",
+      "active_for_new_immediate_screen": false
+    },
+    {
+      "date": "2026-10-20",
+      "source": "docs/TU_VIAJE_PANTALLA_UNICA_CONTRATO_20261020.md",
+      "scope": "new_immediate_single_screen",
+      "active_for_new_immediate_screen": true
+    },
+    {
+      "date": "2026-10-19",
+      "source": "docs/QUICK_TRIP_V6_G4_FUNCIONAL_20261019.md",
+      "scope": "home_brand_circular_reference",
+      "active_for_new_immediate_screen": false
+    }
+  ],
+  "protected_blobs": {
+    "web-pasajero/app.js": "49156fb93615514729085ae5f03f318582bbbb3c",
+    "web-pasajero/route-engine.js": "028adf0d3f009da475ed9bf096c2331d64622c55",
+    "web-pasajero/address-engine.js": "b989852d7b701118e700abfe58015945a6cf3dcc",
+    "web-pasajero/eta-engine.js": "7ea575b66c05cf74c1c0f187aa6fd348641cd870",
+    "web-pasajero/booking-contracts.js": "8fb535ad1742fe5ae72ce13dc2de33e48c5a4686",
+    "web-pasajero/rpc-client.js": "8a1a1f377b4831495c4595cf8b6ae4c6d6d666ed",
+    "mapatrayectos/build.gradle": "a240d380c59d2f50c8b6ef0e0fe2c02220e5c2a0"
+  },
+  "evidence": {
+    "source": "github_only",
+    "original_visual_baselines": "not_located_in_accessible_sources",
+    "reference_image_sha256": [],
+    "real_samsung_validation": "pending",
+    "release_approved": false,
+    "page_deployment_approved": false
+  },
+  "allowed_phase1_files": [
+    ".github/workflows/qa-quicktrip-phase1-canonical.yml",
+    "docs/PRODUCTO_CANONICO_QUICKTRIP.md",
+    "docs/INVENTARIO_FUENTES_QUICKTRIP_20261024.md",
+    "docs/quicktrip-canonical-contract.json",
+    "scripts/qa_quicktrip_phase1_guard.py",
+    "scripts/test_quicktrip_phase1_guard.py"
+  ]
+}
