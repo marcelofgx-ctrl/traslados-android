@@ -25,7 +25,7 @@ jobs:
           import subprocess
           base='452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3'
           changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
-          approved={'.github/workflows/quicktrip-v85-samsung-simulation-qa.yml','web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs','docs/QA_SAMSUNG_QUICKTRIP_v85_20261024.md'}
+          approved={'.github/workflows/quicktrip-v85-samsung-simulation-qa.yml','web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs','docs/QA_SAMSUNG_QUICKTRIP_v85_20261024.md','web-pasajero/tests/quicktrip-v85-samsung-local-preview.py'}
           assert changed<=approved,('Unauthorized changes',sorted(changed-approved))
           assert 'web-pasajero/tests/quicktrip-v85-samsung-simulated-20261024.cjs' in changed
           print('PASS: unchanged engines, Android, Supabase and production')
@@ -63,6 +63,25 @@ jobs:
           set -euo pipefail
           node web-pasajero/tests/quicktrip-v85-cache-real-chromium.cjs
           node -e "const r=require('./quicktrip-samsung-v85-qa/CHROMIUM-CACHE-REAL-v85.json'); if(r.findings.length)process.exit(1); console.log('PASS cache Chromium real offline');"
+      - name: Verificar servidor USB local solo lectura sin conexiones externas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile web-pasajero/tests/quicktrip-v85-samsung-local-preview.py
+          python3 web-pasajero/tests/quicktrip-v85-samsung-local-preview.py --port 8142 > /tmp/quicktrip-local-samsung.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            curl --silent --fail 'http://127.0.0.1:8142/web-pasajero/' > /tmp/qa-html && break
+            sleep 0.2
+          done
+          grep -q 'traslados-preview' /tmp/qa-html
+          grep -q 'QA LOCAL · SOLO LECTURA' /tmp/qa-html
+          curl --silent --dump-header /tmp/qa-headers --output /dev/null 'http://127.0.0.1:8142/web-pasajero/'
+          grep -qi "connect-src 'self'" /tmp/qa-headers
+          POST_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST 'http://127.0.0.1:8142/web-pasajero/')
+          test "$POST_STATUS" = 405
+          echo 'PASS localhost-only preview: read-only meta + CSP blocks remote + POST denied'
       - name: Guardar evidencias y procedimiento sin publicar
         if: always()
         uses: actions/upload-artifact@v4
