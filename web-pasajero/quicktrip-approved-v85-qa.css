@@ -1,0 +1,161 @@
+/* QA v85: recupera la composición circular V6 aprobada, conservando el
+   DOM nativo compacto y los motores originales. Solo en rama QA. */
+body.qt-approved-qa-v85{
+  --qt-qa-gold:#efd093;
+  background:#031e25;
+}
+body.qt-approved-qa-v85 #qt-public-qa-banner{
+  font-size:11px!important;line-height:1.25!important;padding:6px 12px!important;
+  position:relative!important;white-space:normal!important;
+}
+body.qt-approved-qa-v85>.header{background:#072a31;border-color:#c29d5f75}
+body.qt-approved-qa-v85>.header .header-inner{
+  min-height:65px;padding:5px 14px;
+}
+body.qt-approved-qa-v85>.header .identity{justify-content:center}
+body.qt-approved-qa-v85>.header .identity img{
+  width:clamp(156px,47vw,202px);height:54px;object-fit:contain;
+}
+body.qt-approved-qa-v85>.header .identity>span{display:none}
+body.qt-approved-qa-v85>.header .tel{display:none}
+body.qt-approved-qa-v85 .shell{max-width:480px;padding:0 13px 35px}
+body.qt-approved-qa-v85 .shell>.tabs{display:none!important}
+body.qt-approved-qa-v85 #view-inicio.home-screen{
+  min-height:calc(100dvh - 100px);background:#04252b;
+  position:relative;padding-bottom:16px;
+}
+body.qt-approved-qa-v85 #view-inicio .home-hero{
+  min-height:230px;border:0;border-radius:0 0 24px 24px;margin:0;
+  padding:20px 15px 77px;
+  background-image:
+    linear-gradient(180deg,rgba(2,28,34,.25) 0%,rgba(3,31,38,.5) 53%,#04252b 100%),
+    url("./premium-montevideo.webp")!important;
+  background-position:center,center 42%!important;
+  background-repeat:no-repeat!important;
+  background-size:cover!important;
+  overflow:hidden;
+}
+body.qt-approved-qa-v85 #view-inicio .home-hero:after{display:none}
+body.qt-approved-qa-v85 #view-inicio .home-hero .eyebrow{
+  font-size:10px;color:#ffdf9c;letter-spacing:.14em;text-align:center;
+  text-shadow:0 2px 8px #00191a;
+}
+body.qt-approved-qa-v85 #view-inicio .home-hero h1{
+  font:800 clamp(21px,6vw,29px)/1.18 Manrope,Arial,sans-serif;
+  text-align:center;margin:12px auto 0;max-width:320px;
+  color:#fff5dc;text-shadow:0 3px 10px #001a1c;
+}
+body.qt-approved-qa-v85 #view-inicio .home-hero>p:last-child{display:none}
+body.qt-approved-qa-v85 #view-inicio .home-section-heading{display:none}
+body.qt-approved-qa-v85 #view-inicio .service-list{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 10px!important;max-width:420px;margin:-60px auto 13px!important;
+  position:relative;z-index:5;isolation:isolate;padding:0 10px;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card,
+body.qt-approved-qa-v85 #view-inicio .service-card-featured,
+body.qt-approved-qa-v85 #view-inicio .service-card-scheduled,
+body.qt-approved-qa-v85 #view-inicio .service-card-soon{
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:flex-start!important;
+  width:100%!important;max-width:none!important;min-height:0!important;
+  gap:6px!important;margin:0!important;padding:4px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  text-align:center!important;cursor:pointer;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-featured{
+  grid-column:1/-1;justify-self:center!important;width:190px!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-icon{
+  display:grid!important;place-items:center!important;
+  width:94px!important;height:94px!important;flex:0 0 94px!important;
+  min-height:0!important;border:2px solid #f0ca80!important;
+  border-radius:50%!important;padding:8px!important;
+  background:radial-gradient(circle at 36% 26%,#2c6a65,#0b3e43 60%,#021b26)!important;
+  box-shadow:0 0 0 4px #0a252bc9,0 0 0 6px #d6b3738c,0 9px 24px #000b!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-featured .service-card-icon{
+  width:116px!important;height:116px!important;flex-basis:116px!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-icon:before{display:none!important}
+body.qt-approved-qa-v85 #view-inicio .service-emblem{
+  display:block!important;width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-body{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center;gap:4px!important;min-width:0!important;
+  padding:0!important;margin:2px 0 0!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-name{
+  font:800 clamp(15px,4.4vw,19px)/1.2 Manrope,Arial,sans-serif!important;
+  color:#f6e0ad!important;max-width:190px!important;
+  text-align:center!important;white-space:normal!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-featured .service-card-name{
+  font-size:22px!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-description{
+  display:block!important;font-size:10px!important;line-height:1.32!important;
+  text-align:center!important;color:#c6dad5!important;max-width:155px!important;
+}
+body.qt-approved-qa-v85 #view-inicio .service-card-kicker,
+body.qt-approved-qa-v85 #view-inicio .service-card-arrow,
+body.qt-approved-qa-v85 #view-inicio .service-card-action{display:none!important}
+body.qt-approved-qa-v85 #view-inicio .service-card-soon{opacity:.83}
+body.qt-approved-qa-v85 #view-inicio .home-quick-links{margin-top:8px}
+/* La pantalla v85 ya utiliza los nodos originales. Solo corregir densidad. */
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-header{
+  min-height:71px!important;padding:9px 13px!important;display:flex!important;
+  align-items:center!important;justify-content:space-between!important;gap:4px!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-header-copy{
+  margin:0 0 0 auto!important;flex:0 0 auto!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-header-copy small,
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-header-copy p{display:none!important}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-header-copy h1{
+  font-size:18px!important;margin:0!important;white-space:nowrap!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-logo{
+  width:clamp(126px,39vw,168px)!important;max-width:calc(100% - 44px)!important;
+  height:43px!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-content{
+  padding:8px 10px 92px!important;gap:7px!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app #origin-picker,
+body.qt-approved-qa-v85.qt-clean .qtc-app #destination-picker{
+  min-height:74px!important;padding:9px 10px 8px 39px!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .premium-route-cartography{
+  height:180px!important;min-height:180px!important;
+}
+body.qt-approved-qa-v85.qt-clean .qtc-app .qtc-bottom-nav{
+  z-index:50!important;
+}
+/* El permiso GPS continúa accesible, pero no es la primera pantalla. */
+body.qt-approved-qa-v85 .qt-qa-gps-details{
+  margin:8px 0 1px!important;border:1px solid #967a50!important;
+  border-radius:11px!important;padding:6px 9px!important;
+  background:#10343b!important;color:#f4ddb1!important;
+}
+body.qt-approved-qa-v85 .qt-qa-gps-details>summary{
+  display:list-item!important;cursor:pointer!important;
+  font:750 11px/1.5 Manrope,Arial,sans-serif!important;
+  color:#f3d49c!important;
+}
+body.qt-approved-qa-v85 .qt-qa-gps-details[open]{padding-bottom:10px!important}
+body.qt-approved-qa-v85 .qt-qa-gps-details .gps-permission-help{
+  display:block!important;margin:9px 0 0!important;
+}
+body.qt-approved-qa-v85 .qt-qa-gps-details .gps-permission-help[hidden]{display:none!important}
+@media(max-width:365px){
+  body.qt-approved-qa-v85 #view-inicio .home-hero{min-height:214px}
+  body.qt-approved-qa-v85 #view-inicio .service-card-icon{width:83px!important;height:83px!important;flex-basis:83px!important}
+  body.qt-approved-qa-v85 #view-inicio .service-card-featured .service-card-icon{width:107px!important;height:107px!important;flex-basis:107px!important}
+  body.qt-approved-qa-v85 .qtc-app .qtc-header-copy h1{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  body.qt-approved-qa-v85 .service-card-icon{transition:none!important}
+}
