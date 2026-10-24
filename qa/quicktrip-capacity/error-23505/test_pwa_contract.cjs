@@ -27,7 +27,7 @@ const app=fs.readFileSync(path.join(__dirname,"../../../web-pasajero/app.js"),"u
 const start=app.indexOf("function showError("),end=app.indexOf("function loading(",start);
 assert.ok(start>0 && end>start,"actual showError function must be found");
 const ctx={setTimeout,clearTimeout,AbortController,JSON,encodeURIComponent,Error,
-  lastToast:null,tell(value){this.lastToast=value;}};
+  lastToast:null,tell(value){ctx.lastToast=value;}};
 ctx.window=ctx;
 vm.createContext(ctx);
 vm.runInContext(transport,ctx,{filename:"web-pasajero/rpc-client.js"});
