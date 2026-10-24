@@ -1,5 +1,5 @@
 name: Quick Trip v85 V6 circulos QA visual SIN PUBLICACION
-# Segundo pase: oculta por completo la barra heredada, sin modificar motores.
+# Tercer pase: ocultar barra heredada desde presentacion JS, no motores.
 on:
   push:
     branches:
