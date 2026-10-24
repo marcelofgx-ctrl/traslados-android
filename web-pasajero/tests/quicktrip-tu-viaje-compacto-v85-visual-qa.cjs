@@ -92,6 +92,11 @@ async function main(){
       assert(state.mapIsSameNativeNode,"No se debe duplicar mapa vial");
       assert(state.buttonWithinOriginalAction,"El botón debe pertenecer al motor de solicitud original");
       assert(state.overflow<=2,"Desbordamiento horizontal "+state.overflow);
+      if(width===393){
+        assert(state.solicitar&&state.solicitar.bottom<=state.footer.top-5,
+          "En Samsung 393x852 Solicitar viaje queda tapado por barra inferior: "+
+          JSON.stringify({solicitar:state.solicitar,footer:state.footer}));
+      }
       const prefix="Tu-Viaje-v85-"+width;
       await page.screenshot({
         path:path.join(output,prefix+"-primer-pantallazo.png"),
