@@ -19,7 +19,7 @@ const report={
 };
 const must=(ok,label,detail)=>{report.checks.push({label,pass:!!ok,detail});assert(ok,label+": "+String(detail||""))};
 async function main(){
- let browser;
+ let browser,page;
  try {
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||"/usr/bin/google-chrome",args:["--no-sandbox","--disable-dev-shm-usage"]});
   const context=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:3,isMobile:true,hasTouch:true,
@@ -29,7 +29,7 @@ async function main(){
   // validamos explícitamente el documento final sin modificar el sitio.
   await context.addCookies([{name:"__Http-phish",value:"1",url:"https://rawgit.net/",
     httpOnly:true,secure:true,sameSite:"Lax"}]);
-  const page=await context.newPage();
+  page=await context.newPage();
   let anyExternal=0,realSupabaseSuccess=0;const externalCompleted=[];
   page.on("request",req=>{
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev|tile\.openstreetmap\.org/.test(req.url())){
@@ -42,6 +42,8 @@ async function main(){
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev/.test(response.url()))realSupabaseSuccess++;
   });
   page.on("pageerror",e=>report.unexpected.push("PAGE "+e.message));
+  page.on("requestfailed",r=>report.unexpected.push("REQUEST FAILED "+r.url()+" "+r.failure()?.errorText));
+  page.on("response",r=>{if(r.status()>=400)report.unexpected.push("HTTP "+r.status()+" "+r.url());});
   const res=await page.goto(url,{waitUntil:"domcontentloaded",timeout:45000});
   must(res&&res.status()===200,"HTTP 200 en enlace QA",res?.status());
   let visible=await page.locator("#qt-public-qa-banner").count();
@@ -108,7 +110,15 @@ async function main(){
  }catch(e){
   report.onlineValidation="FAIL";
   report.failure=String(e.stack||e);
-  console.error("FAIL QA LINK VALIDATION "+report.failure);
+  if(page){
+    try{
+      report.domDebug=await page.evaluate(()=>({view:document.querySelector(".view.active")?.id,
+        ready:document.readyState,api:typeof window.TrasladosServiceHome,
+        domQtc:document.querySelector(".qtc-app")?.outerHTML.slice(0,120)||null}));
+      await page.screenshot({path:path.join(qaDir,"ERROR-preview-qa-samsung.png"),fullPage:true,timeout:5000});
+    }catch{}
+  }
+  console.error("FAIL QA LINK VALIDATION "+report.failure+" "+JSON.stringify(report.domDebug||{})+" "+JSON.stringify(report.unexpected.slice(-16)));
   process.exitCode=1;
  }finally{
   if(browser)await browser.close();
