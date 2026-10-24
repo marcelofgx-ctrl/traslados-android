@@ -82,7 +82,7 @@
     const route=byId("booking-step-route");
     const destination=byId("destination-picker");
     if(!route||!destination||byId("qtc-history"))return;
-    const box=node("div","qtc-history");box.id="qtc-history";
+    const box=node("div","qtc-history");box.id="qtc-history";box.setAttribute("data-qt-component","collapsible-history");
     historyButton=node("button","qtc-history-button","◷  Historial");
     historyButton.type="button";
     historyButton.setAttribute("aria-expanded","false");
