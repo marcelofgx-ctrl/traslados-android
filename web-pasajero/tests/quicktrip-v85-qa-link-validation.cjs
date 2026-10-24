@@ -9,7 +9,7 @@ const {chromium}=require("playwright-core");
 const qaDir=process.env.QA_DIR||"quicktrip-v85-link-qa";
 fs.mkdirSync(qaDir,{recursive:true});
 const url=process.env.QA_PREVIEW_URL;
-if(!url||!url.startsWith("https://raw.githack.com/marcelofgx-ctrl/traslados-android/"))throw Error("Invalid URL under QA");
+if(!url||!url.startsWith("https://rawgit.net/marcelofgx-ctrl/traslados-android/"))throw Error("Invalid URL under QA");
 const report={
   exactPreviewUrl:url,backend:"CSP connect-src none; preview read-only",
   onlineValidation:"PENDING",browser: "Chromium Android device emulation",
@@ -31,7 +31,7 @@ async function main(){
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev|tile\.openstreetmap\.org/.test(req.url())){
       report.blocked.push({url:new URL(req.url()).hostname,method:req.method(),type:req.resourceType()});
     }
-    if(!req.url().startsWith("https://raw.githack.com/"))anyExternal++;
+    if(!req.url().startsWith("https://rawgit.net/"))anyExternal++;
   });
   page.on("response",response=>{
     if(/supabase\.co|direcciones\.ide\.uy|workers\.dev/.test(response.url()))realSupabaseSuccess++;
