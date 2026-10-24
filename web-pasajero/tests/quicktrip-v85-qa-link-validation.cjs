@@ -44,12 +44,19 @@ async function main(){
   const res=await page.goto(url,{waitUntil:"domcontentloaded",timeout:45000});
   must(res&&res.status()===200,"HTTP 200 en enlace QA",res?.status());
   let visible=await page.locator("#qt-public-qa-banner").count();
-  // Some HTML raw proxies ask for a one-time confirmation page before entering.
+  // rawgit.net muestra aviso de contenido de terceros la primera vez.
+  // Pulsarlo únicamente si el destino sigue siendo ESTA rama y el aviso es exacto.
   if(!visible){
     const text=await page.locator("body").innerText();
-    report.unexpected.push("FIRST PAGE NOT QA: "+text.slice(0,300));
-    report.unexpected.push("INTERSTITIAL CONTROLS: "+JSON.stringify(await page.locator("a,button").evaluateAll(nodes=>nodes.map(n=>({text:n.innerText,href:n.href})).slice(0,8))));
-    throw Error("QA banner missing, possible provider interstitial");
+    const notice="You are opening third-party content";
+    if(!text.includes(notice))throw Error("Unexpected host content: "+text.slice(0,300));
+    const continueControl=page.getByText("Continue to this repository",{exact:true});
+    if((await continueControl.count())!==1)throw Error("Missing unique explicit provider consent control");
+    await continueControl.click();
+    await page.locator("#qt-public-qa-banner").waitFor({state:"visible",timeout:20000});
+    must(page.url().startsWith(url),"Consent returns to exact QA document",page.url());
+    visible=await page.locator("#qt-public-qa-banner").count();
+    report.hostInterstitial="Consent screen encountered and passed by explicit button";
   }
   must(await page.locator("#qt-public-qa-banner").isVisible(),"Banner visible",url);
   const guards=await page.evaluate(()=>({
