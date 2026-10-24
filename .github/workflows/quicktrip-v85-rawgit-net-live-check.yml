@@ -1,0 +1,66 @@
+name: Quick Trip v85 - Verificar CDN rawgit net solo QA
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-samsung-link-readonly-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-rawgit-net-live-check.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-remote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Comparar HTML servido por CDN con commit QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,difflib,os
+          u='https://rawgit.net/marcelofgx-ctrl/traslados-android/'+os.environ['GITHUB_SHA']+'/web-pasajero/index.html'
+          request=urllib.request.Request(u,headers={'User-Agent':'QuickTrip-QA/1.0'})
+          with urllib.request.urlopen(request,timeout=18) as r:
+            remote=r.read();print('REMOTE',r.status,r.headers.get('Content-Type'),'bytes',len(remote))
+          expected=open('web-pasajero/index.html','rb').read()
+          print('LOCAL',len(expected),'EXACT',remote==expected,'HAS_BANNER',b'qt-public-qa-banner' in remote,'HAS_CSP_NONE',b'connect-src \'none\'' in remote,flush=True)
+          a,b=expected.decode('utf-8','replace'),remote.decode('utf-8','replace')
+          print('REMOTE_FIRST',repr(b[:700]))
+          for op,i1,i2,j1,j2 in difflib.SequenceMatcher(None,a,b).get_opcodes():
+            if op!='equal':
+              print('FIRST_DIFF',op,(i1,i2,j1,j2),'expected',repr(a[i1:i1+180]),'remote',repr(b[j1:j1+180]))
+              break
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/qt85-rawgit --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/qt85-rawgit/node_modules" >> "$GITHUB_ENV"
+      - name: Abrir QA remota en Chromium Samsung y verificar banner y no reservas
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-link-qa
+        shell: bash
+        run: |
+          set -euo pipefail
+          export QA_PREVIEW_URL="https://rawgit.net/marcelofgx-ctrl/traslados-android/${GITHUB_SHA}/web-pasajero/index.html"
+          node web-pasajero/tests/quicktrip-v85-qa-link-validation.cjs
+      - name: Adjuntar evidencia cuando exista
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-QA-Static-Link-Comprobacion
+          path: quicktrip-v85-link-qa/
+          retention-days: 14
+          if-no-files-found: warn
