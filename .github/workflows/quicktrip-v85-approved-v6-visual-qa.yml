@@ -1,0 +1,80 @@
+name: Quick Trip v85 V6 circulos QA visual SIN PUBLICACION
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-visual-v6-circulos-samsung-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-approved-v6-visual-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bloquear cambios en motores Supabase Android y produccion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/quicktrip-approved-v85-qa.css','web-pasajero/quicktrip-approved-v85-qa.js','web-pasajero/tests/quicktrip-v85-approved-circles-browser.cjs','.github/workflows/quicktrip-v85-approved-v6-visual-qa.yml'}
+          assert changed==allowed,('Falta',sorted(allowed-changed),'Inesperados',sorted(changed-allowed))
+          for path in ['web-pasajero/app.js','web-pasajero/route-engine.js','web-pasajero/eta-engine.js','web-pasajero/address-engine.js','web-pasajero/booking-contracts.js','web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-clean.css','web-pasajero/quicktrip-v85-resilience.js','web-pasajero/rpc-client.js']:
+            subprocess.run(['git','diff','--exit-code',base+'..HEAD','--',path],check=True)
+          print('PASS: SOLO presentacion QA. NINGUN motor ni produccion modificados.')
+          PY
+      - name: Check aislamiento QA sin Supabase real
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-approved-v85-qa.js
+          node --check web-pasajero/tests/quicktrip-v85-approved-circles-browser.cjs
+          grep -q 'connect-src '\''none'\''' web-pasajero/index.html
+          grep -q 'traslados-preview' web-pasajero/index.html
+          grep -q 'qt-approved-qa-v85' web-pasajero/index.html
+          grep -q 'quicktrip-approved-v85-qa.css' web-pasajero/sw.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regresiones contra original v85 sin modificar checkout de QA remoto
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9:web-pasajero/index.html > web-pasajero/index.html
+          git show 0c7a50db3082d6ef6a691bdd6bf1d1702c9b34b9:web-pasajero/sw.js > web-pasajero/sw.js
+          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
+            node web-pasajero/tests/"$test".cjs
+          done
+          git restore --source=HEAD -- web-pasajero/index.html web-pasajero/sw.js
+      - name: Chromium Playwright en runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-approved-qa --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-approved-qa/node_modules" >> "$GITHUB_ENV"
+      - name: QA real capturas Samsung 393x852 y 360x780
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-v6-qa
+        shell: bash
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-approved-circles-browser.cjs
+      - name: Subir capturas de pantalla reales y JSON solo QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-V6-Circulos-QA-Visual-NoPublicar
+          path: quicktrip-v85-v6-qa/
+          retention-days: 14
+          if-no-files-found: warn
