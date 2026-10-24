@@ -1,0 +1,104 @@
+name: Mapa QT R25.38 firmado - QA aislado (NO DEPLOY)
+on:
+  push:
+    branches:
+      - qa/mapa-qt-r2538-firma-aislada-20261024
+    paths:
+      - '.github/workflows/qa-mapa-r2538-firma-aislada-20261024.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Aislamiento exacto del codigo Android R25.38
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse 32e038ad2de7a53fdc79925a173f7e237bd57587)" = 32e038ad2de7a53fdc79925a173f7e237bd57587
+          test "$(git diff --name-only 32e038ad2de7a53fdc79925a173f7e237bd57587..HEAD)" = '.github/workflows/qa-mapa-r2538-firma-aislada-20261024.yml'
+          grep -Fq "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
+          grep -Fq 'versionCode 91' mapatrayectos/build.gradle
+          grep -Fq "versionName 'MapaQT-0.1-R25.38'" mapatrayectos/build.gradle
+          ! grep -q 'applicationIdSuffix' mapatrayectos/build.gradle
+          echo "PASS: solo workflow nuevo, codigo original intacto; rama QA aislada."
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Restaurar recursos existentes sin alterar fuentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Asegurar Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restaurar keystore original solo en runner temporal
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compilar solamente APK unica Mapa QT Release con firma original
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleRelease --no-daemon --build-cache --console=plain --stacktrace
+      - name: Verificar APK, identidad de instalacion, firma y SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=mapatrayectos/build/outputs/apk/release
+          APK="$(find "$out" -maxdepth 1 -name '*.apk' -type f | head -1)"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee "$out/BADGING.txt"
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='91'" "$out/BADGING.txt"
+          grep -q "application-label:'Mapa QT'" "$out/BADGING.txt"
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee "$out/SIGNING.txt"
+          grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' "$out/SIGNING.txt"
+          grep -qi 'Signer #1 certificate SHA-256 digest: d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d' "$out/SIGNING.txt"
+          sha256sum "$APK" | tee "$out/SHA256SUMS.txt"
+          printf "QA ONLY; no deployment; source base 32e038ad2de7a53fdc79925a173f7e237bd57587\n" > "$out/QA-SOURCE.txt"
+      - name: Subir exclusivamente artefacto QA privado en GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-QT-R25.38-Firmada-QA-Aislada
+          path: |
+            mapatrayectos/build/outputs/apk/release/*.apk
+            mapatrayectos/build/outputs/apk/release/BADGING.txt
+            mapatrayectos/build/outputs/apk/release/SIGNING.txt
+            mapatrayectos/build/outputs/apk/release/SHA256SUMS.txt
+            mapatrayectos/build/outputs/apk/release/QA-SOURCE.txt
+          if-no-files-found: error
+          retention-days: 14
