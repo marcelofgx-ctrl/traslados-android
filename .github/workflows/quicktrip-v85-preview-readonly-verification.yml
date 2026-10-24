@@ -1,0 +1,102 @@
+name: Quick Trip v85 - Verificar enlace temporal QA SIN PRODUCCION
+on:
+  push:
+    branches:
+      - qa/quicktrip-v85-samsung-link-readonly-20261024
+    paths:
+      - .github/workflows/quicktrip-v85-preview-readonly-verification.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-isolated-link:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verificar diferencia exacta respecto rama corregida
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='452ffc8e9b0d76610a5638b87f3c0cd94fe73fd3'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          expected={'web-pasajero/index.html','web-pasajero/manifest.webmanifest','web-pasajero/sw.js','web-pasajero/tests/quicktrip-v85-qa-link-validation.cjs','.github/workflows/quicktrip-v85-preview-readonly-verification.yml'}
+          assert changed==expected,('Cambios fuera de alcance',sorted(changed-expected),'Faltan',sorted(expected-changed))
+          protected=['web-pasajero/app.js','web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-v85-resilience.js','web-pasajero/route-engine.js','web-pasajero/eta-engine.js','web-pasajero/booking-contracts.js','web-pasajero/rpc-client.js','web-pasajero/address-engine.js']
+          for path in protected:
+            subprocess.run(['git','diff','--exit-code',base+'..HEAD','--',path],check=True)
+          print('PASS: SOLO HTML readonly/manifest SW y test; motores Android DB y producción intactos')
+          PY
+      - name: Comprobar aislamiento de la vista QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          html=Path('web-pasajero/index.html').read_text()
+          assert '<meta name="traslados-preview" content="read-only">' in html
+          assert "connect-src 'none'" in html and "form-action 'none'" in html
+          assert 'QA v85' in html and 'qt-public-qa-banner' in html
+          assert 'tel:+598' not in html
+          assert 'http-equiv="Content-Security-Policy"' in html
+          assert html.count('http-equiv="Content-Security-Policy"')==1
+          manifest=json.loads(Path('web-pasajero/manifest.webmanifest').read_text())
+          assert 'QA' in manifest['name'] and manifest['start_url']=='./index.html'
+          sw=Path('web-pasajero/sw.js').read_text()
+          assert 'traslados-pwa-qa-v85-readonly' in sw
+          assert '"./index.html"' in sw and '"./"' not in sw
+          print('PASS: modo preview, CSP sin backend, SW e identidad QA')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ejecutar regresiones locales de motores estables
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/tests/quicktrip-v85-qa-link-validation.cjs
+          for test in booking-contracts-smoke urgent-request-v49-smoke route-engine-smoke eta-engine-smoke search-smoke address-picker-regression-v82-smoke reservation-live-v82-smoke quicktrip-three-services-v84-smoke quicktrip-mobile-skin-v83-smoke; do
+            node web-pasajero/tests/"$test".cjs
+          done
+      - name: Comprobar acceso público exacto con curl sin modificar destinos
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREVIEW="https://raw.githack.com/marcelofgx-ctrl/traslados-android/${GITHUB_SHA}/web-pasajero/index.html"
+          echo "QA_PREVIEW_URL=$PREVIEW" >> "$GITHUB_ENV"
+          echo "CANDIDATE_PREVIEW=$PREVIEW"
+          curl --fail --location --silent --show-error --max-time 40 "$PREVIEW" > /tmp/quicktrip-qa-remote.html
+          cmp web-pasajero/index.html /tmp/quicktrip-qa-remote.html
+          grep -q 'qt-public-qa-banner' /tmp/quicktrip-qa-remote.html
+          curl --fail --location --silent --show-error --max-time 40 "https://raw.githack.com/marcelofgx-ctrl/traslados-android/${GITHUB_SHA}/web-pasajero/quicktrip-v85-resilience.js" > /tmp/quicktrip-qa-remote-script.js
+          cmp web-pasajero/quicktrip-v85-resilience.js /tmp/quicktrip-qa-remote-script.js
+          echo 'PASS enlace real de CDN: HTML + JS originales, idénticos al commit aislado'
+      - name: Preparar navegador móvil para verificar link temporal
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/qt-v85-link --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/qt-v85-link/node_modules" >> "$GITHUB_ENV"
+      - name: Abrir enlace remoto Chromium Android simulado y verificar sólo lectura
+        env:
+          QA_DIR: ${{ github.workspace }}/quicktrip-v85-link-qa
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v85-qa-link-validation.cjs
+      - name: Conservar evidencias y capturas sin deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v85-QA-Link-Temporal-Verificacion
+          path: quicktrip-v85-link-qa/
+          retention-days: 14
+          if-no-files-found: warn
