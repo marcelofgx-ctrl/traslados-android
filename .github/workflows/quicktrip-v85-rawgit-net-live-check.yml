@@ -1,5 +1,5 @@
 name: Quick Trip v85 - Verificar CDN rawgit net solo QA
-# Cuarto pase: verificar CSP bloquea telemetria agregada por proveedor.
+# Quinto pase: manifest comprobado sin fetch, para respetar connect-src none.
 on:
   push:
     branches:
