@@ -1,0 +1,53 @@
+/* Quick Trip v87 — Samsung QA visual overlay. No engines changed. */
+body.qt-v87-qa #qt-public-qa-banner{position:relative!important;z-index:3!important;padding:5px 8px!important;font-size:10px!important;line-height:1.25!important;min-height:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app{width:100%!important;max-width:620px!important;overflow-x:clip!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-header{padding:5px 11px!important;min-height:54px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-brand{gap:7px!important;min-height:42px}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-logo{width:clamp(117px,36vw,156px)!important;height:40px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-header-copy h1{font-size:17px!important}
+/* Place primary action above secondary accordion controls; keep original DOM and listeners. */
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-content{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-areas:"places places" "driver driver" "quote quote" "schedule contact" "success success"!important;gap:6px 7px!important;padding:7px 10px calc(94px + env(safe-area-inset-bottom,0px))!important;align-items:start!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-places{grid-area:places!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver{grid-area:driver!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{grid-area:quote!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-schedule{grid-area:schedule!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-contact{grid-area:contact!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-success-slot{grid-area:success!important;min-width:0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #origin-picker,
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #destination-picker{min-height:62px!important;padding:7px 9px 7px 35px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #origin-picker:before,
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #destination-picker:before{left:12px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #origin-picker:after{left:18px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .location-selected-label{font-size:13px!important;line-height:1.24!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .location-selected-hint{font-size:9px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .premium-route-stops{min-height:30px!important;padding:6px 10px!important;margin:2px 0 0!important}
+/* The immutable route renderer stays available for verified routes only.
+   QA never draws partial external OSM tiles or an invented polyline. */
+body.qt-v87-qa.qt-clean.qt-clean-active .premium-route-canvas[data-qt-v87-route="unverified"]{background:#12353c!important;border:1px solid #50706c!important;border-radius:12px!important;margin:4px 0 0!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .premium-route-canvas[data-qt-v87-route="unverified"] .premium-route-cartography,
+body.qt-v87-qa.qt-clean.qt-clean-active .premium-route-canvas[data-qt-v87-route="unverified"] .premium-route-map-note,
+body.qt-v87-qa.qt-clean.qt-clean-active .premium-route-canvas[data-qt-v87-route="unverified"] .premium-route-retry{display:none!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qt-v87-route-note{display:flex;align-items:center;gap:10px;padding:9px 11px;min-height:56px;background:linear-gradient(120deg,#10343a,#143d43);color:#e6e5d7;line-height:1.34;font-size:11px}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qt-v87-route-note[hidden]{display:none!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qt-v87-route-mark{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;color:#f1d49a;background:#23464b;border:1px solid #827c5d;font-size:18px}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qt-v87-route-note strong{display:block;color:#f6dba7;font-size:12px}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver{padding:8px 10px!important;border-radius:12px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver[data-qt-v87-qa="true"] .qtc-live-dot{background:#d9b97c!important;box-shadow:0 0 0 3px #d9b97c24!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver[data-qt-v87-qa="true"] .qtc-driver-slot,
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver[data-qt-v87-qa="true"] .qtc-driver-unavailable,
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-driver[data-qt-v87-qa="true"] .qtc-driver-search{display:none!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qt-v87-driver-note{display:block;color:#d7e0d8;font-size:11px;line-height:1.35;margin:2px 0 0 17px}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-section-name{margin:0 0 3px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-section-name small{font-size:9px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{padding:8px 10px!important;border-radius:12px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #qtc-summary-wait{color:#e4d9bf!important;font-size:11px!important;line-height:1.35!important;padding:4px 0!important;margin:0 0 5px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #urgent-send{min-height:42px!important;padding:8px 12px!important;font-size:13px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-schedule>summary,
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary{min-height:45px!important;padding:8px!important;gap:5px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary small{display:none!important}
+/* Samsung floating overlay is OS-level, not a web element. Reserve right space. */
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav{padding:6px 68px calc(6px + env(safe-area-inset-bottom,0px)) 8px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3px!important;min-height:58px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button{min-width:0!important;min-height:44px!important;padding:5px 3px!important}
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button span{font-size:10px!important;white-space:nowrap!important}
+@media(min-width:560px){body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav{padding-right:9px!important}}
+@media(prefers-reduced-motion:reduce){body.qt-v87-qa.qt-clean.qt-clean-active *{scroll-behavior:auto!important}}
