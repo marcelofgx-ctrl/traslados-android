@@ -1,8 +1,8 @@
 {
-  "name": "Quick Trip Web/PWA v88 — QA",
-  "short_name": "QT v88 QA",
+  "name": "Quick Trip Web/PWA v89 — QA",
+  "short_name": "QT v89 QA",
   "description": "Candidata aislada de visualización; sin Supabase, sin envío de viajes",
-  "id": "./index.html#qa-gps-v88",
+  "id": "./index.html#qa-gps-ux-v89",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
