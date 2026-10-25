@@ -1,0 +1,102 @@
+name: Quick Trip v89 GPS UX QA - NO DEPLOY
+on:
+  push:
+    branches:
+      - qa/quicktrip-v89-gps-ux-intuitivo-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa-gps-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scope guard and immutable engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,re
+          base='72f9eebac403026105e4f7ced55bbbe74a434d72'
+          actual=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/manifest.webmanifest',
+            'web-pasajero/quicktrip-qa-gps-ux-v89.css','web-pasajero/quicktrip-qa-gps-ux-v89.js',
+            'web-pasajero/tests/quicktrip-v89-gps-ux-qa.cjs',
+            '.github/workflows/qa-quicktrip-v89-gps-ux.yml',
+            'docs/QUICK_TRIP_V89_QA_GPS_UX_20261025.md'
+          }
+          assert actual<=allowed,('Unexpected changes',sorted(actual-allowed))
+          for f in [
+            'web-pasajero/app.js','web-pasajero/address-engine.js','web-pasajero/address-viewport.js',
+            'web-pasajero/geo-search.js','web-pasajero/route-engine.js','web-pasajero/eta-engine.js',
+            'web-pasajero/rpc-client.js','web-pasajero/booking-contracts.js','web-pasajero/premium-map.js',
+            'web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-canonical-v86.css',
+            'web-pasajero/quicktrip-qa-samsung-v87.css','web-pasajero/quicktrip-qa-samsung-v87.js'
+          ]:
+            x=subprocess.check_output(['git','rev-parse',base+':'+f],text=True).strip()
+            y=subprocess.check_output(['git','rev-parse','HEAD:'+f],text=True).strip()
+            assert x==y,('Stable motor/skin altered',f)
+          html=open('web-pasajero/index.html').read()
+          csp=re.search(r"connect-src\s+([^;]+)",html)
+          assert csp and csp.group(1).strip()=='https://direcciones.ide.uy'
+          assert "form-action 'none'" in html and 'traslados-preview' in html
+          for n in ['quicktrip-qa-gps-ux-v89.css?v=89','quicktrip-qa-gps-ux-v89.js?v=89']:
+            assert html.count(n)==1,(n,html.count(n))
+          assert html.count('id="urgent-send"')==1
+          assert html.count('data-qt-service=')==3
+          sw=open('web-pasajero/sw.js').read()
+          assert 'traslados-pwa-qa-gps-ux-v89-20261025' in sw
+          assert '"./quicktrip-qa-gps-ux-v89.css"' in sw and '"./quicktrip-qa-gps-ux-v89.js"' in sw
+          newjs=open('web-pasajero/quicktrip-qa-gps-ux-v89.js').read()
+          assert 'navigator.geolocation.getCurrentPosition' not in newjs
+          assert 'fetch(' not in newjs
+          assert 'permissions.query(' not in newjs
+          print('PASS: no changes to 13 protected modules, one GPS button, CSP IDE-only, QA only')
+          PY
+      - name: Static package, no APK and syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-qa-gps-ux-v89.js
+          node --check web-pasajero/tests/quicktrip-v89-gps-ux-qa.cjs
+          node --check web-pasajero/sw.js
+          node web-pasajero/qa-stage-build.cjs
+          test -f web-pasajero/dist/quicktrip-qa-gps-ux-v89.css
+          test -f web-pasajero/dist/quicktrip-qa-gps-ux-v89.js
+          python3 - <<'PY'
+          from pathlib import Path
+          d=Path('web-pasajero/dist')
+          assert not list(d.rglob('*.apk')) and not list(d.rglob('*.aab'))
+          print('PASS: QA static files ready, no Android payload')
+          PY
+      - name: Install browser harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/qt-v89 --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/qt-v89/node_modules" >> "$GITHUB_ENV"
+      - name: Mock permission granted, prompt and denied in Chromium
+        env:
+          QA_DIR: quicktrip-v89-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v89-gps-ux-qa.cjs
+      - name: Screenshots and test report, never deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v89-GPS-UX-QA-Capturas-y-Pruebas
+          path: quicktrip-v89-evidence/
+          retention-days: 14
+          if-no-files-found: warn
