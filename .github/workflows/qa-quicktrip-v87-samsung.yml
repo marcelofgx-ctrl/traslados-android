@@ -1,0 +1,99 @@
+name: Quick Trip v87 Samsung visual QA - NO DEPLOY
+on:
+  push:
+    branches:
+      - qa/quicktrip-webpwa-v87-samsung-visual-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v87-samsung-safety-and-captures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact branch scope, immutable engines and isolation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='7b98f89a7d156d61ea6926959d7d4e448ea36fcc'
+          files=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/quicktrip-qa-samsung-v87.css',
+            'web-pasajero/quicktrip-qa-samsung-v87.js',
+            'web-pasajero/index.html',
+            'web-pasajero/sw.js',
+            'web-pasajero/manifest.webmanifest',
+            'web-pasajero/tests/quicktrip-v87-samsung-qa.cjs',
+            '.github/workflows/qa-quicktrip-v87-samsung.yml',
+            'docs/QA_QUICKTRIP_V87_SAMSUNG_20261025.md'
+          }
+          assert files<=allowed,('UNAUTHORIZED FILES',sorted(files-allowed))
+          assert {'web-pasajero/index.html','web-pasajero/sw.js'}<=files
+          for f in [
+            'web-pasajero/app.js','web-pasajero/route-engine.js',
+            'web-pasajero/address-engine.js','web-pasajero/geo-search.js',
+            'web-pasajero/eta-engine.js','web-pasajero/rpc-client.js',
+            'web-pasajero/booking-contracts.js','web-pasajero/premium-map.js',
+            'web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-canonical-v86.css',
+            'web-pasajero/quicktrip-approved-v85-qa.js'
+          ]:
+            old=subprocess.check_output(['git','rev-parse',base+':'+f],text=True).strip()
+            new=subprocess.check_output(['git','rev-parse','HEAD:'+f],text=True).strip()
+            assert old==new,('STABLE ENGINE OR LEGACY VISUAL CHANGED',f)
+          html=open('web-pasajero/index.html').read()
+          assert "connect-src 'none'" in html and "form-action 'none'" in html
+          assert html.count('id="urgent-send"')==1
+          assert html.count('data-qt-service=')==3
+          assert html.count('quicktrip-qa-samsung-v87.css?v=87')==1
+          assert html.count('quicktrip-qa-samsung-v87.js?v=87')==1
+          sw=open('web-pasajero/sw.js').read()
+          assert 'traslados-pwa-qa-samsung-v87-20261025' in sw
+          assert '"./quicktrip-qa-samsung-v87.css"' in sw
+          assert '"./quicktrip-qa-samsung-v87.js"' in sw
+          print('PASS: QA files only, 11 original engines/scripts unchanged; readonly CSP and PWA cache')
+          PY
+      - name: Static package, code syntax and no Android payload
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-qa-samsung-v87.js
+          node --check web-pasajero/tests/quicktrip-v87-samsung-qa.cjs
+          node --check web-pasajero/sw.js
+          node web-pasajero/qa-stage-build.cjs
+          python3 - <<'PY'
+          from pathlib import Path
+          d=Path('web-pasajero/dist')
+          assert (d/'quicktrip-qa-samsung-v87.css').exists()
+          assert (d/'quicktrip-qa-samsung-v87.js').exists()
+          assert not any(p.suffix.lower() in ('.apk','.aab') for p in d.rglob('*'))
+          print('PASS: v87 CSS/JS packaged and no APK')
+          PY
+      - name: Chromium installed and Playwright-core for visual QA
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v87-qa --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v87-qa/node_modules" >> "$GITHUB_ENV"
+      - name: Samsung 393 and 360 emulation, no backend
+        env:
+          QA_DIR: quicktrip-v87-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v87-samsung-qa.cjs
+      - name: Upload screenshots and checks; NEVER deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v87-Samsung-QA-Capturas-y-Pruebas
+          path: quicktrip-v87-evidence/
+          retention-days: 14
+          if-no-files-found: warn
