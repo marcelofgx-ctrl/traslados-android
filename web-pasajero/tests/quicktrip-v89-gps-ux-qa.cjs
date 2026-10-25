@@ -19,7 +19,15 @@ const test=(name,condition,detail)=>{report.cases.push({name,pass:!!condition,de
      geolocation:{latitude:-34.85,longitude:-56.05,accuracy:25},reducedMotion:"reduce",serviceWorkers:"block"});
     if(mode==="granted")await ctx.grantPermissions(["geolocation"],{origin:base});
     if(mode==="denied")await ctx.grantPermissions([],{origin:base});
-    // For prompt leave as browser-default; no OS dialog invoked in this branch.
+    // Real headless Chromium denies unset permissions by default. For the
+    // "prompt" branch only, emulate the Permissions API state on this test page.
+    // The native application's useCurrent() and help UI remain unchanged.
+    if(mode==="prompt")await ctx.addInitScript(()=>{
+      const realQuery=navigator.permissions.query.bind(navigator.permissions);
+      Object.defineProperty(navigator.permissions,"query",{
+        configurable:true,value:(opts)=>opts?.name==="geolocation"?Promise.resolve({state:"prompt"}):realQuery(opts)
+      });
+    });
     let reverse=0,supabase=0;
     await ctx.route("**/*",route=>{
      const u=new URL(route.request().url());
