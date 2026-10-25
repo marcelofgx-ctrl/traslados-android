@@ -74,3 +74,9 @@ body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-fal
 
 /* Suppress the old tiny GPS glyph/label without altering its native click handler. */
 body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current .premium-gps-short-label{display:none!important}
+
+/* Compact permission prompt: keep original native action and listeners. */
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-description,
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-steps{display:none!important}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-help{padding:9px 11px!important}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-title{font-size:13px!important;margin-bottom:8px!important}
