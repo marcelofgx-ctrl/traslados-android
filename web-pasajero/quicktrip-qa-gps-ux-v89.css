@@ -1,0 +1,73 @@
+/* Quick Trip v89 — QA exclusively: intuitive GPS button and permission feedback.
+   NO changes to GPS, routing, address lookup or booking engines. */
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search.loc-search-origin{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 41px!important;
+  grid-template-areas:"address lookup" "geolocate geolocate"!important;
+  gap:5px 7px!important;
+  align-items:center!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin input[type="search"]{
+  grid-area:address!important;min-width:0!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-search-action{
+  grid-area:lookup!important;width:41px!important;min-width:41px!important;
+  height:41px!important;min-height:41px!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-use-current{
+  grid-area:geolocate!important;
+  justify-self:end!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:8px!important;
+  width:auto!important;min-width:145px!important;max-width:100%!important;
+  height:39px!important;min-height:39px!important;
+  padding:7px 13px!important;
+  border-radius:21px!important;
+  background:linear-gradient(110deg,#244f55,#173c42)!important;
+  border:1px solid rgba(232,207,151,.7)!important;
+  color:#f1dba7!important;
+  box-shadow:0 2px 8px rgba(0,17,24,.27)!important;
+  font-size:0!important;
+  font-weight:700!important;
+  cursor:pointer!important;
+  overflow:visible!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current::before{
+  content:""!important;display:block!important;flex:0 0 21px!important;
+  width:21px!important;height:21px!important;
+  background:#f1dba7!important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z'/%3E%3C/svg%3E") center / contain no-repeat!important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z'/%3E%3C/svg%3E") center / contain no-repeat!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current::after{
+  content:attr(data-qt-gps-label)!important;display:inline!important;
+  font:700 12px/1.2 system-ui,sans-serif!important;
+  white-space:nowrap!important;letter-spacing:0!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current:focus-visible{
+  outline:2px solid #ffe5ac!important;outline-offset:3px!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current:disabled{
+  opacity:.78!important;cursor:progress!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-status{
+  font-size:11px!important;line-height:1.4!important;color:#e2d7bd!important;
+  padding:5px 8px!important;margin:5px 0!important;
+  background:#193d42!important;border-left:3px solid #d7ba7e!important;
+  border-radius:6px!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-status[hidden]{
+  display:none!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-fallback{
+  display:block!important;margin-top:4px!important;font-size:11px!important;
+  color:#ead09c!important;line-height:1.38!important;
+}
+@media(max-width:365px){
+ body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-use-current{
+  min-width:139px!important;min-height:39px!important;padding:7px 9px!important
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current{transition:none!important}
+}
