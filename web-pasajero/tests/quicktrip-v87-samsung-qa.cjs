@@ -75,6 +75,17 @@ const check=(label,ok,detail)=>{report.cases.push({label,passed:!!ok,detail});as
    check("Still no unverified route image with selected places "+width,
     await page.locator(".premium-route-canvas").getAttribute("data-qt-v87-route")==="unverified");
    check("Still no real request allowed "+width,await page.locator("#urgent-send").evaluate(e=>e.disabled));
+   const historyGeometry=await page.evaluate(()=>{
+    const a=document.querySelector("#destination-picker .qtc-history-button")?.getBoundingClientRect();
+    const b=document.querySelector("#destination-picker .location-selected-label")?.getBoundingClientRect();
+    if(!a||!b)return {valid:false};
+    const intersection=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*
+      Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+    return {valid:true,intersection,history:{x:a.x,y:a.y,w:a.width,h:a.height},
+      label:{x:b.x,y:b.y,w:b.width,h:b.height}};
+   });
+   check("Historial never covers selected destination "+width,
+     historyGeometry.valid&&historyGeometry.intersection===0,historyGeometry);
    name="04-seleccion-ficticia-sin-ruta-v87-"+width+".png";
    await page.screenshot({path:path.join(dir,name),fullPage:true,animations:"disabled"});report.images.push(name);
    const time=page.locator(".qtc-schedule summary");
