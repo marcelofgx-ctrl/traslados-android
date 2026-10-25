@@ -64,6 +64,11 @@
   button.addEventListener("click",()=>{
     show("Comprobando permiso y ubicación en Chrome…");
     win.requestAnimationFrame(refreshBusy);
+    // Some Android/Chromium builds expose help before dispatching mutation
+    // records for the folded container. Reconcile presentation after the
+    // original async permission check, never request location ourselves.
+    win.setTimeout(refreshHelp,150);
+    win.setTimeout(refreshHelp,450);
   },{passive:true});
   const observer=new MutationObserver(records=>{
     if(records.some(r=>r.target===button))refreshBusy();
