@@ -63,7 +63,8 @@ const test=(name,condition,detail)=>{report.cases.push({name,pass:!!condition,de
      test("granted "+width+" uses preauthorized GPS and IDE once",reverse===1&&await page.locator("#origin-picker .location-selected-label").textContent()==="Calle Ficticia QA 123, Canelones",{reverse});
      test("granted "+width+" no permission guidance",await page.locator("#origin-picker .gps-permission-help").evaluate(e=>e.hidden));
     }else{
-     await page.locator("#origin-picker .qt-v89-gps-status:not([hidden])").waitFor({state:"visible",timeout:6000});
+     await page.locator("#origin-picker .gps-permission-help:not([hidden])").waitFor({state:"visible",timeout:8000});
+     await page.waitForFunction(()=>!!document.querySelector("#origin-picker .gps-permission-help")?.closest("details")?.open,null,{timeout:8000});
      const state=await page.evaluate(()=>{
       const h=document.querySelector("#origin-picker .gps-permission-help");
       const det=h?.closest("details");
