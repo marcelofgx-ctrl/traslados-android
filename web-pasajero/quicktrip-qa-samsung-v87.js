@@ -4,11 +4,11 @@
 (function(win,doc){
  const isolation=doc.querySelector('meta[name="quicktrip-qa-isolation"]');
  const csp=doc.querySelector('meta[http-equiv="Content-Security-Policy"]');
- if(!isolation||!String(csp?.content||"").includes("connect-src 'none'"))return;
+ if(!isolation||!String(csp?.content||"").includes("connect-src https://direcciones.ide.uy"))return;
  doc.body.classList.add("qt-v87-qa");
- doc.title="Quick Trip · Web/PWA v87 · Samsung QA";
+ doc.title="Quick Trip · Web/PWA v88 · GPS IDE QA";
  const top=doc.getElementById("qt-public-qa-banner");
- if(top)top.textContent="QA v87 · SIN BACKEND · NO INGRESAR DATOS REALES";
+ if(top)top.textContent="QA v88 · SOLO GPS/IDE · SIN SUPABASE · SIN RESERVAS";
  let scheduled=false;
  function apply(){
   scheduled=false;
