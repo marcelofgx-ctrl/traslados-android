@@ -17,3 +17,14 @@ Rama de distribución aislada: `qa/quicktrip-staging-https-v86-20261024`. NO MER
 - Prohibidas: publicar al dominio de producción, fusionar, borrar backups, compilar nuevas APK, consultar o modificar Supabase real `zetaudvvutlouiqxopvg`.
 
 **Estado:** rama preparada con configuración de empaquetado. **No hay staging real ni enlace verificado hasta conectar hosting y comprobar el despliegue en vivo.**
+
+## Auditoría visual complementaria (capturas reales del CI, NO Samsung físico)
+
+Artifact `12578088180`, archivo `visual/02-tu-viaje-compacto-393.png`, inspeccionado directamente:
+
+- El área del mapa aparece en gris con icono de imagen fallida. Sin origen/destino configurados no implica que el motor vial esté roto, pero **no demuestra un mapa correcto**. Revisar carga real de tiles/imagen y comportamiento después de calcular una ruta en un navegador Samsung, sin conectar Supabase.
+- La navegación inferior flotante tapa parcialmente el contenido inmediatamente encima de «SOLICITAR VIAJE» en la captura completa. Es un **problema de composición y accesibilidad**, no superado por los asserts geométricos existentes.
+- Captura `visual/01-circulos-v6-qa-393.png`: fondo de ciudad, logotipo Quick Trip y tres círculos presentes, pendiente cotejo 1:1 con referencia aprobada.
+- La evidencia automatizada solo confirma existencia de elementos, no que el mapa se dibuje correctamente ni que la barra fija deje accesible todo el formulario.
+
+**Bloqueos de aprobación visual final:** mapa/render físico y superposición barra/contenido; inspección en Samsung antes de promover. No fabricar mapas, kilómetros ni ETA. No alterar motores. Estas observaciones NO modifican archivos de la v86.
