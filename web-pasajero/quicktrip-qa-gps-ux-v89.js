@@ -34,14 +34,20 @@
     if(busy&&controls&&!controls.hidden)show("Buscando tu ubicación. Si Chrome ya tiene permiso, no necesita pedirlo otra vez.");
   };
   function refreshHelp(){
-    if(!help||help.hidden)return;
+    if(!help||help.hidden){host.classList.remove("qt-v89-prompt-help");return;}
     const title=help.querySelector(".gps-permission-title")?.textContent||"";
+    const isPrompt=/antes de autorizar/i.test(title);
+    host.classList.toggle("qt-v89-prompt-help",isPrompt);
+    if(isPrompt){
+      const req=[...help.querySelectorAll("button")].find(x=>x.textContent.includes("Solicitar permiso"));
+      if(req)req.textContent="Permitir ubicación";
+    }
     const details=help.closest(".qt-qa-gps-details");
     if(details&&!details.open)details.open=true;
     if(/bloquead|denegad/i.test(title)){
       show("Ubicación bloqueada. Tocá el candado de Chrome → Permisos → Ubicación → Permitir.");
     }else if(/antes de autorizar/i.test(title)){
-      show("Chrome necesita tu permiso una sola vez. Tocá «Solicitar permiso» abajo.");
+      show("Chrome necesita tu permiso una sola vez. Tocá «Permitir ubicación» abajo.");
     }else if(/demorando|determinar/i.test(title)){
       show("Android no obtuvo una posición. Revisá que esté activada Ubicación y volvé a intentar.");
     }else{
@@ -53,6 +59,8 @@
     const label=selection.querySelector(".location-selected-label");
     if(!label)return;
     show("");
+    const oldToast=doc.getElementById("toast");
+    if(oldToast&&/Solicitando ubicación al navegador/i.test(oldToast.textContent||""))oldToast.hidden=true;
     const generic=label.textContent.trim()==="Ubicación actual (GPS)";
     const old=selection.querySelector(".qt-v89-gps-fallback");
     if(generic&&!old){
