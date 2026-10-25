@@ -1,0 +1,65 @@
+name: Quick Trip v86 staging QA - static integrity only
+on:
+  push:
+    branches:
+      - qa/quicktrip-staging-https-v86-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-qa-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Guard staging branch and source scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess, pathlib, json
+          base='9c15f8465cd81e8a012f75101fe235031bc176e6'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/qa-stage-build.cjs',
+            'web-pasajero/vercel.json',
+            'docs/QA_STAGING_WEBPWA_V86_20261024.md',
+            '.github/workflows/qa-quicktrip-staging-v86.yml'
+          }
+          assert changed == allowed,('Unexpected or missing staging change:', sorted(changed ^ allowed))
+          core=['index.html','sw.js','manifest.webmanifest','quicktrip-canonical-v86.css','app.js','route-engine.js','address-engine.js','eta-engine.js','rpc-client.js']
+          for n in core:
+            file='web-pasajero/'+n
+            old=subprocess.check_output(['git','rev-parse',base+':'+file],text=True).strip()
+            new=subprocess.check_output(['git','rev-parse','HEAD:'+file],text=True).strip()
+            assert old==new,('STAGING MODIFIED SOURCE',file)
+          cfg=json.loads(pathlib.Path('web-pasajero/vercel.json').read_text())
+          assert cfg['outputDirectory']=='dist'
+          assert cfg['framework'] is None
+          print('PASS: source v86 exact, all protected engines intact, QA branch only')
+          PY
+      - name: Static staging package and no-APK test
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/qa-stage-build.cjs
+          node web-pasajero/qa-stage-build.cjs
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          r=Path('web-pasajero'); d=r/'dist'
+          allfiles=[p for p in d.rglob('*') if p.is_file()]
+          assert allfiles and all(p.suffix.lower() in {'.html','.css','.js','.json','.webmanifest','.svg','.png','.webp','.ico'} for p in allfiles)
+          assert not any('downloads' in p.parts or p.suffix.lower()=='.apk' for p in allfiles)
+          for p in allfiles:
+            rel=p.relative_to(d)
+            assert hashlib.sha256(p.read_bytes()).digest()==hashlib.sha256((r/rel).read_bytes()).digest(),rel
+          h=(d/'index.html').read_text()
+          assert "connect-src 'none'" in h and 'traslados-preview' in h
+          print('PASS: static bytes identical; '+str(len(allfiles))+' assets; HTTPS hosting config staged, not deployed')
+          PY
