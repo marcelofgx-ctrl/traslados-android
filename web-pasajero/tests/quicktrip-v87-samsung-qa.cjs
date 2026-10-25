@@ -62,6 +62,21 @@ const check=(label,ok,detail)=>{report.cases.push({label,passed:!!ok,detail});as
    await page.screenshot({path:path.join(dir,name),fullPage:true,animations:"disabled"});report.images.push(name);
    name="03-viewport-Samsung-v87-"+width+".png";
    await page.screenshot({path:path.join(dir,name),fullPage:false,animations:"disabled"});report.images.push(name);
+   // Distinct fake locations: exercise the exact chosen-origin/destination layout
+   // seen in the user's phone, without reading their GPS or querying a backend.
+   const fixture=await page.evaluate(()=>{
+    if(typeof originPicker==="undefined"||typeof destPicker==="undefined")return {supported:false};
+    originPicker.persist({text:"Ubicación de muestra (GPS ficticio QA)",lat:-34.8501,lng:-56.0482,department:"Canelones"});
+    destPicker.persist({text:"Aeropuerto Internacional de Carrasco · terminal de pasajeros (QA)",lat:-34.8352,lng:-56.029,department:"Canelones"});
+    return {supported:true,origin:record.origin?.text||"",dest:record.destination?.text||""};
+   });
+   check("Original location pickers retained "+width,fixture.supported&&fixture.origin.includes("muestra")&&fixture.dest.includes("Aeropuerto"),fixture);
+   await page.waitForTimeout(350);
+   check("Still no unverified route image with selected places "+width,
+    await page.locator(".premium-route-canvas").getAttribute("data-qt-v87-route")==="unverified");
+   check("Still no real request allowed "+width,await page.locator("#urgent-send").evaluate(e=>e.disabled));
+   name="04-seleccion-ficticia-sin-ruta-v87-"+width+".png";
+   await page.screenshot({path:path.join(dir,name),fullPage:true,animations:"disabled"});report.images.push(name);
    const time=page.locator(".qtc-schedule summary");
    await time.click();
    check("Schedule accordion still opens "+width,await page.locator(".qtc-schedule").evaluate(e=>e.open));
