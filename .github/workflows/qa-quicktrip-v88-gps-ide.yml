@@ -1,0 +1,103 @@
+name: Quick Trip v88 QA GPS reverse IDE only - no deploy
+on:
+  push:
+    branches:
+      - qa/quicktrip-v88-gps-ide-only-20261025
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-gps-qa-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact diff scope, immutable engines, CSP and no production
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,re
+          base='922e771fbf3d1e8465eb178a2e89cc51030f88f2'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allowed={
+            'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/manifest.webmanifest',
+            'web-pasajero/qa-stage-build.cjs','web-pasajero/quicktrip-qa-samsung-v87.js',
+            'web-pasajero/tests/quicktrip-v88-gps-ide-qa.cjs',
+            '.github/workflows/qa-quicktrip-v88-gps-ide.yml',
+            'docs/QA_QUICK_TRIP_V88_GPS_IDE_20261025.md'
+          }
+          assert changed<=allowed,('SCOPE VIOLATION',sorted(changed-allowed))
+          for f in [
+            'web-pasajero/app.js','web-pasajero/address-engine.js',
+            'web-pasajero/address-viewport.js','web-pasajero/geo-search.js',
+            'web-pasajero/route-engine.js','web-pasajero/eta-engine.js',
+            'web-pasajero/rpc-client.js','web-pasajero/booking-contracts.js',
+            'web-pasajero/premium-map.js','web-pasajero/quicktrip-clean.js',
+            'web-pasajero/quicktrip-canonical-v86.css','web-pasajero/quicktrip-qa-samsung-v87.css'
+          ]:
+            before=subprocess.check_output(['git','rev-parse',base+':'+f],text=True).strip()
+            after=subprocess.check_output(['git','rev-parse','HEAD:'+f],text=True).strip()
+            assert before==after,('MOTOR OR SKIN ALTERED',f)
+          html=open('web-pasajero/index.html').read()
+          rule=re.search(r"connect-src\s+([^;]+)",html)
+          assert rule and rule.group(1).strip()=="https://direcciones.ide.uy",rule.group(1) if rule else None
+          assert "form-action 'none'" in html and 'traslados-preview' in html
+          assert 'zetaudvvutlouiqxopvg.supabase.co' not in rule.group(1)
+          assert html.count('id="urgent-send"')==1 and html.count('data-qt-service=')==3
+          script=open('web-pasajero/quicktrip-qa-samsung-v87.js').read()
+          assert 'connect-src https://direcciones.ide.uy' in script
+          assert 'send.disabled=true' in script
+          sw=open('web-pasajero/sw.js').read()
+          assert 'traslados-pwa-qa-gps-v88-20261025' in sw
+          print('PASS: IDE public origin only, no Supabase real, 12 engines/visual modules unchanged')
+          PY
+      - name: Static build and JavaScript syntax checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/qa-stage-build.cjs
+          node --check web-pasajero/tests/quicktrip-v88-gps-ide-qa.cjs
+          node --check web-pasajero/quicktrip-qa-samsung-v87.js
+          node --check web-pasajero/sw.js
+          node web-pasajero/qa-stage-build.cjs
+          test -f web-pasajero/dist/index.html
+          test -f web-pasajero/dist/quicktrip-qa-samsung-v87.css
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('web-pasajero/dist')
+          assert not list(root.rglob('*.apk'))
+          assert not list(root.rglob('*.aab'))
+          assert len(list(root.rglob('*.*')))>=38
+          print('PASS: static-only QA PWA, no APK')
+          PY
+      - name: Install Chromium test harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v88-gps --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v88-gps/node_modules" >> "$GITHUB_ENV"
+      - name: Mock GPS and IDE reverse on Samsung-width Chrome, block other networks
+        shell: bash
+        env:
+          QA_DIR: quicktrip-v88-evidence
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/quicktrip-v88-gps-ide-qa.cjs
+      - name: Upload browser evidence, never deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v88-GPS-IDE-QA-Pruebas
+          path: quicktrip-v88-evidence/
+          retention-days: 14
+          if-no-files-found: warn
