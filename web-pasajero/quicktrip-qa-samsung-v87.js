@@ -8,7 +8,7 @@
  doc.body.classList.add("qt-v87-qa");
  doc.title="Quick Trip · Web/PWA v87 · Samsung QA";
  const top=doc.getElementById("qt-public-qa-banner");
- if(top)top.textContent="QUICK TRIP v87 · PRUEBA VISUAL · SIN BACKEND · NO INGRESAR DATOS REALES";
+ if(top)top.textContent="QA v87 · SIN BACKEND · NO INGRESAR DATOS REALES";
  let scheduled=false;
  function apply(){
   scheduled=false;
@@ -18,7 +18,7 @@
    let note=map.querySelector(".qt-v87-route-note");
    if(!note){
     note=doc.createElement("div");note.className="qt-v87-route-note";note.setAttribute("role","status");
-    note.innerHTML='<span class="qt-v87-route-mark" aria-hidden="true">⌖</span><span><strong>Mapa pendiente de verificación</strong><span>Sin ruta, kilómetros ni precio comprobables en esta prueba.</span></span>';
+    note.innerHTML='<span class="qt-v87-route-mark" aria-hidden="true">◎</span><span><strong>Mapa pendiente de verificación</strong><span>Sin ruta, kilómetros ni precio comprobables en esta prueba.</span></span>';
     map.prepend(note);
    }
    const recap=doc.getElementById("urgent-route-recap");
