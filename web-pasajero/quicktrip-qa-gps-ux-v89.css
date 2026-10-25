@@ -71,3 +71,6 @@ body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-fal
 @media(prefers-reduced-motion:reduce){
  body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current{transition:none!important}
 }
+
+/* Suppress the old tiny GPS glyph/label without altering its native click handler. */
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current .premium-gps-short-label{display:none!important}
