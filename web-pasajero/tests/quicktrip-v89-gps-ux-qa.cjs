@@ -86,11 +86,18 @@ const test=(name,condition,detail)=>{report.cases.push({name,pass:!!condition,de
       const det=h?.closest("details");
       return {helpVisible:!!h&&!h.hidden,expanded:!!det?.open,helpTitle:h?.querySelector("strong")?.textContent,
        status:document.querySelector("#origin-picker .qt-v89-gps-status")?.textContent,
-       promptButton:!![...(h?.querySelectorAll("button")||[])].find(x=>x.textContent.includes("Solicitar permiso"))};
+       promptButton:!![...(h?.querySelectorAll("button")||[])].find(x=>x.textContent.includes("Permitir ubicación"))};
      });
      test(mode+" "+width+" help auto-opens without hiding behind collapsed section",state.helpVisible&&state.expanded,state);
      if(mode==="denied")test("denied "+width+" explains Chrome settings",state.status.includes("candado")&&state.helpTitle.includes("bloqueada"),state);
-     if(mode==="prompt")test("prompt "+width+" offers native permission request",state.promptButton&&state.status.includes("una sola vez"),state);
+     if(mode==="prompt"){
+      const compact=await page.evaluate(()=>{
+       const h=document.querySelector("#origin-picker .gps-permission-help");
+       return {stepsHidden:getComputedStyle(h.querySelector(".gps-permission-steps")).display==="none",
+        promptClass:document.querySelector("#origin-picker").classList.contains("qt-v89-prompt-help")};
+      });
+      test("prompt "+width+" offers native permission request in compact help",state.promptButton&&state.status.includes("una sola vez")&&compact.stepsHidden&&compact.promptClass,{state,compact});
+     }
      test(mode+" "+width+" no geolocation requested without user OS permission",reverse===0,{reverse});
     }
     test(mode+" "+width+" booking disabled",await page.locator("#urgent-send").evaluate(x=>x.disabled));
