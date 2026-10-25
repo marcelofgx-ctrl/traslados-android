@@ -74,6 +74,13 @@ const test=(name,condition,detail)=>{report.cases.push({name,pass:!!condition,de
     }else{
      await page.locator("#origin-picker .gps-permission-help:not([hidden])").waitFor({state:"visible",timeout:8000});
      await page.waitForFunction(()=>!!document.querySelector("#origin-picker .gps-permission-help")?.closest("details")?.open,null,{timeout:8000});
+     await page.waitForFunction(()=>{
+       const h=document.querySelector("#origin-picker .gps-permission-help");
+       const s=document.querySelector("#origin-picker .qt-v89-gps-status")?.textContent||"";
+       if(!h||h.hidden)return false;
+       const title=h.querySelector(".gps-permission-title")?.textContent||"";
+       return /Antes de autorizar/i.test(title)?s.includes("una sola vez"):s.includes("bloqueada");
+     },null,{timeout:6000});
      const state=await page.evaluate(()=>{
       const h=document.querySelector("#origin-picker .gps-permission-help");
       const det=h?.closest("details");
