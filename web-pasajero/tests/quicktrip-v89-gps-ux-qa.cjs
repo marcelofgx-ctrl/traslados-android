@@ -16,7 +16,8 @@ const test=(name,condition,detail)=>{report.cases.push({name,pass:!!condition,de
   for(const width of [393,360]){
    for(const mode of ["granted","denied","prompt"]){
     const ctx=await browser.newContext({viewport:{width,height:width===393?852:780},deviceScaleFactor:2,isMobile:true,hasTouch:true,
-     geolocation:{latitude:-34.85,longitude:-56.05,accuracy:25},reducedMotion:"reduce",serviceWorkers:"block"});
+     geolocation:{latitude:-34.85,longitude:-56.05,accuracy:25},reducedMotion:"reduce",serviceWorkers:"block",
+     userAgent:"Mozilla/5.0 (Linux; Android 16; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36"});
     if(mode==="granted")await ctx.grantPermissions(["geolocation"],{origin:base});
     if(mode==="denied")await ctx.grantPermissions([],{origin:base});
     // Real headless Chromium denies unset permissions by default. For the
