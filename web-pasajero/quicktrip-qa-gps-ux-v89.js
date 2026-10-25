@@ -6,6 +6,9 @@
  const csp=doc.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content||"";
  if(!iso.includes("v89-") || !csp.includes("connect-src https://direcciones.ide.uy"))return;
  doc.body.classList.add("qt-v89-gps");
+ doc.title="Quick Trip · Web/PWA v89 · GPS intuitivo QA";
+ const banner=doc.getElementById("qt-public-qa-banner");
+ if(banner)banner.textContent="QA v89 · SOLO GPS/IDE · SIN SUPABASE · SIN RESERVAS";
  const $=q=>doc.querySelector(q);
  let hooked=false;
  function install(){
