@@ -51,3 +51,14 @@ body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button{min-widt
 body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button span{font-size:10px!important;white-space:nowrap!important}
 @media(min-width:560px){body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav{padding-right:9px!important}}
 @media(prefers-reduced-motion:reduce){body.qt-v87-qa.qt-clean.qt-clean-active *{scroll-behavior:auto!important}}
+
+
+/* Samsung selected-address regression: Historial is a native button in the
+   destination picker, not an overlay over a long selected-address label. */
+body.qt-v87-qa.qt-clean.qt-clean-active .qtc-app #destination-picker .qtc-history-button{
+  position:static!important;inset:auto!important;float:none!important;
+  display:inline-flex!important;align-items:center!important;
+  margin:0 0 6px 0!important;padding:4px 9px!important;
+  width:max-content!important;max-width:100%!important;
+  min-height:28px!important;font-size:10px!important;z-index:auto!important
+}
