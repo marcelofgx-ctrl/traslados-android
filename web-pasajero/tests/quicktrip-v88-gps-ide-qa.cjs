@@ -50,14 +50,14 @@ function ok(name,pass,data){results.tests.push({name,pass:!!pass,data});assert(p
    ok("Read only, form blocked, three services "+width,safety.readonly&&safety.formNone&&safety.threeServices,safety);
    await page.locator('#view-inicio [data-service="now"]').click();
    await page.locator("#view-viaje.active .qtc-app").waitFor({state:"visible",timeout:10000});
-   const native=await page.evaluate(()=>typeof window.TrasladosAddress?.reverse==="function"&&typeof window.originPicker?.useCurrent==="function");
+   const native=await page.evaluate(()=>typeof window.TrasladosAddress?.reverse==="function"&&typeof originPicker?.useCurrent==="function");
    ok("Original GPS and IDE reverse engine present "+width,native);
    await page.locator("#origin-picker .location-use-current").click();
-   await page.waitForFunction(()=>window.record?.origin?.text?.includes("Calle de Prueba QA 123"),{timeout:14000});
+   await page.waitForFunction(()=>record?.origin?.text?.includes("Calle de Prueba QA 123"),{timeout:14000});
    const geo=await page.evaluate(()=>({
     label:document.querySelector("#origin-picker .location-selected-label")?.textContent?.trim(),
-    coordLat:window.record?.origin?.lat,coordLng:window.record?.origin?.lng,
-    source:window.record?.origin?.source,disabled:document.querySelector("#urgent-send")?.disabled,
+    coordLat:record?.origin?.lat,coordLng:record?.origin?.lng,
+    source:record?.origin?.source,disabled:document.querySelector("#urgent-send")?.disabled,
     header:document.querySelector("#qt-public-qa-banner")?.textContent?.trim(),
     driverNotice:document.querySelector(".qt-v87-driver-note")?.textContent?.trim()
    }));
