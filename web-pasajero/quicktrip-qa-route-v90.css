@@ -127,3 +127,17 @@ body.qt-v90-qa .qtc-app .qt-v90-disclaimer{
  body.qt-v90-qa .qtc-driver .pickup-presence-metric{padding:9px 7px!important}
  body.qt-v90-qa .qtc-driver .pickup-metric-label{font-size:9px!important}
 }
+
+/* v90 priority fix: the v87 sandbox previously hid this whole slot.
+   Show the original app.js pickup-presence, preserving native hidden state. */
+body.qt-v90-qa.qt-v87-qa.qt-clean.qt-clean-active .qtc-app
+ .qtc-driver[data-qt-v90-driver="public"] .qtc-driver-slot{
+ display:block!important;min-width:0
+}
+body.qt-v90-qa.qt-v87-qa.qt-clean.qt-clean-active .qtc-app
+ .qtc-driver[data-qt-v90-driver="public"] .qtc-driver-search:not([hidden]){
+ display:flex!important
+}
+body.qt-v90-qa .qtc-driver[data-qt-v90-driver="public"] .qtc-section-name small{
+ color:#c9dfd6!important
+}
