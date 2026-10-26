@@ -148,3 +148,28 @@ body.qt-b-qa .qtc-app .qt-b-follow{
 body.qt-b-qa .qtc-app .qt-b-follow .qt-b-map-slot{
   max-width:100%;box-sizing:border-box
 }
+
+/* Same map containment for the existing 'Ver mapa del recorrido' disclosure. */
+body.qt-b-qa .qtc-app .qt-v90-map-stage{
+  display:block;position:relative;max-width:100%;width:100%;
+  min-width:0;overflow:hidden;border-radius:13px;background:#e8ece5
+}
+body.qt-b-qa .qtc-app .qt-v90-map-stage .premium-real-map{
+  position:relative!important;width:100%!important;
+  max-width:100%!important;overflow:hidden!important;background:#e8ece5!important
+}
+body.qt-b-qa .qtc-app .qt-v90-map-stage .premium-map-tiles{
+  position:absolute!important;inset:0;overflow:hidden
+}
+body.qt-b-qa .qtc-app .qt-v90-map-stage .premium-map-tiles img{
+  position:absolute!important;width:256px!important;height:256px!important;
+  max-width:none!important;max-height:none!important;margin:0!important
+}
+body.qt-b-qa .qtc-app .qt-v90-map-stage svg.premium-map-overlays{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;pointer-events:none!important
+}
+body.qt-b-qa .qtc-app .qt-v90-map-stage .premium-map-credit{
+  position:absolute;right:5px;bottom:5px;z-index:1;
+  font-size:9px;background:#123a40c9;color:#fff;padding:2px 5px;border-radius:5px
+}
