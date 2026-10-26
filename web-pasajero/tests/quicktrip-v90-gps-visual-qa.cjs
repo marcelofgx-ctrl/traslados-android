@@ -118,7 +118,7 @@ let server,browser;
      await page.screenshot({path:path.join(out,name),fullPage:false,animations:"disabled"});report.shots.push(name);
     }
     if(mode==="granted"){
-     const selectors=[".qt-v90-scenario",".qtc-schedule > summary",".qtc-contact > summary",
+     const selectors=['[data-qt-b-action="request"]',".qtc-schedule > summary",".qtc-contact > summary",
       ".qt-v90-map-details > summary"];
      await page.locator(".qt-v90-map-details > summary").click();
      for(let i=0;i<selectors.length;i++){

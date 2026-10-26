@@ -71,37 +71,25 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    });
    await page.locator('.qtc-app[data-qt-v90-quote="verified"]').waitFor({state:"attached",timeout:14000});
    const quote=await page.evaluate(()=>{
-    const x=q=>document.querySelector(q),txt=q=>x(q)?.textContent.trim();
-    const card=x(".qt-v90-quote").getBoundingClientRect(),btn=x("#urgent-send").getBoundingClientRect(),driver=x(".qtc-driver").getBoundingClientRect();
-    return {km:txt(".qt-v90-km"),min:txt(".qt-v90-min"),fare:txt(".qt-v90-fare"),
-     message:txt(".qt-v90-quote-message"),disclaimer:txt(".qt-v90-disclaimer"),
-     mapVisible:!x(".qt-v90-map").hidden,mapFolded:!x(".qt-v90-map-details").open,mapSvg:!!x(".qt-v90-map svg"),nativeQuoteHidden:getComputedStyle(x("#urgent-route-recap")).display==="none",
-     driver:txt(".qt-v90-driver-demo"),scenario:x(".qt-v90-driver-demo").dataset.scenario,
-     CTA:x("#urgent-send").disabled,layout:{quoteY:card.y,ctaY:btn.y,driverY:driver.y},overflow:document.documentElement.scrollWidth-innerWidth};
-   });
-   check(width+" road distance verified by mock OSRM API",quote.km==="8,6 km"&&quote.min==="15 min",{quote,osrmCalls});
-   check(width+" indicative price 40UYU/km is arithmetic and prominently labelled",quote.fare.includes("344")&&quote.disclaimer.includes("40 UYU/km")&&quote.disclaimer.includes("NO es cotización oficial"),quote);
-   check(width+" verified GeoJSON sketch and no fake straight line",quote.mapVisible&&quote.mapSvg&&quote.mapFolded,quote);
-   check(width+" simulated driver explicitly fictitious",quote.driver.includes("FICTICIO")&&quote.driver.includes("2,4 km")&&quote.driver.includes("7 min"),quote);
-   check(width+" button and UI placement no overflow",quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.layout.quoteY<quote.layout.driverY&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
-   // The pickup source is intentionally a synthetic QA fixture: never pretend
-   // these metrics came from the real availability/ETA backend.
-   const pickup=await page.evaluate(()=>{
-     const el=document.querySelector(".qt-v90-driver-demo");
-     const boxes=[...el.querySelectorAll(".qt-v90-pickup-metric")];
-     return {state:el.dataset.scenario,label:el.querySelector(".qt-v90-driver-status-label")?.textContent,
-      badge:el.querySelector(".qt-v90-driver-tag")?.textContent,
-      boxes:boxes.map(x=>({name:x.querySelector("small")?.textContent,value:x.querySelector("strong")?.textContent,
-        font:parseFloat(getComputedStyle(x.querySelector("strong")).fontSize)})),
-      hidden:el.querySelector(".qt-v90-pickup-metrics")?.hidden};
-   });
-   check(width+" pickup presence and metrics visible as large QA-only figures",
-     pickup.state==="available"&&pickup.label==="Conductor disponible"&&
-     pickup.badge.includes("FICTICIO")&&!pickup.hidden&&pickup.boxes.length===2&&
-     pickup.boxes[0].name.includes("RECOGIDA")&&pickup.boxes[0].value==="2,4 km"&&
-     pickup.boxes[1].name.includes("LLEGADA")&&pickup.boxes[1].value==="7 min"&&
-     pickup.boxes.every(x=>x.font>=18),pickup);
-   await page.locator(".qt-v90-map-details > summary").click();
+     const x=q=>document.querySelector(q),txt=q=>x(q)?.textContent.trim();
+     const card=x(".qt-v90-quote").getBoundingClientRect(),btn=x("#urgent-send").getBoundingClientRect();
+     const sim=x(".qt-b-sim"),start=x('[data-qt-b-action="request"]');
+     return {km:txt(".qt-v90-km"),min:txt(".qt-v90-min"),fare:txt(".qt-v90-fare"),
+      disclaimer:txt(".qt-v90-disclaimer"),mapVisible:!x(".qt-v90-map").hidden,
+      mapFolded:!x(".qt-v90-map-details").open,mapSvg:!!x(".qt-v90-map svg"),
+      nativeQuoteHidden:getComputedStyle(x("#urgent-route-recap")).display==="none",
+      simLabel:sim?.textContent||"",localReady:!!start&&!start.disabled,
+      CTA:x("#urgent-send").disabled,layout:{quoteY:card.y,ctaY:btn.y},
+      overflow:document.documentElement.scrollWidth-innerWidth};
+    });
+    check(width+" 8.6km 15min mock OSRM",quote.km==="8,6 km"&&quote.min==="15 min",{quote,osrmCalls});
+    check(width+" price is indicative 40UYU/km",quote.fare.includes("344")&&quote.disclaimer.includes("40 UYU/km")&&quote.disclaimer.includes("NO es cotización oficial"),quote);
+    check(width+" road map uses verified mocked geometry",quote.mapVisible&&quote.mapSvg&&quote.mapFolded,quote);
+    check(width+" Etapa B is explicitly local, not driver GPS",
+      quote.simLabel.includes("ETAPA B")&&quote.simLabel.includes("Ninguna acción envía solicitudes")&&quote.localReady,quote);
+    check(width+" real CTA blocked, no horizontal overflow",
+      quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
+    await page.locator(".qt-v90-map-details > summary").click();
    await page.locator(".qt-v90-map-stage .premium-real-map").waitFor({state:"attached",timeout:7000});
    const expanded=await page.locator(".qt-v90-map-details").evaluate(e=>({
      open:e.open,map:!!e.querySelector(".premium-real-map"),
@@ -117,17 +105,24 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    check(width+" single OSRM route request",osrmCalls===1,{osrmCalls});
    const positive="02-route-verified-fictitious-driver-"+width+".png";
    await page.screenshot({path:path.join(evidence,positive),fullPage:true,animations:"disabled"});report.screenshots.push(positive);
-   await page.locator(".qt-v90-scenario").click();
-   const switchState=await page.locator(".qt-v90-driver-demo").evaluate(e=>({status:e.dataset.scenario,text:e.textContent}));
-   check(width+" no-driver fake scenario",switchState.status==="unavailable"&&switchState.text.includes("Dato ficticio"),switchState);
-   const noDriver=await page.locator(".qt-v90-driver-demo").evaluate(e=>({
-      status:e.querySelector(".qt-v90-driver-status-label")?.textContent,
-      metricsHidden:e.querySelector(".qt-v90-pickup-metrics")?.hidden
-   }));
-   check(width+" unavailable pickup hides previous distance and ETA",
-     noDriver.status==="Sin conductor disponible"&&noDriver.metricsHidden,noDriver);
-   await page.locator(".qt-v90-scenario").click();
-   // Change selected destination; invalid response must erase stale metrics.
+   await page.locator('[data-qt-b-action="request"]').click();
+    check(width+" Etapa B pending local marker",
+      await page.locator(".qt-b-local").textContent().then(s=>s.includes("NO ENVIADO")) &&
+      await page.locator('[data-qt-b-action="reject"]').count()===1);
+    await page.locator('[data-qt-b-action="reject"]').click();
+    check(width+" reject is local and resettable",await page.locator('[data-qt-b-action="reset"]').count()===1);
+    await page.locator('[data-qt-b-action="reset"]').click();
+    await page.locator('[data-qt-b-action="request"]').click();
+    await page.locator('[data-qt-b-action="accept"]').click();
+    await page.locator('[data-qt-b-action="enroute"]').click();
+    await page.locator(".qt-b-follow .premium-real-map").waitFor({state:"attached",timeout:9000});
+    const simMap=await page.locator(".qt-b-follow").evaluate(e=>({
+      open:e.open,triangle:!!e.querySelector(".qt-b-fake-car"),
+      text:e.querySelector(".qt-b-map-note")?.textContent||""
+    }));
+    check(width+" enroute triangle labelled fictitious",
+      simMap.open&&simMap.triangle&&simMap.text.includes("no es tu conductor real"),simMap);
+    // Change selected destination; invalid response must erase stale metrics.
    invalid=true;
    await page.evaluate(()=>destPicker.persist({text:"Destino alternativo simulado QA",lat:-34.92,lng:-56.145,department:"Montevideo"}));
    await page.locator('.qtc-app[data-qt-v90-quote="pending"]').waitFor({state:"attached",timeout:13000});
@@ -136,6 +131,8 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
     metricsHidden:document.querySelector(".qt-v90-quote-results")?.hidden,
     mapHidden:document.querySelector(".qt-v90-map")?.hidden,bookingDisabled:document.querySelector("#urgent-send")?.disabled}));
    check(width+" invalid road data fails closed and clears past price",fail.metricsHidden&&fail.mapHidden&&fail.bookingDisabled&&fail.text.includes("No mostramos"),fail);
+    check(width+" route changed resets local simulation and blocks request",
+      await page.locator('[data-qt-b-action="request"]').evaluate(e=>e.disabled),fail);
    check(width+" no Supabase or original Cloudflare Worker network calls",realBackendCalls===0,{realBackendCalls});
    const negative="03-route-failure-no-invented-data-"+width+".png";
    await page.screenshot({path:path.join(evidence,negative),fullPage:true,animations:"disabled"});report.screenshots.push(negative);

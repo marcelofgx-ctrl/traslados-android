@@ -100,22 +100,31 @@ const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
      priceDisclaimer:document.querySelector(".qt-v90-disclaimer")?.textContent,
      mapFolded:!document.querySelector(".qt-v90-map-details")?.open,
      noOverflow:document.documentElement.scrollWidth-innerWidth<=2,
-     fixture:document.querySelector(".qt-v90-driver-demo")?.textContent
+     fixture:document.querySelector(".qt-b-sim")?.textContent||""
    }));
    check(width+" valid 8.6km 15min 344UYU, map folded",current.distance==="8,6 km"&&
      current.duration==="15 min"&&current.fare.includes("344")&&
      current.mapFolded&&current.noOverflow&&
      current.priceDisclaimer.includes("NO es cotización oficial"),current);
-   check(width+" driver fictitious disclosure",current.fixture.includes("FICTICIO")&&current.fixture.includes("7 min"),current.fixture);
+   check(width+" local Etapa B disclosure",current.fixture.includes("ETAPA B")&&current.fixture.includes("Ninguna acción envía solicitudes"),current.fixture);
    await page.screenshot({path:path.join(out,"01-verified-"+width+".png"),fullPage:true,animations:"disabled"});
    report.screenshots.push("01-verified-"+width+".png");
-   await page.locator(".qt-v90-scenario").click();
-   check(width+" driver unavailable is expressly fictitious",
-     await page.locator('.qt-v90-driver-demo[data-scenario="unavailable"]').count()===1);
-   await page.locator(".qt-v90-scenario").click();
-   check(width+" driver availability restored",
-     await page.locator('.qt-v90-driver-demo[data-scenario="available"]').count()===1);
-   // Route with one fictitious intermediate stop. Adapter recalculates using
+   await page.locator('[data-qt-b-action="request"]').click();
+    check(width+" pending labelled unsent with accept available",
+      await page.locator(".qt-b-local").textContent().then(s=>s.includes("NO ENVIADO")) &&
+      await page.locator('[data-qt-b-action="accept"]').count()===1);
+    await page.locator('[data-qt-b-action="reject"]').click();
+    check(width+" rejected state resettable",await page.locator('[data-qt-b-action="reset"]').count()===1);
+    await page.locator('[data-qt-b-action="reset"]').click();
+    await page.locator('[data-qt-b-action="request"]').click();
+    await page.locator('[data-qt-b-action="accept"]').click();
+    check(width+" accepted state offers enroute",await page.locator('[data-qt-b-action="enroute"]').count()===1);
+    await page.locator('[data-qt-b-action="enroute"]').click();
+    await page.locator(".qt-b-follow .premium-real-map").waitFor({state:"attached",timeout:9000});
+    check(width+" enroute map shows labelled fake triangle",
+      await page.locator(".qt-b-follow").evaluate(e=>!!e.querySelector(".qt-b-fake-car") &&
+       e.querySelector(".qt-b-map-note")?.textContent.includes("no es tu conductor real")));
+    // Route with one fictitious intermediate stop. Adapter recalculates using
    // the existing, unmodified route-updated event and original record object.
    await page.evaluate(stop=>{
      record.stops.splice(0,record.stops.length,stop);
@@ -178,11 +187,11 @@ const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
        disabled:document.querySelector("#urgent-send")?.disabled,
        state:document.querySelector(".qtc-app")?.dataset.qtV90Quote,
        message:document.querySelector(".qt-v90-quote-message")?.textContent,
-       fakeDriver:document.querySelector(".qt-v90-driver-demo")?.textContent.includes("FICTICIO")
+       simReset:!!document.querySelector('[data-qt-b-action="request"]')?.disabled
      }));
      check(width+" "+failMode+" hides stale price, route and blocks booking",
        state.hidden&&state.mapHidden&&state.disabled&&
-       state.state==="pending"&&state.fakeDriver,state);
+       state.state==="pending"&&state.simReset,state);
      if(failMode==="offline"){
        await page.screenshot({path:path.join(out,"03-disconnected-"+width+".png"),fullPage:true,animations:"disabled"});
        report.screenshots.push("03-disconnected-"+width+".png");
