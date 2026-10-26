@@ -61,7 +61,7 @@ jobs:
           adapter=open('web-pasajero/quicktrip-qa-route-v90.js').read()
           assert 'https://router.project-osrm.org' in adapter
           assert 'supabase.co' not in adapter and 'workers.dev' not in adapter
-          assert 'document.getElementById("urgent-send")' in adapter
+          assert 'doc.getElementById("urgent-send")' in adapter
           assert 'RATE_QA=40' in adapter
           print('PASS: 16 protected sources intact; no Supabase/Cloudflare access; only IDE+OSRM in QA')
           PY
