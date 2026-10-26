@@ -1,16 +1,17 @@
 "use strict";
-/* Quick Trip v90: isolated QA adapter ONLY. Never replaces stable engines.
-   Never reaches Traslados Cloudflare worker, Supabase or a real driver.
-   OSRM public DEMO is for manual QA, not a supported commercial backend. */
+/* Quick Trip v90: isolated QA presentation adapter. No stable-engine changes.
+   Public driver availability and pickup ETA use the existing read-only clients.
+   Route and price remain DEMO; never submit reservations from this preview. */
 (function(win,doc){
  const iso=doc.querySelector('meta[name="quicktrip-qa-isolation"]')?.content||"";
  const policy=doc.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content||"";
  if(!iso.includes("v90-route-sandbox")||
-    !/connect-src\s+https:\/\/direcciones\.ide\.uy https:\/\/router\.project-osrm\.org(?:;|$)/.test(policy))return;
+    !policy.includes("https://direcciones.ide.uy")||
+    !policy.includes("https://router.project-osrm.org"))return;
  doc.body.classList.add("qt-v90-qa");
  const banner=doc.getElementById("qt-public-qa-banner");
- if(banner)banner.textContent="QA v90 · RUTA OSRM DEMO · CONDUCTOR FICTICIO · SIN SUPABASE";
- doc.title="Quick Trip · v90 · Rutas y conductor de prueba QA";
+ if(banner)banner.textContent="QA v90 · DISPONIBILIDAD REAL DE CONSULTA · RUTA Y PRECIO DEMO · SIN RESERVAS";
+ doc.title="Quick Trip · v90 · Recogida real (consulta) y recorrido QA";
  const RATE_QA=40,ROUTER="https://router.project-osrm.org",TIMEOUT=9500;
  const isUy=p=>p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&
    p.lat>=-35.3&&p.lat<=-30&&p.lng>=-58.8&&p.lng<=-52.9;
@@ -100,41 +101,10 @@
   const mapHelp=node("small","","Mapa del trayecto seleccionado, no muestra un conductor real.");
   const mapStage=node("div","qt-v90-map-stage");
   art.append(mapTitle,mapStage,mapHelp);art.hidden=true;roadDetails.append(art);
-  // Presentation of the established pickup-presence contract, with QA-only
-  // fictitious values. Never fetch public availability or infer real vehicle GPS.
-  const simulated=node("section","qt-v90-driver-demo");
-  simulated.setAttribute("aria-label","Disponibilidad y recogida: simulación QA");
-  const statusRow=node("div","qt-v90-driver-status");
-  const statusText=node("strong","qt-v90-driver-status-label","Conductor disponible");
-  const qaTag=node("span","qt-v90-driver-tag","CONDUCTOR FICTICIO · QA");
-  statusRow.append(statusText,qaTag);
-  const pickupMetrics=node("div","qt-v90-pickup-metrics");
-  for(const [label,value,klass] of [
-   ["DISTANCIA A TU RECOGIDA","2,4 km","qt-v90-pickup-distance"],
-   ["LLEGADA ESTIMADA","7 min","qt-v90-pickup-eta"]
-  ]){
-   const metric=node("div","qt-v90-pickup-metric");
-   metric.append(node("small","",label),node("strong",klass,value));
-   pickupMetrics.append(metric);
-  }
-  const driverInfo=node("p","qt-v90-driver-info","Valores ficticios para revisar la pantalla. No es disponibilidad real.");
-  const scenario=node("button","qt-v90-scenario","Simular conductor no disponible");
-  scenario.type="button";
-  let isAvailable=true;
-  scenario.addEventListener("click",()=>{
-    isAvailable=!isAvailable;
-    simulated.dataset.scenario=isAvailable?"available":"unavailable";
-    statusText.textContent=isAvailable?"Conductor disponible":"Sin conductor disponible";
-    pickupMetrics.hidden=!isAvailable;
-    driverInfo.textContent=isAvailable
-      ?"Valores ficticios para revisar la pantalla. No es disponibilidad real."
-      :"Dato ficticio de prueba. No hay estimación de recogida.";
-    scenario.textContent=isAvailable?"Simular conductor no disponible":"Simular conductor disponible";
-  });
-  simulated.dataset.scenario="available";
-  simulated.append(statusRow,pickupMetrics,driverInfo,scenario);driver.append(simulated);
-  // Hide the old QA placeholder in this sandbox, but never touch real ETA.
-  driver.dataset.qtV90Driver="fixture";
+  // Reuse the original passenger pickup-presence node: app.js already fetches
+  // public_driver_availability_v1 and pickup-eta. Both are read-only.
+  // No driver position is exposed or fabricated. Submit remains disabled.
+  driver.dataset.qtV90Driver="public";
   ui={text,results,slots,map,art,mapStage,roadDetails,disclaimer,routeGeometry:null};
   function expandMap(){
     if(!roadDetails.open||!ui?.routeGeometry)return;
