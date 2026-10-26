@@ -2,16 +2,38 @@ const CACHE="traslados-pwa-qa-route-v90-20261025";
 // CacheStorage is shared by all service workers on an origin.
 // This QA preview may evict only prior caches from its own route-sandbox family.
 const QA_CACHE_PREFIX="traslados-pwa-qa-route-";
+const qaVersion=name=>{
+  const match=String(name).match(/^traslados-pwa-qa-route-v(\d+)(?:-|$)/);
+  return match?Number(match[1]):-1;
+};
+async function cleanObsoleteQACaches(){
+  const names=await caches.keys();
+  // A retired worker may still finish a pending request. It cannot clean
+  // caches after a newer worker has taken ownership of this QA namespace.
+  if(names.some(name=>name.startsWith(QA_CACHE_PREFIX)&&qaVersion(name)>qaVersion(CACHE)))return;
+  await Promise.all(names.filter(name=>
+    name.startsWith(QA_CACHE_PREFIX)&&name!==CACHE
+  ).map(name=>caches.delete(name)));
+}
 const files=["./index.html","./offline.html","./styles.css","./app.js","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-origin-drift.js","./pickup-observability.js","./trip-board.js","./reservation-live.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js","./journey-compat-v7.js","./quicktrip-clean.js","./quicktrip-v85-resilience.js","./quicktrip-canonical-v86.css","./quicktrip-approved-v85-qa.js","./quicktrip-qa-samsung-v87.css","./quicktrip-qa-samsung-v87.js","./quicktrip-qa-gps-ux-v89.css","./quicktrip-qa-gps-ux-v89.js","./quicktrip-qa-route-v90.css","./quicktrip-qa-route-v90.js","./quicktrip-logo-contrast.svg"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(files)).then(()=>self.skipWaiting()));});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k.startsWith(QA_CACHE_PREFIX)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener("activate",e=>{e.waitUntil(
+  cleanObsoleteQACaches()
+    .then(()=>self.clients.claim())
+    // Ensure in-flight requests from the retired controller cannot recreate
+    // the previous cache immediately after claim.
+    .then(()=>new Promise(resolve=>setTimeout(resolve,150)))
+    .then(cleanObsoleteQACaches)
+);});
 self.addEventListener("fetch",e=>{
   const r=e.request;if(r.method!=="GET")return;
   const u=new URL(r.url);if(u.origin!==self.location.origin)return;
   if(r.mode==="navigate"){
     // Acquire the versioned handle before any request can outlive this worker.
     const cacheRef=caches.open(CACHE);
-    e.respondWith(cacheRef.then(cache=>fetch(r).catch(()=>cache.match("./offline.html"))));return;
+    e.respondWith(cacheRef.then(cache=>
+      fetch(r).catch(()=>cache.match("./offline.html")).finally(cleanObsoleteQACaches)
+    ));return;
   }
   if(files.some(path=>new URL(path,self.registration.scope).pathname===u.pathname)){
     // A retired SW must not reopen an evicted cache after a pending response.
@@ -46,7 +68,7 @@ self.addEventListener("fetch",e=>{
         if(hit)return hit;
       }
       return undefined;
-    })));return;
+    }).finally(cleanObsoleteQACaches)));return;
   }
 });
 // A passenger must never receive fabricated push or create bookings offline.
