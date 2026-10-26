@@ -1,0 +1,95 @@
+/* Etapa B isolated QA layer; original passenger and route engines untouched. */
+body.qt-b-qa.qt-v90-qa .qtc-app #urgent-send{display:none!important}
+body.qt-b-qa .qtc-app .qt-b-sim{
+  margin:9px 0 0;padding:13px 14px 16px;
+  background:linear-gradient(155deg,#123f40,#092b30);
+  color:#f2ebd7;border:1px solid #9d8a66;border-radius:18px;
+  min-width:0;overflow:hidden
+}
+body.qt-b-qa .qt-b-heading{display:grid;gap:5px;margin-bottom:11px}
+body.qt-b-qa .qt-b-heading h3{
+  margin:0;font-size:20px;font-weight:850;letter-spacing:-.025em;color:#f6e0b3
+}
+body.qt-b-qa .qt-b-heading small,body.qt-b-qa .qt-b-help{
+  color:#cbddd5;font-size:12px;line-height:1.4;margin:0
+}
+body.qt-b-qa .qt-b-pill{
+  width:max-content;max-width:100%;font-size:10px;letter-spacing:.055em;
+  font-weight:850;color:#122f30;background:#dfbf81;border-radius:20px;
+  padding:4px 10px
+}
+body.qt-b-qa .qt-b-button{
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:13px;padding:10px 14px;min-height:45px;
+  background:#244b4c;color:#f9e9c9;border:1px solid #8a846d;
+  font-size:13px;font-weight:800;cursor:pointer;white-space:normal
+}
+body.qt-b-qa .qt-b-button.primary{
+  color:#092a2e;background:#e4c78b;border-color:#eed5a0
+}
+body.qt-b-qa .qt-b-button.subtle{background:#113c40;color:#f0e1bc}
+body.qt-b-qa .qt-b-button:disabled{opacity:.45;cursor:not-allowed}
+body.qt-b-qa .qt-b-button:focus-visible,
+body.qt-b-qa .qt-b-follow>summary:focus-visible{
+  outline:3px solid #d9f4c9;outline-offset:3px
+}
+body.qt-b-qa .qt-b-start{width:100%;min-height:52px;font-size:15px}
+body.qt-b-qa .qt-b-button[hidden]{display:none!important}
+body.qt-b-qa .qt-b-content{display:grid;gap:10px;margin-top:11px}
+body.qt-b-qa .qt-b-state{
+  border:1px solid #527f73;border-radius:12px;
+  background:#0b3538;padding:11px 12px
+}
+body.qt-b-qa .qt-b-state>strong{
+  display:block;font-size:20px;font-weight:900;line-height:1.2;color:#e5f4e5
+}
+body.qt-b-qa .qt-b-state p{
+  color:#cdddcb;font-size:12px;line-height:1.45;margin:6px 0 0
+}
+body.qt-b-qa .qt-b-local{display:inline-block;color:#edcd93;font-size:10px;
+  font-weight:850;letter-spacing:.04em;margin-bottom:7px}
+body.qt-b-qa .qt-b-owned{font-size:11px;color:#b2d9ce}
+body.qt-b-qa .qt-b-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+body.qt-b-qa .qt-b-flow span{
+  font-size:9px;line-height:1.25;color:#a5c2ba;border:1px solid #476c68;
+  background:#103539;border-radius:8px;padding:7px 2px;text-align:center;
+  overflow-wrap:anywhere
+}
+body.qt-b-qa .qt-b-flow span.qt-b-done{
+  color:#073235;background:#bce8d0;border-color:#bce8d0;font-weight:800
+}
+body.qt-b-qa .qt-b-follow{
+  background:#0b343a;border:1px solid #618e83;border-radius:14px;
+  padding:9px;min-width:0
+}
+body.qt-b-qa .qt-b-follow>summary{
+  display:list-item;list-style:disclosure-closed inside;
+  color:#f0d8a4;font-weight:850;font-size:14px;padding:8px;cursor:pointer
+}
+body.qt-b-qa .qt-b-follow[open]>summary{list-style:disclosure-open inside}
+body.qt-b-qa .qt-b-map-note{
+  font-size:11px;line-height:1.4;color:#d8c6a0;margin:7px 0 9px
+}
+body.qt-b-qa .qt-b-progress{display:block;font-size:11px;color:#c5dcd1;margin-top:7px}
+body.qt-b-qa .qt-b-actions{display:flex;flex-wrap:wrap;gap:8px}
+body.qt-b-qa .qt-b-actions .qt-b-button{flex:1 1 130px}
+body.qt-b-qa .qt-b-sim-map{width:100%;min-height:208px;overflow:hidden;border-radius:12px}
+body.qt-b-qa .qt-b-sim-map .premium-real-map{max-width:100%}
+body.qt-b-qa .qt-b-contract-map .reservation-live{
+  margin-top:2px;min-width:0
+}
+body.qt-b-qa .qt-b-contract-map .reservation-live-freshness{
+  display:none!important
+}
+body.qt-b-qa .qt-b-contract-map .reservation-live-status,
+body.qt-b-qa .qt-b-contract-map .reservation-live-note{
+  font-size:11px!important;line-height:1.4
+}
+@media(max-width:375px){
+  body.qt-b-qa .qtc-app .qt-b-sim{padding:12px 10px}
+  body.qt-b-qa .qt-b-flow span{font-size:8px;padding:7px 1px}
+  body.qt-b-qa .qt-b-state>strong{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.qt-b-qa .qt-b-sim *{transition:none!important;animation:none!important}
+}
