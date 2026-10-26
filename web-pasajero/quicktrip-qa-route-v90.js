@@ -131,6 +131,14 @@
   ui.map.dataset.qtV90Road=verified?"verified":"pending";
   root.dataset.qtV90Quote=verified?"verified":"pending";
   ui.routeGeometry=verified?.geometry||null;
+  // QA-only read of already verified public OSRM geometry. No GPS, no
+  // backend request and no mutation of the stable routing engine.
+  if(typeof win.QuickTripV90QaRoad!=="object")win.QuickTripV90QaRoad=Object.freeze({
+    read:()=>{
+      if(!ui?.routeGeometry||root?.dataset.qtV90Quote!=="verified")return null;
+      return {key:lastKey,points:ui.routeGeometry.map(([lng,lat])=>[lat,lng])};
+    }
+  });
   ui.mapStage.replaceChildren();
   if(verified){
    ui.slots.km.textContent=kmString(verified.km)+" km";
