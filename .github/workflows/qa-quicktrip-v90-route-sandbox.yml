@@ -1,0 +1,121 @@
+name: Quick Trip v90 - QA route + fictitious driver - NO DEPLOY
+on:
+  push:
+    branches: [qa/quicktrip-v90-route-sandbox-20261025]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v90-route-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scope protection, 15+ stable engines unchanged, strict CSP
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,re
+          base='533effddfac8a9cfeb6ab19db92d9e06903d2917'
+          paths=set(subprocess.check_output(['git','diff','--name-only',base+'..HEAD'],text=True).splitlines())
+          allow={
+            'web-pasajero/quicktrip-qa-route-v90.css','web-pasajero/quicktrip-qa-route-v90.js',
+            'web-pasajero/tests/quicktrip-v90-route-sandbox.cjs',
+            'web-pasajero/index.html','web-pasajero/sw.js','web-pasajero/manifest.webmanifest',
+            'web-pasajero/qa-stage-build.cjs','.github/workflows/qa-quicktrip-v90-route-sandbox.yml',
+            'docs/QA_QUICK_TRIP_V90_ROUTE_SECURITY_20261025.md'
+          }
+          assert paths<=allow,('UNAUTHORIZED SOURCE CHANGE',paths-allow)
+          protected=[
+            'web-pasajero/app.js','web-pasajero/route-engine.js','web-pasajero/eta-engine.js',
+            'web-pasajero/address-engine.js','web-pasajero/geo-search.js',
+            'web-pasajero/address-viewport.js','web-pasajero/booking-contracts.js',
+            'web-pasajero/premium-route.js','web-pasajero/premium-map.js',
+            'web-pasajero/quicktrip-clean.js','web-pasajero/quicktrip-canonical-v86.css',
+            'web-pasajero/quicktrip-qa-samsung-v87.js','web-pasajero/quicktrip-qa-samsung-v87.css',
+            'web-pasajero/quicktrip-qa-gps-ux-v89.js','web-pasajero/quicktrip-qa-gps-ux-v89.css',
+            'web-pasajero/rpc-client.js'
+          ]
+          for p in protected:
+            old=subprocess.check_output(['git','rev-parse',base+':'+p],text=True).strip()
+            new=subprocess.check_output(['git','rev-parse','HEAD:'+p],text=True).strip()
+            assert old==new,('STABLE ENGINE MODIFIED',p)
+          html=open('web-pasajero/index.html').read()
+          m=re.search(r'connect-src\s+([^;]+)',html)
+          assert m and m.group(1).strip()=='https://direcciones.ide.uy https://router.project-osrm.org'
+          assert "form-action 'none'" in html and 'traslados-preview' in html
+          assert html.count('data-qt-service=')==3 and html.count('id="urgent-send"')==1
+          assert 'v89-gps-ux-v90-route-sandbox' in html
+          assert html.count('quicktrip-qa-route-v90.js?v=90')==1
+          assert html.count('quicktrip-qa-route-v90.css?v=90')==1
+          sw=open('web-pasajero/sw.js').read()
+          assert 'traslados-pwa-qa-route-v90-20261025' in sw
+          for r in ['quicktrip-qa-route-v90.css','quicktrip-qa-route-v90.js']:
+            assert '"./'+r+'"' in sw
+          adapter=open('web-pasajero/quicktrip-qa-route-v90.js').read()
+          assert 'https://router.project-osrm.org' in adapter
+          assert 'supabase.co' not in adapter and 'workers.dev' not in adapter
+          assert 'document.getElementById("urgent-send")' in adapter
+          assert 'RATE_QA=40' in adapter
+          print('PASS: 16 protected sources intact; no Supabase/Cloudflare access; only IDE+OSRM in QA')
+          PY
+      - name: Static-only bundle + JS syntax, no Android package
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-qa-route-v90.js
+          node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
+          node --check web-pasajero/sw.js
+          node web-pasajero/qa-stage-build.cjs
+          test -f web-pasajero/dist/quicktrip-qa-route-v90.js
+          test -f web-pasajero/dist/quicktrip-qa-route-v90.css
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('web-pasajero/dist')
+          assert not list(root.rglob('*.apk')) and not list(root.rglob('*.aab'))
+          print('PASS: no APK, no Android build')
+          PY
+      - name: Browser harness
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-v90 --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-v90/node_modules" >> "$GITHUB_ENV"
+      - name: Samsung Chromium offline mocked routing, quote, driver and failure regressions
+        env:
+          QA_DIR: quicktrip-v90-evidence
+        run: |
+          node web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
+      - name: One optional public demo OSRM QA probe, synthetic locations only
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          # Strictly one non-commercial diagnostic request; no real passenger data.
+          u='https://router.project-osrm.org/route/v1/driving/-56.165,-34.902;-56.159,-34.926?overview=false'
+          req=urllib.request.Request(u,headers={'User-Agent':'QuickTrip-v90-qa-single-validation/1.0','Accept':'application/json'})
+          try:
+            with urllib.request.urlopen(req,timeout=16) as r:
+              v=json.load(r)
+              route=(v.get('routes') or [{}])[0]
+              ok=v.get('code')=='Ok' and route.get('distance',0)>0 and route.get('duration',0)>0
+              print('LIVE OSRM', 'PASS' if ok else 'UNVERIFIED', 'status',r.status,'distance_m',route.get('distance'),'duration_s',route.get('duration'))
+              if not ok: raise SystemExit(1)
+          except Exception as e:
+            print('LIVE OSRM NOT VERIFIED:',type(e).__name__,str(e)[:180])
+            raise SystemExit(1)
+          PY
+      - name: Upload test evidence and screenshots (NEVER deploy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v90-Route-Sandbox-Capturas-Pruebas
+          path: quicktrip-v90-evidence/
+          retention-days: 14
+          if-no-files-found: warn
