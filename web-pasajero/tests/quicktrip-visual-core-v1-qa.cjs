@@ -53,8 +53,13 @@ function verifyStatic(){
     !hasToken(css,{name:'--bg',value:'#000000'}));
   check('NEGATIVE missing DOM ID detected',
     !html.includes('id="__qt_missing_control__"'));
+  const exactServices=services=>
+    Array.isArray(services)&&services.length===3&&
+    services.join('|')==='Tu Viaje|Tu Paquete|Tu Viaje Programado';
   check('NEGATIVE fourth service blocked',
-    [...catalog.services,'Viajar ahora'].length!==catalog.services.length);
+    !exactServices([...catalog.services,'Viajar ahora']));
+  check('NEGATIVE service missing blocked',
+    !exactServices(catalog.services.slice(0,2)));
   if(fs.existsSync(path.join(root,'.git'))){
     const blobs=JSON.parse(read('docs/quicktrip-canonical-contract.json')).protected_blobs;
     for(const [p,expected] of Object.entries(blobs)){
