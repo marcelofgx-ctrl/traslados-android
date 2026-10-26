@@ -52,7 +52,7 @@ def main():
     (out/"WORKFLOWS_INVENTORY.json").write_text(json.dumps(data,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
     md=[
         "# Inventario workflows — piloto v90", "",
-        f"Rama: \`{branch}\` · base: \`{data['reference_base']}\`", "",
+        f"Rama: `{branch}` · base: `{data['reference_base']}`", "",
         f"- YAML: **{yaml_count}** · otros: **{non_count}** · total: **{len(result)}**",
         "- Este inventario cuenta ARCHIVOS, no workflows habilitados ni ejecuciones.",
         "- No se borró, deshabilitó ni ejecutó un workflow productivo.","",
@@ -61,7 +61,7 @@ def main():
     md += [f"- {k}: {n}" for k,n in sorted(categories.items())]
     md += ["", "## Todos los archivos", "", "| Tipo / clasificación | Archivo | Tamaño (bytes) |",
            "|---|---|---:|"]
-    md += [f"| {x['category']} | \`{x['file'].replace('|','')}\` | {x['bytes']} |" for x in result]
+    md += [f"| {x['category']} | `{x['file'].replace('|','')}` | {x['bytes']} |" for x in result]
     (out/"WORKFLOWS_INVENTORY.md").write_text("\n".join(md)+"\n",encoding="utf8")
     print(f"INVENTORY PASS: {len(result)} entries; {yaml_count} YAML; {non_count} non-YAML. Zero writes to repository.")
     print(json.dumps(categories,ensure_ascii=False,sort_keys=True))
