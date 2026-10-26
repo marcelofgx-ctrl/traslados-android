@@ -38,7 +38,8 @@ jobs:
             "docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md",
             "docs/QA_QUICKTRIP_V90_REVISION_VISUAL_PLAN_PWA_GPS_20261026.md",
             "web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs",
-            "web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs"
+            "web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs",
+            "web-pasajero/sw.js"
           }
           actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
           assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
