@@ -106,7 +106,7 @@
   simulated.setAttribute("aria-label","Disponibilidad y recogida: simulación QA");
   const statusRow=node("div","qt-v90-driver-status");
   const statusText=node("strong","qt-v90-driver-status-label","Conductor disponible");
-  const qaTag=node("span","qt-v90-driver-tag","SIMULACIÓN QA");
+  const qaTag=node("span","qt-v90-driver-tag","CONDUCTOR FICTICIO · QA");
   statusRow.append(statusText,qaTag);
   const pickupMetrics=node("div","qt-v90-pickup-metrics");
   for(const [label,value,klass] of [
