@@ -25,6 +25,11 @@
 
 **Conclusión visual:** sin evidencia de ruptura funcional P0. La prioridad es confirmar V90-UI-01 en el viewport, y reducir mensajes duplicados en fallo solo tras aprobación del ajuste visual.
 
+### PWA-R01 — aislamiento de caches entre aplicaciones, riesgo por lectura estática (P1)
+El SW QA actual obtiene `caches.keys()` y en `activate` elimina **todas** las entradas cuyo nombre empieza por `traslados-cliente-pwa-` o `traslados-pwa-`, salvo su clave actual. Cache Storage se comparte por **origen**, no por scope. Si un preview QA conviviera en el mismo origen que producción, podría eliminar cachés de producción con esos prefijos, aunque tuviera scope distinto. **No se verificó que la QA actual comparta origen con producción**; este es un riesgo condicional, deducido del código, no una incidencia ocurrida.
+
+**Regla de seguridad para la ampliación:** ejecutar solo en un origen local exclusivo y sin acceso a datos reales. Antes de autorizar otra preview HTTPS, revisar que su **origen completo (scheme+host+port)** esté separado de producción. En la prueba local crear primero dos caches semilla de scopes distintos, incluyendo otra clave que coincide con el prefijo, y verificar cuáles elimina `activate`; si borra una cache ajena, marcar **FAIL de aislamiento / requiere propuesta separada de corrección**, no cambiar el SW estable durante esta etapa.
+
 ## C. Propuesta de pruebas automáticas de PWA/caché (sin publicar)
 **Preparación:** un servidor HTTP local aislado `127.0.0.1`, contexto Chromium limpio `serviceWorkers:"allow"`, scope temporal exclusivo; dos copias *temporales* de assets v90 y una versión simulada posterior para probar actualización. Nunca alterar `web-pasajero/sw.js` en el repo ni publicar. Instrumentar Cache Storage, `navigator.serviceWorker.controller`, versión de SW, recurso recibido y solicitudes externas reales. El SW real `sw.js` utiliza `traslados-pwa-qa-route-v90-20261025`; hay un test anterior `quicktrip-v86-canonical-pwa-cache.cjs`, a reutilizar/adaptar.
 
