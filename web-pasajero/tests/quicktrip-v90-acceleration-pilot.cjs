@@ -48,6 +48,7 @@ const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
     const u=new URL(route.request().url());
     if(u.hostname==="127.0.0.1"&&u.port===String(port))
       return route.continue();
+    if(u.hostname==="tile.openstreetmap.org")return route.fulfill({status:200,contentType:"image/png",body:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==","base64")});
     if(u.hostname==="router.project-osrm.org"&&u.pathname.startsWith("/route/v1/driving/")){
       osrm++;
       if(mode==="offline")return route.abort("internetdisconnected");

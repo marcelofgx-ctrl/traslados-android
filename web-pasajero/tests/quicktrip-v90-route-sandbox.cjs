@@ -79,7 +79,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
       mapFolded:!x(".qt-v90-map-details").open,mapSvg:!!x(".qt-v90-map svg"),
       nativeQuoteHidden:getComputedStyle(x("#urgent-route-recap")).display==="none",
       simLabel:sim?.textContent||"",localReady:!!start&&!start.disabled,
-      CTA:x("#urgent-send").disabled,layout:{quoteY:card.y,ctaY:btn.y},
+      CTA:x("#urgent-send").disabled,ctaHidden:getComputedStyle(x("#urgent-send")).display==="none",layout:{quoteY:card.y,ctaY:btn.y},
       overflow:document.documentElement.scrollWidth-innerWidth};
     });
     check(width+" 8.6km 15min mock OSRM",quote.km==="8,6 km"&&quote.min==="15 min",{quote,osrmCalls});
@@ -88,7 +88,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
     check(width+" Etapa B is explicitly local, not driver GPS",
       quote.simLabel.includes("ETAPA B")&&quote.simLabel.includes("Ninguna acción envía solicitudes")&&quote.localReady,quote);
     check(width+" real CTA blocked, no horizontal overflow",
-      quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
+      quote.CTA&&quote.ctaHidden&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
     await page.locator(".qt-v90-map-details > summary").click();
    await page.locator(".qt-v90-map-stage .premium-real-map").waitFor({state:"attached",timeout:7000});
    const expanded=await page.locator(".qt-v90-map-details").evaluate(e=>({
