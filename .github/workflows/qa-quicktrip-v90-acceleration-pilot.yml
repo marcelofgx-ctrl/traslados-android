@@ -1,0 +1,93 @@
+name: Quick Trip v90 - acceleration pilot QA only - NO DEPLOY
+on:
+  push:
+    branches: [qa/quicktrip-v90-acceleration-pilot-20261026]
+    paths:
+      - '.github/workflows/qa-quicktrip-v90-acceleration-pilot.yml'
+      - 'scripts/qa_workflow_inventory.py'
+      - 'web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs'
+      - 'docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory-and-synthetic-web-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Protect exact v90 base and strictly additive scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base="8d882e63e1a4e779f956868af64c9e6158c4c0ac"
+          allowed={
+            ".github/workflows/qa-quicktrip-v90-acceleration-pilot.yml",
+            "scripts/qa_workflow_inventory.py",
+            "web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs",
+            "docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md"
+          }
+          actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
+          assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
+          status=subprocess.check_output(["git","status","--porcelain"],text=True).strip()
+          assert not status,("Dirty source checkout",status)
+          html=open("web-pasajero/index.html",encoding="utf8").read()
+          assert 'name="traslados-preview" content="read-only"' in html
+          assert "connect-src https://direcciones.ide.uy https://router.project-osrm.org;" in html
+          assert "form-action 'none'" in html and 'quicktrip-qa-route-v90.js?v=90' in html
+          print("PASS: exactly four additive QA/documentation files; all original v90 files untouched")
+          PY
+      - name: Inventory and local static build without APK or publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/qa_workflow_inventory.py
+          python3 scripts/qa_workflow_inventory.py --output quicktrip-v90-pilot-evidence/inventory
+          node --check web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs
+          node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
+          node web-pasajero/qa-stage-build.cjs
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("quicktrip-v90-pilot-evidence/inventory/WORKFLOWS_INVENTORY.json")
+          v=json.loads(p.read_text(encoding="utf8"))
+          assert v["yaml_count"]==74,(v["yaml_count"],"expected v90 73 + this pilot")
+          assert v["other_count"]==3
+          assert v["total_files"]==77
+          assert not any(Path("web-pasajero/dist").rglob("*.apk"))
+          assert not any(Path("web-pasajero/dist").rglob("*.aab"))
+          print("PASS: inventory 74 YAML + 3 non-YAML; static-only QA bundle, zero APK")
+          PY
+      - name: Install browser harness, no source dependency changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/qt-v90-acceleration --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/qt-v90-acceleration/node_modules" >> "$GITHUB_ENV"
+      - name: Existing v90 real-browser mocked regression baseline
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/baseline
+        run: node web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
+      - name: Extended negative testing stops, recalculation, prices, disconnect
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/negative
+        run: node web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs
+      - name: Upload inventory JSON, results and screenshots (NEVER DEPLOY)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-v90-Acceleration-QA-Evidence
+          path: quicktrip-v90-pilot-evidence/
+          retention-days: 14
+          if-no-files-found: warn
