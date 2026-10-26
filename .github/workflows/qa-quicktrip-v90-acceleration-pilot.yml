@@ -64,7 +64,18 @@ jobs:
           assert not status,("Dirty source checkout",status)
           html=open("web-pasajero/index.html",encoding="utf8").read()
           assert 'name="traslados-preview" content="read-only"' in html
-          assert "connect-src https://direcciones.ide.uy https://router.project-osrm.org;" in html
+          import re
+          csp=re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)"',html)
+          assert csp, "Missing CSP in isolated QA"
+          parts=[p.strip().split() for p in csp.group(1).split(";") if p.strip()]
+          directives={p[0]:p[1:] for p in parts}
+          read_only=[
+            "https://direcciones.ide.uy",
+            "https://router.project-osrm.org",
+            "https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1",
+            "https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta",
+          ]
+          assert directives.get("connect-src")==read_only, ("Unexpected connect-src",directives.get("connect-src"))
           assert "form-action 'none'" in html and 'quicktrip-qa-route-v90.js?v=90' in html
           print("PASS: QA-only and documentation files; v90 sources untouched; all original v90 files untouched")
           PY
@@ -119,7 +130,6 @@ jobs:
           QA_DIR: quicktrip-v90-pilot-evidence/pwa-cache
         run: node web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs
       - name: Test synthetic GPS permissions and viewport overlap (localhost only)
-        if: always()
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/gps-visual
         run: node web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
