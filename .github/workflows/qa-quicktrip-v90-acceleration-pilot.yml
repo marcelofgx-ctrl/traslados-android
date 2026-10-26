@@ -7,6 +7,8 @@ on:
       - 'scripts/qa_workflow_inventory.py'
       - 'web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs'
       - 'docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md'
+      - 'web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs'
+      - 'web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +35,10 @@ jobs:
             ".github/workflows/qa-quicktrip-v90-acceleration-pilot.yml",
             "scripts/qa_workflow_inventory.py",
             "web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs",
-            "docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md"
+            "docs/QA_QUICKTRIP_V90_ACCELERATION_PILOT_20261026.md",
+            "docs/QA_QUICKTRIP_V90_REVISION_VISUAL_PLAN_PWA_GPS_20261026.md",
+            "web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs",
+            "web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs"
           }
           actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
           assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
@@ -43,7 +48,7 @@ jobs:
           assert 'name="traslados-preview" content="read-only"' in html
           assert "connect-src https://direcciones.ide.uy https://router.project-osrm.org;" in html
           assert "form-action 'none'" in html and 'quicktrip-qa-route-v90.js?v=90' in html
-          print("PASS: exactly four additive QA/documentation files; all original v90 files untouched")
+          print("PASS: QA-only and documentation files; v90 sources untouched; all original v90 files untouched")
           PY
       - name: Inventory and local static build without APK or publishing
         shell: bash
@@ -52,6 +57,8 @@ jobs:
           python3 -m py_compile scripts/qa_workflow_inventory.py
           python3 scripts/qa_workflow_inventory.py --output quicktrip-v90-pilot-evidence/inventory
           node --check web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs
+          node --check web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs
+          node --check web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
           node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
           node web-pasajero/qa-stage-build.cjs
           python3 - <<'PY'
@@ -83,6 +90,15 @@ jobs:
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/negative
         run: node web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs
+      - name: Test real PWA Service Worker cache and synthetic v91 upgrade (localhost only)
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/pwa-cache
+        run: node web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs
+      - name: Test synthetic GPS permissions and viewport overlap (localhost only)
+        if: always()
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/gps-visual
+        run: node web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
       - name: Upload inventory JSON, results and screenshots (NEVER DEPLOY)
         if: always()
         uses: actions/upload-artifact@v4
