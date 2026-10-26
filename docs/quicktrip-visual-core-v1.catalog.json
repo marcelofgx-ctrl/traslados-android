@@ -1,0 +1,222 @@
+{
+  "schema": "qt.visual-core.catalog.v1",
+  "mode": "read-only-inventory",
+  "repository": "marcelofgx-ctrl/traslados-android",
+  "branch": "qa/quicktrip-v90-acceleration-pilot-20261026",
+  "base_sha": "d92cf74f364035aca4f47c8cd88c73d99e3f84ac",
+  "source_precedence": [
+    "docs/PRODUCTO_CANONICO_QUICKTRIP.md",
+    "docs/TU_VIAJE_PANTALLA_UNICA_CONTRATO_20261020.md",
+    "docs/quicktrip-canonical-contract.json"
+  ],
+  "visual_baseline": "pending-approved-private-references",
+  "release_approved": false,
+  "services": [
+    "Tu Viaje",
+    "Tu Paquete",
+    "Tu Viaje Programado"
+  ],
+  "tokens": [
+    {
+      "name": "--bg",
+      "value": "#071e25",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    },
+    {
+      "name": "--panel",
+      "value": "#09363f",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    },
+    {
+      "name": "--gold",
+      "value": "#e7cb85",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    },
+    {
+      "name": "--ivory",
+      "value": "#f8f5ed",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    },
+    {
+      "name": "--muted",
+      "value": "#b3c9c8",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    },
+    {
+      "name": "--green",
+      "value": "#74d9b0",
+      "source": "web-pasajero/styles.css",
+      "status": "observed-not-new-approval"
+    }
+  ],
+  "components": [
+    {
+      "id": "QTServiceHome",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/index.html",
+      "source_markers": [
+        "data-service=\"now\"",
+        "data-service=\"delivery\"",
+        "data-service=\"schedule\""
+      ],
+      "logic_owner": "web-pasajero/service-home.js",
+      "mount": "#view-inicio",
+      "policy": "three circular services; no fourth Viajar ahora"
+    },
+    {
+      "id": "QTHeader",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-header",
+        "qtc-logo"
+      ],
+      "mount": "#view-viaje .qtc-app",
+      "policy": "brand and back control without changing native navigation"
+    },
+    {
+      "id": "QTTheme",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-approved-v85-qa.js",
+      "source_markers": [
+        "theme-toggle",
+        "qt-v86-light"
+      ],
+      "mount": "[data-qt-component=\"theme-toggle\"]",
+      "policy": "existing light/dark modifier and storage; no new theme handler"
+    },
+    {
+      "id": "QTPlaces",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-places",
+        "origin-picker",
+        "destination-picker"
+      ],
+      "mount": ".qtc-places",
+      "policy": "relocate original DOM nodes; no new geocoding, GPS or picker handlers"
+    },
+    {
+      "id": "QTRouteMap",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "premium-route-canvas",
+        "mapAnchorOriginal"
+      ],
+      "mount": ".premium-route-canvas",
+      "policy": "one existing renderer and real verified geometry; separate driver-pickup and passenger-route"
+    },
+    {
+      "id": "QTDriverStatus",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-driver",
+        "qtc-driver-slot"
+      ],
+      "mount": ".qtc-driver",
+      "policy": "show unknown/unavailable states; no invented driver location or ETA"
+    },
+    {
+      "id": "QTTripMetrics",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-submit-region",
+        "qtc-summary-title"
+      ],
+      "mount": ".qtc-submit-region",
+      "policy": "display km/minutes/price from existing engine, no calculation in view"
+    },
+    {
+      "id": "QTAccordion",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-schedule",
+        "qtc-contact",
+        "qtc-history"
+      ],
+      "mount": ".qtc-content",
+      "policy": "history, schedule and passenger account retain original listeners"
+    },
+    {
+      "id": "QTBottomNav",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/quicktrip-clean.js",
+      "source_markers": [
+        "qtc-bottom-nav"
+      ],
+      "mount": ".qtc-bottom-nav",
+      "policy": "must not obscure interactive controls at 360/393/412 CSS px"
+    },
+    {
+      "id": "QTRequestCTA",
+      "surface": "passenger_web_pwa",
+      "source": "web-pasajero/index.html",
+      "source_markers": [
+        "id=\"urgent-send\""
+      ],
+      "mount": "#urgent-send",
+      "policy": "original idempotent handler only; disabled in isolated v90 QA"
+    },
+    {
+      "id": "QTTripProgressQA",
+      "surface": "passenger_web_pwa_qa_only",
+      "source": "web-pasajero/quicktrip-qa-stage-b-v90.js",
+      "source_markers": [
+        "qt-b-sim",
+        "qt-b-flow"
+      ],
+      "mount": ".qt-b-sim",
+      "policy": "synthetic local state and labelled fake driver; not a live request channel"
+    }
+  ],
+  "dom_ids": [
+    "view-inicio",
+    "view-viaje",
+    "origin-picker",
+    "destination-picker",
+    "urgent-send"
+  ],
+  "viewports": [
+    {
+      "width": 360,
+      "height": 780
+    },
+    {
+      "width": 393,
+      "height": 852
+    },
+    {
+      "width": 412,
+      "height": 915
+    }
+  ],
+  "qa_boundary": {
+    "source": "web-pasajero/index.html",
+    "meta": "traslados-preview:read-only",
+    "service_worker": "blocked for visual checks; tested separately",
+    "backend": "remote calls blocked",
+    "fixtures": "synthetic only",
+    "android": "no touches",
+    "supabase": "no touches"
+  },
+  "android_visual_candidates": {
+    "status": "inventory_only_no_modification",
+    "sources": [
+      "mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java",
+      "mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferQuickPanel.java",
+      "mapatrayectos/src/main/java/uy/com/mapatrayectos/HistoryBottomSheet.java",
+      "mapatrayectos/src/main/res/values/styles.xml"
+    ]
+  },
+  "no_new_implementation": true
+}
