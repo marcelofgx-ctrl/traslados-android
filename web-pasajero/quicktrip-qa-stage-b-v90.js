@@ -12,7 +12,7 @@
  const B=win.TrasladosTripBoard,Owned=win.TrasladosOwnedPickup,
        Live=win.TrasladosReservationLive,Map=win.TrasladosPremiumMap;
  if(!B?.metadata||!B?.guidance||!Owned?.match||!Live?.mount||!Map?.render)return;
- let host=null,stage="idle",progress=0,stamp="",identity="",fixture=null;
+ let host=null,stage="idle",progress=0,stamp="",identity="";
  const safeRoute=()=>typeof record!=="undefined"&&record.origin&&record.destination&&
    Array.isArray(record.stops)&&record.stops.every(Boolean);
  const coords=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&
@@ -55,53 +55,87 @@
    const btn=dom("button","qt-b-button "+variant,label);btn.type="button";
    btn.dataset.qtBAction=key;area.append(btn);return btn;
  }
- // A synthetic straight-line road stub only for the isolated visual fixture.
- // This is NEVER a road estimate or GPS fix and is labelled accordingly.
- function line(a,b,count=22){
-   return Array.from({length:count},(_,i)=>{
-     const p=i/(count-1);
-     return [a.lat+(b.lat-a.lat)*p,a.lng+(b.lng-a.lng)*p];
-   });
+ // The demo's *verified public road geometry* comes from the existing
+ // v90 route adapter. It never contains driver location or private GPS.
+ function qaRoad(){
+   const road=win.QuickTripV90QaRoad?.read?.();
+   if(!road||!Array.isArray(road.points)||road.points.length<2||
+      road.points.length>14000||!safeRoute())return null;
+   const from=Live.coordinates(record.origin.lat,record.origin.lng);
+   const to=Live.coordinates(record.destination.lat,record.destination.lng);
+   if(!from||!to)return null;
+   const first=road.points[0],last=road.points[road.points.length-1];
+   if(Math.abs(first[0]-from.lat)>.008||Math.abs(first[1]-from.lng)>.008||
+      Math.abs(last[0]-to.lat)>.008||Math.abs(last[1]-to.lng)>.008)return null;
+   return road.points;
  }
- const stubEngine={
-  estimate:async points=>{
-    if(!Array.isArray(points)||points.length<2)return null;
-    const start=points[0],end=points[points.length-1];
-    if(!coords(start)||!coords(end))return null;
-    return {available:true,source:"qa-local-visual-only",
-      distanceKm:0,durationMin:0,geometry:line(start,end)};
-  },
-  verified:v=>v?.source==="qa-local-visual-only"&&Array.isArray(v.geometry)&&v.geometry.length>=2
- };
- const forbidden=()=>{throw Error("QA local: no reservation or private GPS endpoint permitted");};
- function createContractTracking(parent,row){
-   const wrap=dom("div","qt-b-contract-map");
-   parent.append(wrap);
-   // Existing authorized reservation renderer, but with a mock RPC that
-   // ALWAYS withholds vehicle position. Thus it only renders contract geometry.
-   Live.mount(wrap,{reservation:row,guestToken:"QA-LOCAL-NOT-A-SERVER-TOKEN",
-     sessionToken:null,rpc:async name=>{
-       if(name!=="customer_reservation_position_v1")return forbidden();
-       return {available:false,reason:"preparing_pickup"};
-     },engine:stubEngine,api:"",key:"",renderer:Map});
-   return wrap;
- }
- function movingMap(parent){
-   const a={lat:Number(record.origin.lat),lng:Number(record.origin.lng)};
-   const b={lat:Number(record.destination.lat),lng:Number(record.destination.lng)};
-   if(!coords(a)||!coords(b))return;
-   const map=dom("div","qt-b-sim-map");parent.append(map);
-   const p=Math.max(0,Math.min(1,progress));
-   const start=stage==="ride"
-      ?{lat:a.lat+(b.lat-a.lat)*p,lng:a.lng+(b.lng-a.lng)*p}
-      :{lat:a.lat+(b.lat-a.lat)*(0.10*(1-p)),lng:a.lng+(b.lng-a.lng)*(0.10*(1-p))};
-   const end=stage==="ride"?b:a;
-   // Do not claim this straight-line motion is a verified road or real GPS.
-   if(Map.render(map,line(start,end),{height:210,
-       routeMode:stage==="ride"?"ride":"pickup"})){
-     map.querySelector(".premium-real-map")?.setAttribute("aria-label",
-       "SIMULACIÓN QA: vehículo ficticio sobre una línea ilustrativa; sin GPS ni ruta vial calculada");
+ function qaMarker(host,geometry,isPickup){
+   const frame=host.querySelector(".premium-real-map");
+   const svg=frame?.querySelector("svg.premium-map-overlays");
+   if(!svg)return;
+   const width=Number(svg.getAttribute("viewBox")?.split(" ")[2]);
+   const height=Number(svg.getAttribute("viewBox")?.split(" ")[3]);
+   const view=Map.layout(geometry,width,height);
+   const p=view?.points?.[0];
+   if(!p)return;
+   // Replace the renderer's automobile emoji with a high-contrast triangle
+   // on the exact same simulated route point. The real renderer is untouched.
+   for(const t of [...svg.querySelectorAll("text")]){
+     if(t.textContent!=="🚘")continue;
+     const prior=t.previousElementSibling;
+     if(prior?.tagName.toLowerCase()==="circle")prior.remove();
+     t.remove();
    }
+   const ns="http://www.w3.org/2000/svg";
+   const g=doc.createElementNS(ns,"g");
+   g.setAttribute("class","qt-b-fake-car");
+   g.setAttribute("transform","translate("+p[0]+","+p[1]+")");
+   const shadow=doc.createElementNS(ns,"circle");
+   shadow.setAttribute("r","19");shadow.setAttribute("fill","#062c36");
+   shadow.setAttribute("stroke","#f5d99f");shadow.setAttribute("stroke-width","2.5");
+   const car=doc.createElementNS(ns,"path");
+   car.setAttribute("d","M0 -14 L11 12 L0 6 L-11 12 Z");
+   car.setAttribute("fill","#f5d99f");car.setAttribute("stroke","#0b393b");
+   car.setAttribute("stroke-width","1");
+   g.append(shadow,car);
+   svg.append(g);
+   frame.setAttribute("aria-label","SIMULACIÓN QA: triángulo de automóvil ficticio y "+
+     (isPickup?"pasajero en el punto de recogida":"destino del viaje")+
+     " sobre el recorrido vial verificado; no muestra GPS real");
+ }
+ function drawMap(slot,kind){
+   if(!slot?.isConnected)return;
+   slot.replaceChildren();
+   const road=qaRoad();
+   if(!road){
+     slot.append(dom("p","qt-b-map-unavailable",
+       "El mapa aparecerá cuando termine el cálculo vial. No dibujamos ubicaciones inventadas."));
+     return;
+   }
+   const map=dom("div","qt-b-map-frame");slot.append(map);
+   const moving=kind==="enroute"||kind==="ride";
+   const maxIndex=Math.max(1,Math.floor((road.length-1)*.12));
+   const progressIndex=Math.max(0,Math.min(road.length-2,Math.floor((road.length-2)*progress)));
+   const carIndex=Math.max(1,Math.round(maxIndex*(1-progress)));
+   const segment=kind==="enroute"
+     ?road.slice(0,carIndex+1).reverse()
+     :kind==="ride"?road.slice(progressIndex):road;
+   if(segment.length<2||!Map.render(map,segment,{
+     height:252,routeMode:kind==="enroute"?"pickup":kind==="ride"?"ride":"contract"
+   })){
+     slot.replaceChildren(dom("p","qt-b-map-unavailable","El mapa no está disponible."));
+     return;
+   }
+   if(moving)qaMarker(map,segment,kind==="enroute");
+   const legend=dom("div","qt-b-legend");
+   if(moving)legend.append(dom("span","","▲ Auto ficticio"));
+   legend.append(dom("span","",kind==="ride"?"● Destino":"● Pasajero / recogida"));
+   if(kind!=="enroute")legend.append(dom("span","","◆ Destino"));
+   slot.append(legend);
+   const note=dom("p","qt-b-map-note",moving?
+     "SIMULACIÓN QA · El triángulo no es tu conductor real. El trazo sigue calles verificadas, pero su avance es ficticio.":
+     "Ruta por calles verificada. No se muestra posición del vehículo hasta disponer de GPS autorizado.");
+   slot.append(note);
  }
  function update(){
    if(!host)return;
@@ -140,16 +174,13 @@
        stage==="enroute"?"Conductor en camino · Ver mapa":
        stage==="arrived"?"Conductor llegó · Ver mapa":"Viaje aceptado · Ver recorrido");
      details.append(title);
-     const note=dom("p","qt-b-map-note",
-       "SIMULACIÓN QA · No se consulta GPS privado. El recorrido es ilustrativo.");
-     details.append(note);
-     if(["enroute","ride"].includes(stage)){
-       const motion=dom("div","qt-b-motion");
-       details.append(motion);movingMap(motion);
-       const percent=stage==="ride"?Math.round(progress*100):Math.round(progress*100);
-       details.append(dom("small","qt-b-progress","Avance ficticio: "+percent+" %"));
-     }else createContractTracking(details,row);
+     const slot=dom("div","qt-b-map-slot");
+     details.append(slot);
      content.append(details);
+     win.requestAnimationFrame(()=>{if(details.open)drawMap(slot,stage);});
+     details.addEventListener("toggle",()=>{
+       if(details.open)win.requestAnimationFrame(()=>drawMap(slot,stage));
+     });
    }
    const actions=dom("div","qt-b-actions");
    if(stage==="pending"){
@@ -169,7 +200,7 @@
    content.append(actions);
  }
  function reset(){
-   stage="idle";progress=0;stamp="";fixture=null;identity=identityOf();update();
+   stage="idle";progress=0;stamp="";identity=identityOf();update();
  }
  function action(name){
    if(name==="request"){
