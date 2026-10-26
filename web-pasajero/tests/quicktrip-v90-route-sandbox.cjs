@@ -5,7 +5,9 @@ const fs=require("node:fs"),path=require("node:path"),assert=require("node:asser
 const {spawn}=require("node:child_process"),{chromium}=require("playwright-core");
 const evidence=process.env.QA_DIR||"quicktrip-v90-evidence";fs.mkdirSync(evidence,{recursive:true});
 const base="http://127.0.0.1:8190/web-pasajero/";
-const report={status:"RUNNING",checks:[],screenshots:[],externalRequests:[],pageErrors:[],syntheticCoordinates:true,realBackendRequests:0};
+const report={status:"RUNNING",checks:[],screenshots:[],externalRequests:[],blockedPublicReads:0,pageErrors:[],syntheticCoordinates:true,realBackendRequests:0};
+const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
+  ["/rest/v1/rpc/public_driver_availability_v1","/functions/v1/pickup-eta"].includes(u.pathname);
 const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});assert(pass,name+" "+JSON.stringify(detail))};
 (async()=>{
  const server=spawn("python3",["-m","http.server","8190","--bind","127.0.0.1"],{cwd:process.cwd(),stdio:"ignore"});
@@ -37,6 +39,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
       body:JSON.stringify({code:"Ok",routes:[{distance:8600,duration:875,geometry:{type:"LineString",coordinates:geometry}}],
        waypoints:points.map(p=>({location:p,distance:0,name:"Calle de prueba QA"}))})});
     }
+    if(publicReadOnly(u)){report.blockedPublicReads++;return route.abort("blockedbyclient");}
     if(u.hostname.includes("supabase.co")||u.hostname.includes("workers.dev"))realBackendCalls++;
     report.externalRequests.push({host:u.hostname,path:u.pathname,blocked:true});
     return route.abort("blockedbyclient");
@@ -56,7 +59,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
       buttonLabel:document.querySelector("#origin-picker .location-use-current")?.dataset.qtGpsLabel,
       sendDisabled:document.getElementById("urgent-send").disabled};
    });
-   check(width+" CSP public IDE+OSRM only",safety.connect==="https://direcciones.ide.uy https://router.project-osrm.org",safety);
+   check(width+" exact read-only CSP endpoints",safety.connect==="https://direcciones.ide.uy https://router.project-osrm.org https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1 https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta",safety);
    check(width+" approved v89 GPS UX still mounted",safety.shape&&safety.buttonLabel==="Mi ubicación",safety);
    check(width+" read-only and native booking disabled",safety.readonly&&safety.sendDisabled&&safety.threeServices===3,safety);
    const startName="01-initial-v90-"+width+".png";

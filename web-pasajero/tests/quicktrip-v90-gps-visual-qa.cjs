@@ -8,13 +8,15 @@ const {spawn}=require("node:child_process"),{chromium}=require("playwright-core"
 const out=process.env.QA_DIR||"quicktrip-v90-pilot-evidence/gps-visual";
 fs.mkdirSync(out,{recursive:true});
 const base="http://127.0.0.1:8196/web-pasajero/";
-const report={state:"RUNNING",cases:[],shots:[],pageErrors:[],forbidden:[],scope:"QA only"};
+const report={state:"RUNNING",cases:[],shots:[],pageErrors:[],forbidden:[],blockedPublicReads:0,scope:"QA only"};
 const check=(name,pass,detail)=>{
  report.cases.push({name,pass:Boolean(pass),detail:detail===undefined?null:detail});
  if(!pass)throw Error("ASSERT "+name+" "+JSON.stringify(detail));
 };
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const mockPlace=(text,lat,lng)=>({text,lat,lng,department:"Montevideo"});
+const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
+  ["/rest/v1/rpc/public_driver_availability_v1","/functions/v1/pickup-eta"].includes(u.pathname);
 let server,browser;
 (async()=>{
  try{
@@ -61,6 +63,7 @@ let server,browser;
         geometry:{type:"LineString",coordinates:[ps[0],ps[ps.length-1]]}}],
         waypoints:ps.map(p=>({location:p,name:"Ficticio",distance:0}))})});
      }
+     if(publicReadOnly(u)){report.blockedPublicReads++;return route.abort("blockedbyclient");}
      report.forbidden.push({host:u.hostname,path:u.pathname});return route.abort("blockedbyclient");
     });
     const page=await ctx.newPage();
@@ -75,7 +78,7 @@ let server,browser;
     }));
     check(mode+" "+width+" no GPS before user interaction",before.calls===0,before);
     check(mode+" "+width+" v90 CSP and GPS action accessible",
-     before.csp.includes("connect-src https://direcciones.ide.uy https://router.project-osrm.org;")&&
+     before.csp.includes("connect-src https://direcciones.ide.uy https://router.project-osrm.org https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1 https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta;")&&
      before.csp.includes("form-action 'none'")&&before.button==="Usar mi ubicación actual como origen",before);
     if(mode==="granted"){
      await page.evaluate(dest=>destPicker.persist(dest),mockPlace("Destino QA independiente",-34.927,-56.159));

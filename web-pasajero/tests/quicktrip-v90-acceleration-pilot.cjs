@@ -10,7 +10,7 @@ fs.mkdirSync(out,{recursive:true});
 const port=8191, url="http://127.0.0.1:"+port+"/web-pasajero/";
 const report={result:"RUNNING",sourceBase:"8d882e63e1a4e779f956868af64c9e6158c4c0ac",
   cases:[],screenshots:[],pageErrors:[],unexpectedExternal:[],
-  usedSyntheticCoordinates:true,realBookingRequests:0,realGpsRequests:0};
+  usedSyntheticCoordinates:true,realBookingRequests:0,realGpsRequests:0,blockedPublicReads:0};
 const check=(name,condition,detail)=>{
   report.cases.push({name,pass:!!condition,detail:detail===undefined?null:detail});
   assert.ok(condition,name+" "+JSON.stringify(detail));
@@ -23,6 +23,8 @@ const stop3=mockPlace("Parada ficticia C",-34.918,-56.167);
 const stop4=mockPlace("Parada ficticia D",-34.920,-56.170);
 const stop5=mockPlace("Parada ficticia E",-34.922,-56.172);
 const headers={"Access-Control-Allow-Origin":"*","Content-Type":"application/json"};
+const publicReadOnly=(u)=>u.hostname==="zetaudvvutlouiqxopvg.supabase.co"&&
+  ["/rest/v1/rpc/public_driver_availability_v1","/functions/v1/pickup-eta"].includes(u.pathname);
 (async()=>{
  const server=spawn("python3",["-m","http.server",String(port),"--bind","127.0.0.1"],{cwd:process.cwd(),stdio:"ignore"});
  let browser;
@@ -65,6 +67,7 @@ const headers={"Access-Control-Allow-Origin":"*","Content-Type":"application/jso
        waypoints:coords.map(c=>({location:c,name:"Lugar ficticio",distance:0}))
       })});
     }
+    if(publicReadOnly(u)){report.blockedPublicReads++;return route.abort("blockedbyclient");}
     if(u.hostname.includes("supabase.co")||u.hostname.includes("workers.dev"))report.realBookingRequests++;
     report.unexpectedExternal.push({host:u.hostname,path:u.pathname});
     return route.abort("blockedbyclient");
@@ -84,7 +87,7 @@ const headers={"Access-Control-Allow-Origin":"*","Content-Type":"application/jso
      };
    });
    check(width+" isolated v90 / CSP / no submission",safety.readOnly&&safety.formNone&&
-     safety.csp==="https://direcciones.ide.uy https://router.project-osrm.org"&&
+     safety.csp==="https://direcciones.ide.uy https://router.project-osrm.org https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_driver_availability_v1 https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"&&
      safety.navCount===3&&safety.sendDisabled&&safety.v90,safety);
    await page.evaluate(([a,b])=>{originPicker.persist(a);destPicker.persist(b)},[
      mockPlace("Origen QA",-34.902,-56.165),mockPlace("Destino QA",-34.926,-56.159)]);
