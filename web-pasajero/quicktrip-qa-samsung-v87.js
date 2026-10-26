@@ -5,6 +5,9 @@
  const isolation=doc.querySelector('meta[name="quicktrip-qa-isolation"]');
  const csp=doc.querySelector('meta[http-equiv="Content-Security-Policy"]');
  if(!isolation||!String(csp?.content||"").includes("connect-src https://direcciones.ide.uy"))return;
+ const realPickupPreview=String(isolation.content||"").includes("v90-route-sandbox")&&
+   String(csp.content||"").includes("/rest/v1/rpc/public_driver_availability_v1")&&
+   String(csp.content||"").includes("/functions/v1/pickup-eta");
  doc.body.classList.add("qt-v87-qa");
  doc.title="Quick Trip · Web/PWA v88 · GPS IDE QA";
  const top=doc.getElementById("qt-public-qa-banner");
@@ -29,15 +32,22 @@
    if(note.hidden!==verified)note.hidden=verified;
   }
   const driver=app.querySelector(".qtc-driver");
-  if(driver){
+  if(driver&&realPickupPreview){
+   // v87 must not hide the pre-existing real read-only pickup card in v90.
+   driver.removeAttribute("data-qt-v87-qa");
+   const small=driver.querySelector(".qtc-section-name small");
+   if(small&&small.textContent!=="Disponibilidad y llegada en consulta")
+     small.textContent="Disponibilidad y llegada en consulta";
+   driver.querySelector(".qt-v87-driver-note")?.remove();
+  }else if(driver){
    if(driver.dataset.qtV87Qa!=="true")driver.dataset.qtV87Qa="true";
    const small=driver.querySelector(".qtc-section-name small");
    if(small&&small.textContent!=="Sin conexión real en QA")small.textContent="Sin conexión real en QA";
    if(!driver.querySelector(".qt-v87-driver-note")){
-    const item=doc.createElement("p");item.className="qt-v87-driver-note";
-    item.textContent="Disponibilidad y llegada no consultables en esta prueba.";
-    item.setAttribute("role","status");
-    driver.querySelector(".qtc-section-name")?.after(item);
+     const item=doc.createElement("p");item.className="qt-v87-driver-note";
+     item.textContent="Disponibilidad y llegada no consultables en esta prueba.";
+     item.setAttribute("role","status");
+     driver.querySelector(".qtc-section-name")?.after(item);
    }
   }
   const waiting=doc.getElementById("qtc-summary-wait");
