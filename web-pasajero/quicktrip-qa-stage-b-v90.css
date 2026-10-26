@@ -94,3 +94,57 @@ body.qt-b-qa .qt-b-contract-map .reservation-live-note{
 @media(prefers-reduced-motion:reduce){
   body.qt-b-qa .qt-b-sim *{transition:none!important;animation:none!important}
 }
+
+/* QA inline cartography: premium-map's tile/symbol positioning is scoped to
+   production #view-viajes / .qtc-owned-tracking; bring those same essential
+   rules to the isolated QA card without modifying the stable map engine. */
+body.qt-b-qa .qtc-app .qt-b-map-slot{
+  display:block;min-width:0;width:100%;max-width:100%;overflow:hidden;
+  border:1px solid #5c8e85;border-radius:14px;background:#e5eae3;
+}
+body.qt-b-qa .qtc-app .qt-b-map-frame,
+body.qt-b-qa .qtc-app .qt-b-map-frame .premium-real-map{
+  display:block;position:relative!important;width:100%!important;
+  max-width:100%!important;min-width:0!important;overflow:hidden!important;
+  border-radius:13px!important;background:#e8ece5!important;
+  isolation:isolate;box-sizing:border-box
+}
+body.qt-b-qa .qtc-app .qt-b-map-frame .premium-map-tiles{
+  display:block;position:absolute!important;inset:0;overflow:hidden;
+  filter:saturate(.8) contrast(.93);
+}
+body.qt-b-qa .qtc-app .qt-b-map-frame .premium-map-tiles img{
+  display:block;position:absolute!important;width:256px!important;
+  height:256px!important;max-width:none!important;max-height:none!important;
+  margin:0!important;padding:0!important;object-fit:fill!important;
+  pointer-events:none;border:0!important
+}
+body.qt-b-qa .qtc-app .qt-b-map-frame svg.premium-map-overlays{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;
+  pointer-events:none!important;overflow:hidden!important
+}
+body.qt-b-qa .qtc-app .qt-b-map-frame .premium-map-credit{
+  position:absolute!important;bottom:6px;right:6px;z-index:1;
+  padding:3px 6px;border-radius:5px;
+  color:white;font-size:9px;background:#082e33cf
+}
+body.qt-b-qa .qtc-app .qt-b-map-slot .qt-b-legend{
+  display:flex;flex-wrap:wrap;gap:6px;padding:10px 10px 4px;
+  color:#143a3d;background:#e8ece5;font-weight:800;font-size:11px
+}
+body.qt-b-qa .qtc-app .qt-b-map-slot .qt-b-legend span{
+  display:inline-block;background:#d2e5db;border-radius:30px;padding:5px 8px
+}
+body.qt-b-qa .qtc-app .qt-b-map-slot .qt-b-map-note,
+body.qt-b-qa .qtc-app .qt-b-map-slot .qt-b-map-unavailable{
+  margin:0!important;padding:7px 12px 11px!important;
+  background:#e8ece5!important;color:#34585c!important;
+  font-size:11px!important;line-height:1.45!important
+}
+body.qt-b-qa .qtc-app .qt-b-follow{
+  max-width:100%;overflow:hidden
+}
+body.qt-b-qa .qtc-app .qt-b-follow .qt-b-map-slot{
+  max-width:100%;box-sizing:border-box
+}
