@@ -99,6 +99,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
      pickup.boxes[1].name.includes("LLEGADA")&&pickup.boxes[1].value==="7 min"&&
      pickup.boxes.every(x=>x.font>=18),pickup);
    await page.locator(".qt-v90-map-details > summary").click();
+   await page.locator(".qt-v90-map-stage .premium-real-map").waitFor({state:"attached",timeout:7000});
    const expanded=await page.locator(".qt-v90-map-details").evaluate(e=>({
      open:e.open,map:!!e.querySelector(".premium-real-map"),
      car:!!e.querySelector(".premium-real-map[aria-label*='automóvil']"),
