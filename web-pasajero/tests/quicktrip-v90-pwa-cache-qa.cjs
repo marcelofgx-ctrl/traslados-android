@@ -59,7 +59,18 @@ let server,browser;
   if(next===original)throw Error("Failed to generate synthetic SW version");
   fs.writeFileSync(swPath,next);
   fs.utimesSync(swPath,new Date(Date.now()+5000),new Date(Date.now()+5000));
-  await page.evaluate(async()=>{const reg=await navigator.serviceWorker.ready;await reg.update();});
+  const controllerChanged=await page.evaluate(async()=>{
+   const change=new Promise(resolve=>{
+    const timer=setTimeout(()=>resolve(false),12000);
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+     clearTimeout(timer);resolve(true);
+    },{once:true});
+   });
+   const reg=await navigator.serviceWorker.ready;
+   await reg.update();
+   return await change;
+  });
+  check("PWA synthetic update switches the active page controller",controllerChanged,{controllerChanged});
   await page.waitForFunction(async()=>(await caches.keys()).includes("traslados-pwa-qa-route-v91-synthetic"),null,{timeout:25000});
   await page.waitForFunction(async()=>(await caches.keys()).every(k=>k!=="traslados-pwa-qa-route-v90-20261025"),null,{timeout:18000});
   const fresh=await page.evaluate(async()=>{
