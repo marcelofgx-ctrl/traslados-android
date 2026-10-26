@@ -9,18 +9,23 @@ self.addEventListener("fetch",e=>{
   const r=e.request;if(r.method!=="GET")return;
   const u=new URL(r.url);if(u.origin!==self.location.origin)return;
   if(r.mode==="navigate"){
-    e.respondWith(fetch(r).catch(()=>caches.open(CACHE).then(c=>c.match("./offline.html"))));return;
+    // Acquire the versioned handle before any request can outlive this worker.
+    const cacheRef=caches.open(CACHE);
+    e.respondWith(cacheRef.then(cache=>fetch(r).catch(()=>cache.match("./offline.html"))));return;
   }
   if(files.some(path=>new URL(path,self.registration.scope).pathname===u.pathname)){
-    // Network first for code and styles. New deployments must not stay stuck
-    // behind the previous PWA cache when a passenger is trying to book.
-    e.respondWith(fetch(r).then(response=>{
+    // A retired SW must not reopen an evicted cache after a pending response.
+    const cacheRef=caches.open(CACHE);
+    e.respondWith(cacheRef.then(cache=>fetch(r).then(response=>{
       if(response.ok){
         const copy=response.clone();
-        e.waitUntil(caches.open(CACHE).then(c=>c.put(r,copy)));
+        e.waitUntil(caches.keys().then(keys=>
+          keys.includes(CACHE)?cache.put(r,copy):undefined
+        ).catch(()=>undefined));
       }
       return response;
-    }).catch(()=>caches.open(CACHE).then(async cache=>{
+    }).catch(async()=>{
+      const cache=await cacheRef;
       // No usar ignoreSearch: puede seleccionar la primera copia precargada,
       // aunque exista una versión posterior obtenida con ?v=XX.
       const exact=await cache.match(r);

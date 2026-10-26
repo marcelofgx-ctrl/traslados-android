@@ -97,6 +97,11 @@ let server,browser;
   check("PWA v91 upgrade removes obsolete own QA route versions only",
    !fresh.keys.includes("traslados-pwa-qa-route-v89-obsolete")&&
    !fresh.keys.includes("traslados-pwa-qa-route-v90-20261025"),fresh.keys);
+  await wait(300);
+  const settledKeys=await page.evaluate(()=>caches.keys());
+  check("PWA old SW cannot recreate v90 cache after controller change",
+   settledKeys.includes("traslados-pwa-qa-route-v91-synthetic")&&
+   !settledKeys.includes("traslados-pwa-qa-route-v90-20261025"),settledKeys);
   await ctx.setOffline(true);
   const offline=await page.evaluate(async()=>{
    const result={controlled:Boolean(navigator.serviceWorker.controller)};
@@ -112,6 +117,10 @@ let server,browser;
   check("PWA offline controlled document and fallback",offline.controlled&&offline.page.ok,offline);
   check("PWA offline v91 stylesheet stays current",offline.v91?.status===200&&offline.v91.updated,offline);
   check("PWA offline older query does not resurrect old stylesheet",offline.v90?.status===200&&offline.v90.updated,offline);
+  const postOfflineKeys=await page.evaluate(()=>caches.keys());
+  check("PWA offline fetch preserves unrelated caches and does not resurrect v90",
+   !postOfflineKeys.includes("traslados-pwa-qa-route-v90-20261025")&&
+   foreign.every(name=>postOfflineKeys.includes(name)),postOfflineKeys);
   check("PWA no real outbound request",report.external.length===0,report.external);
   report.state=report.cases.every(c=>c.pass)&&!report.findings.length?"PASS":"FAIL";
   await ctx.close();
