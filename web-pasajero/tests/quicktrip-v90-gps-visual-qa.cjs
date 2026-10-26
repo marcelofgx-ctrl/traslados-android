@@ -45,6 +45,11 @@ let server,browser;
     await ctx.route("**/*",route=>{
      const u=new URL(route.request().url());
      if(u.hostname==="127.0.0.1"&&u.port==="8196")return route.continue();
+     // The QA road map may open here. Never contact OSM from CI.
+     if(u.hostname==="tile.openstreetmap.org")return route.fulfill({
+      status:200,contentType:"image/png",
+      body:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==","base64")
+     });
      if(u.hostname==="direcciones.ide.uy"&&u.pathname==="/api/v1/geocode/reverse"){
       reverse++;return route.fulfill({status:200,headers:{"Access-Control-Allow-Origin":"*","Content-Type":"application/json"},
        body:JSON.stringify([{address:"Calle Ficticia QA 123, Canelones",departamento:"Canelones"}])});
