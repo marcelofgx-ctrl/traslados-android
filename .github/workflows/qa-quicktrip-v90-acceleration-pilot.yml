@@ -31,6 +31,7 @@ jobs:
         with:
           node-version: '22'
       - name: Protect exact v90 base and strictly additive scope
+        id: qt_scope_guard
         shell: bash
         run: |
           set -euo pipefail
@@ -105,6 +106,7 @@ jobs:
           print("PASS: inventory 74 YAML + 3 non-YAML; static-only QA bundle, zero APK")
           PY
       - name: Install browser harness, no source dependency changes
+        id: qt_browser_ready
         shell: bash
         run: |
           set -euo pipefail
@@ -114,22 +116,27 @@ jobs:
           npm install --prefix /tmp/qt-v90-acceleration --no-save --no-audit --no-fund playwright-core@1.56.1
           echo "NODE_PATH=/tmp/qt-v90-acceleration/node_modules" >> "$GITHUB_ENV"
       - name: QT Visual Core v1 existing Chromium mobile visual checks
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/visual-core
         run: node web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs --browser
       - name: Existing v90 real-browser mocked regression baseline
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/baseline
         run: node web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
       - name: Extended negative testing stops, recalculation, prices, disconnect
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/negative
         run: node web-pasajero/tests/quicktrip-v90-acceleration-pilot.cjs
       - name: Test real PWA Service Worker cache and synthetic v91 upgrade (localhost only)
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/pwa-cache
         run: node web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs
       - name: Test synthetic GPS permissions and viewport overlap (localhost only)
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/gps-visual
         run: node web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
