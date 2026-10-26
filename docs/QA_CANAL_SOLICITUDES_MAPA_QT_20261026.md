@@ -44,5 +44,15 @@ Mapa QT QA (misma APK funcional con Conductor integrado)
 - Pruebas mínimas por etapa: (i) ningún write al proyecto operativo, (ii) una solicitud QA produce un único evento, (iii) aceptación/rechazo y fases sincronizan en ambos teléfonos, (iv) reintento y reconexión no duplican, (v) cancelar/cerrar revoca acceso, (vi) pérdida de GPS no inventa vehículo.
 - **Prohibido por este contrato:** alterar Supabase operativo, clonar datos personales, migrar PR #197 a producción, reemplazar APK estable, fusionar/desplegar main, crear un Conductor APK independiente.
 
+## Costo y capacidad verificados 2026-10-26 (sin compra)
+- Organización consultada: `Marcelo Fernandez`, ID `fnqaguiyhslevpkxabwj`, plan **Free**.
+- Proyecto operativo `Traslados`: ACTIVO; otro proyecto `Oak & Ember`: ACTIVO. **Dos de dos proyectos Free ocupados.**
+- API Supabase `get_cost(type=project)`: **USD 0/mes cotizado**, PERO esa cotización no elimina el límite de dos activos. **No afirmar que se puede crear un tercero gratis.**
+- API Supabase `get_cost(type=branch)`: **USD 0.01344/h**, sujeto a condiciones de disponibilidad de Branching y del plan; no crear sin aceptación del gasto.
+- Fuente oficial https://supabase.com/pricing: Pro desde USD 25/mes y cómputo Micro adicional desde USD 10/mes por proyecto. Con tres proyectos Micro activos y un crédito mensual de USD 10, **estimación ilustrativa USD 45/mes** (USD 25 + USD 30 - USD 10), sin extras; no es factura cotizada por Supabase de la actualización del plan.
+- Opciones NO AUTORIZADAS: pasar a Pro, pausar `Oak & Ember` para liberar cupo, crear branch facturable, crear nuevo proyecto en otra cuenta ni modificar Traslados operativo.
+- No correr SQL ni habilitar proyecto hasta elegir una opción, obtener cotización aplicable y confirmar por separado cualquier cargo.
+- Esquema listo pero **SIN EJECUTAR**: [QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql](QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql), fuera de `supabase/migrations`. Comprende `qt_qa_members`, `qt_qa_requests` y `qt_qa_request_events`, RLS denegada por defecto y grants exclusivos de `service_role`. La ejecución posterior exige Edge Functions autenticadas, transiciones atómicas y conexión solo al proyecto QA.
+
 ## Decisión a resolver antes de implementación
-Elegir mecanismo de entorno QA: nuevo proyecto mínimo Supabase (aislamiento fuerte, posible coste/cupo) **o** rama persistente de Supabase (aislada por credenciales y proyecto temporal, sujeta a plan/funciones). Nunca aprovechar `Oak & Ember`. Verificar coste y disponibilidad antes de crear.
+Conservar el aislamiento fuerte del proyecto separado cuando exista cupo/plan confirmado; no copiar datos ni usar el proyecto ajeno. El siguiente paso es aprobación explícita del usuario sobre la opción de costos, NO creación automática.
