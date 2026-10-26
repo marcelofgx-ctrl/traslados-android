@@ -102,7 +102,7 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    await page.locator(".qt-v90-map-stage .premium-real-map").waitFor({state:"attached",timeout:7000});
    const expanded=await page.locator(".qt-v90-map-details").evaluate(e=>({
      open:e.open,map:!!e.querySelector(".premium-real-map"),
-     car:!!e.querySelector(".premium-real-map[aria-label*='automóvil']"),
+     car:[...e.querySelectorAll(".premium-real-map svg text")].some(x=>x.textContent.includes("🚘")),
      hidden:e.hidden,overflow:document.documentElement.scrollWidth-innerWidth
    }));
    check(width+" opens verified-road geographic map inside same card without fake car",
