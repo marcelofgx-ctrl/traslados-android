@@ -38,3 +38,28 @@ body.qt-v90-qa .qtc-app .qt-v90-map svg{width:100%;height:110px;display:block}
  body.qt-v90-qa .qtc-app .qt-v90-metric strong{font-size:11px}
  body.qt-v90-qa .qtc-app .qt-v90-quote-results{gap:4px}
 }
+
+/* Compact priority: selected places → price/km → fictional driver → details.
+   Keep all original nodes and app handlers; reorder only the CSS grid. */
+body.qt-v90-qa.qt-clean.qt-clean-active .qtc-app .qtc-content{
+ grid-template-areas:"places places" "quote quote" "driver driver"
+                     "schedule contact" "success success"!important;
+ gap:6px 7px!important
+}
+/* A road-demo quote must never be presented alongside stale native production
+   quote fields. They are not deleted and remain fully intact for rollback. */
+body.qt-v90-qa .qtc-app[data-qt-v90-quote="verified"] #urgent-route-recap,
+body.qt-v90-qa .qtc-app[data-qt-v90-quote="verified"] .premium-route-canvas{
+ display:none!important
+}
+body.qt-v90-qa .qtc-app .qt-v90-map-details[hidden]{display:none!important}
+body.qt-v90-qa .qtc-app .qt-v90-map-details{margin:5px 0}
+body.qt-v90-qa .qtc-app .qt-v90-map-details>summary{
+ font-size:11px!important;color:#edcf93!important;padding:6px 0!important;cursor:pointer;
+}
+body.qt-v90-qa .qtc-app .qt-v90-map{
+ padding:7px!important;margin:5px 0!important;border-color:#55736a!important;
+}
+body.qt-v90-qa .qtc-app .qt-v90-driver-demo{padding:7px 10px;margin:5px 0}
+body.qt-v90-qa .qtc-app .qt-v90-driver-info{font-size:10px;margin:3px 0}
+body.qt-v90-qa .qtc-app .qt-v90-scenario{margin:2px 0 0!important}
