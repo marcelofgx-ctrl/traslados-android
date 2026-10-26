@@ -87,7 +87,10 @@
    item.append(small,strong);results.appendChild(item);slots[id]=strong;
   }
   const disclaimer=node("small","qt-v90-disclaimer","Solo QA · OSRM demo (OpenStreetMap). Precio ilustrativo: 40 UYU/km. NO es cotización oficial.");
-  quote.append(heading,text,results,disclaimer);
+  const roadDetails=node("details","qt-v90-map-details");roadDetails.hidden=true;
+  const roadSummary=node("summary","","Ver trazado vial de prueba");
+  roadDetails.append(roadSummary);
+  quote.append(heading,text,results,disclaimer,roadDetails);
   const title=summary.querySelector(".qtc-summary-title");
   if(title)title.after(quote);else summary.prepend(quote);
   // The old read-only QA warning is true for official results, but not for
@@ -95,7 +98,7 @@
   const art=node("div","qt-v90-map");art.setAttribute("aria-label","Recorrido vial calculado en QA");
   const mapTitle=node("strong","","Recorrido por carretera · OSRM demo");
   const mapHelp=node("small","","Trazo según servicio vial público. Sin mapa de fondo; no apto para navegación.");
-  art.append(mapTitle,mapHelp);art.hidden=true;map.append(art);
+  art.append(mapTitle,mapHelp);art.hidden=true;roadDetails.append(art);
   const simulated=node("section","qt-v90-driver-demo");
   simulated.setAttribute("aria-label","Conductor de prueba ficticio");
   const driverTitle=node("strong","","CONDUCTOR FICTICIO · SIMULACIÓN QA");
@@ -114,7 +117,7 @@
   simulated.dataset.scenario="available";simulated.append(driverTitle,driverInfo,scenario);driver.append(simulated);
   // Hide the old QA placeholder in this sandbox, but never touch real ETA.
   driver.dataset.qtV90Driver="fixture";
-  ui={text,results,slots,map,art,disclaimer};
+  ui={text,results,slots,map,art,roadDetails,disclaimer};
   const cta=doc.getElementById("urgent-send");if(cta)cta.disabled=true;
   return true;
  }
@@ -123,6 +126,7 @@
   ui.text.textContent=message;
   ui.results.hidden=!verified;
   ui.art.hidden=!verified;
+  ui.roadDetails.hidden=!verified;
   ui.map.dataset.qtV90Road=verified?"verified":"pending";
   root.dataset.qtV90Quote=verified?"verified":"pending";
   ui.art.querySelector("svg")?.remove();
