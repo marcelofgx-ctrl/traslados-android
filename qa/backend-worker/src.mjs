@@ -121,10 +121,10 @@ async function handle(request,env) {
     const count=await env.DB.prepare("SELECT count(*) AS n FROM qa_requests WHERE passenger_ref=? AND created_at >= ?")
       .bind(who.ref,new Date(Date.now()-60*60_000).toISOString()).first();
     if((count?.n||0)>=12)throw fatal(429,'qa_rate_limit');
-    const inserted=await env.DB.prepare(\`INSERT INTO qa_requests
+    const inserted=await env.DB.prepare(`INSERT INTO qa_requests
       (id,passenger_ref,idempotency_key,payload_hash,origin_label,destination_label,
        origin_lat,origin_lng,destination_lat,destination_lng,fare_uyu,last_actor_role,created_at,updated_at,expires_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(passenger_ref,idempotency_key) DO NOTHING RETURNING *\`)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(passenger_ref,idempotency_key) DO NOTHING RETURNING *`)
       .bind(id,who.ref,body.idempotencyKey,fingerprint,body.origin.label,body.destination.label,
         body.origin.lat,body.origin.lng,body.destination.lat,body.destination.lng,body.fareUYU,
         'passenger',current,current,expires).first();
@@ -136,9 +136,9 @@ async function handle(request,env) {
   }
   if(parts.length===3&&parts[1]==='driver'&&parts[2]==='requests'&&request.method==='GET'){
     if(who.role!=='driver')throw fatal(403,'driver_only');
-    const rows=await env.DB.prepare(\`SELECT * FROM qa_requests
+    const rows=await env.DB.prepare(`SELECT * FROM qa_requests
       WHERE (state='PENDIENTE' AND expires_at>?) OR driver_ref=?
-      ORDER BY created_at DESC LIMIT 25\`).bind(nowISO(),who.ref).all();
+      ORDER BY created_at DESC LIMIT 25`).bind(nowISO(),who.ref).all();
     return {status:200,body:{requests:(rows.results||[]).map(render),qaOnly:true}};
   }
   if(parts.length>=3&&parts[1]==='requests'&&uuid(parts[2])){
@@ -159,9 +159,9 @@ async function handle(request,env) {
       if(row.expires_at<=nowISO() && row.state==='PENDIENTE')throw fatal(409,'request_expired');
       if(row.version!==payload.expectedVersion)throw fatal(409,'version_conflict');
       const assigned=(who.role==='driver'&&row.state==='PENDIENTE')?who.ref:row.driver_ref;
-      const updated=await env.DB.prepare(\`UPDATE qa_requests SET state=?,version=version+1,driver_ref=?,last_actor_role=?,updated_at=?
+      const updated=await env.DB.prepare(`UPDATE qa_requests SET state=?,version=version+1,driver_ref=?,last_actor_role=?,updated_at=?
         WHERE id=? AND state=? AND version=? AND (state<>'PENDIENTE' OR expires_at>?)
-          AND (driver_ref IS NULL OR driver_ref=?) RETURNING *\`)
+          AND (driver_ref IS NULL OR driver_ref=?) RETURNING *`)
         .bind(payload.to,assigned,who.role,nowISO(),id,row.state,payload.expectedVersion,nowISO(),who.ref).first();
       if(!updated)throw fatal(409,'concurrent_update');
       return {status:200,body:{request:render(updated),qaOnly:true}};
