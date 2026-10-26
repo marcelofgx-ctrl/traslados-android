@@ -15,6 +15,7 @@ on:
       - 'docs/quicktrip-visual-core-v1.catalog.json'
       - 'web-pasajero/quicktrip-qa-route-v90.js'
       - 'web-pasajero/quicktrip-qa-route-v90.css'
+      - 'web-pasajero/quicktrip-qa-stage-b-v90.css'
   workflow_dispatch:
 permissions:
   contents: read

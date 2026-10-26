@@ -154,10 +154,38 @@ async function verifyBrowser(){
         check('Bottom-nav hit testing '+width+' '+selector,
           hit.visible&&hit.clickable&&!hit.covered,hit);
       }
-      const shot='trip-'+width+'-light.png';
-      await page.screenshot({path:path.join(out,shot),
-        fullPage:false,animations:'disabled'});
-      report.screenshots.push(shot);
+      const geometries=[];
+      for(const mode of ['light','dark']){
+        const light=mode==='light';
+        const value=await page.evaluate(want=>{
+          const toggle=document.querySelector('[data-qt-component="theme-toggle"]');
+          if(document.body.classList.contains('qt-v86-light')!==want)toggle?.click();
+          const app=document.querySelector('.qtc-app');
+          const content=app?.querySelector('.qtc-content');
+          const header=app?.querySelector('.qtc-header');
+          const origin=document.querySelector('#origin-picker');
+          const destination=document.querySelector('#destination-picker');
+          const metric=document.querySelector('.qt-v90-quote-results .qt-v90-metric strong');
+          return {theme:document.body.classList.contains('qt-v86-light'),
+            surface:content?getComputedStyle(content).backgroundColor:null,
+            headerHeight:header?.getBoundingClientRect().height,
+            originHeight:origin?.getBoundingClientRect().height,
+            destinationHeight:destination?.getBoundingClientRect().height,
+            metricFont:metric?parseFloat(getComputedStyle(metric).fontSize):null,
+            horizontalOverflow:document.documentElement.scrollWidth-innerWidth};
+        },light);
+        check('Trip theme '+mode+' '+width,value.theme===light,value);
+        check('Compact Tu Viaje geometry '+mode+' '+width,
+          value.headerHeight<=70&&value.originHeight>=58&&
+          value.destinationHeight>=58&&value.horizontalOverflow<=2,value);
+        geometries.push(value);
+        const shot='trip-'+width+'-'+mode+'.png';
+        await page.screenshot({path:path.join(out,shot),
+          fullPage:false,animations:'disabled'});
+        report.screenshots.push(shot);
+      }
+      check('Trip light and dark actually differ '+width,
+        geometries[0].surface!==geometries[1].surface,geometries);
       check('No JS exceptions '+width,errors.length===0,errors);
       await ctx.close();
     }
