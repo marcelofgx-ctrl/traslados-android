@@ -32,7 +32,7 @@ for (const name of ['icons','data']) recurse(path.join(root,name),name);
 const required=['index.html','offline.html','manifest.webmanifest','sw.js','quicktrip-canonical-v86.css','quicktrip-approved-v85-qa.js','app.js','icons/icon-192.png','icons/icon-512.png'];
 for (const rel of required) if (!fs.existsSync(path.join(out,rel))) throw Error('Missing required file: '+rel);
 const html=fs.readFileSync(path.join(out,'index.html'),'utf8');
-if (!html.includes('quicktrip-qa-isolation') || !html.includes("connect-src https://direcciones.ide.uy") || !html.includes('quicktrip-canonical-v86.css?v=86')) throw Error('Missing v88 QA geo whitelist / protections');
+if (!html.includes('quicktrip-qa-isolation') || !html.includes("connect-src https://direcciones.ide.uy https://router.project-osrm.org") || !html.includes('quicktrip-canonical-v86.css?v=86')) throw Error('Missing v90 QA-only IDE/OSRM CSP protections');
 const files=[];
 function collect(dir,rel='') {
   for(const e of fs.readdirSync(dir,{withFileTypes:true})) {
