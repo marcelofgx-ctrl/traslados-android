@@ -31,14 +31,20 @@ let server,browser;
   page.on("pageerror",e=>report.findings.push("PAGE_ERROR:"+e.message));
   await page.goto(base+"offline.html",{waitUntil:"load"});
   const seeded=await page.evaluate(async()=>{
-   const names=["traslados-pwa-foreign-scope-QA","traslados-pwa-old-owned-QA","unrelated-app-QA"];
+   const names=[
+    "traslados-pwa-v82-production-synthetic",
+    "traslados-cliente-pwa-v77-independent-app",
+    "traslados-pwa-qa-another-feature",
+    "traslados-pwa-qa-route-v89-obsolete",
+    "unrelated-app-QA"
+   ];
    for(const name of names){
     const cache=await caches.open(name);
     await cache.put("./qa-seed.txt",new Response("QA_SEED:"+name));
    }
    return names;
   });
-  check("PWA local seeded caches for unrelated scope and prior version",seeded.length===3,seeded);
+  check("PWA local seeded caches for unrelated scope and prior version",seeded.length===5,seeded);
   await page.evaluate(async()=>{
    await navigator.serviceWorker.register("./sw.js",{scope:"./"});
    await navigator.serviceWorker.ready;
@@ -47,10 +53,16 @@ let server,browser;
    navigator.serviceWorker.controller.state==="activated",null,{timeout:20000});
   const keys=await page.evaluate(()=>caches.keys());
   check("PWA v90 installed and precache registered",keys.includes("traslados-pwa-qa-route-v90-20261025"),keys);
-  const unrelatedSurvived=keys.includes("traslados-pwa-foreign-scope-QA");
-  check("PWA cross-scope cache isolation (foreign prefix must survive)",unrelatedSurvived,keys);
-  check("PWA retires obsolete owned prefixed cache",!keys.includes("traslados-pwa-old-owned-QA"),keys);
-  check("PWA preserves cache outside its namespace",keys.includes("unrelated-app-QA"),keys);
+  const foreign=[
+   "traslados-pwa-v82-production-synthetic",
+   "traslados-cliente-pwa-v77-independent-app",
+   "traslados-pwa-qa-another-feature",
+   "unrelated-app-QA"
+  ];
+  check("PWA preserves every foreign/simulated-production cache even at same origin",
+   foreign.every(name=>keys.includes(name)),{keys,foreign});
+  check("PWA retires only obsolete QA route cache",
+   !keys.includes("traslados-pwa-qa-route-v89-obsolete"),keys);
   await page.screenshot({path:path.join(out,"01-service-worker-registered.png"),fullPage:false});
   report.screenshots.push("01-service-worker-registered.png");
   // Synthetic next-version files exist ONLY in the OS temporary QA folder.
@@ -80,6 +92,11 @@ let server,browser;
   check("PWA v90 to synthetic v91 activation and old version eviction",fresh.keys.includes("traslados-pwa-qa-route-v91-synthetic")&&
    !fresh.keys.includes("traslados-pwa-qa-route-v90-20261025"),fresh);
   check("PWA v91 delivers fresh stylesheet without stale v90",fresh.ok&&fresh.updated,fresh);
+  check("PWA v91 upgrade preserves all four unrelated cache families",
+   foreign.every(name=>fresh.keys.includes(name)),{keys:fresh.keys,foreign});
+  check("PWA v91 upgrade removes obsolete own QA route versions only",
+   !fresh.keys.includes("traslados-pwa-qa-route-v89-obsolete")&&
+   !fresh.keys.includes("traslados-pwa-qa-route-v90-20261025"),fresh.keys);
   await ctx.setOffline(true);
   const offline=await page.evaluate(async()=>{
    const result={controlled:Boolean(navigator.serviceWorker.controller)};
