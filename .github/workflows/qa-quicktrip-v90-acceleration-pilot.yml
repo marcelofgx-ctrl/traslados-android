@@ -10,6 +10,9 @@ on:
       - 'web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs'
       - 'web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs'
       - 'web-pasajero/tests/quicktrip-v90-route-sandbox.cjs'
+      - 'web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs'
+      - 'docs/QT_VISUAL_CORE_V1_QA.md'
+      - 'docs/quicktrip-visual-core-v1.catalog.json'
       - 'web-pasajero/quicktrip-qa-route-v90.js'
       - 'web-pasajero/quicktrip-qa-route-v90.css'
   workflow_dispatch:
@@ -45,7 +48,15 @@ jobs:
             "web-pasajero/sw.js",
             "web-pasajero/quicktrip-qa-route-v90.js",
             "web-pasajero/quicktrip-qa-route-v90.css",
-            "web-pasajero/tests/quicktrip-v90-route-sandbox.cjs"
+            "web-pasajero/tests/quicktrip-v90-route-sandbox.cjs",
+            "docs/QA_CANAL_SOLICITUDES_MAPA_QT_20261026.md",
+            "docs/QT_VISUAL_CORE_V1_QA.md",
+            "docs/quicktrip-visual-core-v1.catalog.json",
+            "web-pasajero/index.html",
+            "web-pasajero/quicktrip-qa-samsung-v87.js",
+            "web-pasajero/quicktrip-qa-stage-b-v90.css",
+            "web-pasajero/quicktrip-qa-stage-b-v90.js",
+            "web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs"
           }
           actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
           assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
@@ -67,6 +78,8 @@ jobs:
           node --check web-pasajero/tests/quicktrip-v90-pwa-cache-qa.cjs
           node --check web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
           node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
+          node --check web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs
+          node web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs
           node web-pasajero/qa-stage-build.cjs
           python3 - <<'PY'
           import json
@@ -89,6 +102,10 @@ jobs:
           echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
           npm install --prefix /tmp/qt-v90-acceleration --no-save --no-audit --no-fund playwright-core@1.56.1
           echo "NODE_PATH=/tmp/qt-v90-acceleration/node_modules" >> "$GITHUB_ENV"
+      - name: QT Visual Core v1 existing Chromium mobile visual checks
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/visual-core
+        run: node web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs --browser
       - name: Existing v90 real-browser mocked regression baseline
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/baseline
