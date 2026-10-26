@@ -88,7 +88,7 @@
   }
   const disclaimer=node("small","qt-v90-disclaimer","Solo QA · OSRM demo (OpenStreetMap). Precio ilustrativo: 40 UYU/km. NO es cotización oficial.");
   const roadDetails=node("details","qt-v90-map-details");roadDetails.hidden=true;
-  const roadSummary=node("summary","","Ver trazado vial de prueba");
+  const roadSummary=node("summary","","Ver mapa del recorrido");
   roadDetails.append(roadSummary);
   quote.append(heading,text,results,disclaimer,roadDetails);
   const title=summary.querySelector(".qtc-summary-title");
@@ -96,28 +96,59 @@
   // The old read-only QA warning is true for official results, but not for
   // the separately labelled demo, so we hide it ONLY inside v90 when quote is valid.
   const art=node("div","qt-v90-map");art.setAttribute("aria-label","Recorrido vial calculado en QA");
-  const mapTitle=node("strong","","Recorrido por carretera · OSRM demo");
-  const mapHelp=node("small","","Trazo según servicio vial público. Sin mapa de fondo; no apto para navegación.");
-  art.append(mapTitle,mapHelp);art.hidden=true;roadDetails.append(art);
+  const mapTitle=node("strong","","Recorrido vial · vista de prueba");
+  const mapHelp=node("small","","Mapa del trayecto seleccionado, no muestra un conductor real.");
+  const mapStage=node("div","qt-v90-map-stage");
+  art.append(mapTitle,mapStage,mapHelp);art.hidden=true;roadDetails.append(art);
+  // Presentation of the established pickup-presence contract, with QA-only
+  // fictitious values. Never fetch public availability or infer real vehicle GPS.
   const simulated=node("section","qt-v90-driver-demo");
-  simulated.setAttribute("aria-label","Conductor de prueba ficticio");
-  const driverTitle=node("strong","","CONDUCTOR FICTICIO · SIMULACIÓN QA");
-  const driverInfo=node("p","qt-v90-driver-info","Ejemplo: disponible, a 2,4 km y a 7 min. Todos los valores son ficticios.");
+  simulated.setAttribute("aria-label","Disponibilidad y recogida: simulación QA");
+  const statusRow=node("div","qt-v90-driver-status");
+  const statusText=node("strong","qt-v90-driver-status-label","Conductor disponible");
+  const qaTag=node("span","qt-v90-driver-tag","SIMULACIÓN QA");
+  statusRow.append(statusText,qaTag);
+  const pickupMetrics=node("div","qt-v90-pickup-metrics");
+  for(const [label,value,klass] of [
+   ["DISTANCIA A TU RECOGIDA","2,4 km","qt-v90-pickup-distance"],
+   ["LLEGADA ESTIMADA","7 min","qt-v90-pickup-eta"]
+  ]){
+   const metric=node("div","qt-v90-pickup-metric");
+   metric.append(node("small","",label),node("strong",klass,value));
+   pickupMetrics.append(metric);
+  }
+  const driverInfo=node("p","qt-v90-driver-info","Valores ficticios para revisar la pantalla. No es disponibilidad real.");
   const scenario=node("button","qt-v90-scenario","Simular conductor no disponible");
   scenario.type="button";
   let isAvailable=true;
   scenario.addEventListener("click",()=>{
     isAvailable=!isAvailable;
     simulated.dataset.scenario=isAvailable?"available":"unavailable";
+    statusText.textContent=isAvailable?"Conductor disponible":"Sin conductor disponible";
+    pickupMetrics.hidden=!isAvailable;
     driverInfo.textContent=isAvailable
-      ?"Ejemplo: disponible, a 2,4 km y a 7 min. Todos los valores son ficticios."
-      :"Ejemplo: no hay conductor disponible. Dato ficticio de prueba.";
+      ?"Valores ficticios para revisar la pantalla. No es disponibilidad real."
+      :"Dato ficticio de prueba. No hay estimación de recogida.";
     scenario.textContent=isAvailable?"Simular conductor no disponible":"Simular conductor disponible";
   });
-  simulated.dataset.scenario="available";simulated.append(driverTitle,driverInfo,scenario);driver.append(simulated);
+  simulated.dataset.scenario="available";
+  simulated.append(statusRow,pickupMetrics,driverInfo,scenario);driver.append(simulated);
   // Hide the old QA placeholder in this sandbox, but never touch real ETA.
   driver.dataset.qtV90Driver="fixture";
-  ui={text,results,slots,map,art,roadDetails,disclaimer};
+  ui={text,results,slots,map,art,mapStage,roadDetails,disclaimer,routeGeometry:null};
+  function expandMap(){
+    if(!roadDetails.open||!ui?.routeGeometry)return;
+    const latlng=ui.routeGeometry.map(([lng,lat])=>[lat,lng]);
+    // The same map renderer used by the existing passenger app, only in
+    // contract mode (origin to destination); never draws a moving car.
+    const ok=win.TrasladosPremiumMap?.render?.(mapStage,latlng,{height:218,routeMode:"contract"});
+    if(!ok){
+      const sketch=mapSVG(ui.routeGeometry);
+      mapStage.replaceChildren();
+      if(sketch)mapStage.append(sketch);
+    }
+  }
+  roadDetails.addEventListener("toggle",expandMap);
   const cta=doc.getElementById("urgent-send");if(cta)cta.disabled=true;
   return true;
  }
@@ -129,14 +160,19 @@
   ui.roadDetails.hidden=!verified;
   ui.map.dataset.qtV90Road=verified?"verified":"pending";
   root.dataset.qtV90Quote=verified?"verified":"pending";
-  ui.art.querySelector("svg")?.remove();
+  ui.routeGeometry=verified?.geometry||null;
+  ui.mapStage.replaceChildren();
   if(verified){
    ui.slots.km.textContent=kmString(verified.km)+" km";
    ui.slots.min.textContent=verified.min+" min";
    ui.slots.fare.textContent="$ "+money(verified.fare)+" UYU";
    const svg=mapSVG(verified.geometry);
-   if(svg)ui.art.append(svg);
+   if(svg)ui.mapStage.append(svg);
    else ui.art.hidden=true;
+   if(ui.roadDetails.open&&ui.routeGeometry)win.requestAnimationFrame(()=>{
+     if(ui?.roadDetails.open)win.TrasladosPremiumMap?.render?.(
+       ui.mapStage,ui.routeGeometry.map(([lng,lat])=>[lat,lng]),{height:218,routeMode:"contract"});
+   });
   }
  }
  async function recalc(){
