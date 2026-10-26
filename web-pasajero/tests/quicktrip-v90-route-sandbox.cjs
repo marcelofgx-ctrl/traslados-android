@@ -20,6 +20,11 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    await ctx.route("**/*",route=>{
     const u=new URL(route.request().url());
     if(u.hostname==="127.0.0.1"&&u.port==="8190")return route.continue();
+    // Mock OSM tiles to test the existing map without making outbound requests.
+    if(u.hostname==="tile.openstreetmap.org")return route.fulfill({
+      status:200,contentType:"image/png",
+      body:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==","base64")
+    });
     if(u.hostname==="router.project-osrm.org"&&u.pathname.startsWith("/route/v1/driving/")){
      osrmCalls++;
      const q=decodeURI(u.pathname);
@@ -76,12 +81,48 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    check(width+" verified GeoJSON sketch and no fake straight line",quote.mapVisible&&quote.mapSvg&&quote.mapFolded,quote);
    check(width+" simulated driver explicitly fictitious",quote.driver.includes("FICTICIO")&&quote.driver.includes("2,4 km")&&quote.driver.includes("7 min"),quote);
    check(width+" button and UI placement no overflow",quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.layout.quoteY<quote.layout.driverY&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
+   // The pickup source is intentionally a synthetic QA fixture: never pretend
+   // these metrics came from the real availability/ETA backend.
+   const pickup=await page.evaluate(()=>{
+     const el=document.querySelector(".qt-v90-driver-demo");
+     const boxes=[...el.querySelectorAll(".qt-v90-pickup-metric")];
+     return {state:el.dataset.scenario,label:el.querySelector(".qt-v90-driver-status-label")?.textContent,
+      badge:el.querySelector(".qt-v90-driver-tag")?.textContent,
+      boxes:boxes.map(x=>({name:x.querySelector("small")?.textContent,value:x.querySelector("strong")?.textContent,
+        font:parseFloat(getComputedStyle(x.querySelector("strong")).fontSize)})),
+      hidden:el.querySelector(".qt-v90-pickup-metrics")?.hidden};
+   });
+   check(width+" pickup presence and metrics visible as large QA-only figures",
+     pickup.state==="available"&&pickup.label==="Conductor disponible"&&
+     pickup.badge.includes("FICTICIO")&&!pickup.hidden&&pickup.boxes.length===2&&
+     pickup.boxes[0].name.includes("RECOGIDA")&&pickup.boxes[0].value==="2,4 km"&&
+     pickup.boxes[1].name.includes("LLEGADA")&&pickup.boxes[1].value==="7 min"&&
+     pickup.boxes.every(x=>x.font>=18),pickup);
+   await page.locator(".qt-v90-map-details > summary").click();
+   const expanded=await page.locator(".qt-v90-map-details").evaluate(e=>({
+     open:e.open,map:!!e.querySelector(".premium-real-map"),
+     car:!!e.querySelector(".premium-real-map[aria-label*='automóvil']"),
+     hidden:e.hidden,overflow:document.documentElement.scrollWidth-innerWidth
+   }));
+   check(width+" opens verified-road geographic map inside same card without fake car",
+     expanded.open&&expanded.map&&!expanded.car&&!expanded.hidden&&expanded.overflow<=2,expanded);
+   const expandedShot="02a-expanded-road-map-"+width+".png";
+   await page.screenshot({path:path.join(evidence,expandedShot),fullPage:false,animations:"disabled"});
+   report.screenshots.push(expandedShot);
+   await page.locator(".qt-v90-map-details > summary").click();
    check(width+" single OSRM route request",osrmCalls===1,{osrmCalls});
    const positive="02-route-verified-fictitious-driver-"+width+".png";
    await page.screenshot({path:path.join(evidence,positive),fullPage:true,animations:"disabled"});report.screenshots.push(positive);
    await page.locator(".qt-v90-scenario").click();
    const switchState=await page.locator(".qt-v90-driver-demo").evaluate(e=>({status:e.dataset.scenario,text:e.textContent}));
    check(width+" no-driver fake scenario",switchState.status==="unavailable"&&switchState.text.includes("Dato ficticio"),switchState);
+   const noDriver=await page.locator(".qt-v90-driver-demo").evaluate(e=>({
+      status:e.querySelector(".qt-v90-driver-status-label")?.textContent,
+      metricsHidden:e.querySelector(".qt-v90-pickup-metrics")?.hidden
+   }));
+   check(width+" unavailable pickup hides previous distance and ETA",
+     noDriver.status==="Sin conductor disponible"&&noDriver.metricsHidden,noDriver);
+   await page.locator(".qt-v90-scenario").click();
    // Change selected destination; invalid response must erase stale metrics.
    invalid=true;
    await page.evaluate(()=>destPicker.persist({text:"Destino alternativo simulado QA",lat:-34.92,lng:-56.145,department:"Montevideo"}));
