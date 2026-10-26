@@ -58,10 +58,25 @@ jobs:
             "web-pasajero/quicktrip-qa-samsung-v87.js",
             "web-pasajero/quicktrip-qa-stage-b-v90.css",
             "web-pasajero/quicktrip-qa-stage-b-v90.js",
-            "web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs"
+            "web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs",
+            "docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql",
+            "qa/backend-worker/README.md",
+            "qa/backend-worker/package.json",
+            "qa/backend-worker/schema.sql",
+            "qa/backend-worker/src.mjs",
+            "qa/backend-worker/test/worker.test.mjs",
+            "qa/backend-worker/wrangler.example.jsonc"
           }
           actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
           assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
+          # Parallel backend QA work is present on this existing branch.
+          # It is NOT part of Visual Core: pin every historical backend blob.
+          baseline="cafdc75962b0ae939e1207f71bf15b63221b8c0c"
+          protected_backend=["docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql","qa/backend-worker/README.md","qa/backend-worker/package.json","qa/backend-worker/schema.sql","qa/backend-worker/src.mjs","qa/backend-worker/test/worker.test.mjs","qa/backend-worker/wrangler.example.jsonc"]
+          for path in protected_backend:
+            expected=subprocess.check_output(["git","rev-parse",f"{baseline}:{path}"],text=True).strip()
+            current=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+            assert current==expected,("BACKEND_SCOPE_VIOLATION",path,expected,current)
           status=subprocess.check_output(["git","status","--porcelain"],text=True).strip()
           assert not status,("Dirty source checkout",status)
           html=open("web-pasajero/index.html",encoding="utf8").read()
