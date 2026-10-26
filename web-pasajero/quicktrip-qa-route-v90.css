@@ -42,7 +42,7 @@ body.qt-v90-qa .qtc-app .qt-v90-map-stage > svg{width:100%;height:120px;display:
 /* Compact priority: selected places → price/km → fictional driver → details.
    Keep all original nodes and app handlers; reorder only the CSS grid. */
 body.qt-v90-qa.qt-clean.qt-clean-active .qtc-app .qtc-content{
- grid-template-areas:"places places" "quote quote" "driver driver"
+ grid-template-areas:"places places" "driver driver" "quote quote"
                      "schedule contact" "success success"!important;
  gap:6px 7px!important
 }
@@ -64,82 +64,66 @@ body.qt-v90-qa .qtc-app .qt-v90-driver-demo{padding:7px 10px;margin:5px 0}
 body.qt-v90-qa .qtc-app .qt-v90-driver-info{font-size:10px;margin:3px 0}
 body.qt-v90-qa .qtc-app .qt-v90-scenario{margin:2px 0 0!important}
 
-/* Pickup presentation contract v90: verified production values are not mocked as live.
-   This card is the QA fixture only, with its simulated data clearly labelled. */
-body.qt-v90-qa .qtc-app .qtc-driver .qtc-section-name>small{display:none!important}
-body.qt-v90-qa .qtc-app .qt-v90-driver-demo{
-  border-color:#4e9484!important;background:#12383c!important;
-  padding:14px!important;
+/* Public pickup status and ETA: the only source is the existing app.js /
+   eta-engine.js. No fictional values, driver coordinates, or live GPS overlay. */
+body.qt-v90-qa .qtc-driver[data-qt-v90-driver="public"] .qt-v87-driver-note,
+body.qt-v90-qa .qtc-driver[data-qt-v90-driver="public"] .qtc-driver-unavailable{
+  display:none!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-status{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:8px;flex-wrap:wrap;margin-bottom:10px
+body.qt-v90-qa .qtc-driver .pickup-presence{
+  margin:4px 0 2px!important;padding:13px 14px!important;
+  border-radius:16px!important;border-color:#5c9c89!important;
+  background:linear-gradient(145deg,#153f41,#092d32)!important;
+  min-width:0
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-status-label{
-  color:#d9f4df;font-size:18px;line-height:1.2;font-weight:800
+body.qt-v90-qa .qtc-driver .pickup-presence[hidden]{display:none!important}
+body.qt-v90-qa .qtc-driver .pickup-card-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:8px
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-status-label::before{
-  content:"";display:inline-block;width:9px;height:9px;background:#62d7a4;
-  border-radius:50%;margin-right:9px;vertical-align:2px
+body.qt-v90-qa .qtc-driver #pickup-presence-title{
+  font-size:clamp(17px,4.4vw,22px)!important;font-weight:850!important;
+  line-height:1.18!important;color:#def0db!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-tag{
-  border:1px solid #9f8865;border-radius:30px;padding:4px 8px;
-  color:#f2dbac;font-size:10px;font-weight:800;letter-spacing:.04em
+body.qt-v90-qa .qtc-driver #pickup-presence-subtitle{
+  font-size:12px!important;line-height:1.4!important;margin-top:4px!important;
+  color:#d0ddd6!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-pickup-metrics{
+body.qt-v90-qa .qtc-driver #pickup-presence-metrics{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:9px;margin:4px 0 9px
+  gap:9px;margin:10px 0 8px
 }
-body.qt-v90-qa .qtc-app .qt-v90-pickup-metrics[hidden]{display:none!important}
-body.qt-v90-qa .qtc-app .qt-v90-pickup-metric{
-  min-width:0;padding:12px 9px;text-align:left;
-  background:#092b30;border-radius:13px;
+body.qt-v90-qa .qtc-driver #pickup-presence-metrics[hidden]{display:none!important}
+body.qt-v90-qa .qtc-driver .pickup-presence-metric{
+  padding:11px 10px!important;min-width:0!important;min-height:75px;
+  border:0!important;border-radius:12px!important;background:#082b30!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-pickup-metric small{
-  color:#bfdbd1;font-size:10px;font-weight:700;letter-spacing:.03em;
-  line-height:1.3;display:block
+body.qt-v90-qa .qtc-driver .pickup-metric-label{
+  font-size:10px!important;font-weight:750!important;letter-spacing:.025em;
+  line-height:1.35!important;color:#cbded3!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-pickup-metric strong{
-  display:block;margin-top:7px;color:#f8db99;font-size:clamp(19px,5vw,26px);
-  font-weight:850;line-height:1.13;font-variant-numeric:tabular-nums;
-  overflow-wrap:normal
+body.qt-v90-qa .qtc-driver #pickup-distance,
+body.qt-v90-qa .qtc-driver #pickup-minutes{
+  display:block;font-size:clamp(21px,5.7vw,29px)!important;line-height:1.1!important;
+  margin-top:7px!important;font-weight:850!important;color:#f8dca2!important;
+  font-variant-numeric:tabular-nums;white-space:nowrap
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-info{
-  font-size:11px!important;color:#c3d6d2;line-height:1.45;margin:7px 0!important
+/* Last check time and internal poll cadence do not belong in the main card. */
+body.qt-v90-qa .qtc-driver #pickup-presence-meta{display:none!important}
+body.qt-v90-qa .qtc-driver #pickup-estimate-note{
+  margin:7px 0 3px!important;color:#cadbd2!important;
+  line-height:1.4!important;font-size:11px!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-demo[data-scenario="unavailable"]{
-  border-color:#ad8066!important
+body.qt-v90-qa .qtc-driver #pickup-eta-retry{
+  min-height:39px;margin-top:8px
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-demo[data-scenario="unavailable"] .qt-v90-driver-status-label{
-  color:#f6d3b8
+body.qt-v90-qa .qtc-app .qt-v90-quote{
+  padding:9px 11px!important;margin:3px 0!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-driver-demo[data-scenario="unavailable"] .qt-v90-driver-status-label::before{
-  background:#d0a078
+body.qt-v90-qa .qtc-app .qt-v90-quote-head{font-size:13px!important}
+body.qt-v90-qa .qtc-app .qt-v90-disclaimer{
+  margin:6px 0!important;font-size:10px!important;line-height:1.3!important
 }
-body.qt-v90-qa .qtc-app .qt-v90-quote-message{
-  font-size:11px!important;line-height:1.4
-}
-body.qt-v90-qa .qtc-app[data-qt-v90-quote="verified"] .qt-v90-quote-message{
-  display:none
-}
-body.qt-v90-qa .qtc-app .qt-v90-metric small{
-  font-size:10px;line-height:1.25
-}
-body.qt-v90-qa .qtc-app .qt-v90-metric strong{
-  font-size:clamp(14px,3.6vw,19px);font-weight:850
-}
-body.qt-v90-qa .qtc-app .qt-v90-map-details>summary{
-  font-size:13px!important;font-weight:750;min-height:40px;
-  display:flex;align-items:center
-}
-body.qt-v90-qa .qtc-app .qt-v90-map-details>summary:focus-visible,
-body.qt-v90-qa .qtc-app .qt-v90-scenario:focus-visible{
-  outline:3px solid #f7d590;outline-offset:3px
-}
-body.qt-v90-qa .qtc-app .qt-v90-map-stage{width:100%;overflow:hidden;border-radius:11px}
-body.qt-v90-qa .qtc-app .qt-v90-map-stage .premium-real-map{width:100%;position:relative}
-body.qt-v90-qa .qtc-app .qt-v90-map small{font-size:10px}
 @media(max-width:365px){
-  body.qt-v90-qa .qtc-app .qt-v90-pickup-metric{padding:10px 8px}
-  body.qt-v90-qa .qtc-app .qt-v90-driver-status-label{font-size:16px}
+ body.qt-v90-qa .qtc-driver .pickup-presence-metric{padding:9px 7px!important}
+ body.qt-v90-qa .qtc-driver .pickup-metric-label{font-size:9px!important}
 }
