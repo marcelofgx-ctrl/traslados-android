@@ -1,0 +1,13 @@
+// TEMPLATE ONLY. Deliberately NOT named wrangler.jsonc: no remote deployment authorized.
+// When independently approved, replace placeholder with a NEW, isolated QA D1 database.
+{
+  "name": "quicktrip-qa-channel",
+  "main": "src.mjs",
+  "compatibility_date": "2026-10-26",
+  "workers_dev": false,
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "quicktrip-qa-only",
+    "database_id": "REPLACE_WITH_NEW_QA_D1_DATABASE_ID"
+  }]
+}
