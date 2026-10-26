@@ -64,18 +64,18 @@ const check=(name,pass,detail)=>{report.checks.push({name,pass:!!pass,detail});a
    await page.locator('.qtc-app[data-qt-v90-quote="verified"]').waitFor({state:"attached",timeout:14000});
    const quote=await page.evaluate(()=>{
     const x=q=>document.querySelector(q),txt=q=>x(q)?.textContent.trim();
-    const card=x(".qt-v90-quote").getBoundingClientRect(),btn=x("#urgent-send").getBoundingClientRect();
+    const card=x(".qt-v90-quote").getBoundingClientRect(),btn=x("#urgent-send").getBoundingClientRect(),driver=x(".qtc-driver").getBoundingClientRect();
     return {km:txt(".qt-v90-km"),min:txt(".qt-v90-min"),fare:txt(".qt-v90-fare"),
      message:txt(".qt-v90-quote-message"),disclaimer:txt(".qt-v90-disclaimer"),
-     mapVisible:!x(".qt-v90-map").hidden,mapSvg:!!x(".qt-v90-map svg"),
+     mapVisible:!x(".qt-v90-map").hidden,mapFolded:!x(".qt-v90-map-details").open,mapSvg:!!x(".qt-v90-map svg"),nativeQuoteHidden:getComputedStyle(x("#urgent-route-recap")).display==="none",
      driver:txt(".qt-v90-driver-demo"),scenario:x(".qt-v90-driver-demo").dataset.scenario,
-     CTA:x("#urgent-send").disabled,layout:{quoteY:card.y,ctaY:btn.y},overflow:document.documentElement.scrollWidth-innerWidth};
+     CTA:x("#urgent-send").disabled,layout:{quoteY:card.y,ctaY:btn.y,driverY:driver.y},overflow:document.documentElement.scrollWidth-innerWidth};
    });
    check(width+" road distance verified by mock OSRM API",quote.km==="8,6 km"&&quote.min==="15 min",{quote,osrmCalls});
    check(width+" indicative price 40UYU/km is arithmetic and prominently labelled",quote.fare.includes("344")&&quote.disclaimer.includes("40 UYU/km")&&quote.disclaimer.includes("NO es cotización oficial"),quote);
-   check(width+" verified GeoJSON sketch and no fake straight line",quote.mapVisible&&quote.mapSvg,quote);
+   check(width+" verified GeoJSON sketch and no fake straight line",quote.mapVisible&&quote.mapSvg&&quote.mapFolded,quote);
    check(width+" simulated driver explicitly fictitious",quote.driver.includes("FICTICIO")&&quote.driver.includes("2,4 km")&&quote.driver.includes("7 min"),quote);
-   check(width+" button and UI placement no overflow",quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.overflow<=2,quote);
+   check(width+" button and UI placement no overflow",quote.CTA&&quote.layout.quoteY<quote.layout.ctaY&&quote.layout.quoteY<quote.layout.driverY&&quote.nativeQuoteHidden&&quote.overflow<=2,quote);
    check(width+" single OSRM route request",osrmCalls===1,{osrmCalls});
    const positive="02-route-verified-fictitious-driver-"+width+".png";
    await page.screenshot({path:path.join(evidence,positive),fullPage:true,animations:"disabled"});report.screenshots.push(positive);
