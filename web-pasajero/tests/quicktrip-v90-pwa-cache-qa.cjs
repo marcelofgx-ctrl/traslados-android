@@ -102,6 +102,9 @@ let server,browser;
   check("PWA old SW cannot recreate v90 cache after controller change",
    settledKeys.includes("traslados-pwa-qa-route-v91-synthetic")&&
    !settledKeys.includes("traslados-pwa-qa-route-v90-20261025"),settledKeys);
+  const ownCacheKeys=settledKeys.filter(name=>name.startsWith("traslados-pwa-qa-route-"));
+  check("PWA no duplicate route cache remains after update",
+   ownCacheKeys.length===1&&ownCacheKeys[0]==="traslados-pwa-qa-route-v91-synthetic",ownCacheKeys);
   await ctx.setOffline(true);
   const offline=await page.evaluate(async()=>{
    const result={controlled:Boolean(navigator.serviceWorker.controller)};
