@@ -94,6 +94,8 @@ let server,browser;
   fs.rmSync(tmp,{recursive:true,force:true});
   fs.writeFileSync(path.join(out,"PWA_CACHE_V90_RESULT.json"),JSON.stringify(report,null,2)+"\n");
   console.log("PWA CACHE "+report.state+" "+report.cases.filter(c=>c.pass).length+"/"+report.cases.length+"; findings="+report.findings.length);
+  console.log("PWA CACHE CASES "+JSON.stringify(report.cases));
+  console.log("PWA CACHE FINDINGS "+JSON.stringify(report.findings));
   if(report.state!=="PASS")process.exitCode=1;
  }
 })();

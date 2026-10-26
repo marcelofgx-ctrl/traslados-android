@@ -89,6 +89,10 @@ let server,browser;
      await page.locator("#origin-picker .gps-permission-help:not([hidden])").waitFor({state:"visible",timeout:11000});
      await page.waitForFunction(()=>document.querySelector("#origin-picker .gps-permission-help")?.closest("details")?.open===true,
       null,{timeout:10000});
+     await page.waitForFunction(m=>{
+      const s=document.querySelector("#origin-picker .qt-v89-gps-status")?.textContent||"";
+      return m==="denied"?s.includes("candado"):s.includes("una sola vez");
+     },mode,{timeout:8000});
      const state=await page.evaluate(()=>{
       const h=document.querySelector("#origin-picker .gps-permission-help");
       return {title:h.querySelector(".gps-permission-title")?.textContent||"",
