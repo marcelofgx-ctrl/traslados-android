@@ -1,0 +1,44 @@
+name: QA browser network preflight for Uruguay geocoding
+on:
+  push:
+    branches: [qa/quicktrip-testing-routes-fix-20261027]
+    paths: ['.github/workflows/qa-browser-network-preflight.yml']
+permissions:
+  contents: read
+jobs:
+  readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read-only test of IDE geocoding HTTP and browser CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          paths=[
+          'https://direcciones.ide.uy/api/v1/geocode/candidates?limit=5&q=18%20de%20Julio',
+          'https://direcciones.ide.uy/api/v1/geocode/direcUnica?limit=5&q=18%20de%20Julio%201234',
+          'https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.01638%2C-34.83696%3B-56.18%2C-34.9']
+          origins=['https://quicktrip-live-qa-only-20261027-1jxnar9t8-marcelofgx-1927.vercel.app','https://marcelofgx-ctrl.github.io']
+          for url in paths:
+            for origin in origins:
+              try:
+                req=urllib.request.Request(url,headers={'Origin':origin,'Accept':'application/json'})
+                with urllib.request.urlopen(req,timeout=17) as r:
+                  head=r.headers
+                  raw=r.read(100000)
+                  try:
+                    payload=json.loads(raw)
+                    shape='array' if isinstance(payload,list) else 'json-object'
+                    result_count=len(payload) if isinstance(payload,list) else 'not-array'
+                  except: shape='non-json';result_count='?'
+                  print(json.dumps({'api':url.split('?')[0].split('/')[-1],
+                    'origin':'QA-Vercel' if '.vercel.app' in origin else 'GitHub-Pages',
+                    'status':r.status,'cors':head.get('Access-Control-Allow-Origin','NONE'),
+                    'response':shape,'rows':result_count}))
+              except urllib.error.HTTPError as e:
+                print('HTTP ERROR',url.split('?')[0].split('/')[-1],e.code,
+                  e.headers.get('Access-Control-Allow-Origin','NONE'))
+              except Exception as e: print('NETWORK ERROR',url.split('?')[0].split('/')[-1],type(e).__name__)
+          PY
