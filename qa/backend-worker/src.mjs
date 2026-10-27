@@ -1,3 +1,4 @@
+import {handleTracking} from './tracking.mjs';
 /* Quick Trip v90 QA only. Worker+D1 HTTP adapter. Never calls Supabase. */
 const STATES = new Set(['PENDIENTE','ACEPTADA','RECHAZADA','CANCELADA','EN_CAMINO','EN_PUNTO','EN_VIAJE','FINALIZADA']);
 const DRIVER_STEPS = Object.freeze({
@@ -107,6 +108,8 @@ async function handle(request,env) {
   const who=await auth(request,env);
   const parts=url.pathname.split('/').filter(Boolean);
   if(parts[0]!=='v1')throw fatal(404,'not_found');
+  const tracked=await handleTracking({parts,request,env,who,readJSON,visible});
+  if(tracked)return tracked;
   if(parts.length===2&&parts[1]==='requests'&&request.method==='POST'){
     if(who.role!=='passenger')throw fatal(403,'passenger_only');
     const body=sanitize(await readJSON(request));

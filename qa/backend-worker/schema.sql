@@ -57,3 +57,29 @@ BEGIN
   INSERT INTO qa_request_events(request_id,version,actor_role,from_state,to_state,created_at)
   VALUES (NEW.id, NEW.version, NEW.last_actor_role, OLD.state, NEW.state, NEW.updated_at);
 END;
+
+-- Quick Trip Live QA; isolated D1 only. Never apply to production.
+CREATE TABLE IF NOT EXISTS qa_tracking_consent (
+  request_id TEXT PRIMARY KEY REFERENCES qa_requests(id) ON DELETE CASCADE,
+  driver_ref TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS qa_tracking_position (
+  request_id TEXT PRIMARY KEY REFERENCES qa_requests(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL CHECK(seq>0),
+  lat REAL NOT NULL CHECK(lat BETWEEN -35.5 AND -30),
+  lng REAL NOT NULL CHECK(lng BETWEEN -59.5 AND -52),
+  accuracy_m REAL NOT NULL CHECK(accuracy_m>0 AND accuracy_m<=50),
+  heading_deg REAL CHECK(heading_deg>=0 AND heading_deg<360),
+  measured_at TEXT NOT NULL,
+  received_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+-- Terminal state clears GPS and revokes consent within the transition transaction.
+CREATE TRIGGER IF NOT EXISTS qa_tracking_terminal AFTER UPDATE OF state ON qa_requests
+WHEN NEW.state IN ('RECHAZADA','CANCELADA','FINALIZADA')
+BEGIN
+  DELETE FROM qa_tracking_position WHERE request_id=NEW.id;
+  UPDATE qa_tracking_consent SET enabled=0,updated_at=NEW.updated_at WHERE request_id=NEW.id;
+END;
