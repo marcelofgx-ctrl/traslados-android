@@ -21,6 +21,13 @@ on:
       - 'web-pasajero/tests/quicktrip-driver-contract-qa.cjs'
       - 'docs/quicktrip-qa-approved-origin.json'
       - 'docs/QUICKTRIP_QA_CONSOLIDATION_GATES_20261026.md'
+      - 'qa/backend-worker/schema.sql'
+      - 'qa/backend-worker/src.mjs'
+      - 'qa/backend-worker/tracking.mjs'
+      - 'qa/backend-worker/test/quicktrip-live.test.mjs'
+      - 'web-pasajero/quicktrip-live-qa.js'
+      - 'web-pasajero/tests/quicktrip-live-qa.test.cjs'
+      - 'docs/QA_QUICKTRIP_LIVE_LOTE1_20261027.md'
   workflow_dispatch:
     inputs:
       qa_url:
@@ -80,7 +87,12 @@ jobs:
             "qa/backend-worker/schema.sql",
             "qa/backend-worker/src.mjs",
             "qa/backend-worker/test/worker.test.mjs",
-            "qa/backend-worker/wrangler.example.jsonc"
+            "qa/backend-worker/wrangler.example.jsonc",
+            "qa/backend-worker/tracking.mjs",
+            "qa/backend-worker/test/quicktrip-live.test.mjs",
+            "web-pasajero/quicktrip-live-qa.js",
+            "web-pasajero/tests/quicktrip-live-qa.test.cjs",
+            "docs/QA_QUICKTRIP_LIVE_LOTE1_20261027.md"
           }
           actual=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
           assert actual==allowed,("SCOPE VIOLATION",sorted(actual^allowed))
@@ -88,8 +100,13 @@ jobs:
           # It is NOT part of Visual Core: pin every historical backend blob.
           baseline="cafdc75962b0ae939e1207f71bf15b63221b8c0c"
           protected_backend=["docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql","qa/backend-worker/README.md","qa/backend-worker/package.json","qa/backend-worker/schema.sql","qa/backend-worker/src.mjs","qa/backend-worker/test/worker.test.mjs","qa/backend-worker/wrangler.example.jsonc"]
+          approved_live_backend={
+            "qa/backend-worker/schema.sql":"c0a705295e2d92b5d7f3d3c5a10270f2ced5eeb3",
+            "qa/backend-worker/src.mjs":"a78362923ba46b743420d29e6c56456cb5879a78"
+          }
           for path in protected_backend:
-            expected=subprocess.check_output(["git","rev-parse",f"{baseline}:{path}"],text=True).strip()
+            expected=approved_live_backend.get(path) or subprocess.check_output(
+              ["git","rev-parse",f"{baseline}:{path}"],text=True).strip()
             current=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
             assert current==expected,("BACKEND_SCOPE_VIOLATION",path,expected,current)
           status=subprocess.check_output(["git","status","--porcelain"],text=True).strip()
@@ -123,6 +140,12 @@ jobs:
           node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
           node --check web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs
           node --check web-pasajero/tests/quicktrip-driver-contract-qa.cjs
+          # Isolated Quick Trip Live: complete existing+new D1 backend tests and Web adapter.
+          node --check qa/backend-worker/src.mjs
+          node --check qa/backend-worker/tracking.mjs
+          node --check web-pasajero/quicktrip-live-qa.js
+          npm --prefix qa/backend-worker test
+          node --test web-pasajero/tests/quicktrip-live-qa.test.cjs
           node web-pasajero/tests/quicktrip-driver-contract-qa.cjs --static
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
