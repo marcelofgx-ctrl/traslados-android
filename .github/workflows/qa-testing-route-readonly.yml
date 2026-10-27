@@ -1,0 +1,47 @@
+name: Quick Trip Testing route repair - read-only QA
+on:
+  push:
+    branches: [qa/quicktrip-testing-routes-fix-20261027]
+    paths:
+      - web-pasajero/route-engine.js
+      - web-pasajero/vercel.json
+      - web-pasajero/tests/testing-route-proxy-smoke.cjs
+      - .github/workflows/qa-testing-route-readonly.yml
+permissions:
+  contents: read
+jobs:
+  route-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify QA-only route proxy, original production Worker and query propagation
+        run: |
+          node --check web-pasajero/route-engine.js
+          node web-pasajero/tests/testing-route-proxy-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+      - name: Read-only Cloudflare CORS diagnosis, no customer actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points=-56.030000%2C-34.835000%3B-56.180000%2C-34.900000'
+          curl -sS --max-time 25 --output "$RUNNER_TEMP/route-response.json" --dump-header "$RUNNER_TEMP/route-headers.txt" \
+            -H 'Origin: https://quicktrip-live-qa-only-20261027-1jxnar9t8-marcelofgx-1927.vercel.app' "$URL"
+          python3 - <<'PY'
+          import os,json
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          headers=(root/'route-headers.txt').read_text().lower()
+          raw=(root/'route-response.json').read_text()
+          result=json.loads(raw)
+          print('Cloudflare response keys:', sorted(result.keys()))
+          print('Worker accepts QA Vercel CORS:', 'yes' if 'access-control-allow-origin: https://quicktrip-live-qa-only' in headers else 'no')
+          print('Verified road route:', str(result.get('available')) if isinstance(result,dict) else 'unknown')
+          assert isinstance(result,dict), 'Cloudflare response not JSON object'
+          PY
