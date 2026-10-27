@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {handleTracking} from '../tracking.mjs';
+import worker from '../src.mjs';
 
 const schema=readFileSync(new URL('../schema.sql',import.meta.url),'utf8');
 const digest=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))),
   n=>n.toString(16).padStart(2,'0')).join('');
 const id='15cd1e14-bbe2-4d5d-8c7a-c809ef5eb389';
-const format={ origin:'https://quicktrip-qa.example.test', driver:'qa-test-driver', passenger:'qa-test-passenger' };
+const format={ origin:'https://quicktrip-qa.example.test', driver:'qa-test-driver-'+'d'.repeat(48), passenger:'qa-test-passenger-'+'p'.repeat(48) };
 class Statement {
   constructor(db,sql,args=[]){this.db=db;this.sql=sql;this.args=args;}
   bind(...a){return new Statement(this.db,this.sql,a);}
@@ -102,4 +103,53 @@ test('revocation and terminal transition clear location and prevent future write
   assert.equal(h.db.raw.prepare('SELECT enabled FROM qa_tracking_consent').get().enabled,0);
   assert.equal((await h.send('GET','location',{role:'passenger'})).body.available,false);
   assert.equal((await h.send('POST','tracking-consent',{body:consent(true,3)})).status,409);
+});
+
+test('full Worker HTTP: driver consent/GPS and passenger visibility then terminal revocation',async t=>{
+  const h=await harness();t.after(()=>h.db.close());
+  const env={DB:h.db,QA_ALLOWED_ORIGIN:format.origin,QA_PASSENGER_TOKEN:format.passenger,QA_DRIVER_TOKEN:format.driver};
+  const call=async(role,method,path,body=null,origin=format.origin)=>{
+    const token=role==='driver'?format.driver:format.passenger;
+    const headers={'origin':origin,'authorization':'Bearer '+token};
+    if(body!==null)headers['content-type']='application/json';
+    const res=await worker.fetch(new Request('https://quicktrip-qa.example.test'+path,{method,headers,body:body===null?undefined:JSON.stringify(body)}),env);
+    return {status:res.status,body:await res.json(),allow:res.headers.get('access-control-allow-origin')};
+  };
+  const url='/v1/requests/'+id;
+  assert.equal((await call('passenger','GET',url+'/location')).body.available,false);
+  assert.equal((await call('passenger','POST',url+'/tracking-consent',consent(true))).status,403);
+  assert.equal((await call('driver','POST',url+'/tracking-consent',consent(true))).status,200);
+  assert.equal((await call('driver','POST',url+'/location',h.sample(1))).status,200);
+  const view=await call('passenger','GET',url+'/location');
+  assert.equal(view.status,200);assert.equal(view.allow,format.origin);
+  assert.equal(view.body.available,true);assert.equal(view.body.seq,1);
+  assert.equal((await call('passenger','POST',url+'/location',h.sample(2))).status,403);
+  assert.equal((await call('driver','GET',url+'/location')).status,403);
+  assert.equal((await call('passenger','GET',url+'/location',null,'https://evil.test')).status,403);
+  for(const [state,version] of [['EN_CAMINO',2],['EN_PUNTO',3],['EN_VIAJE',4],['FINALIZADA',5]]){
+    const next=await call('driver','POST',url+'/transition',{to:state,expectedVersion:version});
+    assert.equal(next.status,200,JSON.stringify(next.body));
+  }
+  assert.equal((await call('passenger','GET',url+'/location')).body.available,false);
+  assert.equal(h.db.raw.prepare('SELECT COUNT(*) n FROM qa_tracking_position').get().n,0);
+  assert.equal((await call('driver','POST',url+'/location',h.sample(2))).status,409);
+});
+
+test('full Worker HTTP: passenger cancellation revokes location in same SQL transition',async t=>{
+  const h=await harness();t.after(()=>h.db.close());
+  const env={DB:h.db,QA_ALLOWED_ORIGIN:format.origin,QA_PASSENGER_TOKEN:format.passenger,QA_DRIVER_TOKEN:format.driver};
+  const call=async(role,method,path,body=null)=>{
+    const headers={origin:format.origin,authorization:'Bearer '+(role==='driver'?format.driver:format.passenger)};
+    if(body!==null)headers['content-type']='application/json';
+    const res=await worker.fetch(new Request('https://quicktrip-qa.example.test'+path,{method,headers,body:body===null?undefined:JSON.stringify(body)}),env);
+    return {status:res.status,body:await res.json()};
+  };
+  const url='/v1/requests/'+id;
+  await call('driver','POST',url+'/tracking-consent',consent(true));
+  await call('driver','POST',url+'/location',h.sample(1));
+  assert.equal((await call('passenger','GET',url+'/location')).body.available,true);
+  assert.equal((await call('passenger','POST',url+'/transition',{to:'CANCELADA',expectedVersion:2})).status,200);
+  assert.equal((await call('passenger','GET',url+'/location')).body.available,false);
+  assert.equal(h.db.raw.prepare('SELECT COUNT(*) n FROM qa_tracking_position').get().n,0);
+  assert.equal((await call('driver','POST',url+'/tracking-consent',consent(true,3))).status,409);
 });
