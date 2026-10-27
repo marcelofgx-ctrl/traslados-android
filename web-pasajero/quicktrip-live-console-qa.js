@@ -1,6 +1,6 @@
 "use strict";
 /* Passenger QA dashboard; deliberately separate from production PWA app.js.
-   Tokens exist in JS memory only, never localStorage, URL or logs. */
+   Tokens exist only in runtime memory, never persistent browser storage, URLs or logs. */
 (function(root,doc){
  const $=id=>doc.getElementById(id);
  const allowedHost=/^quicktrip-(?:live-)?qa[a-z0-9-]*\.[a-z0-9-]+\.workers\.dev$/i;
