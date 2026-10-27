@@ -10,7 +10,7 @@ No existe garantía absoluta de cero fallos; las versiones con defectos conocido
 2. Verificar en CI todos los contratos aprobados (visual 360/393/412,
    GPS con permisos concedido/denegado, caché PWA, rutas, precios, paradas,
    no reserva real). Incorporar tests de backend simulado del conductor
-   con ETA correcta, no disponible, HTTP 403 y preflight CORS rechazado.
+   con ETA correcta, no disponible, HTTP 403 y bloqueo de transporte (como el que produce CORS). El preflight OPTIONS real se comprueba aparte.
    Nunca inventar kilómetros o posición real cuando fallan las consultas.
 3. ÚNICO dominio de liberación QA del conductor: leer qaOrigin desde
    docs/quicktrip-qa-approved-origin.json. Un dominio Preview aleatorio NO

@@ -1,6 +1,6 @@
 "use strict";
 // Quick Trip QA regression gate: all browser backend responses synthetic.
-// Optional manual live mode sends OPTIONS only, never a real ETA or reservation POST.
+// Simulated denied transport is not an actual CORS preflight; manual mode sends OPTIONS only.
 const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
 const {spawn}=require("node:child_process");
 const root=path.resolve(__dirname,".."),repo=path.resolve(root,"..");
@@ -58,8 +58,8 @@ async function browserChecks(){
   assert(ready,"Local QA page unavailable");
   browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||"/usr/bin/chromium",
     args:["--no-sandbox","--disable-dev-shm-usage","--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"]});
-  for(const scenario of ["eta-ok","unavailable","eta-403","cors-403"]){
-   const counts={availability:0,eta:0,preflightRejected:0,unexpected:[],errors:[]};
+  for(const scenario of ["eta-ok","unavailable","eta-403","cors-blocked"]){
+   const counts={availability:0,eta:0,blockedTransport:0,unexpected:[],errors:[]};
    const ctx=await browser.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,
      serviceWorkers:"block",reducedMotion:"reduce"});
    const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS",
@@ -79,10 +79,6 @@ async function browserChecks(){
     if(u.hostname===contract.backendProject+".supabase.co"&&
       [contract.backendAvailabilityEndpoint,contract.backendReadOnlyEndpoint].includes(u.pathname)){
      if(method==="OPTIONS"){
-      if(scenario==="cors-403"&&u.pathname===contract.backendReadOnlyEndpoint){
-       counts.preflightRejected++;return route.fulfill({status:403,
-        headers:{"Content-Type":"application/json"},body:'{"reason":"forbidden"}'});
-      }
       return route.fulfill({status:204,headers:cors});
      }
      if(method!=="POST"){counts.unexpected.push(method);return route.abort();}
@@ -93,6 +89,9 @@ async function browserChecks(){
        checkedAt:new Date().toISOString(),motionHint:"stationary"})});
      }
      counts.eta++;
+     if(scenario==="cors-blocked"){
+       counts.blockedTransport++;return route.abort("blockedbyclient");
+     }
      return route.fulfill({status:scenario==="eta-403"?403:200,headers:cors,
       body:JSON.stringify(scenario==="eta-403"?{available:false,reason:"forbidden"}:
        {available:true,distanceKm:3.5,etaMin:10,estimateType:"coarse"})});
@@ -140,7 +139,7 @@ async function browserChecks(){
     assert.equal(v.km,"");
     if(scenario==="unavailable"){assert.equal(v.phase,"blocked");assert.equal(counts.eta,0);}
     else{assert.equal(v.phase,"issue");assert.match(v.label,/sin estimar/);}
-    if(scenario==="cors-403")assert(counts.preflightRejected>0,"CORS rejection must be tested");
+    if(scenario==="cors-blocked")assert(counts.blockedTransport>0,"Simulated denied transport must be tested");
    }
    assert(v.sendDisabled,"Never enable actual booking in QA");
    assert.equal(v.origin,"Origen de prueba");
@@ -150,7 +149,7 @@ async function browserChecks(){
    await page.screenshot({path:path.join(out,shot),fullPage:false,animations:"disabled"});
    cases.push({scenario,result:"PASS",phase:v.phase,km:v.km,mins:v.mins,
      availabilityMockCalls:counts.availability,etaMockCalls:counts.eta,
-     preflightRejectMocks:counts.preflightRejected,shot});
+     preflightRejectMocks:counts.blockedTransport,shot});
    await ctx.close();
   }
   return {browser:"PASS",cases,realBackendRequests:0};
