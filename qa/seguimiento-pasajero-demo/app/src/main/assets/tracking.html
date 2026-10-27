@@ -1,0 +1,63 @@
+<!doctype html><html lang="es-UY"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quick Trip · Seguimiento de demostración</title>
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{font:14px system-ui,Roboto,sans-serif;background:#f2f6f3;color:#0c3439;display:flex;flex-direction:column}
+header{background:#062c35;color:#fff;padding:13px 17px 12px;display:flex;justify-content:space-between;align-items:center}header b{font-size:22px;letter-spacing:-.7px}header em{font-style:normal;color:#e5b871}header small{display:block;font-size:10px;letter-spacing:1.6px;color:#bfced0}
+.qa{font-size:10px;font-weight:900;color:#fbe1b2;background:#583c35;border-radius:20px;padding:8px}
+.status{padding:12px 17px;background:#fff;box-shadow:0 4px 12px #0001;z-index:3}.status small{font-size:10px;color:#437875;font-weight:900;letter-spacing:1.1px}.status h1{font-size:20px;margin:3px 0 4px}.status p{margin:0;color:#6a8688;font-size:12px}
+#map{position:relative;flex:1;min-height:245px;overflow:hidden;background:repeating-linear-gradient(30deg,#e4efe8 0px,#e4efe8 48px,#d9e7e1 49px,#d9e7e1 54px)}
+#tiles{position:absolute;inset:0;pointer-events:none}#tiles img{position:absolute;width:256px;height:256px;max-width:none;opacity:.91}
+#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#overlay .linehalo{stroke:#fff;stroke-width:13;stroke-linecap:round;stroke-linejoin:round;fill:none}
+#overlay .line{stroke:#047f80;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.pin{position:absolute;border:3px solid white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px #113e5255;transform:translate(-50%,-50%);font-size:21px;font-weight:900}
+#car{z-index:3;background:#0c3840;color:white;width:54px;height:54px;font-size:26px}#car:after{content:"";position:absolute;border:2px solid #047f80;width:63px;height:63px;border-radius:50%}
+#origin{background:#32a779;color:white}#destination{background:#bd823b;color:white}
+.mapnote{position:absolute;top:12px;left:10px;background:#ffffffed;border-radius:11px;padding:8px 11px;font-size:10px;font-weight:800;color:#17615d;box-shadow:0 4px 12px #0002;z-index:4}
+.attrib{position:absolute;right:6px;bottom:5px;font-size:9px;background:#ffffffd9;color:#315052;padding:4px;z-index:3}
+footer{z-index:4;margin-top:-14px;border-radius:20px 20px 0 0;background:#fff;padding:17px 14px 14px;box-shadow:0 -7px 22px #11393222}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.card{border-radius:12px;background:#eaf5f0;border:1px solid #d9eae3;padding:11px 5px;text-align:center}
+.card small{font-size:9px;font-weight:900;color:#55817b;display:block}.card strong{display:block;font-size:18px;margin-top:3px;white-space:nowrap}
+.stages{display:flex;justify-content:center;gap:8px;padding:12px 0}.stages button{border:0;border-radius:20px;padding:8px 12px;font-weight:850;color:#537270;background:#e6efec}.stages button.active{background:#116368;color:#fff}
+.buttons{display:grid;grid-template-columns:1fr 96px;gap:9px}.buttons button{border:0;border-radius:13px;padding:13px 8px;font-size:14px;font-weight:850}.main{color:white;background:#083f48}.reset{color:#5b3f20;background:#f3e4cf}
+.warn{font-size:10px;color:#6d7e7d;line-height:1.35;text-align:center;margin:10px 3px 0}
+@media(max-height:700px){header{padding:8px 14px}.status{padding:9px 14px}footer{padding:11px}.stages{padding:8px 0}}
+</style></head>
+<body><header><div><b>quick<em>trip</em></b><small>SEGUIMIENTO DEL PASAJERO</small></div><span class="qa">QA · SIMULACIÓN</span></header>
+<div class="status"><small id="phase">ETAPA 1 · RECOGIDA</small><h1 id="status">Tu conductor está en camino</h1><p id="info">El mapa acompaña al vehículo hasta la recogida.</p></div>
+<div id="map" role="img" aria-label="Mapa ilustrativo del vehículo"><div id="tiles"></div><svg id="overlay"><path id="halo" class="linehalo"></path><path id="line" class="line"></path></svg>
+<div id="car" class="pin">🚘</div><div id="origin" class="pin">P</div><div id="destination" class="pin">🏁</div>
+<div class="mapnote">📍 Cámara sigue al vehículo · datos ficticios</div><div class="attrib">© OpenStreetMap contributors · recorrido ilustrativo</div></div>
+<footer><div class="cards"><div class="card"><small id="kilolabel">A RECOGIDA</small><strong id="km">— km</strong></div><div class="card"><small id="etalabel">LLEGADA EST.</small><strong id="eta">— min</strong></div><div class="card"><small>POSICIÓN</small><strong>DEMO</strong></div></div>
+<div class="stages"><button id="pickup" class="active">1 · A recoger</button><button id="ride">2 · En viaje</button></div>
+<div class="buttons"><button id="play" class="main">▶ Iniciar recorrido</button><button id="reset" class="reset">↺ Reiniciar</button></div>
+<p class="warn">Prototipo local. No recibe tu GPS ni datos de Quick Trip. Ruta, conductor y tiempos son simulados; no compartas este APK como servicio real.</p></footer>
+<script>
+(()=>{"use strict";
+const $=id=>document.getElementById(id);
+const routes={pickup:[[-34.8389,-55.9993],[-34.841,-56.003],[-34.845,-56.009],[-34.850,-56.014]],ride:[[-34.850,-56.014],[-34.856,-56.027],[-34.869,-56.054],[-34.875,-56.078],[-34.884,-56.11],[-34.89,-56.136],[-34.893,-56.164]]};
+const state={stage:"pickup",progress:0,playing:false,last:null}; let tileKey="";
+const rad=n=>n*Math.PI/180;
+function km(a,b){let dl=rad(b[0]-a[0]),dn=rad(b[1]-a[1]),q=Math.sin(dl/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dn/2)**2;return 12742*Math.asin(Math.min(1,Math.sqrt(q)));}
+function pos(path,t){let f=Math.min(.999999,Math.max(0,t))*(path.length-1),i=Math.min(path.length-2,Math.floor(f)),a=path[i],b=path[i+1],u=f-i;return [a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u];}
+function remaining(path,t){if(t>=1)return 0;let i=Math.min(path.length-2,Math.floor(t*(path.length-1))),sum=km(pos(path,t),path[i+1]);for(let n=i+1;n<path.length-1;n++)sum+=km(path[n],path[n+1]);return sum;}
+function merc(p,z){let s=256*2**z,sine=Math.sin(rad(p[0]));return {x:(p[1]+180)/360*s,y:(.5-Math.log((1+sine)/(1-sine))/(4*Math.PI))*s};}
+function tiles(c,w,h,z){let x0=Math.floor((c.x-w/2)/256)-1,y0=Math.floor((c.y-h/2)/256)-1,x1=Math.ceil((c.x+w/2)/256)+1,y1=Math.ceil((c.y+h/2)/256)+1;const key=[x0,x1,y0,y1,z].join("|");if(key!==tileKey){tileKey=key;$("tiles").replaceChildren();for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(y<0||y>=2**z)continue;let img=new Image();img.alt="";img.loading="lazy";img.referrerPolicy="no-referrer";img.dataset.x=x;img.dataset.y=y;img.src="https://tile.openstreetmap.org/"+z+"/"+x+"/"+y+".png";img.onerror=()=>img.remove();$("tiles").append(img);}}for(const e of $("tiles").children){e.style.left=(e.dataset.x*256-c.x+w/2)+"px";e.style.top=(e.dataset.y*256-c.y+h/2)+"px";}}
+function paint(){const stage=state.stage,first=stage==="pickup"||stage==="arrived",path=first?routes.pickup:routes.ride,progress=(stage==="arrived"||stage==="finished")?1:state.progress,car=pos(path,progress);let box=$("map"),w=box.clientWidth||360,h=box.clientHeight||420,z=first?14:12,center=merc(car,z);tiles(center,w,h,z);
+const xy=p=>{const a=merc(p,z);return [a.x-center.x+w/2,a.y-center.y+h/2]};const marker=(id,p)=>{let a=xy(p);$(id).style.left=a[0]+"px";$(id).style.top=a[1]+"px";};marker("car",car);marker("origin",routes.pickup.at(-1));marker("destination",routes.ride.at(-1));$("origin").style.display=first?"flex":"none";$("destination").style.display=first?"none":"flex";
+$("overlay").setAttribute("viewBox","0 0 "+w+" "+h);let i=Math.min(path.length-2,Math.floor(progress*(path.length-1))),remainingPath=[car,...path.slice(i+1)];let d=remainingPath.map((p,j)=>{let q=xy(p);return (j?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1)}).join(" ");$("halo").setAttribute("d",d);$("line").setAttribute("d",d);
+let dist=remaining(path,progress);$("km").textContent=dist<.05?"0 km":dist.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";$("eta").textContent=dist<.05?"0 min":Math.max(1,Math.ceil(60*dist/(first?30:45)))+" min";
+$("kilolabel").textContent=first?"A RECOGIDA":"A DESTINO";$("etalabel").textContent=first?"LLEGADA EST.":"FIN PREVISTO";
+$("phase").textContent=stage==="pickup"?"ETAPA 1 · RECOGIDA":stage==="arrived"?"EN EL PUNTO DE RECOGIDA":stage==="ride"?"ETAPA 2 · EN VIAJE":"TRAYECTO COMPLETADO";
+$("status").textContent=stage==="pickup"?"Tu conductor está en camino":stage==="arrived"?"El conductor llegó":stage==="ride"?"Tu viaje está en curso":"Llegaste a destino";
+$("info").textContent=stage==="pickup"?"El mapa acompaña al vehículo hasta la recogida.":stage==="arrived"?"Iniciá la segunda etapa cuando quieras.":stage==="ride"?"Observá el avance hacia el destino.":"Fin de la simulación de seguimiento.";
+$("pickup").classList.toggle("active",first);$("ride").classList.toggle("active",!first);
+$("play").textContent=stage==="arrived"?"▶ Empezar viaje":stage==="finished"?"↺ Volver a empezar":state.playing?"Ⅱ Pausar":progress>0?"▶ Continuar":"▶ Iniciar recorrido";
+}
+function reset(){state.stage="pickup";state.progress=0;state.playing=false;state.last=null;paint();}
+$("play").onclick=()=>{if(state.stage==="finished"){reset();return;}if(state.stage==="arrived"){state.stage="ride";state.progress=0;state.playing=true;}else state.playing=!state.playing;paint();};
+$("pickup").onclick=()=>{reset()};$("ride").onclick=()=>{state.stage="ride";state.progress=0;state.playing=false;paint()};$("reset").onclick=reset;
+function tick(now){if(state.playing){if(state.last!=null)state.progress=Math.min(1,state.progress+Math.min(.1,(now-state.last)/1000)/(state.stage==="pickup"?20:50));if(state.progress===1){state.playing=false;state.stage=state.stage==="pickup"?"arrived":"finished";}paint();}state.last=now;requestAnimationFrame(tick);}
+window.addEventListener("resize",()=>{tileKey="";paint()});window.QuickTripDemo=Object.freeze({state:()=>({...state}),remaining});paint();requestAnimationFrame(tick);
+})();
+</script></body></html>
