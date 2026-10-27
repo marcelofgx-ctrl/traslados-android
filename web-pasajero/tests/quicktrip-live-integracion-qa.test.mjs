@@ -36,7 +36,7 @@ test('authenticated GPS required for vehicle marker',()=>{
 });
 test('Android QA package and manifest have only QA entrypoints',()=>{
   assert.match(gradle,/applicationIdSuffix '\.qa'/);
-  assert.match(gradle,/versionNameSuffix '-LIVE-QA'/);
+  assert.match(gradle,/versionNameSuffix '-TESTING'/);
   assert.match(android,/tools:node="replace"/);
   assert.match(android,/android:allowBackup="false"/);
   assert.match(android,/LiveQaActivity/);
