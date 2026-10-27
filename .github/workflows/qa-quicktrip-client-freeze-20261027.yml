@@ -1,0 +1,88 @@
+name: Quick Trip Pasajero RC1 - single acceptance gate (NO DEPLOY)
+on:
+  push:
+    branches: [qa/quicktrip-testing-routes-fix-20261027]
+    paths: ['.github/workflows/qa-quicktrip-client-freeze-20261027.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  passenger-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify actual RC1 product and no independently installed passenger APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'data-qt-contract="rc1"' web-pasajero/index.html
+          grep -q 'id="origin-picker"' web-pasajero/index.html
+          grep -q 'id="destination-picker"' web-pasajero/index.html
+          grep -q 'id="urgent-send"' web-pasajero/index.html
+          grep -q 'customer_reservation_position_v1' web-pasajero/reservation-live.js
+          grep -q 'customer_request_pickup_fixed_v1' web-pasajero/app.js
+          grep -q '"display": "standalone"' web-pasajero/manifest.webmanifest
+          grep -q 'quicktrip-live-qa-only-20261027' web-pasajero/route-engine.js
+          node --check web-pasajero/app.js
+          node --check web-pasajero/reservation-live.js
+          node --check web-pasajero/route-engine.js
+          node --check web-pasajero/quicktrip-rc1-ui.js
+          node web-pasajero/tests/testing-route-proxy-smoke.cjs
+          node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/booking-steps-smoke.cjs
+      - name: Prepare Chromium for real UI regression
+        run: |
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-acceptance --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-acceptance/node_modules" >> "$GITHUB_ENV"
+      - name: Full touch-screen passenger journey and install flow (synthetic bookings, NO WRITES)
+        env:
+          QA_DIR: artifacts/quicktrip-client-freeze
+        run: |
+          node web-pasajero/tests/quicktrip-rc1-browser.cjs
+          node web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs
+      - name: Validate live public backends read only and exact ETA CORS
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json
+          from urllib.parse import quote
+          origin="https://quicktrip-live-qa-only-20261027-1jxnar9t8-marcelofgx-1927.vercel.app"
+          url="https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"
+          req=urllib.request.Request(url,method="OPTIONS",headers={
+            "Origin":origin,"Access-Control-Request-Method":"POST",
+            "Access-Control-Request-Headers":"apikey,content-type"})
+          with urllib.request.urlopen(req,timeout=15) as res:
+            assert res.status==200 and res.headers.get("Access-Control-Allow-Origin")==origin
+            print("LIVE ETA CORS: PASS",res.status)
+          road="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points="
+          points="-56.016380,-34.836960;-55.969099,-34.827469"
+          with urllib.request.urlopen(road+quote(points,safe=''),timeout=25) as res:
+            payload=json.load(res)
+            print("LIVE ROUTE:",{k:payload.get(k) for k in ('available','source','distanceKm','durationMin')})
+            assert res.status==200 and payload.get('available') and payload.get('distanceKm',0)>0
+          geo="https://direcciones.ide.uy/api/v1/geocode/candidates?q=18%20de%20Julio&limit=5"
+          with urllib.request.urlopen(geo,timeout=17) as res:
+            places=json.load(res)
+            assert res.status==200 and isinstance(places,list) and places
+            print("LIVE ADDRESS: PASS",len(places))
+          PY
+      - name: Evidence - visual, contracts, and candidate SHA (NOT physical E2E)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Pasajero-RC1-frozen-evidence
+          path: artifacts/quicktrip-client-freeze/
+          if-no-files-found: warn
+          retention-days: 14
