@@ -1,0 +1,57 @@
+name: Publish verified Mapa Testing QA prerelease (not production)
+on:
+  push:
+    branches: [qa/mapa-testing-rc1-real-gps-20261027]
+    paths: ['.github/workflows/qa-publish-mapa-testing-rc1.yml']
+permissions:
+  contents: write
+jobs:
+  publish-qa-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TESTED_RUN: '40509185702'
+      TESTED_SHA: 'e7ef79c273c6ca4cbf90ffe3dfcf62cef1171aff'
+      QA_TAG: 'mapa-testing-rc1-gps-20261027'
+    steps:
+      - name: Confirm fixed signed QA source and artifact run
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$GH_REPO" = "marcelofgx-ctrl/traslados-android" ]
+          [ "$(gh api "repos/$GH_REPO/actions/runs/$TESTED_RUN" --jq .head_sha)" = "$TESTED_SHA" ]
+          [ "$(gh api "repos/$GH_REPO/actions/runs/$TESTED_RUN" --jq .conclusion)" = "success" ]
+          echo "Only the CI verified Mapa Testing QA binary will be published."
+      - name: Download EXACT signed Mapa Testing QA artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mapa-testing"
+          cd "$RUNNER_TEMP/mapa-testing"
+          gh run download "$TESTED_RUN" --repo "$GH_REPO" --name "Mapa-Testing-RC1-real-map-signed"
+          test -s Mapa-Testing.apk
+          test -s apk-signature.txt
+          test -s SHA256SUMS.txt
+          grep -q "uy.com.mapatrayectos.qa" apk-badging.txt
+          grep -q "Mapa Testing" apk-badging.txt
+          grep -qi "Verified" apk-signature.txt
+          sed 's@qa-delivery/@@' SHA256SUMS.txt | sha256sum -c -
+          echo "APK_DIGEST=$(sha256sum Mapa-Testing.apk | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Publish immutable public GitHub QA prerelease ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$QA_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "::error::QA tag exists; refusing to overwrite any release."
+            exit 3
+          fi
+          cd "$RUNNER_TEMP/mapa-testing"
+          gh release create "$QA_TAG" \
+            Mapa-Testing.apk SHA256SUMS.txt README.txt \
+            --repo "$GH_REPO" --target "$TESTED_SHA" \
+            --title "Mapa Testing RC1 · GPS real · QA exclusivamente" \
+            --prerelease \
+            --notes "APK de prueba con Mapa QT y Conductor originales, paquete independiente uy.com.mapatrayectos.qa. Código validado en GitHub Actions 40509185702; prueba física GPS en Samsung pendiente. Esta variante utiliza el backend Supabase real: habilitar presencia y enviar reservas solo en una sesión de ensayo autorizada. No reemplaza Mapa QT estable. SHA256: $APK_DIGEST"
+          gh release view "$QA_TAG" --repo "$GH_REPO" --json url,tagName,isPrerelease
