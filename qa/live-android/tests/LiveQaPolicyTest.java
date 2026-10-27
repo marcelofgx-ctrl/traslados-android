@@ -6,12 +6,12 @@ public class LiveQaPolicyTest {
   catch(IllegalArgumentException expected){}
  }
  public static void main(String[] args){
-  ok("https://quicktrip-live-qa-demo.workers.dev".equals(
-    LiveQaPolicy.endpoint("https://quicktrip-live-qa-demo.workers.dev/")));
+  ok("https://quicktrip-live-qa-demo.cuenta.workers.dev".equals(
+    LiveQaPolicy.endpoint("https://quicktrip-live-qa-demo.cuenta.workers.dev/")));
   bad("https://zetaudvvutlouiqxopvg.supabase.co");
-  bad("http://quicktrip-live-qa-demo.workers.dev");
-  bad("https://quicktrip-live-qa-demo.workers.dev.evil.test");
-  bad("https://quicktrip-live-qa-demo.workers.dev/other");
+  bad("http://quicktrip-live-qa-demo.cuenta.workers.dev");
+  bad("https://quicktrip-live-qa-demo.cuenta.workers.dev.evil.test");
+  bad("https://quicktrip-live-qa-demo.cuenta.workers.dev/other");
   ok(LiveQaPolicy.valid(true,false,true,true,-34.9,-56.1,10,8000));
   ok(!LiveQaPolicy.valid(true,true,true,true,-34.9,-56.1,10,8000));
   ok(!LiveQaPolicy.valid(true,false,false,true,-34.9,-56.1,10,8000));

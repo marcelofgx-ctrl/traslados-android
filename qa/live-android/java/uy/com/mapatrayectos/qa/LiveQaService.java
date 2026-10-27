@@ -14,7 +14,7 @@ public final class LiveQaService extends Service {
  static final String START="uy.com.mapatrayectos.qa.START",STOP="uy.com.mapatrayectos.qa.STOP";
  private final ExecutorService queue=Executors.newSingleThreadExecutor();
  private final AtomicBoolean sending=new AtomicBoolean(false);
- private String endpoint,id,token;private boolean sharing=false,receiverOn=false,startedTrip=false,stopping=false;
+ private String endpoint,id,token;private volatile boolean sharing=false;private boolean receiverOn=false,startedTrip=false,stopping=false;
  private BroadcastReceiver receiver;private long lastAttempt=0,lastSeq=0;
  static JSONObject request(String base,String id,String token,String path,JSONObject body)throws Exception{
   URL url=new URL(LiveQaPolicy.endpoint(base)+"/v1/requests/"+LiveQaPolicy.requestId(id)+path);
@@ -57,7 +57,8 @@ public final class LiveQaService extends Service {
  @Override public int onStartCommand(Intent intent,int flags,int startId){
   if(intent==null){stopSelf();return START_NOT_STICKY;}
   if(STOP.equals(intent.getAction())){shutdown();return START_NOT_STICKY;}
-  if(!START.equals(intent.getAction())||sharing||stopping){stopSelf();return START_NOT_STICKY;}
+  if(!START.equals(intent.getAction())){stopSelf();return START_NOT_STICKY;}
+  if(sharing||stopping)return START_NOT_STICKY;
   try{
    endpoint=LiveQaPolicy.endpoint(intent.getStringExtra("endpoint"));
    id=LiveQaPolicy.requestId(intent.getStringExtra("request"));
