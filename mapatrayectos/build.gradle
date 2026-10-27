@@ -43,7 +43,7 @@ android {
         qa {
             initWith release
             applicationIdSuffix '.qa'
-            versionNameSuffix '-LIVE-QA'
+            versionNameSuffix '-TESTING'
             minifyEnabled false
             shrinkResources false
             if (hasReleaseSigning) signingConfig signingConfigs.release

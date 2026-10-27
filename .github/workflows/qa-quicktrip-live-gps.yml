@@ -42,7 +42,7 @@ jobs:
           test -s web-pasajero/dist/quicktrip-live-console-qa.js
           test -s web-pasajero/dist/quicktrip-live-console-qa.css
   android-qa:
-    name: Signed Mapa QT QA APK only
+    name: Signed Mapa Testing APK only
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: contracts
@@ -130,12 +130,12 @@ jobs:
           grep -qi "Verified" qa-signature.txt
           sha256sum "$APK" > qa-apk-sha256.txt
           mkdir -p qa-delivery
-          cp "$APK" qa-delivery/Mapa-QT-Live-QA.apk
+          cp "$APK" qa-delivery/Mapa-Testing.apk
           cp qa-signature.txt qa-apk-sha256.txt qa-delivery/
           echo "Only QA APK packaged; no upload into web/pwa or production" > qa-delivery/NOTICE.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Mapa-QT-Live-QA-isolated-signed
+          name: Mapa-Testing-isolated-signed
           path: qa-delivery/
           retention-days: 7
           if-no-files-found: error

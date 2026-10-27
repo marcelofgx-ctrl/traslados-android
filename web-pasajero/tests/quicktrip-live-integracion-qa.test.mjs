@@ -40,6 +40,8 @@ test('Android QA package and manifest have only QA entrypoints',()=>{
   assert.match(android,/tools:node="replace"/);
   assert.match(android,/android:allowBackup="false"/);
   assert.match(android,/LiveQaActivity/);
+  assert.match(android,/android:label="Mapa Testing"/);
+  assert.match(android,/android:icon="@drawable\/mapa_testing_icon"/);
   assert.match(android,/LiveQaTrackingService/);
   assert.doesNotMatch(android,/ReservationMonitorService|\.TrackingService"|uy\.com\.traslados\.conductor\.MainActivity/);
   assert.match(sender,/quicktrip-\(\?:live-\)\?qa/);

@@ -25,10 +25,10 @@ public final class LiveQaActivity extends Activity {
         root.setPadding(30,28,30,28);
         ScrollView scroll=new ScrollView(this);scroll.addView(root);
         setContentView(scroll);
-        TextView title=new TextView(this);title.setText("MAPA QT · LIVE QA");title.setTextSize(25);
+        TextView title=new TextView(this);title.setText("Mapa Testing");title.setTextSize(25);
         root.addView(title);
         TextView warning=new TextView(this);
-        warning.setText("EXCLUSIVO PARA PRUEBAS. No usar clientes, PIN, reservas ni GPS comerciales. Solo funciona con Worker QA aislado.");
+        warning.setText("Aplicación de pruebas de Quick Trip. No modifica Mapa QT estable ni realiza reservas comerciales. La conexión GPS requiere un servidor de pruebas configurado.");
         warning.setPadding(0,12,0,16);root.addView(warning);
         endpointField=field(root,"URL Worker QA HTTPS",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
         requestField=field(root,"UUID solicitud de prueba",InputType.TYPE_CLASS_TEXT);

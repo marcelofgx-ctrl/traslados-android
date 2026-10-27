@@ -6,9 +6,9 @@
         tools:node="replace"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
-        android:label="Mapa QT Live QA"
-        android:icon="@drawable/app_icon"
-        android:roundIcon="@drawable/app_icon"
+        android:label="Mapa Testing"
+        android:icon="@drawable/mapa_testing_icon"
+        android:roundIcon="@drawable/mapa_testing_icon"
         android:theme="@style/AppTheme">
         <activity
             android:name="uy.com.mapatrayectos.qa.LiveQaActivity"
