@@ -1551,6 +1551,33 @@ async function submitBooking(){
 
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null,tripsRefreshPending=false;
+const autoFollowSeen=new Set();
+function autoFollowAccepted(rows,previous){
+  if(document.visibilityState!=="visible"||navigator.onLine===false||
+     !$("trip-chat-sheet").hidden||!$("trip-alert-overlay").hidden)return false;
+  if(!$("view-inicio").classList.contains("active")&&
+     !$("view-viaje").classList.contains("active")&&
+     !$("view-viajes").classList.contains("active")&&
+     !$("view-seguimiento").classList.contains("active"))return false;
+  const accepted=new Set(["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"]);
+  const earlier=new Map(previous.map(r=>[String(r.id||r.code),r]));
+  const candidate=rows.find(r=>{
+    if(!accepted.has(String(r.status))||!r.id||!(authReady()||r.__guestToken))return false;
+    const id=String(r.id),seen=autoFollowSeen.has(id);
+    if(seen||premiumTrackingKey===id&&$("view-seguimiento").classList.contains("active"))return false;
+    const was=earlier.get(id);
+    if(was)return !accepted.has(String(was.status));
+    // On a fresh PWA launch: resume only a recent ride, never an old booking.
+    const created=Date.parse(r.created_at||"");
+    return Number.isFinite(created)&&Date.now()-created>=0&&Date.now()-created<90*60000;
+  });
+  if(!candidate)return false;
+  const id=String(candidate.id);
+  autoFollowSeen.add(id);
+  premiumTrackingKey=id;
+  shiftView("seguimiento");
+  return true;
+}
 let tripQueryEpoch=0,tripRenderedSignature=null;
 // A 20-second response may arrive after logout/login: discard that old account's result.
 function tripDisplayKey(rows){
@@ -2010,6 +2037,16 @@ function renderPremiumTracking(){
   text(hero,"p",tripBoard.guidance(r));
   // The expanded detail shares the EXACT authorized GPS/road component used
   // in Mis traslados. No second static map that contradicts the live car route.
+  const routeSummary=text(content,"section","","premium-follow-places");
+  routeSummary.setAttribute("aria-label","Origen y destino confirmados");
+  for(const [label,value,kind] of [["RECOGIDA",r.origin_text,"origin"],["DESTINO",r.destination_text,"destination"]]){
+    const point=text(routeSummary,"div","","premium-follow-place");
+    point.dataset.point=kind;
+    text(point,"span",kind==="origin"?"●":"◆","premium-follow-place-marker").setAttribute("aria-hidden","true");
+    const placeCopy=text(point,"div","","premium-follow-place-copy");
+    text(placeCopy,"small",label);
+    text(placeCopy,"strong",String(value||"Dirección no disponible"));
+  }
   const mapHost=text(content,"section","","premium-tracking-map");
   mapHost.setAttribute("aria-label",onBoard
     ?"Seguimiento del automóvil hasta el destino"
@@ -2034,12 +2071,6 @@ function renderPremiumTracking(){
     text(body,"strong",label);
     if(i===phase)text(body,"small",i===2?"El conductor marcó el inicio del viaje.":i===1?"El conductor informó su llegada.":"En camino según el estado informado por el conductor.");
     if(i===phase)step.setAttribute("aria-current","step");
-  }
-  const route=text(card,"div","","premium-tracking-route");
-  for(const [name,value] of [["Origen",r.origin_text],["Destino",r.destination_text]]){
-    const item=text(route,"div","","premium-tracking-place");
-    text(item,"small",name);
-    text(item,"strong",String(value||"Dirección no disponible"));
   }
   const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
   const car=text(card,"p","","premium-tracking-vehicle");
@@ -2226,6 +2257,7 @@ async function loadTrips({background=false}={}){
       rows=window.TrasladosGuestHistory.merge(rows,guests,result);
     }
     if(requestEpoch!==tripQueryEpoch)return; // Session changed during network request.
+    const oldTripRows=tripRows;
     const nextRenderKey=tripDisplayKey(rows);
     const needsRender=!tripLoaded||nextRenderKey!==tripRenderedSignature;
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
@@ -2259,7 +2291,8 @@ async function loadTrips({background=false}={}){
     if(selectedPickupMode!=="schedule")void refreshPickupPresence();
     status.textContent=rows.length+" traslado(s) · actualizado a las "+
       new Date().toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})+".";
-    if(updates.length)showTripNotice(updates[0]);
+    const autoOpened=autoFollowAccepted(rows,oldTripRows);
+    if(updates.length&&!autoOpened)showTripNotice(updates[0]);
   }catch(e){
     if(requestEpoch!==tripQueryEpoch)return;
     status.textContent="No se pudo actualizar. Conservamos la última información.";
@@ -2565,9 +2598,12 @@ function init(){
     const inTrips=$("view-viajes")?.classList.contains("active");
     const inTracking=$("view-seguimiento")?.classList.contains("active");
     const tracked=inTracking&&tripRows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
+    const awaiting=tripRows.some(r=>r.status==="PENDIENTE"&&
+      !tripBoard.isHistory(r)&&Boolean(authReady()||r.__guestToken));
     const activeTrip=(inTrips&&tripRows.some(r=>!tripBoard.isHistory(r)))||
       Boolean(tracked&&!tripBoard.isHistory(tracked));
-    const cadence=activeTrip?8000:20000;
+    // Foreground passenger can see acceptance promptly even from Tu Viaje.
+    const cadence=activeTrip||awaiting?4000:20000;
     if(Date.now()-lastBackgroundTripsCheck<cadence)return;
     lastBackgroundTripsCheck=Date.now();
     void loadTrips({background:true});

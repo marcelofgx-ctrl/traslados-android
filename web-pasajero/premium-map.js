@@ -31,7 +31,7 @@
     const width=Math.max(290,Math.min(750,Math.round(host.clientWidth||355)));
     const proposed=Number(options.height);
     const height=options.height!=null&&Number.isFinite(proposed)
-      ?Math.max(160,Math.min(420,Math.round(proposed)))
+      ?Math.max(160,Math.min(560,Math.round(proposed)))
       :width<400?232:258;
     // Extra markers are real known route locations, not invented vehicle positions.
     const extra=Array.isArray(options.extraMarkers)?options.extraMarkers.filter(m=>
@@ -98,6 +98,23 @@
       label.setAttribute("font-size",isCar?"17":"10");
       label.setAttribute("font-weight","800");
       label.textContent=name;svg.append(label);
+      // Smooth only BETWEEN two verified GPS positions, never predict beyond
+      // the last received fix or animate a car without passenger authorization.
+      if(isCar&&options.previousCar&&!options.overview&&
+         typeof circle.animate==="function"){
+        const old=project([options.previousCar.lat,options.previousCar.lng]);
+        if(old){
+          const at=[(old[0]*view.scale-view.centerX)+width/2,
+                    (old[1]*view.scale-view.centerY)+height/2];
+          const dx=at[0]-p[0],dy=at[1]-p[1],pixels=Math.hypot(dx,dy);
+          if(pixels>3&&pixels<170){
+            const frames=[{transform:`translate(${dx}px,${dy}px)`},
+                          {transform:"translate(0px,0px)"}];
+            for(const part of [circle,label])
+              part.animate(frames,{duration:1500,easing:"ease-out",fill:"none"});
+          }
+        }
+      }
     }
     // The car glyph is NEVER rendered unless the caller used a fresh, authorized GPS fix.
     if(live)drawMarker(start,"🚘","#f6e0ae",true);

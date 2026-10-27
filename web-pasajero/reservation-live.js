@@ -61,7 +61,7 @@
     const eta=place(etaBox,"strong","","—");
     const explanation=place(host,"p","reservation-live-note","Hasta recibir GPS válido, este mapa representa el trayecto contratado, no al vehículo.");
     const privacy=place(host,"small","reservation-live-freshness","");
-    let routePromise=null;
+    let routePromise=null,lastDriverPos=null;
     async function paint(points,kind){
       if(!points||points.length<2||!renderer?.render){return;}
       const mode=kind==="driver"?(ride?"ride":"pickup"):"contract";
@@ -72,8 +72,11 @@
       let result=await routePromise;routePromise=null;
       if(!visible())return false;
       if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return false;}
+      const featured=Boolean(host.closest?.("#view-seguimiento"));
+      const height=featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
       if(!renderer.render(mapHost,result.geometry,{
-        height:208,routeMode:mode,
+        height,routeMode:mode,
+        previousCar:kind==="driver"?lastDriverPos:null,
         // Keep three distinct points for orientation while the route line
         // still follows the active leg (car→pickup or car→destination).
         extraMarkers:kind==="driver"?[ride?
@@ -82,6 +85,7 @@
       }))return false;
       host.dataset.mapRoute=cacheKey;
       host.dataset.liveDriver=kind==="driver"?"true":"false";
+      lastDriverPos=kind==="driver"?points[0]:null;
       const km=Number(result.distanceKm);
       const mins=Number(result.durationMin);
       if(kind!=="contract"){
@@ -103,6 +107,7 @@
       if(host.dataset.liveDriver!=="true")return;
       host.dataset.mapRoute="";
       host.dataset.liveDriver="false";
+      lastDriverPos=null;
       // Never leave an obsolete car location visible when its authorization
       // expires or the updated road calculation fails.
       mapHost.replaceChildren();
@@ -141,6 +146,7 @@
             clearDriverRoute();
             void paint([from,to],"contract");
           }
+          host.dataset.gpsState="waiting";
           status.textContent=ride?"Posición del vehículo pendiente":
             atPickup?"Conductor llegó · posición GPS pendiente":
             value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
@@ -158,7 +164,8 @@
         explanation.textContent=ride?"Distancia del vehículo al destino por carretera.":
           atPickup?"Llegada registrada por el conductor. El GPS puede variar algunos metros.":
           "Distancia del vehículo a tu recogida por carretera.";
-        privacy.textContent="🚘 GPS real recibido hace "+Math.round(fresh)+" s · actualiza aprox. cada 12 s con la página abierta";
+        privacy.textContent="● GPS verificado hace "+Math.round(fresh)+" s · consulta cada 4 s con el mapa abierto";
+        host.dataset.gpsState="fresh";
         // If a prior contract-route request is still in-flight, paint the latest
         // driver route once it settles: never leave the static route over GPS.
         if(routePromise)try{await routePromise;}catch(_){}
@@ -191,7 +198,7 @@
         if(!host.isConnected){clearInterval(timer);return;}
         if(!visible())return;
         void run();
-      },12000);
+      },4000);
     }
     // Defer until the document appends the newly constructed reservation node.
     Promise.resolve().then(run);

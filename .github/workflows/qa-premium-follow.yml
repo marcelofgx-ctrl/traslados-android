@@ -1,0 +1,51 @@
+name: QA passenger premium live follow - isolated
+on:
+  push:
+    branches: [qa/quicktrip-premium-follow-20261027]
+    paths: ['web-pasajero/**','.github/workflows/qa-premium-follow.yml']
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify original engines, Web/PWA and negative GPS controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/reservation-live.js
+          node --check web-pasajero/premium-map.js
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/search-smoke.cjs
+          node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
+      - name: Browser dependencies (only test runner, not production)
+        shell: bash
+        run: |
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-follow-browser --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-follow-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Validate auto-opening accepted ride and mobile map, no backend writes
+        shell: bash
+        env:
+          QA_DIR: artifacts/premium-follow
+        run: node web-pasajero/tests/premium-follow-autoopen-qa.cjs
+      - name: Visual evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: QuickTrip-Premium-Follow-QA-evidence
+          path: artifacts/premium-follow/
+          if-no-files-found: warn
+          retention-days: 14

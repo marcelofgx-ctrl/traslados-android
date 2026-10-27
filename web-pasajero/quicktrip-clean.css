@@ -866,3 +866,43 @@ body.qt-clean #view-instalar .section-heading{
  body.qt-clean #view-viajes .trips-refresh{font-size:0!important}
  body.qt-clean #view-viajes .trips-refresh::first-letter{font-size:17px}
 }
+
+/* QA candidate: professional, larger passenger follow-up; never the booking form. */
+#view-seguimiento.premium-tracking-view{background:
+ radial-gradient(circle at 90% 0%,rgba(56,141,139,.17),transparent 40%),
+ linear-gradient(160deg,#0a2833 0%,#051923 95%);min-height:100dvh}
+#view-seguimiento #premium-tracking-content{max-width:850px;margin:auto;padding:10px 12px 32px}
+#view-seguimiento .premium-tracking-hero{border:1px solid rgba(221,195,138,.27);
+ border-radius:21px;background:linear-gradient(128deg,rgba(24,80,82,.95),rgba(6,34,47,.96));
+ box-shadow:0 12px 32px rgba(0,0,0,.17);padding:16px 18px;margin-bottom:12px}
+#view-seguimiento .premium-tracking-hero h2{font-size:clamp(23px,5.6vw,32px);
+ line-height:1.12;letter-spacing:-.035em;margin:5px 0 7px}
+#view-seguimiento .premium-follow-places{display:grid;gap:9px;margin:0 0 12px;
+ padding:13px 15px;border-radius:20px;border:1px solid rgba(233,211,158,.26);
+ background:linear-gradient(145deg,#153e46,#082632);
+ box-shadow:0 8px 24px rgba(0,0,0,.17)}
+#view-seguimiento .premium-follow-place{display:flex;gap:12px;align-items:center;min-width:0}
+#view-seguimiento .premium-follow-place+.premium-follow-place{border-top:1px solid rgba(232,211,160,.16);padding-top:9px}
+#view-seguimiento .premium-follow-place-marker{display:grid;place-items:center;
+ color:#eac88f;flex:0 0 23px;font-size:14px}
+#view-seguimiento .premium-follow-place[data-point="destination"] .premium-follow-place-marker{color:#77dbc8}
+#view-seguimiento .premium-follow-place-copy{min-width:0;display:grid;gap:3px}
+#view-seguimiento .premium-follow-place-copy small{font-size:10px;font-weight:800;letter-spacing:.12em;color:#bdcecf}
+#view-seguimiento .premium-follow-place-copy strong{font-size:clamp(13px,3.8vw,16px);color:#f8f5ec;line-height:1.3;overflow-wrap:anywhere}
+#view-seguimiento .premium-tracking-map.reservation-live{padding:10px;border-radius:22px;
+ background:linear-gradient(130deg,#163e47,#07232d);border:1px solid rgba(234,204,137,.34);
+ box-shadow:0 16px 38px rgba(0,0,0,.23)}
+#view-seguimiento .reservation-live-heading{margin:2px 5px 12px}
+#view-seguimiento .reservation-live-map{min-height:clamp(320px,55dvh,560px)!important;
+ border-radius:17px!important;box-shadow:inset 0 0 0 1px rgba(254,242,205,.14),0 8px 18px rgba(0,0,0,.25)}
+#view-seguimiento .reservation-live-map .premium-real-map{background:#244d50}
+#view-seguimiento .reservation-live-map .premium-map-tiles{filter:saturate(.95) contrast(1.08) brightness(.9)!important}
+#view-seguimiento .reservation-live-metrics{gap:10px;margin-top:12px}
+#view-seguimiento .reservation-live-metric{background:linear-gradient(135deg,#153e46,#082b36);
+ border-color:rgba(239,205,137,.35);padding:15px 12px;border-radius:14px}
+#view-seguimiento .reservation-live-metric small{font-size:11px}
+#view-seguimiento .reservation-live-metric strong{font-size:clamp(22px,5vw,30px);color:#f8e0a3}
+#view-seguimiento .reservation-live-freshness{display:inline-flex;gap:5px;padding:6px 10px;
+ border-radius:20px;background:rgba(24,90,80,.45);color:#c2f4dc;font-size:11px}
+#view-seguimiento .reservation-live[data-gps-state="waiting"] .reservation-live-freshness{color:#e9cd9c}
+@media(prefers-reduced-motion:reduce){#view-seguimiento *{scroll-behavior:auto!important;animation-duration:.01ms!important}}
