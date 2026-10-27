@@ -164,8 +164,8 @@ async function handle(request,env) {
       const assigned=(who.role==='driver'&&row.state==='PENDIENTE')?who.ref:row.driver_ref;
       const updated=await env.DB.prepare(`UPDATE qa_requests SET state=?,version=version+1,driver_ref=?,last_actor_role=?,updated_at=?
         WHERE id=? AND state=? AND version=? AND (state<>'PENDIENTE' OR expires_at>?)
-          AND (driver_ref IS NULL OR driver_ref=?) RETURNING *`)
-        .bind(payload.to,assigned,who.role,nowISO(),id,row.state,payload.expectedVersion,nowISO(),who.ref).first();
+          AND (driver_ref IS NULL OR driver_ref=? OR (?='passenger' AND passenger_ref=?)) RETURNING *`)
+        .bind(payload.to,assigned,who.role,nowISO(),id,row.state,payload.expectedVersion,nowISO(),who.ref,who.role,who.ref).first();
       if(!updated)throw fatal(409,'concurrent_update');
       return {status:200,body:{request:render(updated),qaOnly:true}};
     }

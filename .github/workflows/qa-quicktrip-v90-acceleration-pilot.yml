@@ -102,7 +102,7 @@ jobs:
           protected_backend=["docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql","qa/backend-worker/README.md","qa/backend-worker/package.json","qa/backend-worker/schema.sql","qa/backend-worker/src.mjs","qa/backend-worker/test/worker.test.mjs","qa/backend-worker/wrangler.example.jsonc"]
           approved_live_backend={
             "qa/backend-worker/schema.sql":"c0a705295e2d92b5d7f3d3c5a10270f2ced5eeb3",
-            "qa/backend-worker/src.mjs":"a78362923ba46b743420d29e6c56456cb5879a78"
+            "qa/backend-worker/src.mjs":"804f62a06f7c7806649a79ef944f376208da3bbb"
           }
           for path in protected_backend:
             expected=approved_live_backend.get(path) or subprocess.check_output(
