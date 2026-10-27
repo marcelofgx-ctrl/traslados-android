@@ -60,7 +60,10 @@ const {spawn}=require("node:child_process");
     assert.equal(await page.evaluate(()=>PREVIEW_READ_ONLY),false);
     assert.equal(await page.locator("#qt-public-qa-banner").count(),0);
     assert.equal(await page.locator("#view-inicio [data-service]").count(),3);
-    await page.waitForSelector('#view-inicio.active [data-service="now"]');
+    // The production presenter intentionally auto-opens Tu Viaje on window load;
+    // never assume the homepage is still the active view after goto(load).
+    await page.waitForFunction(()=>typeof enterService==="function"&&
+      document.querySelector("#qtc-app"),{timeout:12000});
     if(label==="web"){
       await page.evaluate(()=>{
         enterService("now");
