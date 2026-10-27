@@ -110,7 +110,18 @@ async function browserChecks(){
    await page.waitForFunction(kind=>{
     const phase=document.querySelector("#pickup-presence")?.dataset.phase;
     return kind==="eta-ok"?phase==="ready":kind==="unavailable"?phase==="blocked":phase==="issue";
-   },scenario,{timeout:17000});
+   },scenario,{timeout:17000}).catch(async err=>{
+    const trace=await page.evaluate(()=>({
+      phase:document.querySelector("#pickup-presence")?.dataset.phase,
+      title:document.querySelector("#pickup-presence-title")?.textContent,
+      subtitle:document.querySelector("#pickup-presence-subtitle")?.textContent,
+      mode:typeof selectedPickupMode==="string"?selectedPickupMode:null,
+      origin:typeof record!=="undefined"?record.origin?.text:null,
+      etaState:typeof lastEtaFailureMessage!=="undefined"?lastEtaFailureMessage:null,
+      cardVisible:document.querySelector("#pickup-presence")?.hidden===false
+    }));
+    throw Error("Driver contract wait "+scenario+": "+JSON.stringify({trace,counts,cause:err.message}));
+   });
    const v=await page.evaluate(()=>({
     phase:document.querySelector("#pickup-presence")?.dataset.phase,
     label:document.querySelector("#pickup-presence-title")?.textContent,
