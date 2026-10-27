@@ -10,6 +10,7 @@ on:
       - 'web-pasajero/quicktrip-rc1-ui.js'
       - 'web-pasajero/sw.js'
       - 'web-pasajero/tests/quicktrip-rc1-browser.cjs'
+      - 'web-pasajero/tests/fixed-fare-v1-smoke.cjs'
       - 'docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md'
   workflow_dispatch:
 permissions:
@@ -39,6 +40,7 @@ jobs:
            "web-pasajero/index.html","web-pasajero/quicktrip-clean.js",
            "web-pasajero/quicktrip-rc1.css","web-pasajero/quicktrip-rc1-ui.js",
            "web-pasajero/sw.js","web-pasajero/tests/quicktrip-rc1-browser.cjs",
+           "web-pasajero/tests/fixed-fare-v1-smoke.cjs",
            "docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md"
           }
           changed=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
@@ -66,7 +68,7 @@ jobs:
           assert src.count('quicktrip-rc1.css')==1
           assert 'quicktrip-clean.css?v=7' not in src
           assert re.search(r'connect-src[^"]*zetaudvvutlouiqxopvg.supabase.co',src)
-          print("PASS RC1: exactly 8 permitted files; original engines/Android/main unmodified; no demo imports")
+          print("PASS RC1: exactly 9 permitted files; original engines/Android/main unmodified; no demo imports")
           PY
       - name: Pure Web/PWA contract regression tests, no external network
         if: ${{ steps.scope_gate.outcome == 'success' }}
