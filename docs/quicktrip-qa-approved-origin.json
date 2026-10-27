@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Single authorized stable QA origin for Quick Trip Web/PWA driver ETA release checks",
+  "qaOrigin": "https://quicktrip-v86-qa-samsung-20261025-git-qa-05b826-marcelofgx-1927.vercel.app",
+  "vercelProject": "quicktrip-v86-qa-samsung-20261025",
+  "deploymentClass": "preview",
+  "backendProject": "zetaudvvutlouiqxopvg",
+  "backendReadOnlyEndpoint": "/functions/v1/pickup-eta",
+  "backendAvailabilityEndpoint": "/rest/v1/rpc/public_driver_availability_v1",
+  "verifiedBackendFunctionVersion": 6,
+  "noProductionNoWrites": true,
+  "liveDriverGpsVerified": false,
+  "note": "Individual deployment URLs are NOT CORS-authorized; recheck live OPTIONS before each user handoff."
+}

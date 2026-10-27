@@ -18,7 +18,15 @@ on:
       - 'web-pasajero/quicktrip-qa-stage-b-v90.css'
       - 'web-pasajero/quicktrip-qa-gps-ux-v89.js'
       - 'web-pasajero/quicktrip-qa-gps-ux-v89.css'
+      - 'web-pasajero/tests/quicktrip-driver-contract-qa.cjs'
+      - 'docs/quicktrip-qa-approved-origin.json'
+      - 'docs/QUICKTRIP_QA_CONSOLIDATION_GATES_20261026.md'
   workflow_dispatch:
+    inputs:
+      qa_url:
+        description: 'Stable QA URL for manual CORS OPTIONS check, no POST'
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
@@ -63,6 +71,9 @@ jobs:
             "web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs",
             "web-pasajero/quicktrip-qa-gps-ux-v89.js",
             "web-pasajero/quicktrip-qa-gps-ux-v89.css",
+            "web-pasajero/tests/quicktrip-driver-contract-qa.cjs",
+            "docs/quicktrip-qa-approved-origin.json",
+            "docs/QUICKTRIP_QA_CONSOLIDATION_GATES_20261026.md",
             "docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql",
             "qa/backend-worker/README.md",
             "qa/backend-worker/package.json",
@@ -111,6 +122,10 @@ jobs:
           node --check web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
           node --check web-pasajero/tests/quicktrip-v90-route-sandbox.cjs
           node --check web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs
+          node --check web-pasajero/tests/quicktrip-driver-contract-qa.cjs
+          node web-pasajero/tests/quicktrip-driver-contract-qa.cjs --static
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs
           node web-pasajero/qa-stage-build.cjs
           python3 - <<'PY'
@@ -160,6 +175,16 @@ jobs:
         env:
           QA_DIR: quicktrip-v90-pilot-evidence/gps-visual
         run: node web-pasajero/tests/quicktrip-v90-gps-visual-qa.cjs
+      - name: Driver ETA browser contract - synthetic backend, no real requests
+        if: ${{ always() && steps.qt_scope_guard.outcome == 'success' && steps.qt_browser_ready.outcome == 'success' }}
+        env:
+          QA_DIR: quicktrip-v90-pilot-evidence/driver-contract
+        run: node web-pasajero/tests/quicktrip-driver-contract-qa.cjs --browser
+      - name: Optional manual stable-QA live CORS preflight - OPTIONS only, never POST
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.qa_url != '' && steps.qt_scope_guard.outcome == 'success' }}
+        env:
+          QA_URL: ${{ inputs.qa_url }}
+        run: node web-pasajero/tests/quicktrip-driver-contract-qa.cjs --live-preflight
       - name: Upload inventory JSON, results and screenshots (NEVER DEPLOY)
         if: always()
         uses: actions/upload-artifact@v4
