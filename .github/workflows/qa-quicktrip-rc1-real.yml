@@ -1,0 +1,113 @@
+name: Quick Trip RC1 real-engine candidate - isolated QA NO DEPLOY NO APK
+on:
+  push:
+    branches: [rc/quicktrip-rc1-real-20261026]
+    paths:
+      - '.github/workflows/qa-quicktrip-rc1-real.yml'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/quicktrip-clean.js'
+      - 'web-pasajero/quicktrip-rc1.css'
+      - 'web-pasajero/quicktrip-rc1-ui.js'
+      - 'web-pasajero/sw.js'
+      - 'web-pasajero/tests/quicktrip-rc1-browser.cjs'
+      - 'docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rc1-scope-and-browser-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gate exact main baseline, permitted files, protected motors and native APK source
+        id: scope_gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess,re
+          base="53dd427d5bda65e84f585b4db2c565227aff673c"
+          allowed={
+           ".github/workflows/qa-quicktrip-rc1-real.yml",
+           "web-pasajero/index.html","web-pasajero/quicktrip-clean.js",
+           "web-pasajero/quicktrip-rc1.css","web-pasajero/quicktrip-rc1-ui.js",
+           "web-pasajero/sw.js","web-pasajero/tests/quicktrip-rc1-browser.cjs",
+           "docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md"
+          }
+          changed=set(subprocess.check_output(["git","diff","--name-only",base+"..HEAD"],text=True).splitlines())
+          assert changed==allowed,("RC1 SCOPE VIOLATION",sorted(changed^allowed))
+          protected=[
+           "web-pasajero/app.js","web-pasajero/route-engine.js",
+           "web-pasajero/address-engine.js","web-pasajero/eta-engine.js",
+           "web-pasajero/booking-contracts.js","web-pasajero/rpc-client.js",
+           "web-pasajero/premium-route.js",
+           "conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java",
+           "mapatrayectos/build.gradle"
+          ]
+          for file in protected:
+           old=subprocess.check_output(["git","rev-parse",base+":"+file],text=True).strip()
+           new=subprocess.check_output(["git","rev-parse","HEAD:"+file],text=True).strip()
+           assert old==new,("PROTECTED MOTOR MODIFIED",file,old,new)
+          assert not subprocess.check_output(["git","status","--porcelain"],text=True).strip()
+          src=open("web-pasajero/index.html",encoding="utf8").read()
+          assert 'data-qt-contract="rc1"' in src
+          assert 'name="traslados-preview"' not in src
+          assert 'quicktrip-qa-route-v90.js' not in src
+          assert 'quicktrip-qa-stage-b-v90.js' not in src
+          assert 'quicktrip-qa-samsung-v87.js' not in src
+          assert 'quicktrip-rc1-ui.js' in src and 'quicktrip-rc1.css' in src
+          assert src.count('quicktrip-rc1.css')==1
+          assert 'quicktrip-clean.css?v=7' not in src
+          assert re.search(r'connect-src[^"]*zetaudvvutlouiqxopvg.supabase.co',src)
+          print("PASS RC1: exactly 8 permitted files; original engines/Android/main unmodified; no demo imports")
+          PY
+      - name: Pure Web/PWA contract regression tests, no external network
+        if: ${{ steps.scope_gate.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-rc1-ui.js
+          node --check web-pasajero/tests/quicktrip-rc1-browser.cjs
+          node --check web-pasajero/sw.js
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/booking-steps-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+      - name: Conductor Mapa native policy contracts without Gradle or APK
+        if: ${{ steps.scope_gate.outcome == 'success' }}
+        shell: bash
+        run: bash scripts/ci_fast_contracts.sh all
+      - name: Install browser harness isolated in runner temp
+        if: ${{ steps.scope_gate.outcome == 'success' }}
+        id: browser_ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-rc1-browser --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-rc1-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Web/PWA and driver state Chromium regression - mock network only
+        if: ${{ steps.scope_gate.outcome == 'success' && steps.browser_ready.outcome == 'success' }}
+        env:
+          QA_DIR: quicktrip-rc1-evidence/browser
+        run: node web-pasajero/tests/quicktrip-rc1-browser.cjs
+      - name: Evidence archive only (no publishing and no APK)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-RC1-Real-Engine-QA-Evidence
+          path: quicktrip-rc1-evidence/
+          retention-days: 14
+          if-no-files-found: warn
