@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="quicktrip-qa-isolation" content="v90-route-sandbox-quicktrip-live-qa">
+  <meta name="traslados-preview" content="read-only">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.workers.dev https://router.project-osrm.org; img-src 'self' data: https://tile.openstreetmap.org; base-uri 'none'; frame-src 'none'; form-action 'none'; object-src 'none'; worker-src 'none'; upgrade-insecure-requests">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Quick Trip Live QA · Seguimiento privado</title>
+  <link rel="stylesheet" href="./premium-route.css">
+  <link rel="stylesheet" href="./quicktrip-live-console-qa.css">
+  <script src="./premium-map.js" defer></script>
+  <script src="./quicktrip-live-qa.js" defer></script>
+  <script src="./quicktrip-live-console-qa.js" defer></script>
+</head>
+<body>
+<main class="shell">
+  <div class="topline"><span class="logo">QT<span class="accent">.</span></span><span class="status-tag">LIVE · QA AISLADA</span></div>
+  <header>
+    <p class="eyebrow">SEGUIMIENTO DEL VIAJE</p>
+    <h1>Tu conductor,<br><em>en tiempo real.</em></h1>
+    <p class="lead">Un enlace de prueba para ver el recorrido hacia tu recogida y durante el viaje. Los movimientos aparecen solamente con GPS autorizado.</p>
+  </header>
+  <section class="card setup" aria-label="Conectar prueba">
+    <h2>Conectar prueba QA</h2>
+    <p class="tip">Utilizá únicamente credenciales de prueba. No ingreses PIN ni información comercial.</p>
+    <label>Endpoint HTTPS del Worker QA<input id="qa-endpoint" placeholder="https://quicktrip-qa-channel.____.workers.dev" spellcheck="false" autocomplete="off" type="url"></label>
+    <label>Token pasajero QA<input id="qa-token" placeholder="Token de prueba" autocomplete="off" type="password"></label>
+    <label>ID de la solicitud (para retomar)<input id="qa-id" placeholder="UUID de prueba" spellcheck="false" autocomplete="off"></label>
+    <div class="actions">
+      <button id="qa-create" class="primary" type="button">Crear viaje QA</button>
+      <button id="qa-connect" type="button">Seguir viaje QA</button>
+    </div>
+    <p id="qa-note" class="note" role="status" aria-live="polite">Sin conexión. Ningún dato GPS será mostrado hasta validar solicitud y token.</p>
+  </section>
+  <section id="qa-live" class="card journey" aria-label="Seguimiento QA" hidden>
+    <div class="heading"><div><p class="eyebrow">VIAJE QA</p><h2 id="qa-state">Pendiente</h2></div><span id="qa-fresh" class="fresh">—</span></div>
+    <p class="tip" id="qa-trip-id"></p>
+    <button type="button" id="qa-copy" class="share">Copiar ID para Mapa QT QA</button>
+    <div class="steps"><span>Recibida</span><span>Aceptada</span><span>En camino</span><span>En viaje</span><span>Finalizada</span></div>
+    <div id="qa-map" class="map" role="group" aria-label="Mapa del vehículo" hidden></div>
+    <p id="qa-map-note" class="note">Esperando GPS autorizado del conductor.</p>
+    <div class="metrics"><div><small>DISTANCIA AL PUNTO</small><strong id="qa-km">—</strong></div><div><small>TIEMPO APROXIMADO</small><strong id="qa-eta">—</strong></div></div>
+    <p class="legal">La ruta y ETA solo aparecen cuando hay GPS reciente y un trayecto vial verificable. El GPS se oculta al finalizar o revocar el consentimiento.</p>
+    <button type="button" id="qa-disconnect">Dejar de seguir</button>
+  </section>
+  <footer>Quick Trip · Entorno QA · Sin reservas comerciales · Sin localización pública</footer>
+</main>
+</body>
+</html>

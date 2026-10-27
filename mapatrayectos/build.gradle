@@ -39,6 +39,15 @@ android {
                 signingConfig signingConfigs.release
             }
         }
+        // Signed standalone package for isolated Live GPS QA, not a new Conductor APK.
+        qa {
+            initWith release
+            applicationIdSuffix '.qa'
+            versionNameSuffix '-LIVE-QA'
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) signingConfig signingConfigs.release
+        }
     }
 
     compileOptions {

@@ -1,0 +1,141 @@
+name: Quick Trip Live GPS - isolated QA only (NO PRODUCTION)
+on:
+  push:
+    branches: [qa/quicktrip-live-gps-integracion-20261027]
+    paths:
+      - 'qa/backend-worker/**'
+      - 'mapatrayectos/src/qa/**'
+      - 'mapatrayectos/build.gradle'
+      - 'web-pasajero/quicktrip-live*'
+      - 'web-pasajero/tests/quicktrip-live*'
+      - '.github/workflows/qa-quicktrip-live-gps.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quicktrip-live-qa-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  contracts:
+    name: Worker + isolated passenger QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend GPS and existing request contract (local D1)
+        run: npm --prefix qa/backend-worker test
+      - name: Existing and new passenger QA contract
+        run: |
+          node --test web-pasajero/tests/quicktrip-live-qa.test.cjs
+          node --test web-pasajero/tests/quicktrip-live-integracion-qa.test.mjs
+          node --check web-pasajero/quicktrip-live-console-qa.js
+          node --check web-pasajero/quicktrip-live-qa.js
+      - name: Static Preview QA packaging (no deploy)
+        run: |
+          node web-pasajero/qa-stage-build.cjs
+          test -s web-pasajero/dist/quicktrip-live-qa.html
+          test -s web-pasajero/dist/quicktrip-live-console-qa.js
+          test -s web-pasajero/dist/quicktrip-live-console-qa.css
+  android-qa:
+    name: Signed Mapa QT QA APK only
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore Android resources from checked-in originals
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          echo "a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg" | sha256sum -c -
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          echo "5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3" | sha256sum -c -
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore signing key in runner only
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-qa-signing.jks"
+          chmod 600 "$RUNNER_TEMP/traslados-qa-signing.jks"
+          test -s "$RUNNER_TEMP/traslados-qa-signing.jks"
+      - name: Compile ONLY isolated QA build type (not release)
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-qa-signing.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleQa --no-daemon --stacktrace
+      - name: Block production Android components in merged QA manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          manifests=list(Path("mapatrayectos/build/intermediates/merged_manifest").glob("qa/**/AndroidManifest.xml"))
+          manifests+=list(Path("mapatrayectos/build/intermediates/merged_manifests").glob("qa/**/AndroidManifest.xml"))
+          assert manifests, "No merged QA manifest found"
+          root=ET.parse(manifests[0]).getroot()
+          ns="{http://schemas.android.com/apk/res/android}"
+          app=root.find("application")
+          assert app is not None
+          components={x.attrib.get(ns+"name") for x in app if x.tag in ("activity","service","receiver","provider")}
+          desired={"uy.com.mapatrayectos.qa.LiveQaActivity","uy.com.mapatrayectos.qa.LiveQaTrackingService"}
+          assert components==desired,("QA_COMPONENT_ISOLATION_FAILED",components)
+          assert app.attrib.get(ns+"allowBackup")=="false"
+          print("QA manifest isolated: only passenger-free driver console and its GPS service")
+          PY
+      - name: Verify package ID, release signature and SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find mapatrayectos/build/outputs/apk/qa -maxdepth 1 -name '*.apk' | head -1)"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='uy.com.mapatrayectos.qa'"
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" > qa-signature.txt
+          grep -qi "Verified" qa-signature.txt
+          sha256sum "$APK" > qa-apk-sha256.txt
+          mkdir -p qa-delivery
+          cp "$APK" qa-delivery/Mapa-QT-Live-QA.apk
+          cp qa-signature.txt qa-apk-sha256.txt qa-delivery/
+          echo "Only QA APK packaged; no upload into web/pwa or production" > qa-delivery/NOTICE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-QT-Live-QA-isolated-signed
+          path: qa-delivery/
+          retention-days: 7
+          if-no-files-found: error
