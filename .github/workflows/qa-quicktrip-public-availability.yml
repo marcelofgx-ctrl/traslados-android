@@ -1,0 +1,50 @@
+name: Quick Trip passenger public availability - live read only
+on:
+  push:
+    branches: [qa/reservation-gps-stable-map-20261027]
+    paths: ['.github/workflows/qa-quicktrip-public-availability.yml']
+permissions:
+  contents: read
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Public passenger website must be accessible and contain booking app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error
+          base="https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/"
+          for path,checks in [
+            ("",['id="origin-picker"','id="destination-picker"','id="urgent-send"','reservation-live.js']),
+            ("app.js",['customer_request_pickup_fixed_v1','TrasladosReservationLive']),
+            ("reservation-live.js",['customer_reservation_position_v1','Seguimiento de tu recogida']),
+            ("sw.js",['self.addEventListener','cache']),
+            ("manifest.webmanifest",['"display": "standalone"'])]:
+            req=urllib.request.Request(base+path,headers={"User-Agent":"QuickTripPublicAvailability/20261027","Accept":"text/html,application/javascript,application/json"})
+            try:
+              with urllib.request.urlopen(req,timeout=18) as response:
+                raw=response.read(300000).decode("utf-8","replace")
+                ok=all(v in raw for v in checks)
+                print("PUBLIC",path or "index",response.status,"length",len(raw),"contract",ok)
+                assert response.status==200 and ok
+            except urllib.error.HTTPError as e:
+              print("PUBLIC FAILED",path,e.code)
+              raise
+          PY
+      - name: Verify live ETA CORS on canonical production website (OPTIONS only)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          url="https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"
+          origin="https://marcelofgx-ctrl.github.io"
+          req=urllib.request.Request(url,method="OPTIONS",headers={
+            "Origin":origin,"Access-Control-Request-Method":"POST",
+            "Access-Control-Request-Headers":"apikey,content-type"})
+          with urllib.request.urlopen(req,timeout=15) as r:
+            ok=r.status==200 and r.headers.get("Access-Control-Allow-Origin")==origin
+            print("CANONICAL ETA PREFLIGHT",r.status,"authorized",ok)
+            assert ok
+          PY
