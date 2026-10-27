@@ -320,6 +320,14 @@ public class TrackingService extends Service implements LocationListener {
             valid?lastAccepted.getLongitude():0,
             valid?lastAcceptedAccuracy:99f,
             valid?lastAcceptedTs:0L,lastMovingAtMs);
+        // Only Mapa Testing publishes the additional reservation-bound GPS.
+        // The existing live presence path and all production releases stay intact.
+        if(valid&&shiftActive&&!shiftPaused&&
+           getPackageName().equals("uy.com.mapatrayectos.qa")){
+            Api.publishReservationPositionQaAsync(true,false,
+                lastAccepted.getLatitude(),lastAccepted.getLongitude(),
+                lastAcceptedAccuracy,lastAcceptedTs);
+        }
     }
 
     private void startLocation(){

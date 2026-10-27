@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Overlay only the launcher identity. ALL original Mapa/Conductor
+         activities, services, permissions and map engines remain merged. -->
+    <application
+        android:label="Mapa Testing"
+        android:icon="@drawable/mapa_testing_icon"
+        android:roundIcon="@drawable/mapa_testing_icon"
+        android:allowBackup="false"
+        tools:replace="android:label,android:icon,android:roundIcon,android:allowBackup"/>
+</manifest>

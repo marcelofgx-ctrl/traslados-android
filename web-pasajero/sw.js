@@ -1,4 +1,4 @@
-const CACHE="traslados-pwa-rc1-candidate-20261026";
+const CACHE="traslados-pwa-rc1-testing-20261027";
 const CACHE_PREFIX="traslados-cliente-pwa-";
 const CURRENT_PREFIX="traslados-pwa-";
 const files=["./","./offline.html","./styles.css","./app.js","./premium-route.js","./address-viewport.js","./premium-route.css","./premium-map.js","./premium-montevideo.webp","./premium-car-crop.webp","./premium-skyline.svg","./geo-search.js","./address-engine.js","./route-engine.js","./eta-engine.js","./booking-contracts.js","./rpc-client.js","./booking-steps.js","./service-home.js","./owned-pickup.js","./pickup-cadence.js","./pickup-origin-drift.js","./pickup-observability.js","./trip-board.js","./reservation-live.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/icon-maskable.png","./guest-history.js","./journey-compat-v7.js","./quicktrip-clean.js","./quicktrip-rc1.css","./quicktrip-rc1-ui.js","./quicktrip-logo-contrast.svg"];

@@ -1,0 +1,162 @@
+name: Mapa Testing + Quick Trip RC1 real GPS (QA only)
+on:
+  push:
+    branches: [qa/mapa-testing-rc1-real-gps-20261027]
+    paths:
+      - 'mapatrayectos/**'
+      - 'conductor/src/**'
+      - 'core-reservations/**'
+      - 'web-pasajero/**'
+      - 'scripts/qa_mapa_testing_contract.py'
+      - '.github/workflows/qa-mapa-testing-rc1-real-gps.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mapa-testing-rc1-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  contracts:
+    name: RC1 + native QA consent and map checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated Android integration and real RC1 booking contracts
+        run: |
+          python3 scripts/qa_mapa_testing_contract.py
+          node --check web-pasajero/quicktrip-rc1-ui.js
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/booking-steps-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          bash scripts/ci_fast_contracts.sh all
+      - name: Browser regression (network mocked, no production writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-rc1-browser --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-rc1-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Complete Chromium RC1 user journey, GPS delegation and PWA recovery
+        env:
+          QA_DIR: mapa-testing-evidence/rc1-browser
+        run: |
+          node web-pasajero/tests/quicktrip-rc1-browser.cjs
+          node web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Mapa-Testing-RC1-browser-evidence
+          path: mapa-testing-evidence/
+          if-no-files-found: warn
+          retention-days: 7
+
+  android:
+    name: Mapa Testing signed APK; original integrated Conductor
+    needs: contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Restore Android resources with existing integrity checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          echo "a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg" | sha256sum -c -
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          echo "5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3" | sha256sum -c -
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDK"
+          yes | "$SDK" --licenses >/dev/null || true
+          "$SDK" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Signing material remains in runner memory only
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-qa-signing.jks"
+          chmod 600 "$RUNNER_TEMP/traslados-qa-signing.jks"
+          test -s "$RUNNER_TEMP/traslados-qa-signing.jks"
+      - name: Build only QA app with real map and embedded Conductor
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-qa-signing.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleQa --no-daemon --stacktrace
+      - name: Strict final APK identity, launcher, service, signature and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find mapatrayectos/build/outputs/apk/qa -maxdepth 1 -name '*.apk' | head -1)"
+          test -s "$APK"
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}/build-tools/35.0.0"
+          "$SDK/aapt" dump badging "$APK" > apk-badging.txt
+          grep -q "package: name='uy.com.mapatrayectos.qa'" apk-badging.txt
+          grep -q "application-label:'Mapa Testing'" apk-badging.txt
+          grep -q "launchable-activity: name='uy.com.mapatrayectos.MainActivity'" apk-badging.txt
+          "$SDK/apksigner" verify --verbose --print-certs "$APK" > apk-signature.txt
+          grep -qi "Verified" apk-signature.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p=list(Path('mapatrayectos/build/intermediates/merged_manifest').glob('qa/**/AndroidManifest.xml'))
+          p+=list(Path('mapatrayectos/build/intermediates/merged_manifests').glob('qa/**/AndroidManifest.xml'))
+          assert p, 'Missing merged QA manifest'
+          app=ET.parse(p[0]).getroot().find('application')
+          ns='{http://schemas.android.com/apk/res/android}'
+          assert app.attrib.get(ns+'label')=='Mapa Testing'
+          assert app.attrib.get(ns+'allowBackup')=='false'
+          components={e.attrib.get(ns+'name') for e in app if e.tag in ('activity','service')}
+          for required in ('uy.com.mapatrayectos.MainActivity',
+                           'uy.com.mapatrayectos.TrackingService',
+                           'uy.com.traslados.conductor.MainActivity',
+                           'uy.com.traslados.conductor.ReservationMonitorService'):
+              assert required in components, ('MISSING REAL COMPONENT',required)
+          assert 'uy.com.mapatrayectos.qa.LiveQaActivity' not in components
+          print('PASS: original map/conductor retained, isolated QA label and package')
+          PY
+          mkdir -p qa-delivery
+          cp "$APK" qa-delivery/Mapa-Testing.apk
+          sha256sum qa-delivery/Mapa-Testing.apk > qa-delivery/SHA256SUMS.txt
+          cp apk-badging.txt apk-signature.txt qa-delivery/
+          printf "QA only. Real GPS requires explicit pickup consent, active shift and authorized reservation; no direct production release.\n" > qa-delivery/README.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-Testing-RC1-real-map-signed
+          path: qa-delivery/
+          retention-days: 14
+          if-no-files-found: error

@@ -39,6 +39,15 @@ android {
                 signingConfig signingConfigs.release
             }
         }
+        // Separate QA package; release/production build type stays untouched.
+        qa {
+            initWith release
+            applicationIdSuffix '.qa'
+            versionNameSuffix '-MAPA-TESTING'
+            minifyEnabled false
+            shrinkResources false
+            if (hasReleaseSigning) signingConfig signingConfigs.release
+        }
     }
 
     compileOptions {

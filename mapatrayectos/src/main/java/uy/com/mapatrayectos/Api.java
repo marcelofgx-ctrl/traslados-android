@@ -22,6 +22,46 @@ public final class Api {
     }
     private static final java.util.concurrent.atomic.AtomicBoolean PRESENCE_BUSY=
         new java.util.concurrent.atomic.AtomicBoolean(false);
+    // QA-only authenticated reservation GPS. Never runs in the stable Mapa QT
+    // package or without explicit pickup-presence consent.
+    private static final java.util.concurrent.atomic.AtomicBoolean RESERVATION_GPS_BUSY=
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    private static volatile long reservationGpsAttemptAt=0L;
+    public static void publishReservationPositionQaAsync(boolean active, boolean paused,
+        double lat, double lng, float accuracy, long gpsAtMs) {
+        if(APP==null||!APP.getPackageName().equals("uy.com.mapatrayectos.qa")
+            ||!pickupPresenceEnabled()||!active||paused)return;
+        long now=System.currentTimeMillis();
+        if(!Double.isFinite(lat)||!Double.isFinite(lng)
+            ||lat < -35.3||lat > -30||lng < -58.8||lng > -52.9
+            ||!Float.isFinite(accuracy)||accuracy<=0||accuracy>45f
+            ||gpsAtMs<=0||gpsAtMs>now+10000L||now-gpsAtMs>12000L
+            ||now-reservationGpsAttemptAt<12000L
+            ||!RESERVATION_GPS_BUSY.compareAndSet(false,true))return;
+        reservationGpsAttemptAt=now;
+        new Thread(()->{
+            try{
+                // Uses the existing private device secret. The server checks
+                // active reservation, current consent and uniqueness.
+                if(!pickupPresenceEnabled())return;
+                String[] ids=credentials();
+                JSONObject request=new JSONObject();
+                request.put("p_device_id",ids[0]);
+                request.put("p_device_secret",ids[1]);
+                request.put("p_shift_active",true);
+                request.put("p_shift_paused",false);
+                request.put("p_lat",lat);
+                request.put("p_lng",lng);
+                request.put("p_accuracy_m",accuracy);
+                request.put("p_gps_at_ms",gpsAtMs);
+                // No private data is printed, persisted, or retried.
+                postRpc("mapa_reservation_position_v1",request);
+            }catch(Exception ignored){
+                // Fail closed: passenger only sees data the server authorizes.
+            }finally{RESERVATION_GPS_BUSY.set(false);}
+        },"mapa-testing-reservation-gps").start();
+    }
+
     public static boolean pickupPresenceEnabled(){
         return APP!=null&&APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
             .getBoolean("enabled",false);

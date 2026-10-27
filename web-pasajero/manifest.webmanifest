@@ -1,8 +1,8 @@
 {
-  "name": "Quick Trip · Tu viaje",
-  "short_name": "Quick Trip",
-  "description": "Tu viaje directo o programado. Solicitudes, estado del conductor y seguimiento desde la web.",
-  "id": "./",
+  "name": "Quick Trip Testing · Tu viaje",
+  "short_name": "QT Testing",
+  "description": "Web de pruebas independiente de Quick Trip",
+  "id": "./quicktrip-testing-20261027",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
