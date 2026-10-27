@@ -27,13 +27,39 @@
   status.className="qt-v89-gps-status";status.hidden=true;
   status.setAttribute("role","status");status.setAttribute("aria-live","polite");
   host.querySelector(".loc-search-origin")?.after(status);
+  // Keep a direct GPS action available with a selected origin. Reuse the
+  // existing native button: no new geolocation call, lookup or persistence.
+  const selectedGps=doc.createElement("button");
+  selectedGps.type="button";
+  selectedGps.className="qt-v90-selected-gps";
+  selectedGps.textContent="⌖ Actualizar con mi ubicación";
+  selectedGps.setAttribute("aria-label","Actualizar origen con mi ubicación GPS actual");
+  selectedGps.title="Solicitar mi posición GPS al tocar, no automáticamente";
+  selectedGps.hidden=true;
+  host.querySelector(".location-widget")?.append(selectedGps);
+  selectedGps.addEventListener("click",()=>{
+    if(button.disabled)return;
+    button.click();
+  });
+  const syncSelectedHelp=()=>{
+    if(!controls||!selection)return;
+    const selected=!selection.hidden;
+    const showing=selected&&help&&!help.hidden;
+    host.classList.toggle("qt-v90-selected-gps-help",Boolean(showing));
+    if(showing)controls.hidden=false;
+    else if(selected)controls.hidden=true;
+  };
+
   const show=message=>{if(status.textContent!==message)status.textContent=message;status.hidden=!message};
   const refreshBusy=()=>{
     const busy=button.disabled;
     button.dataset.qtGpsLabel=busy?"Buscando ubicación…":"Mi ubicación";
+    selectedGps.disabled=busy;
+    selectedGps.textContent=busy?"⌖ Buscando ubicación…":"⌖ Actualizar con mi ubicación";
     if(busy&&controls&&!controls.hidden)show("Buscando tu ubicación. Si Chrome ya tiene permiso, no necesita pedirlo otra vez.");
   };
   function refreshHelp(){
+    syncSelectedHelp();
     if(!help||help.hidden){host.classList.remove("qt-v89-prompt-help");return;}
     const title=help.querySelector(".gps-permission-title")?.textContent||"";
     const isPrompt=/antes de autorizar/i.test(title);
@@ -55,6 +81,8 @@
     }
   }
   const refreshSelection=()=>{
+    selectedGps.hidden=!selection||selection.hidden;
+    syncSelectedHelp();
     if(!selection||selection.hidden){return}
     const label=selection.querySelector(".location-selected-label");
     if(!label)return;
@@ -77,6 +105,7 @@
     // original async permission check, never request location ourselves.
     win.setTimeout(refreshHelp,150);
     win.setTimeout(refreshHelp,450);
+    win.setTimeout(syncSelectedHelp,500);
   },{passive:true});
   const observer=new MutationObserver(records=>{
     if(records.some(r=>r.target===button))refreshBusy();

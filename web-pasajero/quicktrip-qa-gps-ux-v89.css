@@ -80,3 +80,29 @@ body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-h
 body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-steps{display:none!important}
 body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-help{padding:9px 11px!important}
 body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-title{font-size:13px!important;margin-bottom:8px!important}
+/* QA selected origin: offer native GPS without discarding saved address.
+   Explicit tap only; the existing app.js remains the sole GPS owner. */
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:not([hidden]){
+  display:inline-flex;align-items:center;justify-content:center;
+  max-width:100%;min-height:44px;margin:7px 0 0;padding:8px 12px;
+  color:#f4dfae;background:#174149;border:1px solid #b99d6b;
+  border-radius:12px;font:750 12px/1.4 system-ui,sans-serif;
+  text-align:center;cursor:pointer;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:focus-visible{
+  outline:3px solid #f7de9d;outline-offset:2px;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:disabled{
+  opacity:.7;cursor:progress;
+}
+/* On Android permission prompt/denial, retain the selected origin and reveal
+   only the original native help, never the hidden address editor. */
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .location-controls{
+  display:block!important;margin-top:5px!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .location-controls > :not(.qt-qa-gps-details):not(.gps-permission-help):not(.qt-v89-gps-status){
+  display:none!important;
+}
+body.qt-v89-gps.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .qt-qa-gps-details{
+  display:block!important;margin:4px 0!important;
+}

@@ -83,7 +83,22 @@ let server,browser;
     if(mode==="granted"){
      await page.evaluate(dest=>destPicker.persist(dest),mockPlace("Destino QA independiente",-34.927,-56.159));
     }
-    await page.locator("#origin-picker .location-use-current").click();
+    // Reproduce the Samsung regression: an origin was already selected.
+    await page.evaluate(()=>originPicker.persist({
+      text:"Origen guardado QA (no GPS)",lat:-34.86,lng:-56.052,
+      department:"Canelones",source:"manual"
+    }));
+    const directGps=page.locator("#origin-picker .qt-v90-selected-gps");
+    await directGps.waitFor({state:"visible",timeout:7000});
+    const preselected=await page.evaluate(()=>({
+      selected:document.querySelector("#origin-picker .location-selected")?.hidden===false,
+      editorHidden:document.querySelector("#origin-picker .location-controls")?.hidden===true,
+      current:record.origin?.text, calls:window.__qtGPSCalls||0
+    }));
+    check(mode+" "+width+" selected origin keeps direct native GPS control",
+      preselected.selected&&preselected.editorHidden&&preselected.calls===0&&
+      preselected.current==="Origen guardado QA (no GPS)",preselected);
+    await directGps.click();
     if(mode==="granted"){
      await page.waitForFunction(()=>record?.origin?.text==="Calle Ficticia QA 123, Canelones",null,{timeout:15000});
      await page.waitForFunction(()=>document.querySelector(".qtc-app")?.dataset.qtV90Quote==="verified",null,{timeout:15000});
@@ -108,6 +123,11 @@ let server,browser;
        buttons:[...h.querySelectorAll("button")].map(x=>x.textContent.trim()),
        calls:window.__qtGPSCalls,destination:record?.destination?.text||""};
      });
+     check(mode+" "+width+" permission rejection preserves selected origin and reveals help",
+       await page.evaluate(()=>record?.origin?.text==="Origen guardado QA (no GPS)" &&
+         document.querySelector("#origin-picker")?.classList.contains("qt-v90-selected-gps-help") &&
+         document.querySelector("#origin-picker .qt-v90-selected-gps")?.getBoundingClientRect().height>=40 &&
+         getComputedStyle(document.querySelector("#origin-picker .gps-permission-help")).display!=="none"));
      check(mode+" "+width+" permission guidance distinct and no IDE request",
       reverse===0&&(mode==="denied"?(state.status.includes("candado")&&/bloqueada/i.test(state.title)):
       (state.status.includes("una sola vez")&&state.buttons.some(x=>x.includes("Permitir ubicación")))),state);

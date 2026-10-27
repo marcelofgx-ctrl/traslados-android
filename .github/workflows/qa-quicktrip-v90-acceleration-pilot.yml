@@ -16,6 +16,8 @@ on:
       - 'web-pasajero/quicktrip-qa-route-v90.js'
       - 'web-pasajero/quicktrip-qa-route-v90.css'
       - 'web-pasajero/quicktrip-qa-stage-b-v90.css'
+      - 'web-pasajero/quicktrip-qa-gps-ux-v89.js'
+      - 'web-pasajero/quicktrip-qa-gps-ux-v89.css'
   workflow_dispatch:
 permissions:
   contents: read
@@ -59,6 +61,8 @@ jobs:
             "web-pasajero/quicktrip-qa-stage-b-v90.css",
             "web-pasajero/quicktrip-qa-stage-b-v90.js",
             "web-pasajero/tests/quicktrip-visual-core-v1-qa.cjs",
+            "web-pasajero/quicktrip-qa-gps-ux-v89.js",
+            "web-pasajero/quicktrip-qa-gps-ux-v89.css",
             "docs/QA_CANAL_SOLICITUDES_SCHEMA_PROPUESTO.sql",
             "qa/backend-worker/README.md",
             "qa/backend-worker/package.json",
