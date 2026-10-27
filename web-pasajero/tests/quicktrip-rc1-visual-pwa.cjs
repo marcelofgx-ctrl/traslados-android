@@ -122,10 +122,10 @@ const delay=ms=>new Promise(done=>setTimeout(done,ms));
      const registration=await navigator.serviceWorker.register("./sw.js");
      await navigator.serviceWorker.ready;
      const keys=await caches.keys();
-     const cache=await caches.open("traslados-pwa-rc1-candidate-20261026");
+     const cache=await caches.open("traslados-pwa-rc1-testing-20261027");
      const css=await cache.match("./quicktrip-rc1.css");
      const js=await cache.match("./quicktrip-rc1-ui.js");
-     return {active:!!registration.active,key:keys.includes("traslados-pwa-rc1-candidate-20261026"),
+     return {active:!!registration.active,key:keys.includes("traslados-pwa-rc1-testing-20261027"),
       css:!!css,js:!!js};
     });
     assert(sw.key&&sw.css&&sw.js,"PWA RC1 precache incomplete: "+JSON.stringify(sw));
