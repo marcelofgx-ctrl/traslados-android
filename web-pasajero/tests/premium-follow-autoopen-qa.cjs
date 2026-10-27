@@ -76,6 +76,8 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
    assert.equal(observed.destination,"Centro de Montevideo");
    await page.waitForFunction(()=>document.querySelector(
        "#view-seguimiento .reservation-live-map .premium-real-map"),{timeout:15000});
+   await page.waitForFunction(()=>document.querySelector(
+       "#view-seguimiento .reservation-live")?.dataset.liveDriver==="true",{timeout:15000});
    const results=await page.evaluate(()=>{
      const section=document.querySelector("#view-seguimiento");
      const map=section.querySelector(".reservation-live-map .premium-real-map");
@@ -84,10 +86,11 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
        gps:section.querySelector(".reservation-live-freshness")?.textContent,
        routeLabel:section.querySelector(".reservation-live-status")?.textContent,
        width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,
-       hasCar:!!map?.querySelector(".premium-map-overlays text")?.textContent?.includes("🚘")};
+       hasCar:[...(map?.querySelectorAll(".premium-map-overlays text")||[])].some(e=>e.textContent?.includes("🚘"))};
    });
    assert(results.mapHeight>=320,"Map is still a miniature: "+JSON.stringify(results));
    assert(results.tiles>0,"Real map tiles were not laid out");
+   assert(results.hasCar,"Authorized real-GPS mode must draw the car, not only the booked route");
    assert(results.overflow<=3,"Mobile horizontal overflow: "+JSON.stringify(results));
    assert.equal(writes,0,"Browser test must not write a booking");
    await page.screenshot({path:path.join(out,"seguimiento-"+width+".png"),fullPage:true,animations:"disabled"});
