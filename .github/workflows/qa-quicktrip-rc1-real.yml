@@ -10,6 +10,7 @@ on:
       - 'web-pasajero/quicktrip-rc1-ui.js'
       - 'web-pasajero/sw.js'
       - 'web-pasajero/tests/quicktrip-rc1-browser.cjs'
+      - 'web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs'
       - 'web-pasajero/tests/fixed-fare-v1-smoke.cjs'
       - 'web-pasajero/tests/booking-steps-smoke.cjs'
       - 'docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md'
@@ -41,6 +42,7 @@ jobs:
            "web-pasajero/index.html","web-pasajero/quicktrip-clean.js",
            "web-pasajero/quicktrip-rc1.css","web-pasajero/quicktrip-rc1-ui.js",
            "web-pasajero/sw.js","web-pasajero/tests/quicktrip-rc1-browser.cjs",
+           "web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs",
            "web-pasajero/tests/fixed-fare-v1-smoke.cjs",
            "web-pasajero/tests/booking-steps-smoke.cjs",
            "docs/QUICKTRIP_RC1_REAL_AUDIT_20261026.md"
@@ -70,7 +72,7 @@ jobs:
           assert src.count('quicktrip-rc1.css')==1
           assert 'quicktrip-clean.css?v=7' not in src
           assert re.search(r'connect-src[^"]*zetaudvvutlouiqxopvg.supabase.co',src)
-          print("PASS RC1: exactly 10 permitted files; original engines/Android/main unmodified; no demo imports")
+          print("PASS RC1: exactly 11 permitted files; original engines/Android/main unmodified; no demo imports")
           PY
       - name: Pure Web/PWA contract regression tests, no external network
         if: ${{ steps.scope_gate.outcome == 'success' }}
@@ -79,6 +81,7 @@ jobs:
           set -euo pipefail
           node --check web-pasajero/quicktrip-rc1-ui.js
           node --check web-pasajero/tests/quicktrip-rc1-browser.cjs
+          node --check web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs
           node --check web-pasajero/sw.js
           node web-pasajero/tests/fixed-fare-v1-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
@@ -107,6 +110,11 @@ jobs:
         env:
           QA_DIR: quicktrip-rc1-evidence/browser
         run: node web-pasajero/tests/quicktrip-rc1-browser.cjs
+      - name: RC1 visual, GPS delegation, schedule and PWA cache - synthetic only
+        if: ${{ steps.scope_gate.outcome == 'success' && steps.browser_ready.outcome == 'success' }}
+        env:
+          QA_DIR: quicktrip-rc1-evidence/visual-pwa
+        run: node web-pasajero/tests/quicktrip-rc1-visual-pwa.cjs
       - name: Evidence archive only (no publishing and no APK)
         if: always()
         uses: actions/upload-artifact@v4
