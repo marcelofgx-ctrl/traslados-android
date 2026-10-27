@@ -3,7 +3,13 @@
  * Solo acepta distancias y tiempos de carretera verificados.
  */
 (function(root){
-  const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+  const PUBLIC_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+  // In QA Preview only: proxy read-only route checks to the original Worker.
+  // Cloudflare's CORS allows the official GitHub Pages hostname, not Vercel.
+  const qaPreview=/^quicktrip-live-qa-only-20261027(?:-[a-z0-9-]+)?-marcelofgx-1927\.vercel\.app$/i
+    .test(root.location?.hostname||"") &&
+    root.document?.documentElement?.dataset?.qtContract==="rc1";
+  const SHARED_ROUTER=qaPreview ? root.location.origin+"/api/testing-road" : PUBLIC_ROUTER;
   const TTL=300000,cache=new Map(),failures=new Map();
   const reasons=new Set(["not_configured","temporarily_unavailable","no_route","invalid_points"]);
   function reason(value){return reasons.has(value)?value:"unverified_response";}
