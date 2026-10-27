@@ -20,8 +20,9 @@ assert(html.includes('id="when-next"'));
 const appVersion=html.match(/app\.js\?v=(\d+)/)?.[1];
 assert(appVersion&&html.indexOf('booking-steps.js?v=1')<html.indexOf('app.js?v='+appVersion),
   "Accordion loads before the application");
-assert(sw.includes('traslados-pwa-v82-quicktrip-warm-notice-v83-20261023')&&sw.includes('booking-steps.js'),
-  "Offline install must include booking steps and a refreshed v83 presentation cache");
+assert(sw.includes('traslados-pwa-rc1-candidate-20261026')&&sw.includes('booking-steps.js')
+  &&sw.includes('quicktrip-rc1.css')&&sw.includes('quicktrip-rc1-ui.js'),
+  "Offline install must preserve booking steps and precache the RC1 presentation");
 assert(css.includes("booking-step-content[hidden]"));
 assert(css.includes("prefers-reduced-motion"));
 assert(css.includes("repeating-linear-gradient"),"Do not lose existing premium texture");
