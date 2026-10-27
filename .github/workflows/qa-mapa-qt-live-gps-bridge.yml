@@ -1,0 +1,49 @@
+name: Quick Trip Live Mapa QA - compile only, NO DEPLOY
+on:
+  push:
+    branches: [qa/mapa-qt-live-gps-bridge-20261027]
+    paths: ['qa/live-android/**', 'mapatrayectos/build.gradle', '.github/workflows/qa-mapa-qt-live-gps-bridge.yml']
+permissions:
+  contents: read
+jobs:
+  android-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: GPS policy tests
+        run: |
+          mkdir -p /tmp/qtlive
+          javac -d /tmp/qtlive qa/live-android/java/uy/com/mapatrayectos/qa/LiveQaPolicy.java qa/live-android/tests/LiveQaPolicyTest.java
+          java -cp /tmp/qtlive LiveQaPolicyTest
+      - name: Existing Mapa assets
+        run: |
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+      - name: Ensure Android SDK 35
+        run: |
+          SDK=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDK" --licenses >/dev/null || true
+          "$SDK" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build Mapa QA variant; no release
+        run: gradle :mapatrayectos:assembleQaLive --no-daemon --stacktrace
+      - name: Check isolated APK
+        run: |
+          find mapatrayectos/build/outputs/apk -name '*.apk' -print
+          test -s mapatrayectos/build/outputs/apk/qaLive/mapatrayectos-qaLive.apk
+          sha256sum mapatrayectos/build/outputs/apk/qaLive/mapatrayectos-qaLive.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-QT-Live-GPS-QA-NO-PRODUCCION
+          path: mapatrayectos/build/outputs/apk/qaLive/*.apk
+          if-no-files-found: error
+          retention-days: 7

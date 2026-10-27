@@ -133,3 +133,22 @@ tasks.register('prepareEmbeddedConductor') {
     }
 }
 tasks.named('preBuild') { dependsOn tasks.named('prepareEmbeddedConductor') }
+
+// QA-only sourceSet: Mapa QT GPS broadcast bridge; normal Debug/Release unchanged.
+android {
+ buildTypes {
+  qaLive {
+   initWith debug
+   applicationIdSuffix '.liveqa'
+   versionNameSuffix '-liveqa'
+   signingConfig signingConfigs.debug
+   matchingFallbacks = ['debug']
+  }
+ }
+ sourceSets {
+  qaLive {
+   java.srcDir '../qa/live-android/java'
+   manifest.srcFile '../qa/live-android/AndroidManifest.xml'
+  }
+ }
+}
