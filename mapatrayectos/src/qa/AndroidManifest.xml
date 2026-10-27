@@ -5,7 +5,6 @@
     <application
         tools:node="replace"
         android:allowBackup="false"
-        android:debuggable="false"
         android:usesCleartextTraffic="false"
         android:label="Mapa QT Live QA"
         android:icon="@drawable/app_icon"
