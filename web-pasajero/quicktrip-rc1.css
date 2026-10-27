@@ -1,0 +1,1434 @@
+/* Quick Trip RC1 — single visual owner selected from validated canonical v86.
+   Preserves native route/ETA, user actions and reservation engines from main.
+   NO fake positions, prices, requests or extra application controllers. */
+/*
+ * QUICK TRIP — CLEAN SCREEN V7
+ * Única hoja visual del producto Quick Trip V7 en producción.
+ * Los estilos históricos del resto de la PWA quedan fuera de esta pantalla.
+ * No hay fórmulas, mapas falsos, kilómetros ni importes de demostración.
+ */
+body.qt-clean.qt-clean-active{background:#061d22!important;overflow-x:hidden}
+body.qt-clean.qt-clean-active>.header{display:none!important}
+body.qt-clean.qt-clean-active .shell{padding:0!important;margin:0 auto!important;max-width:620px!important;width:100%!important}
+body.qt-clean.qt-clean-active .shell>.tabs,
+body.qt-clean.qt-clean-active .shell>footer{display:none!important}
+body.qt-clean.qt-clean-active #view-viaje{
+  display:block!important;box-sizing:border-box!important;margin:0!important;
+  padding:0!important;max-width:none!important;background:#092830!important;
+  color:#f4efe4!important;min-height:100dvh!important;border:0!important
+}
+body.qt-clean #view-viaje>.journey-hero,
+body.qt-clean #view-viaje>.journey-when-compact,
+body.qt-clean #view-viaje>.premium-intro,
+body.qt-clean #view-viaje>.premium-journey-header,
+body.qt-clean #view-viaje>.premium-live-presence,
+body.qt-clean #view-viaje>.premium-position-summary,
+body.qt-clean #view-viaje>.premium-actions{display:none!important}
+body.qt-clean #view-viaje #journey-field-host{display:block!important;margin:0!important;padding:0!important;background:transparent!important}
+body.qt-clean #view-viaje #journey-field-host>.booking-step-card,
+body.qt-clean #view-viaje #journey-field-host>.urgent-actions,
+body.qt-clean #view-viaje #journey-field-host>.success{display:none!important}
+body.qt-clean #view-viaje .qtc-app{
+  --qtc-ink:#f6f0e4;--qtc-muted:#b6c8c4;--qtc-gold:#ecd19b;
+  --qtc-line:rgba(231,207,155,.23);--qtc-panel:#15383e;
+  position:relative;display:block;max-width:620px;margin:0 auto;
+  padding:0;color:var(--qtc-ink);font-family:"Manrope",system-ui,sans-serif;
+  background:#092830;isolation:isolate
+}
+body.qt-clean .qtc-app *,body.qt-clean .qtc-app *:before,
+body.qt-clean .qtc-app *:after{box-sizing:border-box}
+body.qt-clean .qtc-app button,body.qt-clean .qtc-app input,
+body.qt-clean .qtc-app select{font-family:inherit}
+body.qt-clean .qtc-app [hidden]{display:none!important}
+body.qt-clean .qtc-app .qtc-header{
+  position:relative;padding:10px 16px 9px;
+  background:radial-gradient(ellipse at 83% 8%,#33656a 0,transparent 60%),
+    linear-gradient(145deg,#103b40,#092930 83%);
+  border-bottom:1px solid #3b6060;overflow:hidden
+}
+body.qt-clean .qtc-app .qtc-header:after{
+  content:"";position:absolute;inset:auto -12px -15px 23%;
+  height:61px;opacity:.18;pointer-events:none;
+  background:linear-gradient(90deg,transparent 0 4%,#dfcc94 4% 5%,transparent 5% 12%,#dfcc94 12% 13%,transparent 13% 26%,#dfcc94 26% 28%,transparent 28% 40%,#dfcc94 40% 42%,transparent 42% 56%,#dfcc94 56% 57%,transparent 57% 75%,#dfcc94 75% 77%,transparent 77%);
+  mask-image:linear-gradient(to top,#000 0,transparent 100%)
+}
+body.qt-clean .qtc-app .qtc-brand{display:flex;align-items:center;gap:13px;position:relative;z-index:1}
+body.qt-clean .qtc-app .qtc-back-slot{flex:0 0 34px}
+body.qt-clean .qtc-app .journey-back{
+  display:grid!important;place-items:center;position:static!important;
+  background:#17414a!important;color:var(--qtc-gold)!important;
+  border:1px solid var(--qtc-line)!important;box-shadow:none!important;
+  border-radius:12px!important;width:34px!important;height:37px!important;
+  min-height:0!important;margin:0!important;padding:0!important;
+  font-size:0!important;overflow:hidden
+}
+body.qt-clean .qtc-app .journey-back:before{content:"‹";font:normal 28px/1 Arial;color:var(--qtc-gold)}
+body.qt-clean .qtc-app .qtc-logo{width:168px;max-width:calc(100% - 52px);height:46px;object-fit:contain;object-position:left center;filter:drop-shadow(0 2px 5px rgba(0,12,16,.74))}
+body.qt-clean .qtc-app .qtc-header-copy{position:relative;z-index:1;margin:2px 0 0 46px}
+body.qt-clean .qtc-app .qtc-header-copy small{display:block;color:#c9be9e;letter-spacing:.16em;font-size:9px;font-weight:750}
+body.qt-clean .qtc-app .qtc-header-copy h1{font-size:21px;letter-spacing:-.04em;color:#fff5e5;font-weight:780;line-height:1.15;margin:3px 0 0}
+body.qt-clean .qtc-app .qtc-header-copy p{margin:3px 0 0;color:#d7c5a3;font-size:11px}
+body.qt-clean .qtc-app .qtc-content{padding:10px 12px 78px;display:grid;gap:8px}
+body.qt-clean .qtc-app .qtc-places{margin:0;background:transparent}
+body.qt-clean .qtc-app .qtc-places>.booking-step-card{
+  display:block!important;margin:0!important;padding:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important
+}
+body.qt-clean .qtc-app .qtc-places .booking-step-toggle,
+body.qt-clean .qtc-app .qtc-places .booking-step-number,
+body.qt-clean .qtc-app .qtc-places .route-folded-preview,
+body.qt-clean .qtc-app .qtc-places .route-overview,
+body.qt-clean .qtc-app .qtc-places .wayline{display:none!important}
+body.qt-clean .qtc-app #booking-step-route,
+body.qt-clean .qtc-app #booking-step-route[hidden]{
+  display:flex!important;flex-direction:column;gap:0;margin:0!important;
+  padding:0!important;background:transparent!important;overflow:visible!important
+}
+body.qt-clean .qtc-app #origin-picker,
+body.qt-clean .qtc-app #destination-picker{
+  position:relative;display:block;margin:0!important;min-height:75px!important;
+  padding:10px 11px 7px 40px!important;background:#15383e!important;
+  border:1px solid rgba(204,220,202,.19)!important;
+  border-radius:0!important;box-shadow:none!important;
+}
+body.qt-clean .qtc-app #origin-picker{border-radius:18px 18px 0 0!important;border-bottom-color:transparent!important}
+body.qt-clean .qtc-app #destination-picker{border-radius:0 0 18px 18px!important}
+body.qt-clean .qtc-app #origin-picker:before,
+body.qt-clean .qtc-app #destination-picker:before{
+  content:"";position:absolute;top:26px;left:16px;border:3px solid #4dcda2;
+  background:#092c32;border-radius:50%;width:17px;height:17px
+}
+body.qt-clean .qtc-app #destination-picker:before{border-color:#e57f77}
+body.qt-clean .qtc-app #origin-picker:after{
+  content:"";position:absolute;top:47px;bottom:-10px;left:24px;width:1px;
+  background:repeating-linear-gradient(to bottom,#d3b97f 0 4px,transparent 4px 9px);z-index:2
+}
+body.qt-clean .qtc-app .location-widget{
+  background:none!important;border:0!important;box-shadow:none!important;
+  min-height:0!important;max-height:none!important;padding:0!important;margin:0!important
+}
+body.qt-clean .qtc-app .location-title{font-size:10px!important;letter-spacing:.15em!important;color:#cfddcf!important;font-weight:800!important;margin:0 0 4px!important}
+body.qt-clean .qtc-app .location-controls,
+body.qt-clean .qtc-app .location-selected{margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body.qt-clean .qtc-app .location-selected-label{
+  display:block;color:#fff8e9;font-size:14px;font-weight:750;line-height:1.32;
+  white-space:normal;overflow-wrap:anywhere
+}
+body.qt-clean .qtc-app .location-selected-hint{color:#b2c4bc;font-size:10px}
+body.qt-clean .qtc-app .location-edit{
+  background:transparent!important;border:0!important;color:var(--qtc-gold)!important;padding:4px 0!important;
+  text-decoration:underline;font-size:12px
+}
+body.qt-clean .qtc-app .loc-search,
+body.qt-clean .qtc-app .loc-search.loc-search-origin{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 39px!important;
+  gap:8px!important;align-items:center!important;padding:0!important;margin:0!important
+}
+body.qt-clean .qtc-app .loc-search input[type="search"]{
+  width:100%!important;min-height:34px!important;height:35px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  color:#fff8ea!important;font-size:14px!important;font-weight:600!important;
+  padding:5px 0!important
+}
+body.qt-clean .qtc-app .loc-search input::placeholder{color:#e5e8de!important;opacity:1}
+body.qt-clean .qtc-app .loc-search input:focus{outline:0!important;border-bottom:1px solid var(--qtc-gold)!important}
+body.qt-clean .qtc-app .location-search-action,
+body.qt-clean .qtc-app .location-use-current{
+  display:grid!important;place-items:center!important;width:39px!important;height:39px!important;
+  padding:0!important;border-radius:12px!important;border:1px solid #45676c!important;
+  background:#10313a!important;color:var(--qtc-gold)!important;
+  overflow:hidden!important;font-size:0!important;min-width:0!important
+}
+body.qt-clean .qtc-app .location-search-action:before{content:"⌕";font:normal 29px/1 Arial}
+body.qt-clean .qtc-app .location-use-current{font-size:0!important;font-weight:750!important}
+body.qt-clean .qtc-app .location-use-current .premium-gps-short-label{display:block!important;font-size:11px!important;line-height:1.1!important}
+body.qt-clean .qtc-app .premium-department-toggle{
+  display:inline-block!important;margin:3px 0 6px!important;
+  border:0!important;background:transparent!important;color:#bfcabf!important;
+  padding:0!important;font-size:10px!important;min-height:0!important
+}
+body.qt-clean .qtc-app .departments{margin:2px 0 8px!important}
+body.qt-clean .qtc-app .results{
+  position:relative;z-index:8;max-height:235px;overflow-y:auto;
+  background:#103139;border-radius:13px;margin:7px -4px 0!important;
+  box-shadow:0 12px 24px #0006
+}
+body.qt-clean .qtc-app .results button.result{min-height:52px!important;font-size:12px!important}
+body.qt-clean .qtc-app .qtc-history{position:relative;margin:0;z-index:11}
+body.qt-clean .qtc-app .qtc-history-button{
+  position:absolute;right:9px;top:7px;z-index:12;display:inline-flex;align-items:center;gap:5px;min-height:28px;margin:0;padding:3px 10px;
+  background:transparent;color:var(--qtc-gold);border:1px solid #987d58;
+  border-radius:20px;font-size:11px;font-weight:720;letter-spacing:.01em
+}
+body.qt-clean .qtc-app .qtc-history-panel{
+  position:relative;width:100%;z-index:12;max-height:250px;overflow-y:auto;
+  background:#153b40;border:1px solid #aa946f;border-radius:14px;
+  padding:8px;margin:7px 0 9px;box-shadow:0 15px 30px #0005;
+  animation:qtc-history-in .23s cubic-bezier(.2,.7,.3,1)
+}
+@keyframes qtc-history-in{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+body.qt-clean .qtc-app .qtc-history-empty{font-size:12px;color:#d5e0d8;margin:10px}
+body.qt-clean .qtc-app .qtc-history-list{display:grid;gap:4px}
+body.qt-clean .qtc-app .qtc-history-item{
+  display:flex;align-items:center;gap:9px;text-align:left;width:100%;
+  padding:10px;border:0;border-radius:9px;background:#10343a;color:#f5eddf;
+  font-size:12px;line-height:1.45;overflow-wrap:anywhere
+}
+body.qt-clean .qtc-app .qtc-history-pin{font-size:17px;color:var(--qtc-gold);flex:0 0 18px}
+body.qt-clean .qtc-app .premium-route-stops{
+  display:block!important;width:100%;min-height:38px!important;margin:0 0 5px;padding:9px 12px;
+  background:#12343b;border:1px solid rgba(214,200,160,.18);
+  border-radius:13px;text-align:left;color:#dceadf;font-size:12px;font-weight:650
+}
+body.qt-clean .qtc-app #stop-wrap:not([hidden]){display:block;margin:6px 0;padding:10px;border-radius:12px;background:#14373d}
+body.qt-clean .qtc-app #login-for-stops{font-size:11px;color:#b5c9c4;padding:5px 2px}
+body.qt-clean .qtc-app .premium-route-canvas{
+  display:block!important;position:relative;width:100%;overflow:hidden;
+  margin:2px 0 0!important;background:#e9eee9!important;
+  border:1px solid #5f796e!important;border-radius:18px!important;box-shadow:none!important
+}
+body.qt-clean .qtc-app .premium-route-cartography{
+  display:block!important;height:238px!important;min-height:238px!important;
+  overflow:hidden!important;background:#e9eee9!important
+}
+body.qt-clean.journey-mode-quick #view-viaje .qtc-app .premium-real-map{
+  background:#e9eee9!important;box-shadow:none!important;border:0!important;
+  border-radius:0!important
+}
+body.qt-clean.journey-mode-quick #view-viaje .qtc-app .premium-map-tiles{
+  filter:none!important;opacity:1!important
+}
+body.qt-clean.journey-mode-quick #view-viaje .qtc-app .premium-map-route{
+  stroke:#21956d!important;stroke-width:5!important
+}
+body.qt-clean .qtc-app .premium-route-map-note{
+  background:#e9eee9!important;color:#35575b!important;
+  margin:0!important;padding:9px 12px!important;line-height:1.35!important;font-size:10px!important
+}
+body.qt-clean .qtc-app .premium-route-retry:not([hidden]){color:#8a492f!important;background:#e9eee9!important}
+body.qt-clean .qtc-app .qtc-driver{
+  background:#14383e;border:1px solid var(--qtc-line);border-radius:16px;padding:10px 12px
+}
+body.qt-clean .qtc-app .qtc-section-name{display:flex;align-items:center;gap:8px;margin:0 0 5px}
+body.qt-clean .qtc-app .qtc-section-name strong{color:#f6e0b1;font-size:12px}
+body.qt-clean .qtc-app .qtc-section-name small{margin-left:auto;text-align:right;font-size:9px;color:#b7cac2}
+/* Un solo estado del pasajero: los viajes autorizados no se confunden
+   con disponibilidad pública. El seguimiento utiliza el mismo renderer vial. */
+body.qt-clean .qtc-app .qtc-owned-journey:not([hidden]){
+  display:grid;gap:5px;margin:10px 0 5px;padding:12px 13px;
+  border:1px solid rgba(231,203,133,.4);border-radius:13px;
+  background:linear-gradient(120deg,#204348,#13363d)
+}
+body.qt-clean .qtc-app .qtc-owned-journey strong{
+  color:#f6e0b1;font-size:16px;font-weight:800;line-height:1.3
+}
+body.qt-clean .qtc-app .qtc-owned-journey small{
+  color:#e0eae5;font-size:12px;line-height:1.45
+}
+body.qt-clean .qtc-app .qtc-owned-journey[data-tone="pending"]{
+  border-color:rgba(231,203,133,.5)
+}
+body.qt-clean .qtc-app .qtc-owned-journey[data-tone="closed"]{
+  border-color:rgba(226,148,122,.55);background:#3a3234
+}
+body.qt-clean .qtc-app #qtc-owned-details:not([hidden]){
+  justify-self:start;border:1px solid rgba(240,217,176,.6);
+  background:#0e2f36;color:#f5e0b4;border-radius:9px;
+  font:inherit;font-size:12px;font-weight:700;padding:9px 12px;margin-top:5px
+}
+body.qt-clean .qtc-app .qtc-owned-tracking.reservation-live:not([hidden]){
+  display:grid;gap:9px;margin-top:9px;padding:10px;
+  border:1px solid rgba(240,217,176,.26);border-radius:12px;background:#0b2e35
+}
+body.qt-clean .qtc-app .qtc-owned-tracking[hidden]{display:none!important}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading{
+  display:flex;align-items:center;gap:10px;min-width:0
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-icon{
+  display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;
+  border:1px solid #bfa16d;border-radius:10px;background:#174349
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-copy{
+  display:grid;gap:3px;min-width:0
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-heading-copy strong{
+  font-size:14px;line-height:1.35;color:#fff4df
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-status{
+  font-size:11px;line-height:1.4;color:#b7e9cb
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map{
+  overflow:hidden;border-radius:12px;background:#0b2633
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-real-map{
+  position:relative;width:100%;overflow:hidden;border-radius:12px
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-tiles{
+  position:absolute;inset:0;overflow:hidden;filter:grayscale(.28) brightness(.82)
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-tiles img{
+  position:absolute;width:256px;height:256px;max-width:none;pointer-events:none
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-overlays{
+  position:absolute;inset:0;width:100%;height:100%;pointer-events:none
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map .premium-map-credit{
+  position:absolute;right:4px;bottom:4px;padding:3px 5px;border-radius:5px;
+  background:#08242bdc;color:#fff;font-size:9px
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-metrics{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-metric{
+  min-width:0;padding:9px;border-radius:10px;background:#153e43
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-metric small{
+  display:block;font-size:10px;color:#bed0ca
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-metric strong{
+  display:block;margin-top:4px;font-size:18px;color:#f7dd9f
+}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-map{min-height:175px}
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-note,
+body.qt-clean .qtc-app .qtc-owned-tracking .reservation-live-freshness{
+  font-size:11px;line-height:1.45;color:#d0dfd8
+}
+body.qt-clean .qtc-app .qtc-driver[data-ride-status="closed"] #pickup-presence{
+  display:none!important
+}
+body.qt-clean .qtc-app .qtc-driver[data-ride-status="pending"] .qtc-live-dot{
+  background:#dab875;box-shadow:0 0 0 4px rgba(218,184,117,.12)
+}
+body.qt-clean .qtc-app .qtc-driver[data-ride-status="closed"] .qtc-live-dot{
+  background:#d38b78;box-shadow:0 0 0 4px rgba(211,139,120,.12)
+}
+body.qt-clean .qtc-app .qtc-driver #pickup-presence[data-presence="owned"] .pickup-card-header{
+  display:none!important
+}
+/* El mapa inicial vuelve al cambiar de ruta o cerrar el seguimiento. */
+body.qt-clean .qtc-app[data-ride-stage="tracking"] .qtc-places .premium-route-canvas{
+  display:none!important
+}
+body.qt-clean .qtc-app .qtc-live-dot{width:9px;height:9px;border-radius:50%;background:#3fbd8c;box-shadow:0 0 0 4px #3fbd8c1a}
+/* Estado visual derivado del resultado real de disponibilidad.
+   Evita el ambiguo "Recogida por confirmar" cuando la consulta devuelve false.
+   No calcula ETA, no cambia respuestas del motor y no expone datos del conductor. */
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"] .qtc-live-dot{
+  background:#dab875;box-shadow:0 0 0 4px rgba(218,184,117,.12)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable:not([hidden]){
+  display:grid;gap:6px;margin:8px 0;padding:13px 12px;
+  border:1px solid rgba(225,190,121,.35);border-radius:12px;
+  background:linear-gradient(120deg,#214348,#17383d)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable strong{
+  color:#f0d39b;font-size:15px;font-weight:800;line-height:1.28
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable small{
+  color:#deebe2;font-size:11.5px;line-height:1.52
+}
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"]
+  #pickup-presence .pickup-card-header{display:none!important}
+
+
+/* Buscando conductor: estado derivado SOLO de data-phase del motor original. */
+body.qt-clean .qtc-app .qtc-driver-search:not([hidden]){
+  display:flex;align-items:center;gap:13px;min-height:78px;
+  margin:9px 0 6px;padding:12px 10px;border-radius:13px;
+  background:linear-gradient(110deg,#0c2e35,#17444a,#0c2e35);
+  border:1px solid rgba(129,211,177,.27);overflow:hidden
+}
+body.qt-clean .qtc-app .qtc-search-orbit{
+  position:relative;flex:0 0 47px;height:47px;border-radius:50%;
+  display:grid;place-items:center;border:2px solid rgba(90,207,164,.28);
+  background:#0d333b;box-shadow:0 0 0 5px rgba(58,176,144,.05)
+}
+body.qt-clean .qtc-app .qtc-search-orbit::before,
+body.qt-clean .qtc-app .qtc-search-orbit::after{
+  content:"";position:absolute;inset:-3px;border-radius:50%;
+  border:2px solid transparent;border-top-color:#69ddb1;
+  animation:qtc-search-spin 1.6s linear infinite
+}
+body.qt-clean .qtc-app .qtc-search-orbit::after{
+  inset:-8px;border-top-color:rgba(243,214,148,.57);
+  animation-duration:2.9s;animation-direction:reverse
+}
+body.qt-clean .qtc-app .qtc-search-car{
+  display:block;color:#f4d69a;font-size:29px;font-weight:800;
+  transform:rotate(-16deg);text-shadow:0 0 12px rgba(233,197,122,.22)
+}
+body.qt-clean .qtc-app .qtc-search-copy{min-width:0;flex:1;display:grid;gap:4px}
+body.qt-clean .qtc-app .qtc-search-copy strong{font-size:15px;color:#f6e1b4;font-weight:800}
+body.qt-clean .qtc-app .qtc-search-copy small{font-size:11px;color:#c8ded4;line-height:1.5}
+body.qt-clean .qtc-app .qtc-search-dots{display:flex;align-items:center;gap:4px}
+body.qt-clean .qtc-app .qtc-search-dots i{
+  width:5px;height:5px;border-radius:50%;background:#76deb4;opacity:.24;
+  animation:qtc-search-pulse 1.3s ease-in-out infinite
+}
+body.qt-clean .qtc-app .qtc-search-dots i:nth-child(2){animation-delay:.2s}
+body.qt-clean .qtc-app .qtc-search-dots i:nth-child(3){animation-delay:.4s}
+body.qt-clean .qtc-app .qtc-driver[data-search-state="checking"] #pickup-presence .pickup-card-header,
+body.qt-clean .qtc-app .qtc-driver[data-search-state="routing"] #pickup-presence .pickup-card-header,
+body.qt-clean .qtc-app .qtc-driver[data-search-state="waiting"] #pickup-presence .pickup-card-header{
+  display:none!important
+}
+@keyframes qtc-search-spin{to{transform:rotate(360deg)}}
+@keyframes qtc-search-pulse{
+  0%,100%{opacity:.2;transform:translateY(0)}
+  45%{opacity:1;transform:translateY(-3px)}
+}
+body.qt-clean .qtc-app #pickup-presence{
+  display:block!important;background:transparent!important;border:0!important;
+  margin:0!important;padding:5px 0 0!important;box-shadow:none!important
+}
+body.qt-clean .qtc-app #pickup-presence[hidden]{display:none!important}
+body.qt-clean .qtc-app .pickup-card-heading strong{font-size:13px!important;color:#f2f2e7!important}
+body.qt-clean .qtc-app .pickup-card-heading p{font-size:11px!important;color:#bccbc7!important}
+body.qt-clean .qtc-app .pickup-route-animation{display:none!important}
+body.qt-clean .qtc-app .pickup-presence-metrics:not([hidden]){
+  display:grid!important;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px!important
+}
+body.qt-clean .qtc-app .pickup-presence-metric{
+  display:flex;flex-direction:column;gap:4px;min-width:0;padding:9px;
+  border-radius:11px;background:#0e2b32;border:1px solid #ffffff13
+}
+body.qt-clean .qtc-app .pickup-metric-label{font-size:9px!important;color:#bfcabf}
+body.qt-clean .qtc-app .pickup-presence-metric strong{color:var(--qtc-gold);font-size:18px!important}
+body.qt-clean .qtc-app .pickup-presence-meta,
+body.qt-clean .qtc-app .pickup-estimate-note{font-size:10px!important;line-height:1.35!important}
+body.qt-clean .qtc-app .qtc-schedule,
+body.qt-clean .qtc-app .qtc-contact{
+  display:block!important;overflow:visible;background:#14383e;
+  border:1px solid var(--qtc-line);border-radius:15px;padding:0;margin:0!important
+}
+body.qt-clean .qtc-app .qtc-schedule>summary,
+body.qt-clean .qtc-app .qtc-contact>summary{
+  cursor:pointer;display:flex;gap:9px;align-items:center;min-height:55px;
+  padding:12px 14px;color:#f9ecdc;list-style:none;font-size:14px
+}
+body.qt-clean .qtc-app .qtc-schedule>summary::-webkit-details-marker,
+body.qt-clean .qtc-app .qtc-contact>summary::-webkit-details-marker{display:none}
+body.qt-clean .qtc-app .qtc-schedule .qtc-time-icon{color:var(--qtc-gold);font-size:19px}
+body.qt-clean .qtc-app .qtc-time-copy{display:flex;flex-direction:column;gap:2px;flex:1}
+body.qt-clean .qtc-app .qtc-time-copy strong{font-size:14px}
+body.qt-clean .qtc-app .qtc-time-copy small,
+body.qt-clean .qtc-app .qtc-contact>summary small{font-size:10px;color:#b6c6c2}
+body.qt-clean .qtc-app .qtc-contact>summary strong{font-size:13px}
+body.qt-clean .qtc-app .qtc-contact>summary small{margin-left:auto}
+body.qt-clean .qtc-app .qtc-chevron{margin-left:auto;font-size:20px;color:var(--qtc-gold);transition:transform .2s}
+body.qt-clean .qtc-app details[open]>summary .qtc-chevron{transform:rotate(180deg)}
+body.qt-clean .qtc-app .qtc-schedule-slot,
+body.qt-clean .qtc-app .qtc-contact-slot{padding:0 12px 12px}
+body.qt-clean .qtc-app .journey-when-compact{
+  display:block!important;margin:0!important;padding:6px 0 0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important
+}
+body.qt-clean .qtc-app .journey-when-compact>div:first-child,
+body.qt-clean .qtc-app .journey-time-note{display:none!important}
+body.qt-clean .qtc-app #journey-when-select{
+  display:block!important;width:100%;min-height:44px;padding:10px!important;
+  background:#0d2e35!important;color:#fff3df!important;border:1px solid #718175!important;
+  border-radius:11px!important;font-size:13px!important
+}
+body.qt-clean .qtc-app .premium-clock-layout{display:none!important}
+body.qt-clean .qtc-app .qtc-contact .booking-step-card{
+  display:block!important;margin:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;padding:0!important
+}
+body.qt-clean .qtc-app .qtc-contact .booking-step-toggle{display:none!important}
+body.qt-clean .qtc-app #booking-step-passenger,
+body.qt-clean .qtc-app #booking-step-passenger[hidden]{
+  display:block!important;margin:0!important;padding:0!important
+}
+body.qt-clean .qtc-app .qtc-contact input:not([type="checkbox"]),
+body.qt-clean .qtc-app .qtc-contact textarea,
+body.qt-clean .qtc-app .qtc-contact select{
+  width:100%;min-height:42px;padding:9px;border-radius:10px;
+  background:#0c2d33;border:1px solid #668077;color:#fff5e7
+}
+body.qt-clean .qtc-app .qtc-contact label{font-size:11px;color:#e2d6bd}
+body.qt-clean .qtc-app .qtc-contact .two-cols{display:grid;gap:10px}
+body.qt-clean .qtc-app .qtc-contact .premium-contact-extras{display:grid;gap:7px}
+body.qt-clean .qtc-app .qtc-submit-region{
+  border:1px solid #ba9f67;border-radius:18px;padding:14px 13px 12px;
+  background:linear-gradient(140deg,#1c4749,#102f36);box-shadow:0 7px 20px #0004
+}
+body.qt-clean .qtc-app .qtc-summary-title{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:10px
+}
+body.qt-clean .qtc-app .qtc-summary-title span{font-size:14px;color:#fff2d9;font-weight:780}
+body.qt-clean .qtc-app .qtc-summary-title small{font-size:10px;color:#d9c397}
+body.qt-clean .qtc-app #qtc-summary-wait{padding:10px;margin:0 0 10px;font-size:11px;color:#b9cdc7}
+body.qt-clean .qtc-app #urgent-actions{
+  display:block!important;position:relative;margin:0!important;padding:0!important;
+  background:transparent!important;box-shadow:none!important;border:0!important
+}
+body.qt-clean .qtc-app #urgent-actions[hidden]{display:none!important}
+body.qt-clean .qtc-app #urgent-actions .request-hero,
+body.qt-clean .qtc-app #urgent-actions .premium-confirm-route,
+body.qt-clean .qtc-app #urgent-actions #urgent-actions-description,
+body.qt-clean .qtc-app #urgent-actions>.booking-final-note{display:none!important}
+body.qt-clean .qtc-app #urgent-route-recap{
+  display:block!important;margin:0 0 13px!important;padding:0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important
+}
+body.qt-clean .qtc-app #urgent-route-recap[hidden]{display:none!important}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-top{display:none!important}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics{
+  display:grid!important;grid-template-columns:1fr 1fr 1.15fr;gap:6px!important
+}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics>span{
+  display:flex!important;flex-direction:column;gap:5px;
+  padding:11px 6px!important;background:#092d33;border:1px solid #ffffff14;
+  border-radius:10px;min-width:0;text-align:center
+}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics small{font-size:9px;color:#c0d0c9}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics strong{
+  font-size:16px!important;color:#fff3d9!important;white-space:normal;overflow-wrap:anywhere
+}
+body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics>span:last-child strong{
+  color:#f4d390!important;font-size:19px!important
+}
+body.qt-clean .qtc-app #urgent-send{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:12px!important;width:100%!important;min-height:57px!important;
+  margin:0!important;padding:12px!important;background:linear-gradient(180deg,#ffe3a9,#dfaf67)!important;
+  color:#15292b!important;font-size:16px!important;font-weight:850!important;
+  border:1px solid #f6deaf!important;border-radius:15px!important;box-shadow:0 3px 0 #966b3e!important
+}
+body.qt-clean .qtc-app #urgent-send:disabled{opacity:.53!important;filter:grayscale(.25)}
+body.qt-clean .qtc-app #urgent-send .booking-cta-arrow{font-size:19px}
+body.qt-clean .qtc-app #urgent-send-error:not([hidden]){
+  display:block!important;padding:8px;color:#ffe4d2;font-size:11px
+}
+body.qt-clean .qtc-app .qtc-success-slot .success:not([hidden]){
+  display:block;padding:16px;background:#12423f;color:#f4eddd;border:1px solid #80b39a;border-radius:16px
+}
+
+/* Solicitud recibida: jerarquía levemente mayor sin duplicar la confirmación. */
+body.qt-clean .qtc-app #booking-success.success:not([hidden]){
+  display:grid!important;gap:11px!important;text-align:center!important;
+  padding:24px 19px 22px!important;
+  border:1px solid rgba(236,204,145,.73)!important;
+  border-radius:23px!important;
+  background:linear-gradient(150deg,#0d3c43,#082c34)!important
+}
+body.qt-clean .qtc-app #booking-success.success .mark{
+  font-size:46px!important;line-height:1;margin:1px 0 0!important
+}
+body.qt-clean .qtc-app #booking-success.success h2{
+  color:#fff6e6!important;font-size:clamp(27px,7vw,35px)!important;
+  line-height:1.12!important;margin:2px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-lead{
+  font-size:15.5px!important;line-height:1.5!important;
+  margin:3px 0 5px!important;color:#e9f2eb!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-receipt{
+  display:grid!important;gap:8px!important;text-align:left!important;
+  margin:7px 0 5px!important;padding:18px!important;
+  border-radius:17px!important;
+  border:1px solid rgba(230,202,150,.48)!important;
+  background:#092e37!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-label{
+  font-size:11px!important;letter-spacing:.11em!important;font-weight:850!important
+}
+body.qt-clean .qtc-app #booking-success.success .code{
+  font-size:clamp(25px,6.5vw,34px)!important;line-height:1.18!important;
+  color:#f6d795!important;margin:0 0 5px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-price{
+  font-size:clamp(32px,8.2vw,41px)!important;line-height:1.15!important;
+  color:#fff0c9!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-hint,
+body.qt-clean .qtc-app #booking-success.success .success-footer{
+  font-size:14px!important;line-height:1.5!important;margin:1px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-time{
+  font-size:13.5px!important;line-height:1.5!important;
+  margin:2px 0!important;padding:12px!important
+}
+body.qt-clean .qtc-app #booking-success.success .primary.full{
+  min-height:60px!important;margin-top:8px!important;font-size:15px!important;
+  font-weight:800!important;border-radius:15px!important
+}
+body.qt-clean .qtc-app .qtc-bottom-nav{
+  position:fixed!important;bottom:0;left:50%;transform:translateX(-50%);max-width:620px;display:grid;grid-template-columns:repeat(3,1fr);
+  width:100%;z-index:4;padding:9px 8px calc(9px + env(safe-area-inset-bottom,0px));
+  background:#062126;border-top:1px solid #35555b
+}
+body.qt-clean .qtc-app .qtc-bottom-nav button{
+  border:0;background:transparent;color:#d1d6cb;font-size:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:5px 3px;border-radius:10px;min-height:48px
+}
+body.qt-clean .qtc-app .qtc-bottom-nav button span{font-size:10px;font-weight:700}
+body.qt-clean .qtc-app .qtc-bottom-nav button.qtc-current{color:#edce94;background:#12373b}
+body.qt-clean .qtc-app .qtc-bottom-nav button:disabled{opacity:.48}
+/* Los controles de historial solo pertenecen al viaje inmediato. */
+body.qt-clean:not(.journey-mode-quick) #view-reservar .qtc-history,
+body.qt-clean:not(.journey-mode-quick) #view-reservar .qtc-history-button{display:none!important}
+body.qt-clean .qtc-app .qtc-bottom-nav svg{
+  display:block;width:21px;height:21px;flex:0 0 21px;
+  stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round
+}
+@media(min-width:480px){
+ body.qt-clean .qtc-app .qtc-header{padding:20px 30px}
+ body.qt-clean .qtc-app .qtc-content{padding:20px 24px 85px}
+ body.qt-clean .qtc-app .premium-route-cartography{height:276px!important;min-height:276px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.qt-clean .qtc-app *,body.qt-clean .qtc-app *:before,body.qt-clean .qtc-app *:after{animation:none!important;transition:none!important}
+}
+
+/* Producción V7: disponibilidad real en espacio compacto. La validación y el
+   resultado siguen siendo propiedad de app.js, no de la presentación. */
+body.qt-clean .qtc-app .qtc-driver[data-availability="unavailable"] #pickup-presence{
+  display:none!important
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable:not([hidden]){
+  display:flex;flex-direction:column;gap:3px;margin:6px 0 0;
+  padding:10px 12px;min-height:0;border-radius:12px;
+  background:#17383d;border:1px solid rgba(225,190,121,.32)
+}
+body.qt-clean .qtc-app .qtc-driver-unavailable strong{font-size:13px}
+body.qt-clean .qtc-app .qtc-driver-unavailable small{
+  font-size:11px;line-height:1.36
+}
+/* El origen tiene su propio botón GPS: evitar un segundo botón dentro de la
+   ficha de disponibilidad, manteniendo el vínculo de datos intacto. */
+body.qt-clean .qtc-app .qtc-driver #pickup-use-location{
+  display:none!important
+}
+
+/* Estilos funcionales de seguimiento de reservas migrados desde la antigua hoja
+   antes de retirarla. No restaura su diseño de Tu viaje 1/4–4/4. */
+#view-viajes .reservation-live-slot{margin:12px 0 8px;padding:12px;
+  border:1px solid rgba(197,171,112,.65);border-radius:16px;
+  background:linear-gradient(135deg,#0a3640,#071e2c);
+  box-shadow:inset 0 1px rgba(255,245,218,.08),0 8px 22px #0003}
+#view-viajes .reservation-live-heading{display:flex;align-items:center;gap:10px;
+  margin-bottom:10px;min-width:0}
+#view-viajes .reservation-live-heading-icon{display:grid;place-items:center;
+  font-size:24px;width:40px;height:40px;flex:0 0 40px;
+  border:1px solid #bfa16d;border-radius:13px;background:#0e3b40}
+#view-viajes .reservation-live-heading-copy{display:grid;gap:3px;min-width:0}
+#view-viajes .reservation-live-heading-copy strong{font-size:15px;line-height:1.25;
+  font-weight:800;color:#fff4df}
+#view-viajes .reservation-live-status{font-size:12px;font-weight:660;color:#b7e9cb;
+  line-height:1.35}
+#view-viajes .reservation-live-map{min-height:188px;overflow:hidden;border-radius:12px;
+  background:#0b2633}
+#view-viajes .reservation-live-map .premium-real-map{position:relative;width:100%;
+  border:1px solid #5e8a8877;border-radius:12px;overflow:hidden;
+  background:linear-gradient(115deg,#143942,#0b2331)}
+#view-viajes .reservation-live-map .premium-map-tiles{position:absolute;inset:0;overflow:hidden;
+  filter:grayscale(.45) brightness(.72)}
+#view-viajes .reservation-live-map .premium-map-tiles img{position:absolute;
+  width:256px;height:256px;max-width:none;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-overlays{position:absolute;
+  inset:0;width:100%;height:100%;pointer-events:none}
+#view-viajes .reservation-live-map .premium-map-credit{position:absolute;right:4px;
+  bottom:4px;background:#08242bdc;padding:3px 5px;border-radius:5px;color:#fff;font-size:9px}
+#view-viajes .reservation-live-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#view-viajes .reservation-live-metric{background:#062531;border:1px solid #9baf9a55;
+  border-radius:11px;padding:10px 12px;min-width:0}
+#view-viajes .reservation-live-metric small{display:block;color:#bfd2c4;
+  font-size:10px;font-weight:750;letter-spacing:.08em}
+#view-viajes .reservation-live-metric strong{display:block;color:#ffe1a8;
+  margin-top:4px;font-size:20px;font-weight:850;line-height:1.2}
+#view-viajes .reservation-live-note{margin:10px 1px 3px;font-size:11px;
+  line-height:1.45;color:#d2e4dd}
+#view-viajes .reservation-live-freshness{display:block;font-size:10px;color:#a9bdba}
+@media(max-width:359px){
+  #view-viajes .trip-route-label{font-size:13px}
+  #view-viajes .reservation-live-metric strong{font-size:17px}
+  #view-viajes .reservation-live-slot{padding:9px}
+}
+
+/* Seguimiento de fases: números legibles incluso en pantallas estrechas. */
+#view-viajes .reservation-live-metric strong{
+  font-size:clamp(16px,4.6vw,20px);overflow-wrap:anywhere
+}
+#view-viajes .reservation-live-map{min-height:208px}
+#view-viajes .reservation-live-map .premium-map-tiles{filter:grayscale(.28) brightness(.82)}
+#view-viajes .reservation-live-freshness{line-height:1.5}
+
+/* v82 QA · Mis traslados and expanded follow-up reuse the same live GPS module.
+   This panel is not a second static approximation of the driver's location. */
+#view-seguimiento .premium-tracking-map.reservation-live{
+  display:block;padding:12px;border:1px solid rgba(197,171,112,.65);
+  border-radius:16px;background:linear-gradient(135deg,#0a3640,#071e2c);
+  box-shadow:0 8px 22px #0003
+}
+#view-seguimiento .reservation-live-heading{display:flex;align-items:center;gap:10px;
+  min-width:0;margin-bottom:10px}
+#view-seguimiento .reservation-live-heading-icon{display:grid;place-items:center;
+  width:40px;height:40px;flex:0 0 40px;font-size:23px;
+  background:#0e3b40;border:1px solid #bfa16d;border-radius:13px}
+#view-seguimiento .reservation-live-heading-copy{display:grid;gap:3px;min-width:0}
+#view-seguimiento .reservation-live-heading-copy strong{font-size:15px;color:#fff4df}
+#view-seguimiento .reservation-live-status{font-size:12px;color:#b7e9cb;line-height:1.4}
+#view-seguimiento .reservation-live-map{min-height:208px;border-radius:12px;overflow:hidden;background:#0b2633}
+#view-seguimiento .reservation-live-map .premium-real-map{position:relative;width:100%;border-radius:12px;overflow:hidden}
+#view-seguimiento .reservation-live-map .premium-map-tiles{position:absolute;inset:0;overflow:hidden;filter:grayscale(.28) brightness(.82)}
+#view-seguimiento .reservation-live-map .premium-map-tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none}
+#view-seguimiento .reservation-live-map .premium-map-overlays{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#view-seguimiento .reservation-live-map .premium-map-credit{position:absolute;right:4px;bottom:4px;background:#08242bdc;padding:3px 5px;border-radius:5px;color:#fff;font-size:9px}
+#view-seguimiento .reservation-live-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+#view-seguimiento .reservation-live-metric{padding:10px;background:#062531;border:1px solid #9baf9a55;border-radius:11px;min-width:0}
+#view-seguimiento .reservation-live-metric small{display:block;color:#bfd2c4;font-size:10px;font-weight:750;letter-spacing:.06em}
+#view-seguimiento .reservation-live-metric strong{display:block;margin-top:4px;color:#ffe1a8;font-size:clamp(16px,4.6vw,20px);overflow-wrap:anywhere}
+#view-seguimiento .reservation-live-note{margin:10px 1px 3px;color:#d2e4dd;font-size:11px;line-height:1.5}
+#view-seguimiento .reservation-live-freshness{display:block;color:#a9bdba;font-size:10px;line-height:1.5}
+@media(max-width:359px){#view-seguimiento .premium-tracking-map.reservation-live{padding:9px}}
+
+/* V7.1 — identidad de producción también en Mis traslados, Programar, Cuenta,
+   Seguimiento e instalación. Solo presentación: no reemplaza handlers. */
+body.qt-clean:not(.qt-clean-active){
+  background:#082830!important;color:#f6f0e4;
+}
+body.qt-clean:not(.qt-clean-active)>.header{
+  background:linear-gradient(135deg,#133b40,#082a32)!important;
+  border-bottom:1px solid rgba(237,207,151,.2)!important;
+  box-shadow:none!important;backdrop-filter:none!important
+}
+body.qt-clean:not(.qt-clean-active) .header-inner{
+  max-width:620px!important;margin:0 auto!important;
+  padding:9px 14px!important;min-height:62px;gap:10px
+}
+body.qt-clean:not(.qt-clean-active) .identity{gap:9px;align-items:center;overflow:hidden}
+body.qt-clean:not(.qt-clean-active) .identity .quicktrip-page-logo{
+  width:150px;height:43px;object-fit:contain;object-position:left center;
+  border:0!important;border-radius:0!important;box-shadow:none!important
+}
+body.qt-clean:not(.qt-clean-active) .identity small{
+  font-size:9px;color:#d8c69d;letter-spacing:.08em;white-space:nowrap
+}
+body.qt-clean:not(.qt-clean-active) .tel{
+  flex:0 0 38px;width:38px;height:38px;border-radius:13px;
+  display:grid;place-items:center;padding:0!important;
+  color:#ecd19b!important;background:#143a3f!important;
+  font-size:17px
+}
+body.qt-clean:not(.qt-clean-active) .tel span{display:none}
+body.qt-clean:not(.qt-clean-active) .shell{
+  max-width:620px!important;width:100%!important;
+  margin:0 auto!important;padding:0 12px 98px!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  position:fixed!important;top:auto!important;bottom:0;left:50%;
+  transform:translateX(-50%);width:100%;max-width:620px;
+  padding:8px 7px calc(8px + env(safe-area-inset-bottom,0px))!important;
+  margin:0!important;gap:3px;z-index:70;
+  border:0!important;border-top:1px solid #35555b!important;
+  border-radius:0!important;background:#062126!important;
+  box-shadow:none!important;backdrop-filter:none!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs .tab{
+  color:#bbceca;background:transparent;border:0!important;
+  box-shadow:none!important;border-radius:11px!important;
+  min-width:0;min-height:48px;padding:8px 3px!important;
+  font-size:10.5px;line-height:1.25;font-weight:750
+}
+body.qt-clean:not(.qt-clean-active) .shell>.tabs .tab.active{
+  color:#f1d4a1!important;background:#13393c!important
+}
+body.qt-clean:not(.qt-clean-active) .shell>.view.active{
+  padding:13px 0 0!important;min-width:0
+}
+body.qt-clean:not(.qt-clean-active) .shell>.footer{display:none!important}
+
+/* Mis traslados: mismo carbón/petróleo sobrio que Quick Trip, tarjetas útiles y
+   plegables; las categorías/consultas originales siguen a cargo de trip-board. */
+body.qt-clean #view-viajes .trip-intro{display:none!important}
+body.qt-clean #view-viajes .trips-board{
+  padding:15px 12px!important;margin:0!important;
+  background:linear-gradient(155deg,#153c40,#10333b)!important;
+  border:1px solid rgba(226,198,146,.31)!important;
+  border-radius:20px!important;box-shadow:none!important;
+  max-width:100%!important
+}
+body.qt-clean #view-viajes .trips-board-heading{gap:10px;align-items:center}
+body.qt-clean #view-viajes .trips-board-heading h3{
+  color:#fff3dc!important;font-size:20px!important;margin:0
+}
+body.qt-clean #view-viajes .trips-eyebrow{
+  font-size:9px!important;color:#ddc18d!important;margin:0 0 3px;
+  letter-spacing:.12em
+}
+body.qt-clean #view-viajes .trips-refresh{
+  min-height:36px!important;min-width:38px;
+  padding:7px 10px!important;border:1px solid rgba(231,203,133,.32)!important;
+  background:#103239!important;border-radius:11px!important;
+  color:#e9cb93!important;font-size:11px!important
+}
+body.qt-clean #view-viajes .trips-tabs{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
+  overflow:visible!important;gap:5px!important;
+  margin:12px 0 10px!important;padding:0!important
+}
+body.qt-clean #view-viajes .trips-tab{
+  min-width:0!important;min-height:42px!important;
+  padding:7px 3px!important;flex:1 1 auto!important;
+  border-radius:11px!important;background:#0b2d35!important;
+  border:1px solid #436365!important;box-shadow:none!important;
+  font-size:11px!important;color:#e0e6d9!important;
+  white-space:normal!important
+}
+body.qt-clean #view-viajes .trips-tab.active{
+  background:#ecd09b!important;color:#193638!important;
+  border-color:#ecd09b!important
+}
+body.qt-clean #view-viajes .trips-focus{
+  padding:8px 10px!important;margin:0 0 9px!important;
+  font-size:11px!important;line-height:1.4!important;
+  background:#0c3138!important;border:1px solid #2c5557!important
+}
+body.qt-clean #view-viajes .trips-focus:empty,
+body.qt-clean #view-viajes .trips-status:empty{display:none!important}
+body.qt-clean #view-viajes .trips-advanced{margin:0 0 8px!important}
+body.qt-clean #view-viajes .trips-advanced>summary{
+  min-height:38px!important;padding:8px 11px!important;
+  background:#102e36!important;color:#edd1a1!important;
+  font-size:11px!important;border-radius:11px!important
+}
+body.qt-clean #view-viajes .trips-status{
+  font-size:10.5px!important;margin:4px 0 8px!important;
+  white-space:normal!important;overflow-wrap:anywhere
+}
+body.qt-clean #view-viajes .trips-list{gap:8px!important}
+body.qt-clean #view-viajes .trips-day{
+  border-radius:14px!important;background:#082c32!important;
+  border:1px solid rgba(225,196,137,.26)!important
+}
+body.qt-clean #view-viajes .trips-day>summary{
+  min-height:49px!important;padding:10px 12px!important;
+  background:#123b40!important
+}
+body.qt-clean #view-viajes .trips-day-caption{font-size:12.5px!important}
+body.qt-clean #view-viajes .trips-day-count{font-size:10px!important}
+
+/* Comprobante: solo recibo y acción de seguimiento; después del envío ya no
+   tiene sentido mantener debajo el mapa, el formulario ni una tarjeta vacía. */
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-places,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-driver,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-schedule,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-contact,
+body.qt-clean.qt-clean-active #view-viaje:has(#booking-success:not([hidden])) .qtc-submit-region{
+  display:none!important
+}
+body.qt-clean .qtc-app #booking-success.success:not([hidden]){
+  gap:7px!important;padding:16px 13px!important;
+  border-radius:18px!important
+}
+body.qt-clean .qtc-app #booking-success.success .mark{
+  font-size:30px!important
+}
+body.qt-clean .qtc-app #booking-success.success h2{
+  font-size:24px!important;line-height:1.15!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-lead{
+  font-size:12.5px!important;line-height:1.4!important;margin:2px 0!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-receipt{
+  padding:12px!important;gap:4px!important;margin:5px 0 2px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-label{
+  font-size:9px!important
+}
+body.qt-clean .qtc-app #booking-success.success .code{
+  font-size:clamp(18px,4.8vw,23px)!important;margin:0 0 3px!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-price{
+  font-size:27px!important;line-height:1.13!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-hint,
+body.qt-clean .qtc-app #booking-success.success .success-footer{
+  font-size:12px!important;line-height:1.4!important
+}
+body.qt-clean .qtc-app #booking-success.success .success-time{
+  padding:8px!important;margin:0!important;font-size:11.5px!important
+}
+body.qt-clean .qtc-app #booking-success.success .primary.full{
+  min-height:49px!important;font-size:13px!important;margin:6px 0 0!important
+}
+
+/* Pantallas auxiliares: mismo fondo sin reconstruir cuenta y seguimiento. */
+body.qt-clean #view-seguimiento .premium-tracking-toolbar,
+body.qt-clean #view-cuenta .section-heading,
+body.qt-clean #view-instalar .section-heading{
+  border-radius:14px;color:#f4eddd
+}
+@media(max-width:359px){
+ body.qt-clean:not(.qt-clean-active) .identity .quicktrip-page-logo{width:125px}
+ body.qt-clean:not(.qt-clean-active) .identity small{display:none}
+ body.qt-clean #view-viajes .trips-refresh{font-size:0!important}
+ body.qt-clean #view-viajes .trips-refresh::first-letter{font-size:17px}
+}
+
+/*
+ * QA v85 — Tu Viaje compacto en móviles.
+ * Esta es la MISMA hoja de presentación v7: sin motores, sin nodos duplicados,
+ * sin ocultar estado real de recogida, validaciones o botones originales.
+ * Conserva el mapa vial nativo, abierto siempre antes de enviar.
+ */
+@media (max-width:479px){
+  body.qt-clean.qt-clean-active .qtc-app .qtc-header{
+    display:flex;align-items:center;gap:11px;min-height:66px;
+    padding:7px 12px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-brand{flex:0 1 auto;gap:8px;min-width:0}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-back-slot{flex-basis:32px}
+  body.qt-clean.qt-clean-active .qtc-app .journey-back{
+    width:32px!important;height:36px!important;border-radius:11px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-logo{
+    width:120px;height:39px;max-width:calc(100vw - 188px);
+    object-position:left center;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-header-copy{
+    flex:1;min-width:0;margin:0;text-align:right;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-header-copy small,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-header-copy p{display:none}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-header-copy h1{
+    margin:0;font-size:17px;white-space:nowrap;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-content{
+    padding:7px 10px calc(69px + env(safe-area-inset-bottom,0px));gap:6px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #origin-picker,
+  body.qt-clean.qt-clean-active .qtc-app #destination-picker{
+    min-height:62px!important;padding:7px 9px 6px 36px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #origin-picker:before,
+  body.qt-clean.qt-clean-active .qtc-app #destination-picker:before{
+    left:13px;top:23px;width:14px;height:14px;border-width:3px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #origin-picker:after{
+    left:20px;top:40px;bottom:-8px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .location-title{
+    font-size:9px!important;margin-bottom:2px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .location-selected-label{
+    font-size:13px;line-height:1.23;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-history-button{
+    font-size:10px;padding:5px 9px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .premium-route-stops{
+    min-height:32px!important;margin:0 0 3px;padding:7px 10px;
+    font-size:11px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #login-for-stops{
+    font-size:10px;padding:2px 1px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .premium-route-cartography{
+    height:145px!important;min-height:145px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .premium-route-canvas{
+    margin-top:3px!important;border-radius:13px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .premium-route-map-note{
+    padding:5px 9px!important;font-size:9px!important;line-height:1.25!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-driver{
+    border-radius:12px;padding:7px 10px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-section-name{gap:6px;margin-bottom:2px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-section-name small{
+    font-size:9px;line-height:1.1;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #pickup-presence{
+    padding-top:2px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .pickup-card-heading strong{font-size:12px!important}
+  body.qt-clean.qt-clean-active .qtc-app .pickup-card-heading p{
+    font-size:10px!important;line-height:1.28!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .pickup-presence-metrics:not([hidden]){
+    gap:5px;margin-top:5px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .pickup-presence-metric{
+    padding:6px 8px;gap:2px;border-radius:9px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .pickup-presence-metric strong{
+    font-size:16px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact{border-radius:12px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule>summary,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary{
+    min-height:44px;padding:7px 11px;gap:7px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-time-copy strong{font-size:12px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary strong{font-size:12px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary small{
+    font-size:9px;line-height:1.2;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{
+    padding:9px 10px 10px;border-radius:13px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-summary-title{margin-bottom:6px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-summary-title span{font-size:12px}
+  body.qt-clean.qt-clean-active .qtc-app #qtc-summary-wait{
+    padding:4px 0;margin:0 0 7px;line-height:1.25;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #urgent-route-recap{
+    margin-bottom:7px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #urgent-route-recap .request-recap-metrics>span{
+    padding:6px 4px!important;gap:3px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #urgent-route-recap .request-recap-metrics strong{
+    font-size:14px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #urgent-route-recap .request-recap-metrics>span:last-child strong{
+    font-size:17px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app #urgent-send{
+    min-height:49px!important;font-size:14px!important;
+    border-radius:11px!important;padding:9px!important;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav{
+    padding:5px 7px calc(5px + env(safe-area-inset-bottom,0px));
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button{
+    min-height:43px;gap:2px;padding:4px 3px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav button span{font-size:9px}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-bottom-nav svg{
+    width:19px;height:19px;flex-basis:19px;
+  }
+}
+
+/* QA v85.1: controles secundarios en una fila; al abrirse ocupan la fila
+   completa. El botón NATIVO de solicitar queda antes de la barra inferior
+   en la pantalla Samsung 393x852, sin atajos en la validación del motor. */
+@media (max-width:479px){
+  body.qt-clean.qt-clean-active .qtc-app .qtc-content{
+    grid-template-columns:repeat(2,minmax(0,1fr));column-gap:7px;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-places,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-driver,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-submit-region,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-success-slot{
+    grid-column:1 / -1;min-width:0;
+  }
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact{grid-column:auto;min-width:0}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule[open],
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact[open]{grid-column:1 / -1}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary small{display:none}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-chevron{margin-left:auto}
+  body.qt-clean.qt-clean-active .qtc-app .qtc-schedule>summary,
+  body.qt-clean.qt-clean-active .qtc-app .qtc-contact>summary{
+    padding:7px 8px;gap:6px;
+  }
+}
+
+/* Portada base v84: composición de ciudad reutilizada. */
+/* Quick Trip v84 QA — portada de los tres servicios.
+   Capa VISUAL únicamente. No modifica mapas, GPS, reservas, RPC o flujos.
+   Basada en las tarjetas y emblemas ya aprobados en v83. */
+#view-inicio .home-hero{
+  background-image:
+    linear-gradient(95deg,rgba(3,32,39,.96) 0%,rgba(4,43,49,.89) 46%,rgba(5,37,46,.59) 100%),
+    url("./premium-montevideo.webp");
+  background-color:#08303a;
+  background-position:center,center 45%;
+  background-size:cover,cover;
+  border-color:rgba(235,206,144,.48);
+}
+#view-inicio .home-hero h1,
+#view-inicio .home-hero .eyebrow,
+#view-inicio .home-hero > p{position:relative;z-index:1}
+#view-inicio .service-card-scheduled .service-card-name{
+  max-width:100%;
+  line-height:1.13;
+  overflow-wrap:normal;
+}
+#view-inicio .service-card-scheduled .service-card-name em{
+  display:inline;
+}
+#view-inicio .service-card{
+  scroll-margin-top:90px;
+}
+#view-inicio .service-card .service-card-icon{
+  flex-shrink:0;
+}
+@media(max-width:520px){
+  /* Circunferencias de tamaño medio, sin sacrificar área táctil. */
+  #view-inicio .service-card{
+    grid-template-columns:72px minmax(0,1fr) 18px;
+    min-height:122px;
+    gap:11px;
+    padding:12px 12px 12px 10px;
+  }
+  #view-inicio .service-card-icon,
+  #view-inicio .service-emblem{width:72px;height:72px}
+  #view-inicio .service-card-icon:before{width:52px;height:52px}
+  #view-inicio .service-card-name{font-size:clamp(19px,4.8vw,22px)}
+  #view-inicio .service-card-description{font-size:11px}
+  #view-inicio .home-hero{min-height:172px}
+}
+@media(max-width:365px){
+  #view-inicio .service-card{grid-template-columns:66px minmax(0,1fr) 15px;gap:9px}
+  #view-inicio .service-card-icon,
+  #view-inicio .service-emblem{width:66px;height:66px}
+  #view-inicio .service-card-name{font-size:19px}
+}
+
+/* Cierre visual canónico: 3 círculos, Tu Viaje compacto. */
+/* QA v85: recupera la composición circular V6 aprobada, conservando el
+   DOM nativo compacto y los motores originales. Solo en rama QA. */
+body.qt-rc1{
+  --qt-qa-gold:#efd093;
+  background:#031e25;
+}
+body.qt-rc1 #qt-public-qa-banner{
+  font-size:11px!important;line-height:1.25!important;padding:6px 12px!important;
+  position:relative!important;white-space:normal!important;
+}
+body.qt-rc1>.header{background:#072a31;border-color:#c29d5f75}
+body.qt-rc1>.header .header-inner{
+  min-height:65px;padding:5px 14px;
+}
+body.qt-rc1>.header .identity{justify-content:center}
+body.qt-rc1>.header .identity img{
+  width:clamp(156px,47vw,202px);height:54px;object-fit:contain;
+}
+body.qt-rc1>.header .identity>span{display:none}
+body.qt-rc1>.header .tel{display:none}
+body.qt-rc1 .shell{max-width:480px;padding:0 13px 35px}
+body.qt-rc1 .shell>.tabs{display:none!important}
+body.qt-rc1 #view-inicio.home-screen{
+  min-height:calc(100dvh - 100px);background:#04252b;
+  position:relative;padding-bottom:16px;
+}
+body.qt-rc1 #view-inicio .home-hero{
+  min-height:230px;border:0;border-radius:0 0 24px 24px;margin:0;
+  padding:20px 15px 77px;
+  background-image:
+    linear-gradient(180deg,rgba(2,28,34,.25) 0%,rgba(3,31,38,.5) 53%,#04252b 100%),
+    url("./premium-montevideo.webp")!important;
+  background-position:center,center 42%!important;
+  background-repeat:no-repeat!important;
+  background-size:cover!important;
+  overflow:hidden;
+}
+body.qt-rc1 #view-inicio .home-hero:after{display:none}
+body.qt-rc1 #view-inicio .home-hero .eyebrow{
+  font-size:10px;color:#ffdf9c;letter-spacing:.14em;text-align:center;
+  text-shadow:0 2px 8px #00191a;
+}
+body.qt-rc1 #view-inicio .home-hero h1{
+  font:800 clamp(21px,6vw,29px)/1.18 Manrope,Arial,sans-serif;
+  text-align:center;margin:12px auto 0;max-width:320px;
+  color:#fff5dc;text-shadow:0 3px 10px #001a1c;
+}
+body.qt-rc1 #view-inicio .home-hero>p:last-child{display:none}
+body.qt-rc1 #view-inicio .home-section-heading{display:none}
+body.qt-rc1 #view-inicio .service-list{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 10px!important;max-width:420px;margin:-60px auto 13px!important;
+  position:relative;z-index:5;isolation:isolate;padding:0 10px;
+}
+body.qt-rc1 #view-inicio .service-card,
+body.qt-rc1 #view-inicio .service-card-featured,
+body.qt-rc1 #view-inicio .service-card-scheduled,
+body.qt-rc1 #view-inicio .service-card-soon{
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:flex-start!important;
+  width:100%!important;max-width:none!important;min-height:0!important;
+  gap:6px!important;margin:0!important;padding:4px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  text-align:center!important;cursor:pointer;
+}
+body.qt-rc1 #view-inicio .service-card-featured{
+  grid-column:1/-1;justify-self:center!important;width:190px!important;
+}
+body.qt-rc1 #view-inicio .service-card-icon{
+  display:grid!important;place-items:center!important;
+  width:94px!important;height:94px!important;flex:0 0 94px!important;
+  min-height:0!important;border:2px solid #f0ca80!important;
+  border-radius:50%!important;padding:8px!important;
+  background:radial-gradient(circle at 36% 26%,#2c6a65,#0b3e43 60%,#021b26)!important;
+  box-shadow:0 0 0 4px #0a252bc9,0 0 0 6px #d6b3738c,0 9px 24px #000b!important;
+}
+body.qt-rc1 #view-inicio .service-card-featured .service-card-icon{
+  width:116px!important;height:116px!important;flex-basis:116px!important;
+}
+body.qt-rc1 #view-inicio .service-card-icon:before{display:none!important}
+body.qt-rc1 #view-inicio .service-emblem{
+  display:block!important;width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+}
+body.qt-rc1 #view-inicio .service-card-body{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center;gap:4px!important;min-width:0!important;
+  padding:0!important;margin:2px 0 0!important;
+}
+body.qt-rc1 #view-inicio .service-card-name{
+  font:800 clamp(15px,4.4vw,19px)/1.2 Manrope,Arial,sans-serif!important;
+  color:#f6e0ad!important;max-width:190px!important;
+  text-align:center!important;white-space:normal!important;
+}
+body.qt-rc1 #view-inicio .service-card-featured .service-card-name{
+  font-size:22px!important;
+}
+body.qt-rc1 #view-inicio .service-card-description{
+  display:block!important;font-size:10px!important;line-height:1.32!important;
+  text-align:center!important;color:#c6dad5!important;max-width:155px!important;
+}
+body.qt-rc1 #view-inicio .service-card-kicker,
+body.qt-rc1 #view-inicio .service-card-arrow,
+body.qt-rc1 #view-inicio .service-card-action{display:none!important}
+body.qt-rc1 #view-inicio .service-card-soon{opacity:.83}
+body.qt-rc1 #view-inicio .home-quick-links{margin-top:8px}
+/* La pantalla v85 ya utiliza los nodos originales. Solo corregir densidad. */
+body.qt-rc1.qt-clean .qtc-app .qtc-header{
+  min-height:71px!important;padding:9px 13px!important;display:flex!important;
+  align-items:center!important;justify-content:space-between!important;gap:4px!important;
+}
+body.qt-rc1.qt-clean .qtc-app .qtc-header-copy{
+  margin:0 0 0 auto!important;flex:0 0 auto!important;
+}
+body.qt-rc1.qt-clean .qtc-app .qtc-header-copy small,
+body.qt-rc1.qt-clean .qtc-app .qtc-header-copy p{display:none!important}
+body.qt-rc1.qt-clean .qtc-app .qtc-header-copy h1{
+  font-size:18px!important;margin:0!important;white-space:nowrap!important;
+}
+body.qt-rc1.qt-clean .qtc-app .qtc-logo{
+  width:clamp(126px,39vw,168px)!important;max-width:calc(100% - 44px)!important;
+  height:43px!important;
+}
+body.qt-rc1.qt-clean .qtc-app .qtc-content{
+  padding:8px 10px 92px!important;gap:7px!important;
+}
+body.qt-rc1.qt-clean .qtc-app #origin-picker,
+body.qt-rc1.qt-clean .qtc-app #destination-picker{
+  min-height:74px!important;padding:9px 10px 8px 39px!important;
+}
+body.qt-rc1.qt-clean .qtc-app .premium-route-cartography{
+  height:180px!important;min-height:180px!important;
+}
+body.qt-rc1.qt-clean .qtc-app .qtc-bottom-nav{
+  z-index:50!important;
+}
+/* El permiso GPS continúa accesible, pero no es la primera pantalla. */
+body.qt-rc1 .qt-qa-gps-details{
+  margin:8px 0 1px!important;border:1px solid #967a50!important;
+  border-radius:11px!important;padding:6px 9px!important;
+  background:#10343b!important;color:#f4ddb1!important;
+}
+body.qt-rc1 .qt-qa-gps-details>summary{
+  display:list-item!important;cursor:pointer!important;
+  font:750 11px/1.5 Manrope,Arial,sans-serif!important;
+  color:#f3d49c!important;
+}
+body.qt-rc1 .qt-qa-gps-details[open]{padding-bottom:10px!important}
+body.qt-rc1 .qt-qa-gps-details .gps-permission-help{
+  display:block!important;margin:9px 0 0!important;
+}
+body.qt-rc1 .qt-qa-gps-details .gps-permission-help[hidden]{display:none!important}
+@media(max-width:365px){
+  body.qt-rc1 #view-inicio .home-hero{min-height:214px}
+  body.qt-rc1 #view-inicio .service-card-icon{width:83px!important;height:83px!important;flex-basis:83px!important}
+  body.qt-rc1 #view-inicio .service-card-featured .service-card-icon{width:107px!important;height:107px!important;flex-basis:107px!important}
+  body.qt-rc1 .qtc-app .qtc-header-copy h1{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  body.qt-rc1 .service-card-icon{transition:none!important}
+}
+
+/* La navegación heredada no forma parte de las 3 superficies oficiales.
+   Forzar ocultación incluso si el skin base la reactivó después. */
+html body.qt-rc1 main.shell>nav.tabs,
+html body.qt-rc1 nav.tabs{
+  display:none!important;visibility:hidden!important;
+  max-height:0!important;overflow:hidden!important;
+}
+
+/* v86 QA: selector de tema visible; no afecta motores */
+body.qt-rc1 .qt-v86-theme-toggle{
+  appearance:none;display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;
+  padding:8px 10px;border:1px solid #e8c785;border-radius:999px;background:#103b42;
+  color:#ffe3a7;font:750 12px/1.1 Manrope,Arial,sans-serif;min-height:38px;cursor:pointer;
+}
+body.qt-rc1.qt-v86-light{background:#e7f3f0;color:#163c40}
+body.qt-rc1.qt-v86-light>.header{background:#f6faf8;border-color:#b69a64}
+body.qt-rc1.qt-v86-light .qt-v86-theme-toggle{background:#f6f0dc;color:#1e4345;border-color:#ad8b5a}
+body.qt-rc1.qt-v86-light #view-inicio.home-screen{background:#d9ede7;color:#194849}
+body.qt-rc1.qt-v86-light #view-inicio .home-hero{
+  background-image:linear-gradient(180deg,rgba(244,252,248,.15),rgba(227,246,239,.42),rgba(217,237,231,.95)),url("./premium-montevideo.webp")!important;
+}
+body.qt-rc1.qt-v86-light #view-inicio .home-hero h1{color:#173e42;text-shadow:0 1px 7px #ffffff}
+body.qt-rc1.qt-v86-light #view-inicio .service-card-name{color:#275456!important}
+body.qt-rc1.qt-v86-light #view-inicio .service-card-description{color:#2b5a5c!important}
+
+
+/* RC1 validated responsive arrangement: no QA route/driver mask */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app{width:100%!important;max-width:620px!important;overflow-x:clip!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-header{padding:5px 11px!important;min-height:54px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-brand{gap:7px!important;min-height:42px}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-logo{width:clamp(117px,36vw,156px)!important;height:40px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-header-copy h1{font-size:17px!important}
+/* Place primary action above secondary accordion controls; keep original DOM and listeners. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-content{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-areas:"places places" "driver driver" "quote quote" "schedule contact" "success success"!important;gap:6px 7px!important;padding:7px 10px calc(94px + env(safe-area-inset-bottom,0px))!important;align-items:start!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-places{grid-area:places!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-driver{grid-area:driver!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{grid-area:quote!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-schedule{grid-area:schedule!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-contact{grid-area:contact!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-success-slot{grid-area:success!important;min-width:0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker,
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #destination-picker{min-height:62px!important;padding:7px 9px 7px 35px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker:before,
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #destination-picker:before{left:12px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker:after{left:18px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .location-selected-label{font-size:13px!important;line-height:1.24!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .location-selected-hint{font-size:9px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .premium-route-stops{min-height:30px!important;padding:6px 10px!important;margin:2px 0 0!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-driver{padding:8px 10px!important;border-radius:12px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-section-name{margin:0 0 3px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-section-name small{font-size:9px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{padding:8px 10px!important;border-radius:12px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #qtc-summary-wait{color:#e4d9bf!important;font-size:11px!important;line-height:1.35!important;padding:4px 0!important;margin:0 0 5px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #urgent-send{min-height:42px!important;padding:8px 12px!important;font-size:13px!important}
+
+/* RC1: GPS presentation from verified v89; native app.js remains GPS owner. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search.loc-search-origin{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 41px!important;
+  grid-template-areas:"address lookup" "geolocate geolocate"!important;
+  gap:5px 7px!important;
+  align-items:center!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin input[type="search"]{
+  grid-area:address!important;min-width:0!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-search-action{
+  grid-area:lookup!important;width:41px!important;min-width:41px!important;
+  height:41px!important;min-height:41px!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-use-current{
+  grid-area:geolocate!important;
+  justify-self:end!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:8px!important;
+  width:auto!important;min-width:145px!important;max-width:100%!important;
+  height:39px!important;min-height:39px!important;
+  padding:7px 13px!important;
+  border-radius:21px!important;
+  background:linear-gradient(110deg,#244f55,#173c42)!important;
+  border:1px solid rgba(232,207,151,.7)!important;
+  color:#f1dba7!important;
+  box-shadow:0 2px 8px rgba(0,17,24,.27)!important;
+  font-size:0!important;
+  font-weight:700!important;
+  cursor:pointer!important;
+  overflow:visible!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current::before{
+  content:""!important;display:block!important;flex:0 0 21px!important;
+  width:21px!important;height:21px!important;
+  background:#f1dba7!important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z'/%3E%3C/svg%3E") center / contain no-repeat!important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z'/%3E%3C/svg%3E") center / contain no-repeat!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current::after{
+  content:attr(data-qt-gps-label)!important;display:inline!important;
+  font:700 12px/1.2 system-ui,sans-serif!important;
+  white-space:nowrap!important;letter-spacing:0!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current:focus-visible{
+  outline:2px solid #ffe5ac!important;outline-offset:3px!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current:disabled{
+  opacity:.78!important;cursor:progress!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-status{
+  font-size:11px!important;line-height:1.4!important;color:#e2d7bd!important;
+  padding:5px 8px!important;margin:5px 0!important;
+  background:#193d42!important;border-left:3px solid #d7ba7e!important;
+  border-radius:6px!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-status[hidden]{
+  display:none!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v89-gps-fallback{
+  display:block!important;margin-top:4px!important;font-size:11px!important;
+  color:#ead09c!important;line-height:1.38!important;
+}
+@media(max-width:365px){
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .loc-search-origin .location-use-current{
+  min-width:139px!important;min-height:39px!important;padding:7px 9px!important
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current{transition:none!important}
+}
+
+/* Suppress the old tiny GPS glyph/label without altering its native click handler. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .location-use-current .premium-gps-short-label{display:none!important}
+
+/* Compact permission prompt: keep original native action and listeners. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-description,
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-steps{display:none!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-help{padding:9px 11px!important}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v89-prompt-help .gps-permission-title{font-size:13px!important;margin-bottom:8px!important}
+/* QA selected origin: offer native GPS without discarding saved address.
+   Explicit tap only; the existing app.js remains the sole GPS owner. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:not([hidden]){
+  display:inline-flex;align-items:center;justify-content:center;
+  max-width:100%;min-height:44px;margin:7px 0 0;padding:8px 12px;
+  color:#f4dfae;background:#174149;border:1px solid #b99d6b;
+  border-radius:12px;font:750 12px/1.4 system-ui,sans-serif;
+  text-align:center;cursor:pointer;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:focus-visible{
+  outline:3px solid #f7de9d;outline-offset:2px;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker .qt-v90-selected-gps:disabled{
+  opacity:.7;cursor:progress;
+}
+/* On Android permission prompt/denial, retain the selected origin and reveal
+   only the original native help, never the hidden address editor. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .location-controls{
+  display:block!important;margin-top:5px!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .location-controls > :not(.qt-qa-gps-details):not(.gps-permission-help):not(.qt-v89-gps-status){
+  display:none!important;
+}
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker.qt-v90-selected-gps-help .qt-qa-gps-details{
+  display:block!important;margin:4px 0!important;
+}
+
+
+/* RC1 mobile compact geometry: derived from QA v90 visual checks only. */
+@media(max-width:479px){
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-header{min-height:60px!important;padding:5px 10px!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-content{gap:6px 7px!important;padding:7px 10px calc(94px + env(safe-area-inset-bottom,0px))!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app #origin-picker,
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app #destination-picker{min-height:65px!important;padding:7px 9px 7px 35px!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-driver{padding:8px 10px!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .pickup-presence{padding:9px 10px!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app #pickup-presence-metrics{gap:6px;margin:7px 0 5px}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .pickup-presence-metric{min-height:67px;padding:8px!important}
+ body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-submit-region{padding:9px 11px!important}
+}
+/* Light mode changes the surface only. Native cards keep contrast and status. */
+body.qt-rc1.qt-clean.qt-clean-active .qtc-app .qtc-content{background:#092830}
+body.qt-rc1.qt-v86-light.qt-clean.qt-clean-active #view-viaje,
+body.qt-rc1.qt-v86-light.qt-clean.qt-clean-active #view-viaje .qtc-app{background:#e7f1eb!important}
+body.qt-rc1.qt-v86-light.qt-clean.qt-clean-active .qtc-app .qtc-content{background:#e7f1eb;color:#153e40}
+body.qt-rc1.qt-v86-light.qt-clean.qt-clean-active .qtc-app .qtc-places{border:1px solid #c6d9cd;border-radius:14px}
+body.qt-rc1.qt-v86-light.qt-clean.qt-clean-active .qtc-app .qtc-section-name strong{color:#f6dfae}
+body.qt-rc1 .qtc-brand .qt-rc1-journey-theme{margin-left:auto;z-index:2;min-height:42px;flex:0 0 auto;max-width:85px;white-space:normal;padding:6px}
+body.qt-rc1 .qtc-app #urgent-send:not([disabled]){opacity:1!important;pointer-events:auto!important}

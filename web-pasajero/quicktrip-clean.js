@@ -82,7 +82,7 @@
     const route=byId("booking-step-route");
     const destination=byId("destination-picker");
     if(!route||!destination||byId("qtc-history"))return;
-    const box=node("div","qtc-history");box.id="qtc-history";
+    const box=node("div","qtc-history");box.id="qtc-history";box.dataset.qtComponent="collapsible-history";
     historyButton=node("button","qtc-history-button","◷  Historial");
     historyButton.type="button";
     historyButton.setAttribute("aria-expanded","false");
@@ -113,7 +113,7 @@
   // loaded, fail closed to the original usable booking view instead of showing
   // unstyled 720px SVGs, native white buttons, or overlapping layouts.
   function skinReady(){
-    const link=doc.querySelector('link[href*="quicktrip-clean.css"]');
+    const link=doc.querySelector('link[href*="quicktrip-rc1.css"]');
     if(!link||!link.sheet)return false;
     try{return link.sheet.cssRules.length>0;}catch{return false;}
   }
