@@ -1,0 +1,98 @@
+name: QA live pickup ETA CORS proof and GPS RPC diagnosis
+on:
+  push:
+    branches: [qa/fix-eta-origin-cors-20261027]
+    paths: ['.github/workflows/qa-eta-cors-live-proof-20261027.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check approved and forbidden Edge origins with real HTTP OPTIONS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          endpoint="https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"
+          valid=[
+            "https://quicktrip-live-qa-only-20261027-1jxnar9t8-marcelofgx-1927.vercel.app",
+            "https://quicktrip-live-qa-only-20261027-jfz3kqn98-marcelofgx-1927.vercel.app",
+            "https://marcelofgx-ctrl.github.io"]
+          for origin in valid:
+            req=urllib.request.Request(endpoint,method="OPTIONS",headers={
+              "Origin":origin,"Access-Control-Request-Method":"POST",
+              "Access-Control-Request-Headers":"apikey,content-type"})
+            with urllib.request.urlopen(req,timeout=15) as response:
+              cors=response.headers.get("Access-Control-Allow-Origin")
+              print("APPROVED PREFLIGHT",origin,"status",response.status,
+                "CORS exact",cors==origin)
+              assert response.status==200 and cors==origin
+          hostile="https://untrusted-qa-site.example.org"
+          req=urllib.request.Request(endpoint,method="OPTIONS",headers={"Origin":hostile})
+          try:
+            urllib.request.urlopen(req,timeout=15)
+            raise AssertionError("Untrusted origin unexpectedly accepted")
+          except urllib.error.HTTPError as e:
+            print("BLOCKED ORIGIN status",e.code)
+            assert e.code==403
+          PY
+      - name: Safe anonymous GPS RPC mismatch diagnosis (invalid credentials; no state mutation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json,re
+          from pathlib import Path
+          source=Path("mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java").read_text()
+          key=re.search(r'public static final String KEY="([^"]+)"',source).group(1)
+          endpoint="https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/mapa_reservation_position_v1"
+          body={"p_device_id":"00000000-0000-0000-0000-000000000000",
+            "p_device_secret":"invalid-for-qa-diagnosis",
+            "p_shift_active":False,"p_shift_paused":True,
+            "p_lat":-34.9,"p_lng":-56.2,"p_accuracy_m":99.0,
+            "p_gps_at_ms":1}
+          req=urllib.request.Request(endpoint,data=json.dumps(body).encode(),method="POST",
+            headers={"apikey":key,"Content-Type":"application/json","Accept":"application/json"})
+          try:
+            with urllib.request.urlopen(req,timeout=15) as r:
+              data=json.load(r); print("GPS RPC HTTP",r.status,"result reason",data.get("reason"))
+              assert data=={"ok":False,"reason":"unauthorized"},data
+          except urllib.error.HTTPError as e:
+            raw=e.read(8192).decode("utf8","replace")
+            try: result=json.loads(raw)
+            except: result={}
+            print("GPS RPC HTTP",e.code,"PostgREST error code",result.get("code"),
+              "message",str(result.get("message",""))[:280])
+            raise AssertionError("RPC not callable from Android publishable key") from e
+          PY
+      - name: One authorized public ETA request without creating a reservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json
+          origin="https://quicktrip-live-qa-only-20261027-1jxnar9t8-marcelofgx-1927.vercel.app"
+          endpoint="https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"
+          data=json.dumps({"originLat":-34.83696,"originLng":-56.01638}).encode()
+          req=urllib.request.Request(endpoint,data=data,method="POST",headers={
+            "Origin":origin,"Content-Type":"application/json","Accept":"application/json",
+            "User-Agent":"QuickTrip-QA-ETA-Regression/20261027"})
+          try:
+            with urllib.request.urlopen(req,timeout=19) as r:
+              body=json.load(r)
+              print("REAL ETA",{"http":r.status,"available":body.get("available"),
+                "distanceKm":body.get("distanceKm"),"etaMin":body.get("etaMin"),
+                "reason":body.get("reason"),"cors":r.headers.get("Access-Control-Allow-Origin")==origin})
+              assert body.get("available") is True and isinstance(body.get("etaMin"),(int,float)),body
+          except urllib.error.HTTPError as e:
+            raw=e.read(4096).decode("utf8","replace")
+            print("ETA failure HTTP",e.code,"response",raw[:300])
+            raise
+          PY
