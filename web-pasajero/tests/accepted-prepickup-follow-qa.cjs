@@ -96,6 +96,21 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
           width:document.documentElement.scrollWidth-innerWidth};
       });
       assert(waiting.mapHeight>=320,"Large map missing "+JSON.stringify(waiting));
+      const simple=await page.evaluate(()=>{
+        const view=document.querySelector("#view-seguimiento");
+        const extras=view.querySelector(".qt-track-more");
+        const card=reservationView({...tripRows[0]},"qa-guest-never-sent");
+        return {addresses:view.querySelectorAll(".premium-follow-place").length,
+          maps:view.querySelectorAll(".reservation-live-map").length,
+          extrasClosed:extras?.open===false,
+          summaryHasNoMap:!card.querySelector(".reservation-live-slot"),
+          summaryButton:!!card.querySelector(".qt-trip-map-open"),
+          summaryCompact:!card.open,
+          overflow:document.documentElement.scrollWidth-innerWidth};
+      });
+      assert(simple.addresses===2&&simple.maps===1&&simple.extrasClosed&&
+        simple.summaryHasNoMap&&simple.summaryButton&&simple.summaryCompact&&simple.overflow<=3,
+        "Single map + simple list + folded details regression "+JSON.stringify(simple));
       assert(!waiting.hasDriver,"Never draw driver before GPS authorization");
       assert(!waiting.overlays.includes("🚘"),"Never invent a vehicle marker");
       assert(waiting.width<=3,"Mobile overflow");
@@ -150,6 +165,9 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
             ".premium-follow-place[data-point=origin] strong")?.textContent};
       });
       assert(moving.car&&moving.hero==="Conductor en camino",JSON.stringify(moving));
+      await page.locator("#view-seguimiento .qt-track-more summary").click();
+      assert.equal(await page.locator("#view-seguimiento .premium-tracking-actions").isVisible(),true,
+        "Contact controls must remain available inside Details");
       assert.equal(networkWrites,0,"No actual reservation mutations during browser test");
       assert.deepEqual(errors,[],"Uncaught browser errors");
       await page.screenshot({path:path.join(out,"moving-"+width+".png"),fullPage:true});

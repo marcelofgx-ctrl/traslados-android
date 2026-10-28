@@ -1792,9 +1792,8 @@ function reservationView(r,guestToken){
   const d=document.createElement("details");d.className="reservation trip-card";
   d.dataset.tripCode=r.code||"";d.dataset.tone=meta.tone;
   const acceptedOrMoving=meta.tone==="confirmed"||meta.tone==="moving";
-  const firstConfirmation=acceptedOrMoving&&!autoExpandedActiveTrips.has(String(r.code||r.id));
-  if(firstConfirmation)autoExpandedActiveTrips.add(String(r.code||r.id));
-  d.open=openTripCards.has(r.code)||firstConfirmation;
+  // No long automatic expansion when a ride is accepted.
+  d.open=openTripCards.has(r.code);
   d.addEventListener("toggle",()=>{if(d.open)openTripCards.add(r.code);else openTripCards.delete(r.code);});
   const top=text(d,"summary"),head=text(top,"div","","trip-head");
   const date=text(head,"div","","trip-date-wrap");
@@ -1825,55 +1824,10 @@ function reservationView(r,guestToken){
     follow.setAttribute("aria-label","Abrir la solicitud pendiente y su estado real");
     follow.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
   }
-  if(meta.tone==="moving"){
-    // Live tracking stays in this same trip card; no second full-screen map.
-    // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
-    const onBoard=r.status==="EN_VIAJE";
-    const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
-    const live=text(top,"div","","trip-live-spotlight");
-    live.dataset.stage=onBoard?"trip":arrived?"arrived":"approach";
-    live.setAttribute("role","status");
-    text(live,"span",onBoard?"◆":arrived?"✓":"●","trip-live-symbol").setAttribute("aria-hidden","true");
-    const copy=text(live,"div","","trip-live-copy");
-    text(copy,"strong",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Tu conductor está en camino");
-    text(copy,"span",onBoard?"El traslado ya comenzó.":arrived?"Está en el punto de recogida.":"Va hacia el lugar donde te recogerá.");
-    const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
-    if(plate)text(copy,"span","Matrícula · "+plate,"trip-live-vehicle-plate");
-    if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
-    // El conductor es la única fuente de verdad de fases: no crear ETA ni GPS ficticios.
-    const actualStage=onBoard?2:arrived?1:0;
-    const liveSteps=text(top,"div","","premium-trip-timeline");
-    liveSteps.setAttribute("aria-label","Estado de recogida y traslado informado por el conductor");
-    for(const [index,label] of ["En camino","En el punto de recogida","Durante el viaje"].entries()){
-      const item=text(liveSteps,"div","","premium-trip-phase");
-      item.dataset.phaseStatus=index<actualStage?"completed":index===actualStage?"current":"upcoming";
-      const symbol=text(item,"span",index<actualStage?"✓":String(index+1),"premium-trip-phase-dot");
-      symbol.setAttribute("aria-hidden","true");
-      text(item,"small",label,"premium-trip-phase-label");
-      if(index===actualStage)item.setAttribute("aria-current","step");
-    }
-    const quick=text(top,"div","","premium-trip-contact");
-    const call=text(quick,"a","☎ Llamar","premium-trip-call");
-    call.href="tel:+59897228175";
-    call.setAttribute("aria-label","Llamar al conductor de Traslados");
-    // Enlaces externos oficiales: no se comunica el código ni datos personales.
-    const whatsapp=text(quick,"a","◉ WhatsApp","premium-trip-whatsapp");
-    whatsapp.href="https://wa.me/59897228175";
-    whatsapp.rel="noopener noreferrer";whatsapp.target="_blank";
-    whatsapp.setAttribute("aria-label","Abrir WhatsApp del conductor");
-    const chatAction=button(quick,"✉ Chat","premium-trip-chat-link",()=>{
-      d.open=true;
-      const trigger=d.querySelector(".trip-chat-open");
-      if(trigger)trigger.click();else d.scrollIntoView({block:"start",behavior:"smooth"});
-    });
-    // Evita que los tres botones activen además el desplegable <summary>.
-    for(const action of [call,whatsapp,chatAction])
-      action.addEventListener("click",event=>event.stopPropagation());
-    text(top,"p",onBoard
-      ?"El inicio fue informado por el conductor. La finalización se actualizará al cerrar el traslado."
-      :arrived?"El conductor registró su llegada al punto de recogida."
-      :"El conductor confirmó que se dirige a la recogida. Consultá el seguimiento para ver actualizaciones.",
-      "premium-trip-truth");
+  if(acceptedOrMoving){
+    // Single map is in Seguimiento, not duplicated in each Mis traslados card.
+    const follow=button(top,"Ver mapa y seguimiento","qt-trip-map-open",()=>openPremiumTracking(r));
+    follow.addEventListener("click",e=>{e.preventDefault();e.stopPropagation()});
   }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
@@ -1883,13 +1837,6 @@ function reservationView(r,guestToken){
   }
   stop("◉",r.origin_text||"Origen");
   stop(/aeropuerto/i.test(r.destination_text||"")?"✈":"◆",r.destination_text||"Destino");
-  if(acceptedOrMoving){
-    const inlineMap=text(top,"section","","reservation-live-slot");
-    window.TrasladosReservationLive?.mount(inlineMap,{
-      reservation:r,guestToken,sessionToken:authReady()?session?.token:null,
-      rpc,engine:roadEngine,api:API,key:KEY,renderer:window.TrasladosPremiumMap
-    });
-  }
   const foot=text(top,"div","","trip-card-footer");
   const fixedFare=r.fare_mode==="fixed";
   const amount=text(foot,"span",price>0?tripMoney(price):"Importe pendiente",price>0?"trip-card-quote":"trip-card-prompt");
@@ -2067,7 +2014,7 @@ function renderPremiumTracking(){
     text(placeCopy,"small",label);
     text(placeCopy,"strong",String(value||"Dirección no disponible"));
   }
-  const mapHost=text(content,"section","","premium-tracking-map");
+  const mapHost=text(content,"section","","premium-tracking-map qt-track-map");
   mapHost.setAttribute("aria-label",onBoard
     ?"Seguimiento del automóvil hasta el destino"
     :"Seguimiento del automóvil hasta la recogida");
@@ -2103,6 +2050,21 @@ function renderPremiumTracking(){
   whatsapp.href="https://wa.me/59897228175";whatsapp.target="_blank";whatsapp.rel="noopener noreferrer";
   const chat=button(buttons,"✉ Chat","premium-tracking-action",()=>openTripChat(r,r.__guestToken||null,chat));
   text(content,"p","El conductor es quien registra la llegada, el inicio y la finalización del traslado.","premium-tracking-disclaimer");
+  // One disclosure owns secondary information. The live map remains at the
+  // top and continues to receive real, authorized GPS updates.
+  const extra=text(content,"details","","qt-track-more");
+  const label=text(extra,"summary","Detalles del viaje","qt-track-more-summary");
+  label.setAttribute("aria-label","Mostrar estados, matrícula, precio y contactos");
+  const body=text(extra,"div","","qt-track-more-body");
+  const metrics=mapHost.querySelector(".reservation-live-metrics");
+  const note=mapHost.querySelector(".reservation-live-note");
+  const freshness=mapHost.querySelector(".reservation-live-freshness");
+  for(const item of [metrics,note,freshness,card,buttons]){
+    if(item)body.append(item);
+  }
+  const notices=[...content.querySelectorAll(":scope > .premium-tracking-disclaimer")];
+  for(const item of notices)body.append(item);
+  button(body,"Abrir mapa completo","qt-track-expand-map",()=>openFullscreenTracking(r));
 }
 async function decideQuote(id,accept,guestToken=null){
   if(!confirm(accept?"¿Aceptás el presupuesto definitivo?":"¿Rechazás este presupuesto?"))return;
