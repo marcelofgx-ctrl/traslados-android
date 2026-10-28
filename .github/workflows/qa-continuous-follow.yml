@@ -1,0 +1,41 @@
+name: QA continuous passenger tracking - isolated browser only
+on:
+  push:
+    branches: [qa/quicktrip-continuous-follow-audit-20261028]
+    paths: ['web-pasajero/tests/continuous-follow-audit-qa.cjs', '.github/workflows/qa-continuous-follow.yml']
+permissions:
+  contents: read
+jobs:
+  continuous-follow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and immutable engine checks
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/tests/continuous-follow-audit-qa.cjs
+          node --check web-pasajero/quicktrip-map-focus.js
+          node --check web-pasajero/reservation-live.js
+          node --check web-pasajero/premium-map.js
+      - name: Install isolated browser runner
+        run: |
+          set -euo pipefail
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-continuous-audit --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-continuous-audit/node_modules" >> "$GITHUB_ENV"
+      - name: Continuous five-stage local browser audit (no external requests)
+        run: node web-pasajero/tests/continuous-follow-audit-qa.cjs
+      - name: Keep screenshots and JSON for failed transitions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Continuous-Follow-Isolated-QA
+          path: artifacts/continuous-follow-audit/
+          if-no-files-found: warn
+          retention-days: 14
