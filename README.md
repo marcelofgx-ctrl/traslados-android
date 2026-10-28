@@ -16,18 +16,17 @@
 ## Accesos
 
 - [Web única del pasajero](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/)
-- [Descarga Cliente Premium](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-cliente-premium-v15.apk)
-- [Descarga Conductor](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/traslados-conductor-r6.apk)
-- [Descarga Mapa Trayectos](https://marcelofgx-ctrl.github.io/traslados-android/web-pasajero/downloads/mapa-trayectos-r25.0.apk)
+- [Mapa QT — estado automático y enlace de la última APK verificada](docs/ESTADO_AUTOMATICO_TRASLADOS.md) · verificar firma y versión antes de instalar
+- **No instalar APK Cliente ni APK Conductor independientes:** son archivos históricos y no corresponden a la arquitectura vigente
 - [Backend — traslados-web](https://github.com/marcelofgx-ctrl/traslados-web)
 
-Los enlaces anteriores corresponden al corte del 13/10/2026; **verificar el estado automático antes de anunciar que son la última versión**.
+Los enlaces vigentes muestran la web única y el estado técnico verificado. Las descargas antiguas permanecen archivadas en Git para posibles rollbacks, pero dejan de promocionarse como aplicaciones actuales.
 
 ## Organización
 
-- `web-pasajero/` · PWA publicada por GitHub Pages; Cliente Premium usa la misma interfaz vía WebView.
-- `conductor/` · APK nativa Conductor, presupuestos y reservas.
-- `mapatrayectos/` · APK nativa Mapa Trayectos y GPS.
+- `web-pasajero/` · única web/PWA de pasajeros; no se distribuye una APK Cliente independiente.
+- `conductor/` · módulo Android histórico/conductor integrado en Mapa; no se empaqueta como APK independiente.
+- `mapatrayectos/` · única APK Android Mapa QT con GPS y módulo Conductor integrado.
 - `core-reservations/` · código compartido Android.
 - `docs/` · contexto, decisiones, QA e historia.
 - `scripts/estado_traslados.py` + [workflow automático](.github/workflows/estado-tecnico-auto.yml) · regeneran únicamente estado técnico, sin builds.
