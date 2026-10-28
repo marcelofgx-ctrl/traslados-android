@@ -93,7 +93,15 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
     origin:!!document.querySelector("#origin-picker"),destination:!!document.querySelector("#destination-picker"),
     buttonPanelWidth:document.querySelector(".premium-route-canvas .premium-map-controls")?.getBoundingClientRect().width,
     legend:document.querySelector(".premium-route-canvas .premium-map-view-label")?.textContent,
-    instructionsHidden:document.querySelector(".premium-route-canvas .premium-map-gesture-hint")?.hidden
+    instructionsHidden:document.querySelector(".premium-route-canvas .premium-map-gesture-hint")?.hidden,
+    controlsNearBottom:(()=>{
+      const panel=document.querySelector(".premium-route-canvas .premium-map-controls");
+      const map=document.querySelector(".premium-route-canvas .premium-real-map");
+      if(!panel||!map)return false;
+      return panel.getBoundingClientRect().bottom>=map.getBoundingClientRect().bottom-42 &&
+        panel.getBoundingClientRect().top>map.getBoundingClientRect().top+map.getBoundingClientRect().height/2;
+    })(),
+    viewportTileCount:document.querySelectorAll(".premium-route-canvas .premium-map-tiles img").length
    }));
    assert(metrics.horizontalOverflow<=3,"Horizontal overflow: "+JSON.stringify(metrics));
    assert(metrics.pageCanScroll,"Page must remain vertically scrollable");
@@ -102,6 +110,8 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
    assert(metrics.buttonPanelWidth<=60,"Floating map controls too large: "+JSON.stringify(metrics));
    assert.equal(metrics.instructionsHidden,true,"Avoid permanent help overlay covering cartography");
    assert(metrics.legend,"Missing compact verified map context badge");
+   assert(metrics.controlsNearBottom,"Controls must float at the bottom-right, not over the airport: "+JSON.stringify(metrics));
+   assert(metrics.viewportTileCount>=8,"Viewport tiles truncated: "+JSON.stringify(metrics));
    assert.equal(writes,0,"Browser map test must be read-only");
    await page.screenshot({path:path.join(output,"map-close-"+width+".png"),fullPage:true});
    console.log("PASS interactive reference map",width,JSON.stringify({baseline,zoomed,after,overview,metrics}));

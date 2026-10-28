@@ -1,7 +1,7 @@
 name: QA passenger premium live follow - isolated
 on:
   push:
-    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027]
+    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027]
     paths: ['web-pasajero/**','.github/workflows/qa-premium-follow.yml']
 permissions:
   contents: read
@@ -29,8 +29,41 @@ jobs:
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
           node web-pasajero/tests/pickup-eta-stability-v67-smoke.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/qa-route-price-regression.cjs
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
+      - name: Verify original road provider AND live price RPC (read-only requests)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'JS'
+          const fs=require("node:fs"),assert=require("node:assert/strict");
+          const source=fs.readFileSync("web-pasajero/app.js","utf8");
+          const k=source.match(/const KEY="([^"]+)"/)?.[1];
+          assert(k&&k.startsWith("sb_publishable_"));
+          (async()=>{
+            const route="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate?points="+
+              encodeURIComponent("-56.016380,-34.836960;-55.969099,-34.827469");
+            const r=await fetch(route,{signal:AbortSignal.timeout(25000)});
+            const d=await r.json();
+            console.log("LIVE ROAD:",{status:r.status,source:d.source,
+              available:d.available,distanceKm:d.distanceKm,durationMin:d.durationMin,reason:d.reason});
+            assert(r.ok&&d.available===true&&
+              Number.isFinite(d.distanceKm)&&d.distanceKm>0&&
+              Number.isFinite(d.durationMin)&&d.durationMin>=0,
+              "Live road service must provide a verified journey");
+            const quote="https://zetaudvvutlouiqxopvg.supabase.co/rest/v1/rpc/public_reference_quote_v1?p_distance_km="+encodeURIComponent(d.distanceKm);
+            const q=await fetch(quote,{headers:{apikey:k,Accept:"application/json"},
+              signal:AbortSignal.timeout(14000)});
+            const x=await q.json();
+            console.log("LIVE UYU QUOTE:",{status:q.status,available:x.available,
+              currency:x.currency,referenceFareUyu:x.referenceFareUyu,
+              rateUyuPerKm:x.rateUyuPerKm});
+            assert(q.ok&&x.available===true&&x.currency==="UYU"&&
+              Number.isFinite(x.referenceFareUyu)&&x.referenceFareUyu>0,
+              "Price RPC must return a verified UYU value");
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          JS
       - name: Browser dependencies (only test runner, not production)
         shell: bash
         run: |

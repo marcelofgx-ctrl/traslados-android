@@ -3,7 +3,16 @@
  * Solo acepta distancias y tiempos de carretera verificados.
  */
 (function(root){
-  const SHARED_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+  const PUBLIC_ROUTER="https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate";
+  // QA Preview is a different browser origin from the production Cloudflare
+  // Worker. Use the fixed same-origin Vercel route rewrite only for QA.
+  const hostname=root.location?.hostname||"";
+  // Only our separately named QA Vercel preview domains ever use this
+  // rewrite. The real HTML has no data-qt-contract attribute; requiring it
+  // silently disabled pricing on every Testing release.
+  const qaPreview=/^quicktrip-live-qa-only-20261027(?:-[a-z0-9-]+)?-marcelofgx-1927\.vercel\.app$/i.test(hostname)
+    && root.location?.protocol==="https:";
+  const SHARED_ROUTER=qaPreview?root.location.origin+"/api/testing-road":PUBLIC_ROUTER;
   const TTL=300000,cache=new Map(),failures=new Map();
   const reasons=new Set(["not_configured","temporarily_unavailable","no_route","invalid_points"]);
   function reason(value){return reasons.has(value)?value:"unverified_response";}

@@ -79,9 +79,10 @@
     const x0=Math.floor((view.centerX-width/2)/256),x1=Math.floor((view.centerX+width/2)/256);
     const y0=Math.floor((view.centerY-height/2)/256),y1=Math.floor((view.centerY+height/2)/256);
     let n=0, loaded=0;
-    // Máximo 12 imágenes, solo en pantalla y sin descargas masivas.
+    // Only viewport tiles; enough tiles to cover all mobile/tablet edges.
+    // Browser cache handles repeats; never prefetch outside the visible map.
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-      if(y<0||y>=2**view.zoom||n>=12)continue;
+      if(y<0||y>=2**view.zoom||n>=25)continue;
       n++;
       const img=document.createElement("img");img.loading="eager";img.decoding="async";
       img.alt="";img.referrerPolicy="strict-origin-when-cross-origin";

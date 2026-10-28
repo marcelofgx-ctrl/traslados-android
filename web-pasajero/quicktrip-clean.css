@@ -1018,3 +1018,18 @@ body.qt-clean .qtc-app .premium-route-map-note{
 }
 #view-seguimiento .premium-map-controls{top:13px!important;right:13px!important}
 #view-seguimiento .premium-map-view-label{top:13px}
+
+/* Polished mobile map: floating controls at the BOTTOM, out of the route. */
+body.qt-clean .premium-real-map .premium-map-controls,
+#view-seguimiento .premium-map-controls{
+  top:auto!important;bottom:24px!important;right:12px!important;
+  left:auto!important;
+}
+body.qt-clean .premium-real-map .premium-map-credit,
+#view-seguimiento .premium-map-credit{
+  bottom:4px!important;left:7px!important;right:auto!important;
+}
+body.qt-clean .premium-real-map .premium-map-gesture-hint,
+#view-seguimiento .premium-map-gesture-hint{
+  bottom:auto!important;top:58px!important;left:12px!important;
+}
