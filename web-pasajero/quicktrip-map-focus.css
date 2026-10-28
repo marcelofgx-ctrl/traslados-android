@@ -312,3 +312,9 @@ body.qt-clean .premium-route-expand{display:flex;gap:7px;align-items:center;just
   #qt-focus[data-mode="tracking"] .qt-focus-tracking-route{max-height:110px}
   #qt-focus[data-mode="tracking"] .qt-focus-sheet{max-height:38dvh}
 }
+
+/* QT FOLLOW ARRIVED LABEL — visual-only deduplication, not a GPS override.
+   The stage remains readable in the canonical sheet title and details. */
+#qt-focus[data-mode="tracking"][data-follow-stage="arrived"] .reservation-live-status{
+  display:none!important;
+}

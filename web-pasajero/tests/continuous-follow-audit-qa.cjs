@@ -98,6 +98,8 @@ let browser;
            driverLive:live?.dataset.liveDriver==="true",
            mapPresent:!!frame,livePresent:!!live,
            statusText:live?.querySelector(".reservation-live-status")?.textContent,
+           statusVisible:!!live?.querySelector(".reservation-live-status")&&
+             getComputedStyle(live.querySelector(".reservation-live-status")).display!=="none",
            message:el?.querySelector(".qt-focus-message")?.textContent,
            alertOpen:!document.querySelector("#trip-alert-overlay")?.hidden,
            alertTitle:document.querySelector("#trip-alert-title")?.textContent,
@@ -149,7 +151,7 @@ let browser;
        await waitHeading("En tu recogida",true);
        const c=await capture("03-en-punto");
        check(c.mapPresent&&c.hasCar&&c.dual,width+"-pickup-position-with-gps",c);
-       check(/Conductor en el punto de recogida/.test(c.statusText||"")&&
+       check(c.heading==="En tu recogida"&&!c.statusVisible&&
          /Tu conductor te espera/.test(c.alertTitle||""),
          width+"-arrival-copy-consistent",c);
        check(c.sheet==="expanded",width+"-keep-sheet-on-arrival",{
