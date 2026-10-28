@@ -33,7 +33,14 @@
     }
     map.append(mapHost,caption);
     if(summary)map.append(summary);
-    map.append(retry);card.append(map);
+    map.append(retry);
+    // Reuse ONLY verified route state, with no duplicate booking/routing engine.
+    const expand=doc.createElement("button");expand.type="button";
+    expand.className="premium-route-expand";
+    expand.textContent="↗ Ver mapa grande";
+    expand.setAttribute("aria-label","Abrir mapa de tu viaje a pantalla completa");
+    map.append(expand);card.append(map);
+    root.QuickTripMapFocus?.bindOpenButton(expand,getState);
     const stops=doc.createElement("button");stops.type="button";stops.className="premium-route-stops";
     stops.textContent="Agregar paradas (opcional)";
     const stopBody=doc.getElementById("stop-wrap"),login=doc.getElementById("login-for-stops");
@@ -79,6 +86,7 @@
         c.input.placeholder=quick?(c.id==="origin-picker"?"¿Dónde te buscamos?":"¿A dónde vamos?"):c.placeholder;
         if(selected){c.widget.classList.remove("is-editing","is-department-open");c.toggle.setAttribute("aria-expanded","false");}
       }
+      root.QuickTripMapFocus?.sync(state);
       const count=state.stops.filter(Boolean).length;
       stops.textContent=count?count+(count===1?" parada intermedia":" paradas intermedias")+" · Editar":"Agregar paradas (opcional)";
       stops.setAttribute("aria-expanded",String(showStops));
