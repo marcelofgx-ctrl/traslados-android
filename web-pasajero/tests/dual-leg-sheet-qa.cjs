@@ -24,7 +24,11 @@ const cwd=path.resolve(__dirname,"../.."),sleep=ms=>new Promise(r=>setTimeout(r,
     if(url.hostname==="tile.openstreetmap.org")return route.fulfill({
       status:200,contentType:"image/png",
       body:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==","base64")});
-    if(req.method()!=="GET")outboundWrites++;
+    // Existing public availability/route-cache RPCs are read-only POSTs.
+    // The browser mock intercepts every request, so no backend is contacted.
+    const name=url.pathname.split("/").pop()||"";
+    if(req.method()==="POST"&&/create_reservation|customer_request_pickup_fixed|cancel_reservation|customer_quote_decision/i.test(name))
+      outboundWrites++;
     return route.abort();
    });
    const page=await ctx.newPage(),errors=[];
