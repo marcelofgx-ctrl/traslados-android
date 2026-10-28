@@ -1,0 +1,42 @@
+name: QA obsolete follow cleanup - no backend access
+on:
+  push:
+    branches: [qa/quicktrip-prune-obsolete-follow-20261028]
+    paths:
+      - 'seguimiento-review/**'
+      - 'docs/QA_GPS_PUBLISHER_CHAIN_AUDIT_20261028.md'
+      - 'scripts/qa_clean_obsolete_follow.cjs'
+      - '.github/workflows/qa-clean-obsolete-follow.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm only obsolete website was removed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d seguimiento-review
+          test -f web-pasajero/index.html
+          test -f web-pasajero/pruebas/map-first/QA_BUILD.json
+          node --check scripts/qa_clean_obsolete_follow.cjs
+          node --check web-pasajero/reservation-live.js
+          node --check web-pasajero/quicktrip-map-focus.js
+          node --check web-pasajero/premium-map.js
+          node scripts/qa_clean_obsolete_follow.cjs
+      - name: Existing pure JS GPS and availability contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/premium-map-smoke.cjs
