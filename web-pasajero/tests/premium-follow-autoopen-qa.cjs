@@ -50,6 +50,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
      }
      return route.abort();
    });
+   await context.addInitScript(()=>{try{sessionStorage.setItem("quicktrip.gps.welcome.session.v1","completed")}catch{}});
    const page=await context.newPage(),errors=[];
    page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:8291/web-pasajero/",{waitUntil:"load"});

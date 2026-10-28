@@ -1,7 +1,7 @@
 name: QA passenger premium live follow - isolated
 on:
   push:
-    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027, qa/quicktrip-accepted-follow-20261027, qa/quicktrip-fullscreen-map-20261027]
+    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027, qa/quicktrip-accepted-follow-20261027, qa/quicktrip-fullscreen-map-20261027, qa/quicktrip-gps-welcome-20261028]
     paths: ['web-pasajero/**','.github/workflows/qa-premium-follow.yml']
 permissions:
   contents: read
@@ -21,6 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check web-pasajero/app.js
+          node --check web-pasajero/gps-welcome.js
           node --check web-pasajero/reservation-live.js
           node --check web-pasajero/premium-map.js
           node --check web-pasajero/premium-route.js
@@ -33,6 +34,7 @@ jobs:
           node web-pasajero/tests/qa-route-price-regression.cjs
           node web-pasajero/tests/search-smoke.cjs
           node web-pasajero/tests/booking-send-navigation-v48-smoke.cjs
+          node web-pasajero/tests/location-permission-smoke.cjs
       - name: Verify original road provider AND live price RPC (read-only requests)
         shell: bash
         run: |
@@ -82,6 +84,7 @@ jobs:
           node web-pasajero/tests/fullscreen-ride-map-qa.cjs
           node web-pasajero/tests/dual-leg-sheet-qa.cjs
           node web-pasajero/tests/inline-map-tiles-qa.cjs
+          node web-pasajero/tests/gps-welcome-qa.cjs
       - name: Visual evidence
         uses: actions/upload-artifact@v4
         if: always()
@@ -94,5 +97,6 @@ jobs:
             artifacts/fullscreen-ride/
             artifacts/dual-leg-sheet/
             artifacts/inline-map-tiles/
+            artifacts/gps-welcome/
           if-no-files-found: warn
           retention-days: 14

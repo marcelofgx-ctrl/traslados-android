@@ -31,6 +31,7 @@ const cwd=path.resolve(__dirname,"../.."),sleep=ms=>new Promise(r=>setTimeout(r,
       outboundWrites++;
     return route.abort();
    });
+   await ctx.addInitScript(()=>{try{sessionStorage.setItem("quicktrip.gps.welcome.session.v1","completed")}catch{}});
    const page=await ctx.newPage(),errors=[];
    page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:8296/web-pasajero/",{waitUntil:"load"});

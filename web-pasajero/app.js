@@ -923,8 +923,11 @@ function picker(name,mount,position){
       showGpsPermissionPreparation();
     }
   };
-  function requestGps(){
-    if(!navigator.geolocation||geo?.disabled)return;
+  function requestGps(onResult){
+    if(typeof onResult!=="function")onResult=null;
+    if(!navigator.geolocation||geo?.disabled){
+      onResult?.({ok:false,code:0});return;
+    }
     if(gpsHelp)gpsHelp.hidden=true;
     const original=geo.textContent;
     geo.disabled=true;geo.textContent="⌖ Obteniendo ubicación…";
@@ -935,7 +938,7 @@ function picker(name,mount,position){
       try{
         const lat=p.coords.latitude,lng=p.coords.longitude;
         if(!isUruguayCoords(lat,lng)){
-          tell("La ubicación detectada no está en Uruguay. Elegí el origen manualmente.");return;
+          tell("La ubicación detectada no está en Uruguay. Elegí el origen manualmente.");onResult?.({ok:false,code:2});return;
         }
         let address="Ubicación actual (GPS)",selectedDept=dept;
         try{
@@ -945,11 +948,13 @@ function picker(name,mount,position){
           }
         }catch{/* Las coordenadas GPS siguen siendo válidas sin geocodificación. */}
         persist({text:address,lat,lng,department:selectedDept,source:"gps"});
-      }catch{showGpsPermissionHelp(2);}
+        onResult?.({ok:true});
+      }catch{showGpsPermissionHelp(2);onResult?.({ok:false,code:2});}
       finally{finish();}
     },error=>{
       finish();
       showGpsPermissionHelp(error?.code??0);
+      onResult?.({ok:false,code:error?.code??0});
     },{enableHighAccuracy:true,timeout:14000,maximumAge:15000});
   }
   if(name==="stop"&&record.stops[position])persist(record.stops[position]);
@@ -960,7 +965,7 @@ function picker(name,mount,position){
     if(gpsHelp)gpsHelp.hidden=true;
     repaint();
   }
-  return {state:()=>selected,chooseDept,input,persist,box,useCurrent,resetSelection};
+  return {state:()=>selected,chooseDept,input,persist,box,useCurrent,requestGps,resetSelection};
 }
 // El motor vial no depende de la UI ni del estado de reservas.
 const roadEngine=window.TrasladosRoutes;
@@ -2647,5 +2652,8 @@ function init(){
   // Public homepage deep link opens the PWA installer view, not a separate app.
   if(window.location.hash==="#instalar")shiftView("instalar");
   if(authReady()||jsonStorage(GUEST_KEY,[]).length)void loadTrips({background:true});
+  // Consent-first QA only: existing origin picker is the single GPS and address engine.
+  window.QuickTripGpsWelcome?.mount({hasOrigin:()=>Boolean(record.origin),
+    start:callback=>originPicker.requestGps(callback)});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();

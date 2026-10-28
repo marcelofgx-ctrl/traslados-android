@@ -51,6 +51,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
             geometry:[[-34.805,-56.04],[-34.81,-56.06],[-34.82,-56.08]]}});
         return route.fulfill({status:200,contentType:"application/json",body:'{"available":false,"reason":"qa"}'});
       });
+      await ctx.addInitScript(()=>{try{sessionStorage.setItem("quicktrip.gps.welcome.session.v1","completed")}catch{}});
       const page=await ctx.newPage();let errors=[];
       page.on("pageerror",e=>errors.push(e.message));
       await page.goto("http://127.0.0.1:8297/web-pasajero/",{waitUntil:"load"});

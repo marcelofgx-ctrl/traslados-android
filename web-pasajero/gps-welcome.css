@@ -1,0 +1,39 @@
+/* Quick Trip QA — consent screen before the user starts booking. */
+#qt-gps-welcome[hidden]{display:none!important}
+#qt-gps-welcome{position:fixed;inset:0;z-index:16000;
+  display:flex;align-items:center;justify-content:center;overflow-y:auto;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 17px
+          calc(20px + env(safe-area-inset-bottom,0px));
+  background:rgba(4,20,25,.94);color:#f9f5ed;
+  font-family:system-ui,-apple-system,sans-serif}
+#qt-gps-welcome *{box-sizing:border-box}
+#qt-gps-welcome .qt-gps-welcome-card{width:min(100%,420px);
+  background:linear-gradient(155deg,#174347,#0c2831);
+  border:1px solid #d5bb8177;border-radius:27px;
+  padding:28px 23px 24px;display:flex;flex-direction:column;align-items:center;
+  gap:13px;text-align:center;box-shadow:0 24px 64px #0008}
+#qt-gps-welcome .qt-gps-welcome-brand{font-size:12px;letter-spacing:.14em;
+  font-weight:800;color:#e6ce99;margin:0}
+#qt-gps-welcome .qt-gps-welcome-symbol{width:78px;height:78px;
+  display:grid;place-items:center;border-radius:50%;background:#135756;
+  border:2px solid #b9dfd0;color:#b9dfd0;font-size:60px;line-height:1}
+#qt-gps-welcome #qt-gps-welcome-title{font-size:26px;line-height:1.15;
+  margin:4px 0 0;color:#fff9ee}
+#qt-gps-welcome .qt-gps-welcome-description{font-size:15px;line-height:1.55;
+  margin:0;color:#d9e7e2}
+#qt-gps-welcome .qt-gps-welcome-note{font-size:12px;line-height:1.5;
+  margin:0;color:#bbcec8}
+#qt-gps-welcome .qt-gps-welcome-steps{font-size:12px;text-align:left;
+  line-height:1.5;margin:0;padding:12px 15px 12px 28px;
+  background:#09242bcf;border-radius:12px;width:100%;color:#e8eee9}
+#qt-gps-welcome .qt-gps-welcome-steps[hidden]{display:none!important}
+#qt-gps-welcome button{display:block;width:100%;min-height:53px;
+  border:0;border-radius:14px;padding:12px;font:750 15px system-ui;
+  cursor:pointer;touch-action:manipulation}
+#qt-gps-welcome button:focus-visible{outline:3px solid #a8f2d0;outline-offset:3px}
+#qt-gps-welcome .qt-gps-welcome-primary{background:#ebcf92;color:#102d2e}
+#qt-gps-welcome .qt-gps-welcome-primary:disabled{opacity:.6;cursor:wait}
+#qt-gps-welcome .qt-gps-welcome-manual{background:transparent;color:#e4f0e9;
+  border:1px solid #aecac088}
+@media(max-height:560px){#qt-gps-welcome{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){#qt-gps-welcome *{animation:none!important;transition:none!important}}

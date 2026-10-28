@@ -30,6 +30,7 @@ const cwd=path.resolve(__dirname,"../.."),delay=ms=>new Promise(ok=>setTimeout(o
     if(r.method()==="POST"&&/create_reservation|customer_request_pickup_fixed|cancel_reservation/i.test(rpc))writes++;
     return route.fulfill({status:200,contentType:"application/json",body:'{"available":false,"reason":"qa"}'});
    });
+   await ctx.addInitScript(()=>{try{sessionStorage.setItem("quicktrip.gps.welcome.session.v1","completed")}catch{}});
    const page=await ctx.newPage(),errors=[];
    page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:8299/web-pasajero/",{waitUntil:"load"});

@@ -33,6 +33,7 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
     if(req.method()==="POST"&&/^(?:create_reservation|customer_create_reservation_v\\d+|customer_request_pickup_fixed_v\\d+|customer_cancel_reservation|customer_quote_decision_v\\d+|mapa_accept_reservation.*)$/i.test(rpcName))writes++;
     return route.fulfill({status:200,contentType:"application/json",body:'{"available":false,"reason":"qa"}'});
    });
+   await ctx.addInitScript(()=>{try{sessionStorage.setItem("quicktrip.gps.welcome.session.v1","completed")}catch{}});
    const page=await ctx.newPage();const errors=[];page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:8298/web-pasajero/?ui=clean");
    const host=".premium-route-canvas .premium-real-map";
