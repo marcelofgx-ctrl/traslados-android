@@ -27,7 +27,10 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
     if(url.hostname==="127.0.0.1")return route.continue();
     if(url.hostname==="tile.openstreetmap.org")return route.fulfill({status:200,contentType:"image/png",
      body:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==","base64")});
-    if(req.method()==="POST")writes++;
+    // Supabase read-only RPCs also use POST. Only count actual booking
+    // mutations; ALL outbound requests are intercepted before any network.
+    const rpcName=url.pathname.split("/").pop()||"";
+    if(req.method()==="POST"&&/^(?:create_reservation|customer_create_reservation_v\\d+|customer_request_pickup_fixed_v\\d+|customer_cancel_reservation|customer_quote_decision_v\\d+|mapa_accept_reservation.*)$/i.test(rpcName))writes++;
     return route.fulfill({status:200,contentType:"application/json",body:'{"available":false,"reason":"qa"}'});
    });
    const page=await ctx.newPage();const errors=[];page.on("pageerror",e=>errors.push(e.message));
