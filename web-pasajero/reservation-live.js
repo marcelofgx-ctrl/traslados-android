@@ -98,7 +98,7 @@
         contractRoute.geometry.length>=2;
       if(!renderer.render(mapHost,dual?contractRoute.geometry:result.geometry,{
         height,fullscreen:Boolean(overlay),
-        routeMode:dual?"contract":mode,
+        routeMode:mode,
         secondaryGeometry:dual?result.geometry:null,
         driverPosition:dual?points[0]:null,
         previousCar:kind==="driver"?lastDriverPos:null,
