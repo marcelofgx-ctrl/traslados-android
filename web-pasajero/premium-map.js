@@ -118,7 +118,7 @@
     }
     if(!options.overview){
       path("#042e46",9,"premium-map-route-shadow");
-      path(live?"#56cba0":"#2b866e",5,"premium-map-route");
+      path(secondary?"#f5f7f8":live?"#56cba0":"#2b866e",5,"premium-map-route");
       if(secondary){
         const plotted=secondary.map(project).filter(Boolean).map(p=>[
           (p[0]*view.scale-view.centerX)+width/2,
