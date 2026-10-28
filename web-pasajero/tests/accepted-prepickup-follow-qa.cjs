@@ -99,6 +99,41 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       assert(!waiting.hasDriver,"Never draw driver before GPS authorization");
       assert(!waiting.overlays.includes("🚘"),"Never invent a vehicle marker");
       assert(waiting.width<=3,"Mobile overflow");
+      const ui=await page.evaluate(()=>{
+        const root=document.querySelector("#view-seguimiento");
+        const card=root.querySelector(".premium-tracking-card");
+        const timeline=root.querySelector(".premium-tracking-timeline");
+        const steps=[...root.querySelectorAll(".premium-tracking-step")];
+        const buttons=[...root.querySelectorAll(".premium-tracking-actions .premium-tracking-action")];
+        const boxes=steps.map(x=>x.getBoundingClientRect());
+        const actions=buttons.map(x=>x.getBoundingClientRect());
+        const header=root.querySelector(".premium-tracking-stephead");
+        const strong=root.querySelector(".premium-tracking-step-text strong");
+        const circle=root.querySelector(".premium-tracking-step-dot");
+        return {cardWidth:card?.getBoundingClientRect().width||0,
+          timelineDisplay:getComputedStyle(timeline).display,
+          stepDisplay:steps.map(x=>getComputedStyle(x).display),
+          stepCount:steps.length,buttonCount:buttons.length,
+          noOverlap:boxes.every((b,i)=>i===0||b.top>=boxes[i-1].bottom-1),
+          dotsize:circle?.getBoundingClientRect().width||0,
+          labelFont:parseFloat(getComputedStyle(strong).fontSize),
+          stepHeadDisplay:getComputedStyle(header).display,
+          buttonHeights:actions.map(x=>x.height),
+          buttonBg:getComputedStyle(buttons[0]).backgroundColor,
+          buttonsInViewport:actions.every(x=>x.left>=-1&&x.right<=innerWidth+1),
+          cardInViewport:card.getBoundingClientRect().right<=innerWidth+1,
+          horizontalOverflow:document.documentElement.scrollWidth-innerWidth};
+      });
+      assert(ui.timelineDisplay==="grid"&&ui.stepCount===4&&
+        ui.stepDisplay.every(x=>x==="grid")&&ui.noOverlap,
+        "Timeline steps must align without overlap: "+JSON.stringify(ui));
+      assert(ui.dotsize>=28&&ui.labelFont<=15&&
+        ui.stepHeadDisplay==="flex"&&ui.cardInViewport,
+        "Compact tracking card and labels regression: "+JSON.stringify(ui));
+      assert(ui.buttonCount===3&&ui.buttonHeights.every(h=>h>=44)&&
+        ui.buttonsInViewport&&ui.buttonBg!=="rgba(0, 0, 0, 0)"&&
+        ui.horizontalOverflow<=3,
+        "Tracking phone/WhatsApp/chat actions must be styled: "+JSON.stringify(ui));
       await page.screenshot({path:path.join(out,"accepted-"+width+".png"),fullPage:true});
       gpsReady=true;
       await page.evaluate(()=>{
