@@ -25,7 +25,18 @@
     const address=make("div","qt-focus-address");
     address.append(make("small","", "DESTINO"),make("strong","qt-focus-address-text","Elegí destino"));
     const brand=make("span","qt-focus-brand","Quick Trip");
-    top.append(back,address,brand);
+    const trackingRoute=make("div","qt-focus-tracking-route");
+    trackingRoute.setAttribute("aria-label","Origen y destino de la reserva");
+    for(const [kind,label] of [["origin","ORIGEN"],["destination","DESTINO"]]){
+      const point=make("div","qt-focus-tracking-point");
+      point.dataset.point=kind;
+      const pin=make("span","qt-focus-tracking-pin",kind==="origin"?"●":"◆");
+      pin.setAttribute("aria-hidden","true");
+      const copy=make("div","qt-focus-tracking-copy");
+      copy.append(make("small","",label),make("strong","qt-focus-tracking-"+kind+"-text","—"));
+      point.append(pin,copy);trackingRoute.append(point);
+    }
+    top.append(back,address,brand,trackingRoute);
     const sheet=make("section","qt-focus-sheet");
     const handle=make("button","qt-focus-handle");handle.type="button";
     handle.setAttribute("aria-label","Expandir o reducir detalles del viaje");
@@ -76,7 +87,20 @@
     const booked=make("span","qt-focus-legend-booked","● Blanco · recorrido del viaje");
     legend.append(approach,booked);
     const note=make("p","qt-focus-note","Sin cobro anticipado · Precio sujeto a confirmación del conductor");
-    sheet.append(handle,heading,option,legend,stats,route,message,actions,note);
+    const trackingExtra=make("section","qt-focus-tracking-extra");
+    trackingExtra.setAttribute("aria-label","Más información del viaje");
+    trackingExtra.append(make("strong","qt-focus-tracking-stage","Viaje aceptado"),
+      make("p","qt-focus-tracking-vehicle","Vehículo confirmado"));
+    const contacts=make("nav","qt-focus-tracking-contacts");
+    const call=make("a","qt-focus-tracking-contact","☎ Llamar");call.href="tel:+59897228175";
+    const whatsapp=make("a","qt-focus-tracking-contact","◉ WhatsApp");
+    whatsapp.href="https://wa.me/59897228175";
+    whatsapp.target="_blank";whatsapp.rel="noopener noreferrer";
+    const chat=make("button","qt-focus-tracking-contact","✉ Chat");chat.type="button";
+    chat.onclick=()=>trackingCtx?.onChat?.();
+    contacts.append(call,whatsapp,chat);
+    trackingExtra.append(contacts);
+    sheet.append(handle,heading,option,legend,stats,route,message,actions,note,trackingExtra);
     // Drag the handle or header on mobile to expand / collapse the bottom
     // sheet. Never bind the gesture to the map itself.
     let gestureStart=null;
@@ -176,6 +200,7 @@
   }
   function close(){
     if(!screen)return;
+    const wasTracking=Boolean(trackingCtx);
     if(trackingStop)trackingStop();
     trackingStop=null;trackingCtx=null;
     screen.hidden=true;open=false;lastMapKey="";
@@ -185,7 +210,8 @@
     screen.querySelector(".qt-focus-handle")?.setAttribute("aria-expanded","false");
     // Release map tiles/listeners while overlay is hidden.
     host.replaceChildren();
-    doc.querySelector(".premium-route-expand")?.focus({preventScroll:true});
+    (wasTracking?doc.querySelector('[data-view="viajes"]'):
+      doc.querySelector(".premium-route-expand"))?.focus({preventScroll:true});
   }
   function bindOpenButton(button,getState){
     button.addEventListener("click",()=>{
@@ -207,13 +233,28 @@
     setSheet(false);
     const onboard=String(r.status)==="EN_VIAJE";
     screen.querySelector(".qt-focus-kicker").textContent=onboard?"EN VIAJE · GPS REAL":"RECOGIDA · GPS REAL";
-    screen.querySelector(".qt-focus-sheet-heading h2").textContent=onboard?"Tu viaje en curso":"Seguí a tu conductor";
+    screen.querySelector(".qt-focus-sheet-heading h2").textContent=onboard?
+      "Viaje en curso":r.pickup_phase==="EN_PUNTO"?"En tu recogida":
+      r.pickup_phase==="EN_CAMINO"?"Conductor en camino":"Viaje aceptado";
+    screen.querySelector(".qt-focus-tracking-origin-text").textContent=
+      safeText({text:r.origin_text},"Origen pendiente");
+    screen.querySelector(".qt-focus-tracking-destination-text").textContent=
+      safeText({text:r.destination_text},"Destino pendiente");
+    screen.querySelector(".qt-focus-tracking-stage").textContent=onboard?
+      "Durante el viaje":r.pickup_phase==="EN_PUNTO"?
+      "Conductor en el punto de recogida":r.pickup_phase==="EN_CAMINO"?
+      "Conductor en camino":"Viaje aceptado · preparando recogida";
+    screen.querySelector(".qt-focus-tracking-vehicle").textContent=
+      "Vehículo confirmado · ubicación disponible solo con GPS autorizado";
+    screen.querySelector(".qt-focus-tracking-contacts button").disabled=
+      typeof options.onChat!=="function";
     screen.querySelector(".qt-focus-address small").textContent=onboard?"DESTINO":"RECOGIDA";
     screen.querySelector(".qt-focus-address-text").textContent=safeText(
       {text:onboard?r.destination_text:r.origin_text},"Tu dirección");
     screen.querySelector(".qt-focus-fare").textContent=Number(r.quote_final_total)>0
       ?UYU(Number(r.quote_final_total)):"Importe confirmado pendiente";
-    screen.querySelector(".qt-focus-car-detail").textContent="Conductor confirmado";
+    screen.querySelector(".qt-focus-car-detail").textContent=onboard?
+      "En viaje":"Recogida confirmada";
     screen.querySelector(".qt-focus-origin").textContent="● "+safeText({text:r.origin_text},"Origen");
     screen.querySelector(".qt-focus-destination").textContent="◆ "+safeText({text:r.destination_text},"Destino");
     screen.querySelector(".qt-focus-distance").textContent="—";
@@ -223,7 +264,7 @@
     submit.disabled=false;submit.textContent="Volver a Mis traslados";submit.onclick=close;
     screen.querySelector(".qt-focus-retry").hidden=true;
     const legend=screen.querySelector(".qt-focus-legend");legend.hidden=false;
-    legend.querySelector(".qt-focus-legend-approach").hidden=onboard;
+    legend.querySelector(".qt-focus-legend-approach").hidden=true;
     host.replaceChildren();
     const trackingStopFn=root.TrasladosReservationLive.mount(host,{
       reservation:r,guestToken:options.guestToken,sessionToken:options.sessionToken,

@@ -70,24 +70,25 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
           __guestToken:"qa-guest-never-sent"};
         tripRows=[r];tripLoaded=true;
         const ok=autoFollowAccepted([r],[{...r,status:"PENDIENTE"}]);
-        const section=document.querySelector("#view-seguimiento");
-        return {ok,opened:section.classList.contains("active"),
-          hero:section.querySelector(".premium-tracking-hero h2")?.textContent,
-          origin:section.querySelector(".premium-follow-place[data-point=origin] strong")?.textContent,
-          destination:section.querySelector(".premium-follow-place[data-point=destination] strong")?.textContent,
-          tracking:!!section.querySelector(".reservation-live")};
+        const section=document.querySelector("#qt-focus");
+        return {ok,opened:!section.hidden&&section.dataset.mode==="tracking",
+          hero:section.querySelector(".qt-focus-sheet-heading h2")?.textContent,
+          origin:section.querySelector(".qt-focus-tracking-origin-text")?.textContent,
+          destination:section.querySelector(".qt-focus-tracking-destination-text")?.textContent,
+          tracking:!!section.querySelector(".reservation-live"),
+          oldView:document.querySelector("#view-seguimiento").classList.contains("active")};
       });
-      assert(accepted.ok&&accepted.opened&&accepted.tracking,
-        "Accepted ride must open its tracking card "+JSON.stringify(accepted));
-      assert.match(accepted.hero,/aceptó/);
+      assert(accepted.ok&&accepted.opened&&accepted.tracking&&!accepted.oldView,
+        "Accepted ride must open only canonical map "+JSON.stringify(accepted));
+      assert.match(accepted.hero,/aceptado/);
       assert.match(accepted.origin,/Roque/);
       assert.match(accepted.destination,/Aeropuerto/);
       await page.waitForFunction(()=>document.querySelector(
-        "#view-seguimiento .reservation-live-map .premium-real-map"),{timeout:18000});
+        "#qt-focus .reservation-live-map .premium-real-map"),{timeout:18000});
       await page.waitForFunction(()=>document.querySelector(
-        "#view-seguimiento .reservation-live-status")?.textContent.includes("preparando"),{timeout:15000});
+        "#qt-focus .reservation-live-status")?.textContent.includes("preparando"),{timeout:15000});
       const waiting=await page.evaluate(()=>{
-        const el=document.querySelector("#view-seguimiento .reservation-live");
+        const el=document.querySelector("#qt-focus .reservation-live");
         const map=el.querySelector(".premium-real-map");
         return {mapHeight:map.getBoundingClientRect().height,
           hasDriver:el.dataset.liveDriver==="true",
@@ -99,55 +100,59 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       assert(!waiting.hasDriver,"Never draw driver before GPS authorization");
       assert(!waiting.overlays.includes("🚘"),"Never invent a vehicle marker");
       assert(waiting.width<=3,"Mobile overflow");
-      const ui=await page.evaluate(()=>{
-        const root=document.querySelector("#view-seguimiento");
-        const card=root.querySelector(".premium-tracking-card");
-        const timeline=root.querySelector(".premium-tracking-timeline");
-        const steps=[...root.querySelectorAll(".premium-tracking-step")];
-        const buttons=[...root.querySelectorAll(".premium-tracking-actions .premium-tracking-action")];
-        const boxes=steps.map(x=>x.getBoundingClientRect());
-        const actions=buttons.map(x=>x.getBoundingClientRect());
-        const header=root.querySelector(".premium-tracking-stephead");
-        const strong=root.querySelector(".premium-tracking-step-text strong");
-        const circle=root.querySelector(".premium-tracking-step-dot");
-        return {cardWidth:card?.getBoundingClientRect().width||0,
-          timelineDisplay:getComputedStyle(timeline).display,
-          stepDisplay:steps.map(x=>getComputedStyle(x).display),
-          stepCount:steps.length,buttonCount:buttons.length,
-          noOverlap:boxes.every((b,i)=>i===0||b.top>=boxes[i-1].bottom-1),
-          dotsize:circle?.getBoundingClientRect().width||0,
-          labelFont:parseFloat(getComputedStyle(strong).fontSize),
-          stepHeadDisplay:getComputedStyle(header).display,
-          buttonHeights:actions.map(x=>x.height),
-          buttonBg:getComputedStyle(buttons[0]).backgroundColor,
-          buttonsInViewport:actions.every(x=>x.left>=-1&&x.right<=innerWidth+1),
-          cardInViewport:card.getBoundingClientRect().right<=innerWidth+1,
-          horizontalOverflow:document.documentElement.scrollWidth-innerWidth};
+      const canonical=await page.evaluate(()=>{
+        const focus=document.querySelector("#qt-focus");
+        const sheet=focus.querySelector(".qt-focus-sheet");
+        const map=focus.querySelector(".qt-focus-map");
+        const header=focus.querySelector(".qt-focus-tracking-route");
+        const controls=focus.querySelector(".qt-focus-tracking-extra");
+        const tabs=document.querySelector(".tabs");
+        return {
+          sheet:focus.dataset.sheet,header:getComputedStyle(header).display,
+          origin:focus.querySelector(".qt-focus-tracking-origin-text").textContent,
+          destination:focus.querySelector(".qt-focus-tracking-destination-text").textContent,
+          mapHeight:map.getBoundingClientRect().height,
+          sheetHeight:sheet.getBoundingClientRect().height,
+          extrasHidden:getComputedStyle(controls).display==="none",
+          oldTrackerActive:document.querySelector("#view-seguimiento").classList.contains("active"),
+          tabsCovered:document.elementFromPoint(innerWidth/2,innerHeight-18)?.closest("#qt-focus")!==null,
+          overflow:document.documentElement.scrollWidth-innerWidth
+        };
       });
-      assert(ui.timelineDisplay==="grid"&&ui.stepCount===4&&
-        ui.stepDisplay.every(x=>x==="grid")&&ui.noOverlap,
-        "Timeline steps must align without overlap: "+JSON.stringify(ui));
-      assert(ui.dotsize>=28&&ui.labelFont<=15&&
-        ui.stepHeadDisplay==="flex"&&ui.cardInViewport,
-        "Compact tracking card and labels regression: "+JSON.stringify(ui));
-      assert(ui.buttonCount===3&&ui.buttonHeights.every(h=>h>=44)&&
-        ui.buttonsInViewport&&ui.buttonBg!=="rgba(0, 0, 0, 0)"&&
-        ui.horizontalOverflow<=3,
-        "Tracking phone/WhatsApp/chat actions must be styled: "+JSON.stringify(ui));
-      await page.screenshot({path:path.join(out,"accepted-"+width+".png"),fullPage:true});
+      assert(canonical.sheet==="compact"&&canonical.header==="grid"&&
+        canonical.mapHeight>=350&&canonical.extrasHidden&&!canonical.oldTrackerActive&&
+        canonical.tabsCovered&&canonical.overflow<=3,
+        "Canonical map must dominate screen "+JSON.stringify(canonical));
+      assert.match(canonical.origin,/Roque/);
+      assert.match(canonical.destination,/Aeropuerto/);
+      await page.screenshot({path:path.join(out,"canonical-compact-"+width+".png"),fullPage:true});
+      await page.locator("#qt-focus .qt-focus-handle").click();
+      const expanded=await page.locator("#qt-focus").evaluate(el=>({
+        state:el.dataset.sheet,
+        contacts:getComputedStyle(el.querySelector(".qt-focus-tracking-extra")).display,
+        controls:[...el.querySelectorAll(".qt-focus-tracking-contact")].map(x=>({
+          height:x.getBoundingClientRect().height,href:x.getAttribute("href"),disabled:x.disabled
+        }))
+      }));
+      assert(expanded.state==="expanded"&&expanded.contacts==="grid"&&
+        expanded.controls.length===3&&expanded.controls.every(x=>x.height>=44),
+        "Expanded details/contact actions must work "+JSON.stringify(expanded));
+      await page.screenshot({path:path.join(out,"canonical-expanded-"+width+".png"),fullPage:true});
+      await page.locator("#qt-focus .qt-focus-handle").click();
+      assert.equal(await page.locator("#qt-focus").getAttribute("data-sheet"),"compact");
       gpsReady=true;
       await page.evaluate(()=>{
         tripRows=[{...tripRows[0],pickup_phase:"EN_CAMINO"}];
-        renderPremiumTracking();
+        window.QuickTripMapFocus.updateTracking(tripRows[0]);
       });
       await page.waitForFunction(()=>document.querySelector(
-        "#view-seguimiento .reservation-live")?.dataset.liveDriver==="true",{timeout:18000});
+        "#qt-focus .reservation-live")?.dataset.liveDriver==="true",{timeout:18000});
       const moving=await page.evaluate(()=>{
-        const section=document.querySelector("#view-seguimiento");
-        return {hero:section.querySelector(".premium-tracking-hero h2")?.textContent,
+        const section=document.querySelector("#qt-focus");
+        return {hero:section.querySelector(".qt-focus-sheet-heading h2")?.textContent,
           car:[...section.querySelectorAll(".reservation-live-map .premium-map-overlays text")]
             .some(x=>x.textContent==="🚘"),origin:section.querySelector(
-            ".premium-follow-place[data-point=origin] strong")?.textContent};
+            ".qt-focus-tracking-origin-text")?.textContent};
       });
       assert(moving.car&&moving.hero==="Conductor en camino",JSON.stringify(moving));
       assert.equal(networkWrites,0,"No actual reservation mutations during browser test");

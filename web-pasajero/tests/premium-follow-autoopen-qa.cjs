@@ -68,30 +68,36 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
      tripRows=[accepted];tripLoaded=true;tripSnap=null;
      const opened=autoFollowAccepted([accepted],[pending]);
      const suppressed=autoFollowAccepted([accepted],[pending]);
-     return {opened,suppressed,active:document.querySelector("#view-seguimiento").classList.contains("active"),
-       origin:document.querySelector("#view-seguimiento .premium-follow-place[data-point=origin] strong")?.textContent,
-       destination:document.querySelector("#view-seguimiento .premium-follow-place[data-point=destination] strong")?.textContent};
+     const focus=document.querySelector("#qt-focus");
+     return {opened,suppressed,active:focus?.dataset.mode==="tracking"&&!focus.hidden,
+       origin:focus?.querySelector(".qt-focus-tracking-origin-text")?.textContent,
+       destination:focus?.querySelector(".qt-focus-tracking-destination-text")?.textContent,
+       oldView:document.querySelector("#view-seguimiento").classList.contains("active")};
    });
-   assert(observed.opened&& !observed.suppressed && observed.active,JSON.stringify(observed));
+   assert(observed.opened&&!observed.suppressed&&observed.active&&!observed.oldView,
+      "Canonical map must auto-open without old view "+JSON.stringify(observed));
    assert.equal(observed.origin,"Aeropuerto de Carrasco");
    assert.equal(observed.destination,"Centro de Montevideo");
    await page.waitForFunction(()=>document.querySelector(
-       "#view-seguimiento .reservation-live-map .premium-real-map"),{timeout:15000});
+       "#qt-focus .reservation-live-map .premium-real-map"),{timeout:15000});
    await page.waitForFunction(()=>document.querySelector(
-       "#view-seguimiento .reservation-live")?.dataset.liveDriver==="true",{timeout:15000});
+       "#qt-focus .reservation-live")?.dataset.liveDriver==="true",{timeout:15000});
    const results=await page.evaluate(()=>{
-     const section=document.querySelector("#view-seguimiento");
+     const section=document.querySelector("#qt-focus");
      const map=section.querySelector(".reservation-live-map .premium-real-map");
      return {mapHeight:map?.getBoundingClientRect().height,
        tiles:map?.querySelectorAll(".premium-map-tiles img").length,
        gps:section.querySelector(".reservation-live-freshness")?.textContent,
-       routeLabel:section.querySelector(".reservation-live-status")?.textContent,
+       routeLabel:section.querySelector(".qt-focus-message")?.textContent,
+       canonicalHeader:getComputedStyle(section.querySelector(".qt-focus-tracking-route")).display==="grid",
+       compact:section.dataset.sheet==="compact",
        width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,
        hasCar:[...(map?.querySelectorAll(".premium-map-overlays text")||[])].some(e=>e.textContent?.includes("🚘"))};
    });
    assert(results.mapHeight>=320,"Map is still a miniature: "+JSON.stringify(results));
    assert(results.tiles>0,"Real map tiles were not laid out");
-   assert(results.hasCar,"Authorized real-GPS mode must draw the car, not only the booked route");
+   assert(results.hasCar&&results.canonicalHeader&&results.compact,
+      "Authorized GPS and compact canonical map required "+JSON.stringify(results));
    assert(results.overflow<=3,"Mobile horizontal overflow: "+JSON.stringify(results));
    assert.equal(writes,0,"Browser test must not write a booking");
    await page.screenshot({path:path.join(out,"seguimiento-"+width+".png"),fullPage:true,animations:"disabled"});

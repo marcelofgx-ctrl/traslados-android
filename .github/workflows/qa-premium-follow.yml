@@ -1,7 +1,7 @@
 name: QA passenger premium live follow - isolated
 on:
   push:
-    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027, qa/quicktrip-accepted-follow-20261027, qa/quicktrip-fullscreen-map-20261027, qa/quicktrip-gps-welcome-20261028, qa/quicktrip-tracking-status-ui-20261028]
+    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027, qa/quicktrip-accepted-follow-20261027, qa/quicktrip-fullscreen-map-20261027, qa/quicktrip-gps-welcome-20261028, qa/quicktrip-tracking-status-ui-20261028, qa/quicktrip-canonical-follow-20261028]
     paths: ['web-pasajero/**','.github/workflows/qa-premium-follow.yml']
 permissions:
   contents: read

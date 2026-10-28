@@ -1580,6 +1580,8 @@ function autoFollowAccepted(rows,previous){
   const id=String(candidate.id);
   autoFollowSeen.add(id);
   premiumTrackingKey=id;
+  if(openFullscreenTracking(candidate))return true;
+  // Restricted fallback: pending or legacy records without verified coordinates.
   shiftView("seguimiento");
   return true;
 }
@@ -1825,55 +1827,24 @@ function reservationView(r,guestToken){
     follow.setAttribute("aria-label","Abrir la solicitud pendiente y su estado real");
     follow.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
   }
-  if(meta.tone==="moving"){
-    // Live tracking stays in this same trip card; no second full-screen map.
-    // La fase validada por servidor es prioritaria: visible incluso con tarjeta cerrada.
-    const onBoard=r.status==="EN_VIAJE";
-    const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
-    const live=text(top,"div","","trip-live-spotlight");
-    live.dataset.stage=onBoard?"trip":arrived?"arrived":"approach";
-    live.setAttribute("role","status");
-    text(live,"span",onBoard?"◆":arrived?"✓":"●","trip-live-symbol").setAttribute("aria-hidden","true");
-    const copy=text(live,"div","","trip-live-copy");
-    text(copy,"strong",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Tu conductor está en camino");
-    text(copy,"span",onBoard?"El traslado ya comenzó.":arrived?"Está en el punto de recogida.":"Va hacia el lugar donde te recogerá.");
-    const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
-    if(plate)text(copy,"span","Matrícula · "+plate,"trip-live-vehicle-plate");
-    if(r.id&&(authReady()||guestToken))void refreshVehiclePlateForTrip(r,guestToken);
-    // El conductor es la única fuente de verdad de fases: no crear ETA ni GPS ficticios.
-    const actualStage=onBoard?2:arrived?1:0;
-    const liveSteps=text(top,"div","","premium-trip-timeline");
-    liveSteps.setAttribute("aria-label","Estado de recogida y traslado informado por el conductor");
-    for(const [index,label] of ["En camino","En el punto de recogida","Durante el viaje"].entries()){
-      const item=text(liveSteps,"div","","premium-trip-phase");
-      item.dataset.phaseStatus=index<actualStage?"completed":index===actualStage?"current":"upcoming";
-      const symbol=text(item,"span",index<actualStage?"✓":String(index+1),"premium-trip-phase-dot");
-      symbol.setAttribute("aria-hidden","true");
-      text(item,"small",label,"premium-trip-phase-label");
-      if(index===actualStage)item.setAttribute("aria-current","step");
-    }
-    const quick=text(top,"div","","premium-trip-contact");
-    const call=text(quick,"a","☎ Llamar","premium-trip-call");
-    call.href="tel:+59897228175";
-    call.setAttribute("aria-label","Llamar al conductor de Traslados");
-    // Enlaces externos oficiales: no se comunica el código ni datos personales.
-    const whatsapp=text(quick,"a","◉ WhatsApp","premium-trip-whatsapp");
-    whatsapp.href="https://wa.me/59897228175";
-    whatsapp.rel="noopener noreferrer";whatsapp.target="_blank";
-    whatsapp.setAttribute("aria-label","Abrir WhatsApp del conductor");
-    const chatAction=button(quick,"✉ Chat","premium-trip-chat-link",()=>{
-      d.open=true;
-      const trigger=d.querySelector(".trip-chat-open");
-      if(trigger)trigger.click();else d.scrollIntoView({block:"start",behavior:"smooth"});
-    });
-    // Evita que los tres botones activen además el desplegable <summary>.
-    for(const action of [call,whatsapp,chatAction])
-      action.addEventListener("click",event=>event.stopPropagation());
-    text(top,"p",onBoard
-      ?"El inicio fue informado por el conductor. La finalización se actualizará al cerrar el traslado."
-      :arrived?"El conductor registró su llegada al punto de recogida."
-      :"El conductor confirmó que se dirige a la recogida. Consultá el seguimiento para ver actualizaciones.",
-      "premium-trip-truth");
+  if(meta.tone==="moving"||meta.tone==="confirmed"){
+    // Trip cards are for discovery, not a second active tracking dashboard.
+    // One canonical full-map view owns GPS and the interactive route.
+    const onboard=r.status==="EN_VIAJE";
+    const arrived=r.pickup_phase==="EN_PUNTO";
+    const summary=text(top,"div","","trip-live-spotlight");
+    summary.dataset.stage=onboard?"trip":arrived?"arrived":"approach";
+    text(summary,"span",onboard?"◆":arrived?"✓":"●","trip-live-symbol")
+      .setAttribute("aria-hidden","true");
+    const copy=text(summary,"div","","trip-live-copy");
+    text(copy,"strong",onboard?"Tu viaje está en curso":
+      arrived?"Tu conductor llegó":r.pickup_phase==="EN_CAMINO"?
+      "Tu conductor está en camino":"Tu viaje fue aceptado");
+    text(copy,"span",onboard?"Seguimiento hasta destino":
+      arrived?"En el punto de recogida":"Abrí el mapa para seguir el traslado");
+    const follow=button(top,"↗ Abrir seguimiento en mapa","trip-open-canonical",()=>openPremiumTracking(r));
+    follow.setAttribute("aria-label","Abrir mapa grande de seguimiento de este traslado");
+    follow.addEventListener("click",event=>event.stopPropagation());
   }
   const route=text(top,"div","","trip-route");
   function stop(icon,value){
@@ -1883,13 +1854,7 @@ function reservationView(r,guestToken){
   }
   stop("◉",r.origin_text||"Origen");
   stop(/aeropuerto/i.test(r.destination_text||"")?"✈":"◆",r.destination_text||"Destino");
-  if(acceptedOrMoving){
-    const inlineMap=text(top,"section","","reservation-live-slot");
-    window.TrasladosReservationLive?.mount(inlineMap,{
-      reservation:r,guestToken,sessionToken:authReady()?session?.token:null,
-      rpc,engine:roadEngine,api:API,key:KEY,renderer:window.TrasladosPremiumMap
-    });
-  }
+  // No duplicated live map inside the list: full-screen tracking is canonical.
   const foot=text(top,"div","","trip-card-footer");
   const fixedFare=r.fare_mode==="fixed";
   const amount=text(foot,"span",price>0?tripMoney(price):"Importe pendiente",price>0?"trip-card-quote":"trip-card-prompt");
@@ -1962,13 +1927,15 @@ function openFullscreenTracking(r){
     reservation:r,guestToken:r.__guestToken||null,
     sessionToken:authReady()?session?.token:null,
     rpc,engine:roadEngine,api:API,key:KEY,
-    renderer:window.TrasladosPremiumMap
+    renderer:window.TrasladosPremiumMap,
+    onChat:()=>openTripChat(r,r.__guestToken||null,null)
   })===true;
 }
 function openPremiumTracking(r){
   premiumTrackingKey=String(r?.id||r?.code||"");
   if(!premiumTrackingKey)return;
-  // shiftView renders once; avoid launching duplicate route fetches.
+  if(openFullscreenTracking(r))return;
+  // Pending / unverifiable reservations keep their read-only details fallback.
   shiftView("seguimiento");
 }
 function renderPremiumTracking(){
