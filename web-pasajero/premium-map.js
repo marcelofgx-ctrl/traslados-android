@@ -3,6 +3,18 @@
    Los mosaicos OSM son opcionales; la polilínea conserva sus coordenadas reales.
    No calcula ETA, no lee GPS, ni guarda ubicaciones del conductor. */
 (function(root){
+  // UI camera is local to each map host, never stored with driver/customer data.
+  const cameras=new WeakMap();
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  function routeIdentity(geometry,mode){
+    const pair=geometry[geometry.length-1]||[];
+    const start=geometry[0]||[];
+    const end=pair.map(n=>Number(n).toFixed(4)).join(",");
+    const first=start.map(n=>Number(n).toFixed(4)).join(",");
+    // Driver GPS changes at the start of the live leg; keep a manually
+    // positioned viewport unless destination or phase changes.
+    return (mode||"contract")+"|"+end+(mode==="pickup"||mode==="ride"?"":"|"+first);
+  }
   function project(pair){
     if(!Array.isArray(pair)||pair.length!==2)return null;
     const lat=Number(pair[0]),lng=Number(pair[1]);
@@ -10,7 +22,7 @@
     const phi=lat*Math.PI/180;
     return [(lng+180)/360,(1-Math.log(Math.tan(phi)+1/Math.cos(phi))/Math.PI)/2];
   }
-  function layout(geometry,width=355,height=240,extraPoints=[]){
+  function layout(geometry,width=355,height=240,extraPoints=[],camera=null){
     if(!Array.isArray(geometry)||geometry.length<2||geometry.length>20000)return null;
     const points=geometry.map(project);
     if(points.some(p=>!p))return null;
@@ -19,16 +31,18 @@
     const minX=Math.min(...xs),maxX=Math.max(...xs);
     const minY=Math.min(...ys),maxY=Math.max(...ys);
     const deltaX=Math.max(0.0000001,maxX-minX),deltaY=Math.max(0.0000001,maxY-minY);
-    const zoom=Math.max(8,Math.min(15,Math.floor(Math.log2(Math.min(
-      Math.max(1,width-66)/(256*deltaX),Math.max(1,height-54)/(256*deltaY)
-    )))));
+    const fitted=Math.floor(Math.log2(Math.min(
+      Math.max(1,width-48)/(256*deltaX),Math.max(1,height-48)/(256*deltaY)
+    )));
+    const zoom=camera?clamp(camera.zoom,8,19):clamp(fitted,8,18);
     const scale=256*2**zoom;
-    const centerX=(minX+maxX)/2*scale,centerY=(minY+maxY)/2*scale;
+    const centerX=(camera?camera.x:(minX+maxX)/2)*scale;
+    const centerY=(camera?camera.y:(minY+maxY)/2)*scale;
     return {width,height,zoom,scale,centerX,centerY,
       points:points.map(p=>[(p[0]*scale-centerX)+width/2,(p[1]*scale-centerY)+height/2])};
   }
   function render(host,geometry,options={}){
-    const width=Math.max(290,Math.min(750,Math.round(host.clientWidth||355)));
+    const width=Math.max(220,Math.min(750,Math.round(host.clientWidth||355)));
     const proposed=Number(options.height);
     const height=options.height!=null&&Number.isFinite(proposed)
       ?Math.max(160,Math.min(560,Math.round(proposed)))
@@ -36,18 +50,29 @@
     // Extra markers are real known route locations, not invented vehicle positions.
     const extra=Array.isArray(options.extraMarkers)?options.extraMarkers.filter(m=>
       m&&project([m.lat,m.lng])&&["O","P","D"].includes(m.label)):[];
-    const view=layout(geometry,width,height,extra.map(m=>[m.lat,m.lng]));
+    const identity=routeIdentity(geometry,options.overview?"overview":options.routeMode||"contract");
+    let camera=cameras.get(host);
+    if(!camera||camera.identity!==identity){
+      camera={identity,custom:null,explore:false};
+      cameras.set(host,camera);
+    }
+    const view=layout(geometry,width,height,extra.map(m=>[m.lat,m.lng]),camera.custom);
     if(!view)return false;
     host.replaceChildren();
     const frame=document.createElement("div");
     frame.className="premium-real-map";
-    frame.setAttribute("role","img");
+    frame.setAttribute("role","group");
     const live=options.routeMode==="pickup"||options.routeMode==="ride";
     frame.setAttribute("aria-label",options.overview?"Mapa geográfico de referencia, sin posición GPS ni ruta calculada":
       options.routeMode==="pickup"?"Posición GPS reciente del automóvil, ruta por calles hasta la recogida y destino marcado":
       options.routeMode==="ride"?"Posición GPS reciente del automóvil con pasajero a bordo, ruta por calles hasta el destino":
       "Mapa del recorrido contratado entre origen y destino; no muestra el automóvil");
     frame.style.height=height+"px";
+    frame.dataset.zoom=String(view.zoom);
+    frame.dataset.manual=String(Boolean(camera.custom));
+    frame.dataset.explore=String(camera.explore);
+    // Leave vertical swipes to page scrolling until Explorar is enabled.
+    frame.style.touchAction=camera.explore?"none":"pan-y";
     const tiles=document.createElement("div");tiles.className="premium-map-tiles";
     const scale=view.scale;
     const x0=Math.floor((view.centerX-width/2)/256),x1=Math.floor((view.centerX+width/2)/256);
@@ -57,13 +82,14 @@
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       if(y<0||y>=2**view.zoom||n>=12)continue;
       n++;
-      const img=document.createElement("img");img.loading="lazy";img.decoding="async";
+      const img=document.createElement("img");img.loading="eager";img.decoding="async";
       img.alt="";img.referrerPolicy="strict-origin-when-cross-origin";
       img.src="https://tile.openstreetmap.org/"+view.zoom+"/"+((x%(2**view.zoom)+2**view.zoom)%(2**view.zoom))+"/"+y+".png";
       img.style.left=(x*256-(view.centerX-width/2))+"px";
       img.style.top=(y*256-(view.centerY-height/2))+"px";
       img.width=256;img.height=256;
       img.addEventListener("load",()=>{loaded++;frame.dataset.tiles=String(loaded);},{once:true});
+      img.addEventListener("error",()=>{img.remove();frame.dataset.tileError="true";},{once:true});
       tiles.append(img);
     }
     const NS="http://www.w3.org/2000/svg";
@@ -130,7 +156,89 @@
     }
     const credit=document.createElement("span");credit.className="premium-map-credit";
     credit.textContent="© OpenStreetMap contributors";
-    frame.append(tiles,svg,credit);host.append(frame);
+    const controls=document.createElement("div");
+    controls.className="premium-map-controls";
+    controls.setAttribute("aria-label","Controles del mapa");
+    function control(text,label,klass,action){
+      const btn=document.createElement("button");
+      btn.type="button";btn.textContent=text;
+      btn.className="premium-map-control "+klass;
+      btn.setAttribute("aria-label",label);
+      btn.addEventListener("click",event=>{event.stopPropagation();action();});
+      controls.append(btn);return btn;
+    }
+    function applyCamera(next){
+      camera.custom=next;
+      cameras.set(host,camera);
+      render(host,geometry,options);
+    }
+    function zoomBy(step){
+      const normalized=camera.custom||{
+        x:view.centerX/view.scale,y:view.centerY/view.scale,zoom:view.zoom
+      };
+      applyCamera({...normalized,zoom:clamp(normalized.zoom+step,8,19)});
+    }
+    control("+","Acercar mapa","premium-map-control-zoom-in",()=>zoomBy(1));
+    control("−","Alejar mapa","premium-map-control-zoom-out",()=>zoomBy(-1));
+    control("◎","Centrar la ruta","premium-map-control-reset",()=>applyCamera(null));
+    control(camera.explore?"Listo":"Explorar","Activar o desactivar arrastrar y pellizcar el mapa",
+      "premium-map-control-explore",()=>{
+        camera.explore=!camera.explore;
+        cameras.set(host,camera);
+        render(host,geometry,options);
+      });
+    const hint=document.createElement("span");
+    hint.className="premium-map-gesture-hint";
+    hint.textContent=camera.explore?"Arrastrá o pellizcá · tocá Listo para seguir bajando":"Deslizá la página · tocá Explorar para mover el mapa";
+    frame.append(tiles,svg,credit,controls,hint);host.append(frame);
+    // In explore mode drag/pinch changes only the viewport. Coordinates, the
+    // authorized vehicle fix and route metrics are never modified.
+    const pointers=new Map();
+    let gesture=null,moveX=0,moveY=0,pinchRatio=1;
+    function pointerPair(){
+      const values=[...pointers.values()];
+      return values.length<2?0:Math.hypot(values[0].x-values[1].x,values[0].y-values[1].y);
+    }
+    frame.addEventListener("pointerdown",event=>{
+      if(!camera.explore||event.target.closest?.(".premium-map-controls"))return;
+      if(event.pointerType==="mouse"&&event.button!==0)return;
+      pointers.set(event.pointerId,{x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY});
+      if(typeof frame.setPointerCapture==="function")frame.setPointerCapture(event.pointerId);
+      if(pointers.size===1){
+        gesture={kind:"pan"};moveX=0;moveY=0;
+      }else if(pointers.size===2){
+        gesture={kind:"pinch",length:pointerPair()};pinchRatio=1;
+        tiles.style.transform="";svg.style.transform="";
+      }
+    });
+    frame.addEventListener("pointermove",event=>{
+      const p=pointers.get(event.pointerId);if(!p)return;
+      p.x=event.clientX;p.y=event.clientY;
+      if(gesture?.kind==="pan"&&pointers.size===1){
+        moveX=p.x-p.startX;moveY=p.y-p.startY;
+        const shift="translate("+moveX+"px,"+moveY+"px)";
+        tiles.style.transform=shift;svg.style.transform=shift;
+      }else if(gesture?.kind==="pinch"&&pointers.size===2){
+        pinchRatio=clamp(pointerPair()/Math.max(12,gesture.length),.5,3);
+        const scaling="scale("+pinchRatio+")";
+        tiles.style.transform=scaling;svg.style.transform=scaling;
+      }
+    });
+    function finish(event){
+      if(!pointers.has(event.pointerId))return;
+      pointers.delete(event.pointerId);
+      if(pointers.size)return;
+      if(gesture?.kind==="pinch"){
+        const difference=Math.log2(pinchRatio);
+        if(Math.abs(difference)>.15)zoomBy(difference>0?Math.max(1,Math.round(difference)):Math.min(-1,Math.round(difference)));
+      }else if(gesture?.kind==="pan"&&(Math.abs(moveX)>5||Math.abs(moveY)>5)){
+        const base=camera.custom||{x:view.centerX/view.scale,y:view.centerY/view.scale,zoom:view.zoom};
+        applyCamera({...base,x:base.x-moveX/view.scale,y:base.y-moveY/view.scale});
+      }
+      gesture=null;
+    }
+    frame.addEventListener("pointerup",finish);
+    frame.addEventListener("pointercancel",finish);
     return true;
   }
   function overview(host,points=[],options={}){

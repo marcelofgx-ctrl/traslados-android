@@ -142,3 +142,8 @@ body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-previo
 .pickup-eta-retry[hidden]{display:none!important}
 .pickup-eta-retry:disabled{opacity:.65;cursor:default}
 .pickup-eta-retry:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+/* Always allow page scrolling over the normal map. Map exploration is opt-in. */
+body.journey-mode-quick #view-viaje .premium-route-cartography{
+  min-height:318px;touch-action:pan-y;overflow:hidden
+}

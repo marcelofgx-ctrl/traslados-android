@@ -906,3 +906,42 @@ body.qt-clean #view-instalar .section-heading{
  border-radius:20px;background:rgba(24,90,80,.45);color:#c2f4dc;font-size:11px}
 #view-seguimiento .reservation-live[data-gps-state="waiting"] .reservation-live-freshness{color:#e9cd9c}
 @media(prefers-reduced-motion:reduce){#view-seguimiento *{scroll-behavior:auto!important;animation-duration:.01ms!important}}
+
+/* QA: mapa de viaje cercano, navegable, con página normalmente desplazable. */
+body.qt-clean .qtc-app .premium-route-cartography{
+  height:318px!important;min-height:318px!important;
+  overflow:hidden!important;position:relative;touch-action:pan-y
+}
+body.qt-clean .qtc-app .premium-route-canvas{overflow:hidden;touch-action:pan-y}
+.premium-real-map{position:relative;overflow:hidden;touch-action:pan-y}
+.premium-real-map[data-explore="true"]{touch-action:none!important;cursor:grab}
+.premium-real-map[data-explore="true"]:active{cursor:grabbing}
+.premium-map-tiles,.premium-map-overlays{will-change:transform;pointer-events:none}
+.premium-map-controls{
+  position:absolute;top:11px;right:11px;z-index:5;display:grid;
+  grid-template-columns:repeat(2,42px);gap:6px;padding:7px;
+  border:1px solid #f3dfb087;border-radius:15px;background:#09262ce8;
+  box-shadow:0 8px 28px #0005;touch-action:manipulation
+}
+.premium-map-control{font:800 21px/1 system-ui,sans-serif;display:grid;
+  place-items:center;min-height:42px;min-width:42px;margin:0;padding:6px;
+  background:#1c4750;color:#fff0cd;border:1px solid #eed19b80;
+  border-radius:10px;box-shadow:none;cursor:pointer;user-select:none}
+.premium-map-control:focus-visible{outline:3px solid #ffd17c;outline-offset:2px}
+.premium-map-control:active{background:#31656e}
+.premium-map-control-explore{font-size:11px;letter-spacing:.01em;
+  grid-column:1/-1;min-height:36px}
+.premium-real-map[data-explore="true"] .premium-map-control-explore{
+  background:#e5c17c;color:#102d37}
+.premium-map-gesture-hint{
+  position:absolute;bottom:9px;left:9px;z-index:3;
+  display:inline-block;max-width:calc(100% - 118px);
+  background:#08272bdb;color:#faf7ef;font:650 10px/1.35 system-ui,sans-serif;
+  border:1px solid #eee5d144;border-radius:8px;
+  padding:6px 9px;pointer-events:none
+}
+#view-seguimiento .premium-map-controls{top:13px;right:13px}
+#view-seguimiento .premium-map-gesture-hint{bottom:20px}
+@media(max-width:359px){.premium-map-controls{right:7px;top:7px;gap:4px;padding:5px}
+ .premium-map-control{min-width:38px;min-height:38px}
+ .premium-map-gesture-hint{font-size:9px}}
