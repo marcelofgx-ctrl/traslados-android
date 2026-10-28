@@ -91,7 +91,7 @@
       if(kind==="contract")contractRoute=result;
       const overlay=host.closest?.("#qt-focus");
       const featured=Boolean(host.closest?.("#view-seguimiento")||overlay);
-      const overlayTop=overlay?.querySelector(".qt-focus-sheet")?.getBoundingClientRect().top;
+      const overlayTop=overlay?.querySelector?.(".qt-focus-sheet")?.getBoundingClientRect?.().top;
       const height=overlay?Math.round(Math.max(300,Math.min(root.innerHeight||760,(overlayTop||450)+26)))
         :featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
       const dual=kind==="driver"&&!ride&&Array.isArray(contractRoute?.geometry)&&
