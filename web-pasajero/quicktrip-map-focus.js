@@ -306,11 +306,15 @@
        !(options.sessionToken||options.guestToken)||!root.TrasladosReservationLive?.mount)return false;
     const origin={lat:r.origin_lat,lng:r.origin_lng},destination={lat:r.destination_lat,lng:r.destination_lng};
     if(!valid(origin)||!valid(destination))return false;
+    // A new travel leg deliberately fits the new route, but must not close
+    // the passenger's already expanded details for this SAME reservation.
+    const retainSheet=Boolean(open&&trackingCtx&&screen?.dataset.sheet==="expanded"&&
+      String(trackingCtx.reservation.id)===String(r.id));
     if(open)close();
     setup();open=true;trackingCtx=options;
     screen.hidden=false;screen.dataset.mode="tracking";lastMapKey="";
     doc.body.classList.add("qt-focus-open");
-    setSheet(false);
+    setSheet(retainSheet);
     const onboard=String(r.status)==="EN_VIAJE";
     syncTrackingStage(r);
     screen.querySelector(".qt-focus-tracking-origin-text").textContent=

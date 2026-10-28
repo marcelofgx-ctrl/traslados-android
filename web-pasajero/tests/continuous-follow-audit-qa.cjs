@@ -165,6 +165,8 @@ let browser;
        await waitHeading("Viaje en curso",true);
        const d=await capture("04-en-viaje");
        check(d.open&&d.hasCar&&!d.dual,width+"-onboard-direction",d);
+       check(d.sheet===custom.sheet,width+"-keep-sheet-onboard",{
+         before:custom.sheet,after:d.sheet});
        check(/Buen viaje/.test(d.alertTitle||""),
          width+"-onboard-notice-consistent",d);
        check(d.fare===a.fare&&d.origin===a.origin&&d.destination===a.destination,
