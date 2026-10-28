@@ -294,6 +294,14 @@
       moving?"Conductor en camino":"Viaje aceptado · preparando recogida";
     screen.querySelector(".qt-focus-car-detail").textContent=
       onboard?"En viaje":arrived?"Conductor llegó":"Recogida confirmada";
+    // The stable live tracker was mounted before the arrival status changed.
+    // Keep its map/timer but correct the passenger-facing arrival label.
+    if(arrived&&!onboard){
+      const live=host.querySelector(".reservation-live");
+      const label=live?.querySelector(".reservation-live-status");
+      if(label)label.textContent=live.dataset.gpsState==="fresh"
+        ?"Conductor en el punto de recogida":"Conductor llegó · posición GPS pendiente";
+    }
   }
   function showTracking(options){
     const r=options?.reservation;
@@ -340,6 +348,12 @@
       key:options.key,renderer:twoLegRenderer,
       onUpdate:data=>{
         if(!trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
+        const atPickupNow=!onboard&&trackingCtx.reservation.pickup_phase==="EN_PUNTO";
+        if(atPickupNow){
+          const status=host.querySelector(".reservation-live-status");
+          if(status)status.textContent=data.gps?
+            "Conductor en el punto de recogida":"Conductor llegó · posición GPS pendiente";
+        }
         screen.querySelector(".qt-focus-message").textContent=data.gps?
           onboard?"GPS verificado · conductor rumbo al destino":
             data.dual?"GPS verificado · dos recorridos reales":

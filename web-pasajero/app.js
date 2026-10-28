@@ -2150,20 +2150,27 @@ function tripNoticeAppearance(change){
   };
 }
 function showTripNotice(change){
-  if(document.visibilityState!=="visible"||!$("trip-alert-overlay").hidden||
-      !$("trip-chat-sheet").hidden)return;
-  const appearance=tripNoticeAppearance(change);
+  if(document.visibilityState!=="visible"||!$("trip-chat-sheet").hidden)return;
   const overlay=$("trip-alert-overlay");
-  tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
+  const updatingSameTrip=!overlay.hidden&&tripFocused===change.row.code;
+  if(!overlay.hidden&&!updatingSameTrip)return;
+  const appearance=tripNoticeAppearance(change);
+  // An existing notice for the same reservation must follow the newer
+  // pickup/trip status without replaying notification sound or vibration.
+  if(!updatingSameTrip){
+    tripFocused=change.row.code;tripPreviouslyFocused=document.activeElement;
+  }
   overlay.dataset.tone=appearance.tone;
   $("trip-alert-symbol").textContent=appearance.icon;
   $("trip-alert-eyebrow").textContent=appearance.eyebrow;
   $("trip-alert-title").textContent=appearance.title;
   $("trip-alert-description").textContent=appearance.description;
   $("trip-alert-open").textContent=appearance.action+"  →";
-  overlay.hidden=false;$("trip-alert-close").focus();
-  if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
-  playTripAlertSound();
+  if(!updatingSameTrip){
+    overlay.hidden=false;$("trip-alert-close").focus();
+    if($("trips-alert-vibrate").checked&&navigator.vibrate)navigator.vibrate([90,65,90]);
+    playTripAlertSound();
+  }
 }
 function renderTripsBoard({reset=false}={}){
   // Keep the dedicated screen in sync even when the upcoming filter becomes

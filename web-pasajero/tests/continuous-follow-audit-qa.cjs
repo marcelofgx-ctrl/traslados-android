@@ -149,6 +149,9 @@ let browser;
        await waitHeading("En tu recogida",true);
        const c=await capture("03-en-punto");
        check(c.mapPresent&&c.hasCar&&c.dual,width+"-pickup-position-with-gps",c);
+       check(/Conductor en el punto de recogida/.test(c.statusText||"")&&
+         /Tu conductor te espera/.test(c.alertTitle||""),
+         width+"-arrival-copy-consistent",c);
        check(c.sheet==="expanded",width+"-keep-sheet-on-arrival",{
          before:custom.sheet,after:c.sheet});
        check(c.manual==="true"&&c.zoom===custom.zoom,
