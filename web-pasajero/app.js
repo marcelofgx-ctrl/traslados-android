@@ -2107,6 +2107,14 @@ function tripNoticeAppearance(change){
     description:"Tu conductor te dejó un mensaje. Entrá cuando quieras para leerlo.",
     action:"LEER MENSAJE"
   };
+  // Terminal status takes precedence over the last pickup phase.
+  // FINALIZADA may legitimately retain pickup_phase="EN_PUNTO".
+  if(status==="FINALIZADA")return {
+    tone:"accepted",icon:"✓",eyebrow:"LLEGASTE A DESTINO",
+    title:"¡Gracias por viajar con nosotros!",
+    description:"Esperamos que hayas disfrutado tu traslado.",
+    action:"VER MI VIAJE"
+  };
   if(phase==="EN_CAMINO"||status==="EN_CAMINO")return {
     tone:"moving",icon:"➜",eyebrow:"YA ESTÁ EN CAMINO",
     title:"Tu conductor va hacia vos",
@@ -2123,12 +2131,6 @@ function tripNoticeAppearance(change){
     tone:"moving",icon:"➜",eyebrow:"EN VIAJE",
     title:"¡Buen viaje!",
     description:"Tu viaje ya comenzó. Podés consultar sus detalles cuando quieras.",
-    action:"VER MI VIAJE"
-  };
-  if(status==="FINALIZADA")return {
-    tone:"accepted",icon:"✓",eyebrow:"LLEGASTE A DESTINO",
-    title:"¡Gracias por viajar con nosotros!",
-    description:"Esperamos que hayas disfrutado tu traslado.",
     action:"VER MI VIAJE"
   };
   if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(status))return {
@@ -2295,7 +2297,15 @@ async function loadTrips({background=false}={}){
         window.QuickTripMapFocus.close();
       }else window.QuickTripMapFocus.updateTracking(tracked);
     }
-    if(updates.length&&!autoOpened)showTripNotice(updates[0]);
+    if(updates.length&&!autoOpened){
+      // Replace a previous pickup alert with the terminal notice for this
+      // SAME reservation; do not leave "en camino" after FINALIZADA.
+      const finalNotice=updates.find(change=>
+        String(change.row?.status)==="FINALIZADA"&&change.kind!=="message");
+      if(finalNotice&&!$("trip-alert-overlay").hidden&&
+         tripFocused===finalNotice.row.code)closeTripNotice();
+      showTripNotice(finalNotice||updates[0]);
+    }
   }catch(e){
     if(requestEpoch!==tripQueryEpoch)return;
     status.textContent="No se pudo actualizar. Conservamos la última información.";

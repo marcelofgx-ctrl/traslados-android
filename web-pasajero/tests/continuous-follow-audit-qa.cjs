@@ -99,6 +99,8 @@ let browser;
            mapPresent:!!frame,livePresent:!!live,
            statusText:live?.querySelector(".reservation-live-status")?.textContent,
            message:el?.querySelector(".qt-focus-message")?.textContent,
+           alertOpen:!document.querySelector("#trip-alert-overlay")?.hidden,
+           alertTitle:document.querySelector("#trip-alert-title")?.textContent,
            overflow:document.documentElement.scrollWidth-innerWidth};
        });
        steps.push({width,stage,...s});
@@ -166,6 +168,8 @@ let browser;
          null,{timeout:4000}).catch(()=>{});
        const e=await capture("05-finalizada");
        check(!e.open,width+"-final-close",e);
+       check(e.alertOpen&&/Gracias por viajar/.test(e.alertTitle||""),
+         width+"-final-notice-consistent",e);
      }catch(e){
        const msg=String(e.stack||e);
        findings.push({name:width+"-execution-error",detail:msg});

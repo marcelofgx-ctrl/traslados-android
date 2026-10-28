@@ -219,6 +219,82 @@
       if(!show(next))button.setAttribute("aria-label","Seleccioná origen y destino para abrir el mapa");
     });
   }
+
+  // Presentation-only adapter: combine independently VERIFIED route geometries
+  // for the booked trip and for the authorized driver position.
+  // The private GPS permission check and routing engines remain unchanged.
+  function verifiedTwoLegRenderer(options,r){
+    const renderer=options.renderer,engine=options.engine;
+    const start={lat:Number(r.origin_lat),lng:Number(r.origin_lng)};
+    const end={lat:Number(r.destination_lat),lng:Number(r.destination_lng)};
+    let bookedGeometry=null,pending=null,serial=0;
+    const geometryOk=route=>engine?.verified?.(route)===true&&
+      Array.isArray(route.geometry)&&route.geometry.length>=2&&
+      route.geometry.every(p=>Array.isArray(p)&&p.length===2&&
+        Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1])));
+    function bookRoute(){
+      if(!pending&&valid(start)&&valid(end)&&typeof engine?.estimate==="function"){
+        pending=Promise.resolve().then(()=>engine.estimate([start,end],{
+          api:options.api,publishableKey:options.key
+        })).then(route=>{
+          if(geometryOk(route))bookedGeometry=route.geometry;
+          return bookedGeometry;
+        }).catch(()=>null);
+      }
+      return pending;
+    }
+    return {
+      overview:(...args)=>renderer.overview?.(...args),
+      render(mapHost,geometry,opts={}){
+        const step=++serial;
+        if(opts.routeMode==="contract"&&Array.isArray(geometry)&&geometry.length>=2)
+          bookedGeometry=geometry;
+        const pickup=opts.routeMode==="pickup";
+        const needsOverlay=pickup&&!opts.secondaryGeometry;
+        const verifiedBook=needsOverlay&&bookedGeometry;
+        const next=verifiedBook?{
+          ...opts,secondaryGeometry:geometry
+        }:opts;
+        const result=renderer.render(mapHost,verifiedBook?bookedGeometry:geometry,next);
+        if(needsOverlay&&!bookedGeometry){
+          void bookRoute()?.then(route=>{
+            const follow=mapHost.closest(".reservation-live");
+            // Do not redraw an unauthorized, stale or superseded GPS response.
+            if(!route||serial!==step||!mapHost.isConnected||
+               follow?.dataset.liveDriver!=="true"||
+               follow?.dataset.gpsState!=="fresh"||
+               !trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
+            const merged=renderer.render(mapHost,route, {
+              ...opts,secondaryGeometry:geometry
+            });
+            if(merged){
+              screen.querySelector(".qt-focus-message").textContent=
+                "GPS verificado · dos recorridos reales";
+              const approach=screen.querySelector(".qt-focus-legend-approach");
+              if(approach)approach.hidden=false;
+            }
+          });
+        }
+        return result;
+      }
+    };
+  }
+
+  function syncTrackingStage(r){
+    const onboard=r.status==="EN_VIAJE";
+    const arrived=r.pickup_phase==="EN_PUNTO";
+    const moving=r.pickup_phase==="EN_CAMINO";
+    screen.querySelector(".qt-focus-kicker").textContent=
+      onboard?"EN VIAJE · GPS REAL":"RECOGIDA · GPS REAL";
+    screen.querySelector(".qt-focus-sheet-heading h2").textContent=
+      onboard?"Viaje en curso":arrived?"En tu recogida":
+      moving?"Conductor en camino":"Viaje aceptado";
+    screen.querySelector(".qt-focus-tracking-stage").textContent=
+      onboard?"Durante el viaje":arrived?"Conductor en el punto de recogida":
+      moving?"Conductor en camino":"Viaje aceptado · preparando recogida";
+    screen.querySelector(".qt-focus-car-detail").textContent=
+      onboard?"En viaje":arrived?"Conductor llegó":"Recogida confirmada";
+  }
   function showTracking(options){
     const r=options?.reservation;
     if(!r||!["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"].includes(String(r.status))||
@@ -232,18 +308,11 @@
     doc.body.classList.add("qt-focus-open");
     setSheet(false);
     const onboard=String(r.status)==="EN_VIAJE";
-    screen.querySelector(".qt-focus-kicker").textContent=onboard?"EN VIAJE · GPS REAL":"RECOGIDA · GPS REAL";
-    screen.querySelector(".qt-focus-sheet-heading h2").textContent=onboard?
-      "Viaje en curso":r.pickup_phase==="EN_PUNTO"?"En tu recogida":
-      r.pickup_phase==="EN_CAMINO"?"Conductor en camino":"Viaje aceptado";
+    syncTrackingStage(r);
     screen.querySelector(".qt-focus-tracking-origin-text").textContent=
       safeText({text:r.origin_text},"Origen pendiente");
     screen.querySelector(".qt-focus-tracking-destination-text").textContent=
       safeText({text:r.destination_text},"Destino pendiente");
-    screen.querySelector(".qt-focus-tracking-stage").textContent=onboard?
-      "Durante el viaje":r.pickup_phase==="EN_PUNTO"?
-      "Conductor en el punto de recogida":r.pickup_phase==="EN_CAMINO"?
-      "Conductor en camino":"Viaje aceptado · preparando recogida";
     screen.querySelector(".qt-focus-tracking-vehicle").textContent=
       "Vehículo confirmado · ubicación disponible solo con GPS autorizado";
     screen.querySelector(".qt-focus-tracking-contacts button").disabled=
@@ -253,8 +322,6 @@
       {text:onboard?r.destination_text:r.origin_text},"Tu dirección");
     screen.querySelector(".qt-focus-fare").textContent=Number(r.quote_final_total)>0
       ?UYU(Number(r.quote_final_total)):"Importe confirmado pendiente";
-    screen.querySelector(".qt-focus-car-detail").textContent=onboard?
-      "En viaje":"Recogida confirmada";
     screen.querySelector(".qt-focus-origin").textContent="● "+safeText({text:r.origin_text},"Origen");
     screen.querySelector(".qt-focus-destination").textContent="◆ "+safeText({text:r.destination_text},"Destino");
     screen.querySelector(".qt-focus-distance").textContent="—";
@@ -266,10 +333,11 @@
     const legend=screen.querySelector(".qt-focus-legend");legend.hidden=false;
     legend.querySelector(".qt-focus-legend-approach").hidden=true;
     host.replaceChildren();
+    const twoLegRenderer=verifiedTwoLegRenderer(options,r);
     const trackingStopFn=root.TrasladosReservationLive.mount(host,{
       reservation:r,guestToken:options.guestToken,sessionToken:options.sessionToken,
       rpc:options.rpc,engine:options.engine,api:options.api,
-      key:options.key,renderer:options.renderer,
+      key:options.key,renderer:twoLegRenderer,
       onUpdate:data=>{
         if(!trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
         screen.querySelector(".qt-focus-message").textContent=data.gps?
@@ -296,6 +364,16 @@
     if(!trackingCtx||!r||String(trackingCtx.reservation.id)!==String(r.id))return false;
     if(r.status===trackingCtx.reservation.status&&
       r.pickup_phase===trackingCtx.reservation.pickup_phase)return false;
+    const previous=trackingCtx.reservation;
+    if(previous.status!=="EN_VIAJE"&&r.status!=="EN_VIAJE"){
+      // Same pickup leg: keep the live tracker, camera and sheet mounted.
+      // Only its display label changes. The real GPS refresh timer continues.
+      trackingCtx={...trackingCtx,reservation:r};
+      syncTrackingStage(r);
+      return true;
+    }
+    // Switching to the destination leg requires the existing live engine to
+    // re-evaluate the authorized destination; the map will re-fit that leg.
     return showTracking({...trackingCtx,reservation:r});
   }
   root.QuickTripMapFocus=Object.freeze({

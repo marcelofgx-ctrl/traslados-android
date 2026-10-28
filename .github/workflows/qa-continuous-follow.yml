@@ -1,8 +1,8 @@
 name: QA continuous passenger tracking - isolated browser only
 on:
   push:
-    branches: [qa/quicktrip-continuous-follow-audit-20261028]
-    paths: ['web-pasajero/tests/continuous-follow-audit-qa.cjs', '.github/workflows/qa-continuous-follow.yml']
+    branches: [qa/quicktrip-continuous-follow-audit-20261028, qa/quicktrip-continuous-follow-ui-fix-20261028]
+    paths: ['web-pasajero/tests/continuous-follow-audit-qa.cjs', 'web-pasajero/quicktrip-map-focus.js', 'web-pasajero/app.js', '.github/workflows/qa-continuous-follow.yml']
 permissions:
   contents: read
 jobs:
