@@ -45,7 +45,7 @@
     const width=Math.max(220,Math.min(750,Math.round(host.clientWidth||355)));
     const proposed=Number(options.height);
     const height=options.height!=null&&Number.isFinite(proposed)
-      ?Math.max(160,Math.min(560,Math.round(proposed)))
+      ?Math.max(160,Math.min(options.fullscreen?1500:560,Math.round(proposed)))
       :width<400?232:258;
     // Extra markers are real known route locations, not invented vehicle positions.
     const extra=Array.isArray(options.extraMarkers)?options.extraMarkers.filter(m=>

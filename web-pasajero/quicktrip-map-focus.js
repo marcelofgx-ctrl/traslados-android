@@ -114,9 +114,15 @@
       ":"+Math.round(host.clientWidth||390);
     if(key!==lastMapKey&&root.TrasladosPremiumMap){
       lastMapKey=key;host.replaceChildren();
-      const height=Math.max(460,Math.round(root.innerHeight*.80));
-      if(geometry)root.TrasladosPremiumMap.render(host,geometry,{height});
-      else root.TrasladosPremiumMap.overview(host,points.map(p=>[p.lat,p.lng]),{height});
+      // Fit the route in the VISIBLE map ABOVE the bottom sheet, not in the
+      // portion hidden behind the fare card. Avoid blank extra height at
+      // device pixel ratios and varying Android Chrome toolbar sizes.
+      const sheetTop=screen.querySelector(".qt-focus-sheet")?.getBoundingClientRect().top;
+      const visibleHeight=Number.isFinite(sheetTop)&&sheetTop>200
+        ?sheetTop:Math.round(root.innerHeight*.58);
+      const height=Math.round(Math.min(root.innerHeight,Math.max(300,visibleHeight+26)));
+      if(geometry)root.TrasladosPremiumMap.render(host,geometry,{height,fullscreen:true});
+      else root.TrasladosPremiumMap.overview(host,points.map(p=>[p.lat,p.lng]),{height,fullscreen:true});
     }
   }
   function show(next){

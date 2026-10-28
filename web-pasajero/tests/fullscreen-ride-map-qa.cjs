@@ -57,12 +57,44 @@ const cwd=path.resolve(__dirname,"../.."),delay=ms=>new Promise(ok=>setTimeout(o
       route:!!route,car:!!overlay.querySelector(".premium-map-overlays text")?.textContent.includes("🚘"),
       filter:getComputedStyle(overlay.querySelector(".premium-map-tiles img")).filter,
       sheetTop:overlay.querySelector(".qt-focus-sheet").getBoundingClientRect().top,
+      mapBottom:overlay.querySelector(".premium-real-map").getBoundingClientRect().bottom,
+      mapWidth:overlay.querySelector(".premium-real-map").getBoundingClientRect().width,
+      tilePosition:getComputedStyle(overlay.querySelector(".premium-map-tiles")).position,
+      imagePosition:getComputedStyle(overlay.querySelector(".premium-map-tiles img")).position,
+      overlayPosition:getComputedStyle(overlay.querySelector(".premium-map-overlays")).position,
+      svgWidth:overlay.querySelector(".premium-map-overlays").getBoundingClientRect().width,
+      svgHeight:overlay.querySelector(".premium-map-overlays").getBoundingClientRect().height,
+      paintedRoadBounds:(()=>{
+        const el=overlay.querySelector(".premium-map-route");const bbox=el?.getBBox();
+        const svg=overlay.querySelector(".premium-map-overlays");
+        return bbox?{x:bbox.x,y:bbox.y,w:bbox.width,h:bbox.height,
+          visible:bbox.width>0&&bbox.height>0&&bbox.x+bbox.width>0&&
+            bbox.x<svg.clientWidth&&bbox.y+bbox.height>0&&bbox.y<svg.clientHeight}:null;
+      })(),
+      viewportTileCoverage:(()=>{
+        const map=overlay.querySelector(".premium-real-map");
+        const tiles=[...map.querySelectorAll(".premium-map-tiles img")];
+        return tiles.length>=4&&
+          Math.min(...tiles.map(i=>parseFloat(i.style.left)))<=0&&
+          Math.max(...tiles.map(i=>parseFloat(i.style.left)+256))>=map.clientWidth&&
+          Math.min(...tiles.map(i=>parseFloat(i.style.top)))<=0&&
+          Math.max(...tiles.map(i=>parseFloat(i.style.top)+256))>=map.clientHeight;
+      })(),
       horizontalOverflow:document.documentElement.scrollWidth-innerWidth
     };
    });
    assert(detail.visible&&detail.top===0&&detail.height>=840,
      "Full screen required "+JSON.stringify(detail));
    assert(detail.route&&detail.filter!=="none","Must show a dark, real road route");
+   assert.equal(detail.tilePosition,"absolute","Tiles are missing the required map positioning");
+   assert.equal(detail.imagePosition,"absolute","Tile images were stacked in document flow");
+   assert.equal(detail.overlayPosition,"absolute","Route SVG was not positioned over the tiles");
+   assert(Math.abs(detail.svgWidth-detail.mapWidth)<2,"SVG map did not fill the viewport");
+   assert(detail.svgHeight>350,"SVG map height is truncated");
+   assert(detail.mapBottom>detail.sheetTop-55&&detail.mapBottom<detail.sheetTop+55,
+     "Map height must end under the bottom sheet, not leave uncovered viewport");
+   assert(detail.paintedRoadBounds?.visible,"The verified road has no visible SVG bounds");
+   assert(detail.viewportTileCoverage,"Tile images do not cover the map viewport");
    assert.match(detail.fare,/264/);
    assert.match(detail.address,/Shangrilá/);
    assert.equal(detail.distance,"6,6 km");assert.equal(detail.duration,"11 min");
