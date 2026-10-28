@@ -108,7 +108,7 @@ const cwd=path.resolve(__dirname,"../.."),sleep=ms=>new Promise(r=>setTimeout(r,
      const s=document.querySelector("#qt-focus");
      return s.dataset.mode==="tracking"&&s.querySelector(".premium-map-route")&&
        !s.querySelector(".premium-map-approach")&&
-       s.querySelector(".qt-focus-sheet-heading h2")?.textContent==="Tu viaje en curso";
+       s.querySelector(".qt-focus-sheet-heading h2")?.textContent==="Viaje en curso";
    },{timeout:16000});
    assert.equal(await page.locator("#qt-focus .qt-focus-legend-approach").isVisible(),false);
    await page.screenshot({path:path.join(out,"in-ride-"+width+".png"),fullPage:true});
