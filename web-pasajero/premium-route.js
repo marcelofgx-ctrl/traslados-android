@@ -88,8 +88,8 @@
       const key=JSON.stringify(geometry||points)+":"+Math.round(mapHost.clientWidth||355);
       if(key!==lastMap){
         lastMap=key;
-        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:318});
-        else root.TrasladosPremiumMap.overview(mapHost,points,{height:318});
+        if(geometry)root.TrasladosPremiumMap.render(mapHost,geometry,{height:340});
+        else root.TrasladosPremiumMap.overview(mapHost,points,{height:340});
       }
       caption.textContent=geometry?"Tu recorrido por calles · sin tráfico en vivo":points.length===2?"Origen y destino elegidos · ruta pendiente de verificar":points.length?"Ubicación elegida · agregá el destino para ver la ruta":"Montevideo y Ciudad de la Costa · elegí tu recorrido";
       if(state.metrics){

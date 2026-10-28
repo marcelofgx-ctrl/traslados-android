@@ -63,7 +63,8 @@
     frame.className="premium-real-map";
     frame.setAttribute("role","group");
     const live=options.routeMode==="pickup"||options.routeMode==="ride";
-    frame.setAttribute("aria-label",options.overview?"Mapa geográfico de referencia, sin posición GPS ni ruta calculada":
+    const knownOverview=Array.isArray(options.overviewPoints)?options.overviewPoints:[];
+    frame.setAttribute("aria-label",options.overview?"Mapa de orientación con los puntos de origen y destino seleccionados, sin inventar una ruta vial":
       options.routeMode==="pickup"?"Posición GPS reciente del automóvil, ruta por calles hasta la recogida y destino marcado":
       options.routeMode==="ride"?"Posición GPS reciente del automóvil con pasajero a bordo, ruta por calles hasta el destino":
       "Mapa del recorrido contratado entre origen y destino; no muestra el automóvil");
@@ -107,8 +108,9 @@
       line.setAttribute("class",klass);svg.append(line);
     }
     if(!options.overview){
-    path("#042e46",9,"premium-map-route-shadow");
-    path(live?"#56cba0":"#6ce4ff",5,"premium-map-route");
+      path("#042e46",9,"premium-map-route-shadow");
+      path(live?"#56cba0":"#2b866e",5,"premium-map-route");
+    }
     const start=view.points[0],end=view.points[view.points.length-1];
     function drawMarker(p,name,color,isCar=false){
       const circle=document.createElementNS(NS,"circle");
@@ -142,17 +144,28 @@
         }
       }
     }
-    // The car glyph is NEVER rendered unless the caller used a fresh, authorized GPS fix.
-    if(live)drawMarker(start,"🚘","#f6e0ae",true);
-    else drawMarker(start,"O","#49e0a7");
-    drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
-    for(const marker of extra){
+    // In preview mode show only verified pickup/destination COORDINATES.
+    // A pending or failed routing engine must never draw a fabricated road.
+    if(options.overview){
+      const plotted=knownOverview.map(pair=>project(pair)).filter(Boolean);
+      for(let i=0;i<plotted.length&&i<2;i++){
+        const point=plotted[i];
+        const position=[(point[0]*view.scale-view.centerX)+width/2,
+          (point[1]*view.scale-view.centerY)+height/2];
+        drawMarker(position,i===0?"O":"D",i===0?"#38b98b":"#ed8270");
+      }
+    }else{
+      // The car glyph is NEVER rendered without a fresh authorized GPS fix.
+      if(live)drawMarker(start,"🚘","#f6e0ae",true);
+      else drawMarker(start,"O","#49e0a7");
+      drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
+      for(const marker of extra){
       const projected=project([marker.lat,marker.lng]);
       if(!projected)continue;
       const at=[(projected[0]*view.scale-view.centerX)+width/2,
                 (projected[1]*view.scale-view.centerY)+height/2];
       drawMarker(at,marker.label,marker.label==="D"?"#ef8f70":"#49e0a7");
-    }
+      }
     }
     const credit=document.createElement("span");credit.className="premium-map-credit";
     credit.textContent="© OpenStreetMap contributors";
@@ -181,7 +194,7 @@
     control("+","Acercar mapa","premium-map-control-zoom-in",()=>zoomBy(1));
     control("−","Alejar mapa","premium-map-control-zoom-out",()=>zoomBy(-1));
     control("◎","Centrar la ruta","premium-map-control-reset",()=>applyCamera(null));
-    control(camera.explore?"Listo":"Explorar","Activar o desactivar arrastrar y pellizcar el mapa",
+    control(camera.explore?"✓":"✥","Activar o desactivar arrastrar y pellizcar el mapa",
       "premium-map-control-explore",()=>{
         camera.explore=!camera.explore;
         cameras.set(host,camera);
@@ -189,8 +202,13 @@
       });
     const hint=document.createElement("span");
     hint.className="premium-map-gesture-hint";
-    hint.textContent=camera.explore?"Arrastrá o pellizcá · tocá Listo para seguir bajando":"Deslizá la página · tocá Explorar para mover el mapa";
-    frame.append(tiles,svg,credit,controls,hint);host.append(frame);
+    hint.textContent=camera.explore?"Mové o acercá con dos dedos · tocá ✓ para salir":"";
+    hint.hidden=!camera.explore;
+    const badge=document.createElement("div");
+    badge.className="premium-map-view-label";
+    badge.textContent=live?"● GPS del conductor":options.overview?
+      knownOverview.length>=2?"● Origen  ·  Destino":"● Mapa de referencia":"● Ruta por calles";
+    frame.append(tiles,svg,credit,badge,controls,hint);host.append(frame);
     // In explore mode drag/pinch changes only the viewport. Coordinates, the
     // authorized vehicle fix and route metrics are never modified.
     const pointers=new Map();
@@ -246,7 +264,7 @@
     let bounds=[[-34.95,-56.4],[-34.72,-55.93]];
     if(valid.length===1){const [lat,lng]=valid[0];bounds=[[lat-.025,lng-.035],[lat+.025,lng+.035]];}
     else if(valid.length>1)bounds=valid;
-    return render(host,bounds,{...options,overview:true});
+    return render(host,bounds,{...options,overview:true,overviewPoints:valid.slice(0,2)});
   }
   root.TrasladosPremiumMap=Object.freeze({project,layout,render,overview});
 })(window);

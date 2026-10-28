@@ -43,7 +43,7 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
       pageScroll:getComputedStyle(el).touchAction,
       cardHeight:el.closest(".premium-route-cartography")?.getBoundingClientRect().height
    }));
-   assert(baseline.cardHeight>=315,"Tiny map: "+JSON.stringify(baseline));
+   assert(baseline.cardHeight>=338,"Map must be prominent: "+JSON.stringify(baseline));
    assert.equal(baseline.pageScroll,"pan-y","Normal swipes must scroll the page");
    await page.locator(host+" .premium-map-control-zoom-in").click();
    const zoomed=await page.locator(host).evaluate(el=>+el.dataset.zoom);
@@ -71,20 +71,40 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
    await page.locator(host+" .premium-map-control-reset").click();
    assert.equal(await page.locator(host).evaluate(el=>el.dataset.manual),"false","Reset should recenter real route");
    assert.equal(await page.locator(host).evaluate(el=>+el.dataset.zoom),baseline.zoom);
+   const overview=await page.evaluate(()=>{
+     const temp=document.createElement("section");temp.style.width="340px";
+     document.body.append(temp);
+     const ok=window.TrasladosPremiumMap.overview(temp,
+       [[-34.835,-56.028],[-34.895,-56.185]],{height:340});
+     const names=[...temp.querySelectorAll(".premium-map-overlays text")].map(x=>x.textContent);
+     const falseRoute=temp.querySelectorAll(".premium-map-route").length;
+     const overlay=temp.querySelector(".premium-map-view-label")?.textContent;
+     temp.remove();
+     return {ok,names,falseRoute,overlay};
+   });
+   assert(overview.ok&&overview.names.includes("O")&&overview.names.includes("D"),
+     "Pending route should show both real positions: "+JSON.stringify(overview));
+   assert.equal(overview.falseRoute,0,"Never invent a road while calculation is pending");
    const metrics=await page.evaluate(()=>({
     horizontalOverflow:document.documentElement.scrollWidth-innerWidth,
     pageCanScroll:document.documentElement.scrollHeight>innerHeight+150,
     controls:document.querySelectorAll(".premium-route-canvas .premium-map-control").length,
     bookingButton:!!document.querySelector("#urgent-send"),
-    origin:!!document.querySelector("#origin-picker"),destination:!!document.querySelector("#destination-picker")
+    origin:!!document.querySelector("#origin-picker"),destination:!!document.querySelector("#destination-picker"),
+    buttonPanelWidth:document.querySelector(".premium-route-canvas .premium-map-controls")?.getBoundingClientRect().width,
+    legend:document.querySelector(".premium-route-canvas .premium-map-view-label")?.textContent,
+    instructionsHidden:document.querySelector(".premium-route-canvas .premium-map-gesture-hint")?.hidden
    }));
    assert(metrics.horizontalOverflow<=3,"Horizontal overflow: "+JSON.stringify(metrics));
    assert(metrics.pageCanScroll,"Page must remain vertically scrollable");
    assert(metrics.bookingButton&&metrics.origin&&metrics.destination,"Booking engines / controls lost");
    assert.equal(metrics.controls,4);
+   assert(metrics.buttonPanelWidth<=60,"Floating map controls too large: "+JSON.stringify(metrics));
+   assert.equal(metrics.instructionsHidden,true,"Avoid permanent help overlay covering cartography");
+   assert(metrics.legend,"Missing compact verified map context badge");
    assert.equal(writes,0,"Browser map test must be read-only");
    await page.screenshot({path:path.join(output,"map-close-"+width+".png"),fullPage:true});
-   console.log("PASS interactive map",width,JSON.stringify({baseline,zoomed,after,metrics}));
+   console.log("PASS interactive reference map",width,JSON.stringify({baseline,zoomed,after,overview,metrics}));
    assert.deepEqual(errors,[],"Uncaught browser JS errors");
    await ctx.close();
   }

@@ -147,3 +147,9 @@ body.journey-mode-quick #view-viaje[data-premium-step="confirm"] .premium-previo
 body.journey-mode-quick #view-viaje .premium-route-cartography{
   min-height:318px;touch-action:pan-y;overflow:hidden
 }
+
+/* QA reference: full-height breathing room without obstructing the request CTA. */
+body.journey-mode-quick #view-viaje .premium-route-cartography{
+ min-height:340px!important;height:340px!important;
+ background:#e8eee8!important
+}
