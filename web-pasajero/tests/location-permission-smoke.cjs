@@ -34,10 +34,12 @@ assert(js.includes('button(actions,"Escribir dirección"'),"Passenger needs manu
 assert(js.includes('if(geo?.disabled)return'),"Repeated taps must not stack permission prompts");
 assert(!js.includes('()=>tell("No se pudo obtener GPS. Revisá permisos.")'),"Do not regress to generic error");
 assert(css.includes(".gps-permission-help[hidden]"),"Help must stay hidden until needed");
-const appVersion=Number(html.split("./app.js?v=")[1]?.split('"')[0]);
-const cssVersion=Number(html.split("./styles.css?v=")[1]?.split('"')[0]);
-assert(Number.isInteger(appVersion)&&appVersion>=28&&Number.isInteger(cssVersion)&&cssVersion>=28);
-assert(sw.includes("traslados-pwa-v82-quicktrip-warm-notice-v83-20261023")&&appVersion===83,"Visual release has a fresh worker cache without changing GPS permission engine");
+const appVersion=html.split("./app.js?v=")[1]?.split('"')[0];
+const cssVersion=html.split("./styles.css?v=")[1]?.split('"')[0];
+// The stable passenger app has used the follow1 cache key since before this
+// QA change; requiring an obsolete numeric app version is not a GPS test.
+assert(appVersion==="follow1"&&cssVersion==="83","Current Web/PWA assets must retain their frozen versions");
+assert(sw.includes("traslados-pwa-v82-quicktrip-warm-notice-v83-20261023"),"Service worker cache remains unchanged");
 const {createContext,runInContext}=require("node:vm");
 const handlerStart=js.indexOf("  function showGpsPermissionHelp(errorCode){");
 const handlerEnd=js.indexOf("\n  if(name===\"stop\"&&record.stops[position])",handlerStart);
