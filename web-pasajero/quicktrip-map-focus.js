@@ -83,6 +83,9 @@
     function startSheetGesture(e){
       if(e.pointerType==="mouse"&&e.button!==0)return;
       gestureStart={y:e.clientY,id:e.pointerId};
+      // Keep receiving pointerup even when the finger leaves the small
+      // drag handle/header. Otherwise an actual swipe silently does nothing.
+      e.currentTarget?.setPointerCapture?.(e.pointerId);
     }
     function endSheetGesture(e){
       if(!gestureStart||e.pointerId!==gestureStart.id)return;
