@@ -98,8 +98,23 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
       const panel=document.querySelector(".premium-route-canvas .premium-map-controls");
       const map=document.querySelector(".premium-route-canvas .premium-real-map");
       if(!panel||!map)return false;
-      return panel.getBoundingClientRect().bottom>=map.getBoundingClientRect().bottom-42 &&
-        panel.getBoundingClientRect().top>map.getBoundingClientRect().top+map.getBoundingClientRect().height/2;
+      const gap=map.getBoundingClientRect().bottom-panel.getBoundingClientRect().bottom;
+      return gap>=4&&gap<=43;
+    })(),
+    controlsBottomOffset:(()=>{
+      const panel=document.querySelector(".premium-route-canvas .premium-map-controls");
+      const map=document.querySelector(".premium-route-canvas .premium-real-map");
+      return Math.round(map.getBoundingClientRect().bottom-panel.getBoundingClientRect().bottom);
+    })(),
+    tilesCoverMap:(()=>{
+      const map=document.querySelector(".premium-route-canvas .premium-real-map");
+      const tiles=[...map.querySelectorAll(".premium-map-tiles img")];
+      if(!tiles.length)return false;
+      const minX=Math.min(...tiles.map(i=>parseFloat(i.style.left)));
+      const maxX=Math.max(...tiles.map(i=>parseFloat(i.style.left)+256));
+      const minY=Math.min(...tiles.map(i=>parseFloat(i.style.top)));
+      const maxY=Math.max(...tiles.map(i=>parseFloat(i.style.top)+256));
+      return minX<=0&&maxX>=map.clientWidth&&minY<=0&&maxY>=map.clientHeight;
     })(),
     viewportTileCount:document.querySelectorAll(".premium-route-canvas .premium-map-tiles img").length
    }));
@@ -111,7 +126,7 @@ const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
    assert.equal(metrics.instructionsHidden,true,"Avoid permanent help overlay covering cartography");
    assert(metrics.legend,"Missing compact verified map context badge");
    assert(metrics.controlsNearBottom,"Controls must float at the bottom-right, not over the airport: "+JSON.stringify(metrics));
-   assert(metrics.viewportTileCount>=8,"Viewport tiles truncated: "+JSON.stringify(metrics));
+   assert(metrics.tilesCoverMap,"Viewport tile coverage incomplete: "+JSON.stringify(metrics));
    assert.equal(writes,0,"Browser map test must be read-only");
    await page.screenshot({path:path.join(output,"map-close-"+width+".png"),fullPage:true});
    console.log("PASS interactive reference map",width,JSON.stringify({baseline,zoomed,after,overview,metrics}));
