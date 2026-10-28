@@ -96,6 +96,9 @@ let browser;
            approachColor:approach?getComputedStyle(approach).stroke:null,
            rideColor:main?getComputedStyle(main).stroke:null,
            driverLive:live?.dataset.liveDriver==="true",
+           mapPresent:!!frame,livePresent:!!live,
+           statusText:live?.querySelector(".reservation-live-status")?.textContent,
+           message:el?.querySelector(".qt-focus-message")?.textContent,
            overflow:document.documentElement.scrollWidth-innerWidth};
        });
        steps.push({width,stage,...s});
@@ -105,14 +108,17 @@ let browser;
      async function waitHeading(t,car){
        await page.waitForFunction(title=>{
          const el=document.querySelector("#qt-focus");
-         return el&&!el.hidden&&el.querySelector(".qt-focus-sheet-heading h2")?.textContent===title&&
-           !!el.querySelector(".premium-real-map");
-       },t,{timeout:15000});
+         return el&&!el.hidden&&el.querySelector(".qt-focus-sheet-heading h2")?.textContent===title;
+       },t,{timeout:12000});
+       await page.waitForFunction(()=>{
+         const s=document.querySelector("#qt-focus");
+         return !!s?.querySelector(".premium-real-map");
+       },null,{timeout:2500}).catch(()=>{});
        if(car)await page.waitForFunction(()=>{
          const s=document.querySelector("#qt-focus");
          return s?.querySelector(".reservation-live")?.dataset.liveDriver==="true"&&
            [...s.querySelectorAll(".premium-map-overlays text")].some(x=>x.textContent==="🚘");
-       },null,{timeout:15000});
+       },null,{timeout:2500}).catch(()=>{});
      }
      try{
        await page.goto("http://127.0.0.1:8292/web-pasajero/",{waitUntil:"load"});
@@ -124,6 +130,8 @@ let browser;
        state.row={...state.row,pickup_phase:"EN_CAMINO"};state.gps=true;
        await page.evaluate(async()=>loadTrips({background:true}));
        await waitHeading("Conductor en camino",true);
+       await page.waitForFunction(()=>!!document.querySelector("#qt-focus .premium-map-approach"),
+         null,{timeout:1800}).catch(()=>{});
        const b=await capture("02-en-camino");
        check(b.dual&&b.approachColor!==b.rideColor&&b.hasCar,
          width+"-approach-two-colors",b);
@@ -138,7 +146,7 @@ let browser;
        await page.evaluate(async()=>loadTrips({background:true}));
        await waitHeading("En tu recogida",true);
        const c=await capture("03-en-punto");
-       check(c.hasCar&&c.dual,width+"-pickup-position-with-gps",c);
+       check(c.mapPresent&&c.hasCar&&c.dual,width+"-pickup-position-with-gps",c);
        check(c.sheet==="expanded",width+"-keep-sheet-on-arrival",{
          before:custom.sheet,after:c.sheet});
        check(c.manual==="true"&&c.zoom===custom.zoom,
@@ -155,7 +163,7 @@ let browser;
        state.row={...state.row,status:"FINALIZADA"};state.gps=false;
        await page.evaluate(async()=>loadTrips({background:true}));
        await page.waitForFunction(()=>window.QuickTripMapFocus?.isTrackingOpen?.()===false,
-         null,{timeout:10000});
+         null,{timeout:4000}).catch(()=>{});
        const e=await capture("05-finalizada");
        check(!e.open,width+"-final-close",e);
      }catch(e){
