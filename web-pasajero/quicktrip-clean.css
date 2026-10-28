@@ -1033,3 +1033,31 @@ body.qt-clean .premium-real-map .premium-map-gesture-hint,
 #view-seguimiento .premium-map-gesture-hint{
   bottom:auto!important;top:58px!important;left:12px!important;
 }
+
+/* QA 2026-10-28: map compacto de Tu viaje.
+   Los tiles OSM y el SVG de la ruta comparten el mismo viewport.
+   No altera el motor vial, los precios, el GPS ni el mapa grande. */
+body.qt-clean #view-viaje .premium-route-cartography .premium-real-map{
+  position:relative!important;width:100%!important;overflow:hidden!important;
+  isolation:isolate;
+}
+body.qt-clean #view-viaje .premium-route-cartography .premium-map-tiles{
+  position:absolute!important;inset:0!important;overflow:hidden!important;
+  z-index:1!important;pointer-events:none!important;
+}
+body.qt-clean #view-viaje .premium-route-cartography .premium-map-tiles img{
+  position:absolute!important;display:block!important;
+  width:256px!important;height:256px!important;min-width:256px!important;
+  max-width:none!important;margin:0!important;object-fit:fill!important;
+  pointer-events:none!important;
+}
+body.qt-clean #view-viaje .premium-route-cartography .premium-map-overlays{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;z-index:2!important;
+  pointer-events:none!important;
+}
+body.qt-clean #view-viaje .premium-route-cartography .premium-map-route{
+  fill:none!important;stroke:#21956d!important;stroke-width:5!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+  vector-effect:non-scaling-stroke;
+}
