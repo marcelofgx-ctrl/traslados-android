@@ -39,7 +39,7 @@ const cssVersion=html.split("./styles.css?v=")[1]?.split('"')[0];
 // The stable passenger app has used the follow1 cache key since before this
 // QA change; requiring an obsolete numeric app version is not a GPS test.
 assert(appVersion==="follow1"&&cssVersion==="83","Current Web/PWA assets must retain their frozen versions");
-assert(sw.includes("traslados-pwa-v82-quicktrip-warm-notice-v83-20261023"),"Service worker cache remains unchanged");
+assert(sw.includes('const CACHE="traslados-pwa-fullscreen-tiles-fixed-qa-20261027"'),"Frozen QA service worker cache must remain unchanged");
 const {createContext,runInContext}=require("node:vm");
 const handlerStart=js.indexOf("  function showGpsPermissionHelp(errorCode){");
 const handlerEnd=js.indexOf("\n  if(name===\"stop\"&&record.stops[position])",handlerStart);
