@@ -80,6 +80,7 @@ jobs:
           node web-pasajero/tests/accepted-prepickup-follow-qa.cjs
           node web-pasajero/tests/map-pan-zoom-qa.cjs
           node web-pasajero/tests/fullscreen-ride-map-qa.cjs
+          node web-pasajero/tests/dual-leg-sheet-qa.cjs
       - name: Visual evidence
         uses: actions/upload-artifact@v4
         if: always()
@@ -90,5 +91,6 @@ jobs:
             artifacts/map-nav/
             artifacts/accepted-follow/
             artifacts/fullscreen-ride/
+            artifacts/dual-leg-sheet/
           if-no-files-found: warn
           retention-days: 14

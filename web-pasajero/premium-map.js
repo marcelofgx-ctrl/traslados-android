@@ -56,7 +56,15 @@
       camera={identity,custom:null,explore:false};
       cameras.set(host,camera);
     }
-    const view=layout(geometry,width,height,extra.map(m=>[m.lat,m.lng]),camera.custom);
+    // Fit both independently verified legs. The secondary route is ONLY
+    // provided by authorized reservation tracking, never by public presence.
+    const secondary=Array.isArray(options.secondaryGeometry)&&options.secondaryGeometry.length>=2
+      ?options.secondaryGeometry.filter(p=>project(p)):null;
+    const vehicle=options.driverPosition&&project([options.driverPosition.lat,options.driverPosition.lng])
+      ?options.driverPosition:null;
+    const fitExtra=extra.map(m=>[m.lat,m.lng])
+      .concat(secondary||[],vehicle?[[vehicle.lat,vehicle.lng]]:[]);
+    const view=layout(geometry,width,height,fitExtra,camera.custom);
     if(!view)return false;
     host.replaceChildren();
     const frame=document.createElement("div");
@@ -111,6 +119,23 @@
     if(!options.overview){
       path("#042e46",9,"premium-map-route-shadow");
       path(live?"#56cba0":"#2b866e",5,"premium-map-route");
+      if(secondary){
+        const plotted=secondary.map(project).filter(Boolean).map(p=>[
+          (p[0]*view.scale-view.centerX)+width/2,
+          (p[1]*view.scale-view.centerY)+height/2
+        ]);
+        const pathString=plotted.map(p=>p.map(z=>z.toFixed(2)).join(",")).join(" ");
+        for(const [klass,stroke,weight] of [
+          ["premium-map-approach-shadow","#0d2931",10],
+          ["premium-map-approach","#59dfb6",6]
+        ]){
+          const leg=document.createElementNS(NS,"polyline");
+          leg.setAttribute("points",pathString);leg.setAttribute("fill","none");
+          leg.setAttribute("stroke",stroke);leg.setAttribute("stroke-width",String(weight));
+          leg.setAttribute("stroke-linejoin","round");leg.setAttribute("stroke-linecap","round");
+          leg.setAttribute("class",klass);svg.append(leg);
+        }
+      }
     }
     const start=view.points[0],end=view.points[view.points.length-1];
     function drawMarker(p,name,color,isCar=false){
@@ -157,9 +182,19 @@
       }
     }else{
       // The car glyph is NEVER rendered without a fresh authorized GPS fix.
-      if(live)drawMarker(start,"🚘","#f6e0ae",true);
-      else drawMarker(start,"O","#49e0a7");
-      drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
+      if(vehicle){
+        // Primary line is the booked route, so never paint a car at its origin.
+        drawMarker(start,"O","#49e0a7");
+        drawMarker(end,"D","#ef8f70");
+        const p=project([vehicle.lat,vehicle.lng]);
+        const at=[(p[0]*view.scale-view.centerX)+width/2,
+                  (p[1]*view.scale-view.centerY)+height/2];
+        drawMarker(at,"🚘","#f6e0ae",true);
+      }else{
+        if(live)drawMarker(start,"🚘","#f6e0ae",true);
+        else drawMarker(start,"O","#49e0a7");
+        drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
+      }
       for(const marker of extra){
       const projected=project([marker.lat,marker.lng]);
       if(!projected)continue;

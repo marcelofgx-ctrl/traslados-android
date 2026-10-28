@@ -1949,6 +1949,17 @@ function reservationView(r,guestToken){
 }
 
 let premiumTrackingKey=null;
+function openFullscreenTracking(r){
+  // Never expose private GPS through the public ETA or unverified booking data.
+  // This is the same session/guest-token authorized RPC as Mis traslados.
+  if(!r?.id||!(authReady()||r.__guestToken))return false;
+  return window.QuickTripMapFocus?.showTracking?.({
+    reservation:r,guestToken:r.__guestToken||null,
+    sessionToken:authReady()?session?.token:null,
+    rpc,engine:roadEngine,api:API,key:KEY,
+    renderer:window.TrasladosPremiumMap
+  })===true;
+}
 function openPremiumTracking(r){
   premiumTrackingKey=String(r?.id||r?.code||"");
   if(!premiumTrackingKey)return;
@@ -1997,7 +2008,8 @@ function renderPremiumTracking(){
       text(cell,"span",index===0?"✓":String(index+1)).setAttribute("aria-hidden","true");
       text(cell,"small",label);
     }
-    const mapHost=text(content,"section","","premium-tracking-map");
+    button(content,"↗ Abrir mapa grande · dos recorridos","premium-tracking-open-full",()=>openFullscreenTracking(r));
+  const mapHost=text(content,"section","","premium-tracking-map");
     mapHost.setAttribute("aria-label","Mapa del recorrido solicitado");
     const from=[Number(r.origin_lat),Number(r.origin_lng)];
     const to=[Number(r.destination_lat),Number(r.destination_lng)];
@@ -2304,6 +2316,12 @@ async function loadTrips({background=false}={}){
       const current=rows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
       if(current&&(!before||before.status!==current.status||
          before.pickup_phase!==current.pickup_phase))renderPremiumTracking();
+    }
+    if(window.QuickTripMapFocus?.isTrackingOpen?.()){
+      const tracked=rows.find(r=>String(r.id||"")===premiumTrackingKey);
+      if(!tracked||!["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"].includes(String(tracked.status))){
+        window.QuickTripMapFocus.close();
+      }else window.QuickTripMapFocus.updateTracking(tracked);
     }
     if(updates.length&&!autoOpened)showTripNotice(updates[0]);
   }catch(e){

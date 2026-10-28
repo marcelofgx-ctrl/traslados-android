@@ -6,6 +6,7 @@
 (function(root){
   const doc=root.document;
   let screen=null,host=null,state=null,open=false,lastMapKey="";
+  let trackingCtx=null,trackingStop=null,previewSubmit=null;
   const valid=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&
     Number(p.lat)>=-35.3&&Number(p.lat)<=-30&&Number(p.lng)>=-58.8&&Number(p.lng)<=-52.9;
   const safeText=(p,fallback)=>String(p?.text||p?.label||fallback);
@@ -67,9 +68,35 @@
       }
       original?.click();
     };
+    previewSubmit=submit.onclick;
     actions.append(retry,submit);
+    const legend=make("div","qt-focus-legend");
+    legend.hidden=true;
+    const approach=make("span","qt-focus-legend-approach","● Verde · conductor a recogida");
+    const booked=make("span","qt-focus-legend-booked","● Blanco · recorrido del viaje");
+    legend.append(approach,booked);
     const note=make("p","qt-focus-note","Sin cobro anticipado · Precio sujeto a confirmación del conductor");
-    sheet.append(handle,heading,option,stats,route,message,actions,note);
+    sheet.append(handle,heading,option,legend,stats,route,message,actions,note);
+    // Drag the handle or header on mobile to expand / collapse the bottom
+    // sheet. Never bind the gesture to the map itself.
+    let gestureStart=null;
+    function startSheetGesture(e){
+      if(e.pointerType==="mouse"&&e.button!==0)return;
+      gestureStart={y:e.clientY,id:e.pointerId};
+    }
+    function endSheetGesture(e){
+      if(!gestureStart||e.pointerId!==gestureStart.id)return;
+      const dy=e.clientY-gestureStart.y;gestureStart=null;
+      if(Math.abs(dy)>=42){
+        e.preventDefault();
+        setSheet(dy<0);
+      }
+    }
+    for(const dragSurface of [handle,heading]){
+      dragSurface.addEventListener("pointerdown",startSheetGesture);
+      dragSurface.addEventListener("pointerup",endSheetGesture);
+      dragSurface.addEventListener("pointercancel",()=>{gestureStart=null;});
+    }
     screen.append(host,top,sheet);doc.body.append(screen);
     screen.addEventListener("keydown",e=>{
       if(e.key==="Escape"){e.preventDefault();close()}
@@ -82,12 +109,16 @@
       }
     });
   }
-  function toggleSheet(){
-    if(!screen)return;const expanded=screen.classList.toggle("qt-focus-expanded");
-    const handle=screen.querySelector(".qt-focus-handle");
-    handle?.setAttribute("aria-expanded",String(expanded));
+  function setSheet(expanded){
+    if(!screen)return;
+    screen.classList.toggle("qt-focus-expanded",Boolean(expanded));
+    screen.querySelector(".qt-focus-handle")?.setAttribute("aria-expanded",String(Boolean(expanded)));
+    screen.dataset.sheet=expanded?"expanded":"compact";
+    if(!trackingCtx&&open){lastMapKey="";sync(state);}
   }
+  function toggleSheet(){setSheet(!screen?.classList.contains("qt-focus-expanded"));}
   function sync(next){
+    if(trackingCtx)return; // Live tracking owns its authorized map.
     state=next||null;if(!open||!screen||!state)return;
     const origin=state.origin,destination=state.destination;
     const points=[origin,destination].filter(valid);
@@ -127,7 +158,14 @@
   }
   function show(next){
     if(!next?.origin||!next?.destination||!valid(next.origin)||!valid(next.destination))return false;
+    if(trackingCtx)close();
     setup();screen.hidden=false;open=true;lastMapKey="";
+    screen.dataset.mode="preview";setSheet(false);
+    screen.querySelector(".qt-focus-legend").hidden=true;
+    screen.querySelector(".qt-focus-sheet-heading h2").textContent="Elegí tu viaje";
+    screen.querySelector(".qt-focus-kicker").textContent="TU VIAJE · URUGUAY";
+    screen.querySelector(".qt-focus-submit").textContent="Continuar con mi viaje →";
+    screen.querySelector(".qt-focus-submit").onclick=previewSubmit;
     doc.body.classList.add("qt-focus-open");
     sync(next);
     screen.querySelector(".qt-focus-back").focus({preventScroll:true});
@@ -135,7 +173,10 @@
   }
   function close(){
     if(!screen)return;
+    if(trackingStop)trackingStop();
+    trackingStop=null;trackingCtx=null;
     screen.hidden=true;open=false;lastMapKey="";
+    delete screen.dataset.mode;
     doc.body.classList.remove("qt-focus-open");
     screen.classList.remove("qt-focus-expanded");
     screen.querySelector(".qt-focus-handle")?.setAttribute("aria-expanded","false");
@@ -149,5 +190,72 @@
       if(!show(next))button.setAttribute("aria-label","Seleccioná origen y destino para abrir el mapa");
     });
   }
-  root.QuickTripMapFocus=Object.freeze({sync,show,close,bindOpenButton,isOpen:()=>open});
+  function showTracking(options){
+    const r=options?.reservation;
+    if(!r||!["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"].includes(String(r.status))||
+       !r.id||!options?.rpc||!options?.renderer||
+       !(options.sessionToken||options.guestToken)||!root.TrasladosReservationLive?.mount)return false;
+    const origin={lat:r.origin_lat,lng:r.origin_lng},destination={lat:r.destination_lat,lng:r.destination_lng};
+    if(!valid(origin)||!valid(destination))return false;
+    if(open)close();
+    setup();open=true;trackingCtx=options;
+    screen.hidden=false;screen.dataset.mode="tracking";lastMapKey="";
+    doc.body.classList.add("qt-focus-open");
+    setSheet(false);
+    const onboard=String(r.status)==="EN_VIAJE";
+    screen.querySelector(".qt-focus-kicker").textContent=onboard?"EN VIAJE · GPS REAL":"RECOGIDA · GPS REAL";
+    screen.querySelector(".qt-focus-sheet-heading h2").textContent=onboard?"Tu viaje en curso":"Seguí a tu conductor";
+    screen.querySelector(".qt-focus-address small").textContent=onboard?"DESTINO":"RECOGIDA";
+    screen.querySelector(".qt-focus-address-text").textContent=safeText(
+      {text:onboard?r.destination_text:r.origin_text},"Tu dirección");
+    screen.querySelector(".qt-focus-fare").textContent=Number(r.quote_final_total)>0
+      ?UYU(Number(r.quote_final_total)):"Importe confirmado pendiente";
+    screen.querySelector(".qt-focus-car-detail").textContent="Conductor confirmado";
+    screen.querySelector(".qt-focus-origin").textContent="● "+safeText({text:r.origin_text},"Origen");
+    screen.querySelector(".qt-focus-destination").textContent="◆ "+safeText({text:r.destination_text},"Destino");
+    screen.querySelector(".qt-focus-distance").textContent="—";
+    screen.querySelector(".qt-focus-time").textContent="—";
+    screen.querySelector(".qt-focus-message").textContent="Esperando la posición GPS autorizada del conductor…";
+    const submit=screen.querySelector(".qt-focus-submit");
+    submit.disabled=false;submit.textContent="Volver a Mis traslados";submit.onclick=close;
+    screen.querySelector(".qt-focus-retry").hidden=true;
+    const legend=screen.querySelector(".qt-focus-legend");legend.hidden=false;
+    legend.querySelector(".qt-focus-legend-approach").hidden=onboard;
+    host.replaceChildren();
+    const trackingStopFn=root.TrasladosReservationLive.mount(host,{
+      reservation:r,guestToken:options.guestToken,sessionToken:options.sessionToken,
+      rpc:options.rpc,engine:options.engine,api:options.api,
+      key:options.key,renderer:options.renderer,
+      onUpdate:data=>{
+        if(!trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
+        screen.querySelector(".qt-focus-message").textContent=data.gps?
+          onboard?"GPS verificado · conductor rumbo al destino":
+            data.dual?"GPS verificado · dos recorridos reales":
+              "GPS verificado · verificando recorrido hasta recogida":
+          data.message||"Esperando GPS reciente para mostrar el vehículo";
+        legend.querySelector(".qt-focus-legend-approach").hidden=onboard||!data.gps;
+        if(data.gps){
+          if(Number.isFinite(data.distanceKm)&&data.distanceKm>=0)
+            screen.querySelector(".qt-focus-distance").textContent=
+              data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+          if(Number.isFinite(data.durationMin)&&data.durationMin>=0)
+            screen.querySelector(".qt-focus-time").textContent=
+              Math.max(1,Math.ceil(data.durationMin))+" min";
+        }
+      }
+    });
+    trackingStop=typeof trackingStopFn==="function"?trackingStopFn:null;
+    screen.querySelector(".qt-focus-back").focus({preventScroll:true});
+    return true;
+  }
+  function updateTracking(r){
+    if(!trackingCtx||!r||String(trackingCtx.reservation.id)!==String(r.id))return false;
+    if(r.status===trackingCtx.reservation.status&&
+      r.pickup_phase===trackingCtx.reservation.pickup_phase)return false;
+    return showTracking({...trackingCtx,reservation:r});
+  }
+  root.QuickTripMapFocus=Object.freeze({
+    sync,show,showTracking,updateTracking,close,bindOpenButton,
+    isOpen:()=>open,isTrackingOpen:()=>Boolean(trackingCtx)
+  });
 })(window);

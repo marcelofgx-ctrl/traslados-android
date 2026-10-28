@@ -28,15 +28,19 @@
     return route;
   }
   function formatKm(km){return Number(km).toLocaleString("es-UY",{maximumFractionDigits:1})+" km";}
-  function mount(host,{reservation:r,guestToken=null,sessionToken=null,rpc,engine,api,key,renderer}={}){
+  function mount(host,{reservation:r,guestToken=null,sessionToken=null,rpc,engine,api,key,renderer,onUpdate=null}={}){
     if(!host||!r||!activeStatus.has(String(r.status))||typeof rpc!=="function")return;
+    let stopped=false,timer=null,contractRoute=null;
     const ride=String(r.status)==="EN_VIAJE";
+    const notify=data=>{if(!stopped&&typeof onUpdate==="function")onUpdate(data);};
     const atPickup=!ride&&String(r.pickup_phase)==="EN_PUNTO";
     // Only the currently visible app surface may request private vehicle GPS.
     // Prevent parallel polls from the collapsed trips screen and tracking screen.
     function visible(){
       const view=host.closest?.(".view");
-      return host.isConnected&&(!view||view.classList.contains("active"))&&
+      return !stopped&&host.isConnected&&
+        !(view&&root.QuickTripMapFocus?.isTrackingOpen?.())&&
+        (!view||view.classList.contains("active"))&&
         document.visibilityState!=="hidden"&&root.navigator?.onLine!==false;
     }
     const from=coordinates(r.origin_lat,r.origin_lng);
@@ -84,10 +88,19 @@
         }
         return false;
       }
-      const featured=Boolean(host.closest?.("#view-seguimiento"));
-      const height=featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
-      if(!renderer.render(mapHost,result.geometry,{
-        height,routeMode:mode,
+      if(kind==="contract")contractRoute=result;
+      const overlay=host.closest?.("#qt-focus");
+      const featured=Boolean(host.closest?.("#view-seguimiento")||overlay);
+      const overlayTop=overlay?.querySelector(".qt-focus-sheet")?.getBoundingClientRect().top;
+      const height=overlay?Math.round(Math.max(300,Math.min(root.innerHeight||760,(overlayTop||450)+26)))
+        :featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
+      const dual=kind==="driver"&&!ride&&Array.isArray(contractRoute?.geometry)&&
+        contractRoute.geometry.length>=2;
+      if(!renderer.render(mapHost,dual?contractRoute.geometry:result.geometry,{
+        height,fullscreen:Boolean(overlay),
+        routeMode:dual?"contract":mode,
+        secondaryGeometry:dual?result.geometry:null,
+        driverPosition:dual?points[0]:null,
         previousCar:kind==="driver"?lastDriverPos:null,
         // Keep three distinct points for orientation while the route line
         // still follows the active leg (car→pickup or car→destination).
@@ -101,6 +114,8 @@
       const km=Number(result.distanceKm);
       const mins=Number(result.durationMin);
       if(kind!=="contract"){
+        notify({stage:ride?"en_viaje":"recogida",gps:true,dual,
+          distanceKm:Number(result.distanceKm),durationMin:Number(result.durationMin)});
         distanceTitle.textContent=ride?"AUTO → DESTINO":"AUTO → RECOGIDA";
         etaTitle.textContent=ride?"TIEMPO AL DESTINO":atPickup?"ESTADO DE RECOGIDA":"LLEGADA APROX.";
         if(Number.isFinite(km)&&km>=0)distance.textContent=formatKm(km);
@@ -165,6 +180,7 @@
               "Recogida confirmada · posición pendiente";
           explanation.textContent="Vista del origen y destino contratados. Todavía no tenemos una posición GPS reciente del auto.";
           privacy.textContent="La llegada del conductor no puede estimarse sin su ubicación verificada.";
+          notify({stage:ride?"en_viaje":"recogida",gps:false,message:status.textContent});
           return;
         }
         const destination=ride?to:from;
@@ -206,7 +222,7 @@
     // loadTrips skips repainting the card due to its stable status signature.
     // One timer per visible mounted card, automatically cleared on removal.
     if(typeof setInterval==="function"){
-      const timer=setInterval(()=>{
+      timer=setInterval(()=>{
         if(!host.isConnected){clearInterval(timer);return;}
         if(!visible())return;
         void run();
@@ -214,6 +230,7 @@
     }
     // Defer until the document appends the newly constructed reservation node.
     Promise.resolve().then(run);
+    return ()=>{stopped=true;if(timer!==null)clearInterval(timer);};
   }
   root.TrasladosReservationLive=Object.freeze({mount,coordinates});
 })(window);
