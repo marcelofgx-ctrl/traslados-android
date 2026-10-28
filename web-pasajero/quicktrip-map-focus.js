@@ -7,6 +7,10 @@
   const doc=root.document;
   let screen=null,host=null,state=null,open=false,lastMapKey="";
   let trackingCtx=null,trackingStop=null,previewSubmit=null;
+  let arrivalLabelObserver=null;
+  function stopArrivalLabelObserver(){
+    arrivalLabelObserver?.disconnect();arrivalLabelObserver=null;
+  }
   const valid=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&
     Number(p.lat)>=-35.3&&Number(p.lat)<=-30&&Number(p.lng)>=-58.8&&Number(p.lng)<=-52.9;
   const safeText=(p,fallback)=>String(p?.text||p?.label||fallback);
@@ -202,6 +206,7 @@
     if(!screen)return;
     const wasTracking=Boolean(trackingCtx);
     if(trackingStop)trackingStop();
+    stopArrivalLabelObserver();
     trackingStop=null;trackingCtx=null;
     screen.hidden=true;open=false;lastMapKey="";
     delete screen.dataset.mode;
@@ -296,11 +301,26 @@
       onboard?"En viaje":arrived?"Conductor llegó":"Recogida confirmada";
     // The stable live tracker was mounted before the arrival status changed.
     // Keep its map/timer but correct the passenger-facing arrival label.
+    stopArrivalLabelObserver();
     if(arrived&&!onboard){
       const live=host.querySelector(".reservation-live");
       const label=live?.querySelector(".reservation-live-status");
-      if(label)label.textContent=live.dataset.gpsState==="fresh"
-        ?"Conductor en el punto de recogida":"Conductor llegó · posición GPS pendiente";
+      if(label){
+        const syncLabel=()=>{
+          if(!trackingCtx||trackingCtx.reservation.pickup_phase!=="EN_PUNTO"||
+             trackingCtx.reservation.status==="EN_VIAJE")return;
+          const expected=live.dataset.gpsState==="fresh"
+            ?"Conductor en el punto de recogida":"Conductor llegó · posición GPS pendiente";
+          if(label.textContent!==expected)label.textContent=expected;
+        };
+        syncLabel();
+        // Mounted GPS tracker still emits its original pickup copy. Observe
+        // just the visible status label instead of changing the stable engine.
+        if(typeof MutationObserver!=="undefined"){
+          arrivalLabelObserver=new MutationObserver(syncLabel);
+          arrivalLabelObserver.observe(label,{childList:true,subtree:true,characterData:true});
+        }
+      }
     }
   }
   function showTracking(options){

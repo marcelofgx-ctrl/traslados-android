@@ -2115,6 +2115,12 @@ function tripNoticeAppearance(change){
     description:"Esperamos que hayas disfrutado tu traslado.",
     action:"VER MI VIAJE"
   };
+  if(status==="EN_VIAJE")return {
+    tone:"moving",icon:"➜",eyebrow:"EN VIAJE",
+    title:"¡Buen viaje!",
+    description:"Tu viaje ya comenzó. Podés consultar sus detalles cuando quieras.",
+    action:"VER MI VIAJE"
+  };
   if(phase==="EN_CAMINO"||status==="EN_CAMINO")return {
     tone:"moving",icon:"➜",eyebrow:"YA ESTÁ EN CAMINO",
     title:"Tu conductor va hacia vos",
@@ -2125,12 +2131,6 @@ function tripNoticeAppearance(change){
     tone:"moving",icon:"✓",eyebrow:"¡YA LLEGÓ!",
     title:"Tu conductor te espera",
     description:"Está en el punto de recogida. ¡Buen viaje!",
-    action:"VER MI VIAJE"
-  };
-  if(status==="EN_VIAJE")return {
-    tone:"moving",icon:"➜",eyebrow:"EN VIAJE",
-    title:"¡Buen viaje!",
-    description:"Tu viaje ya comenzó. Podés consultar sus detalles cuando quieras.",
     action:"VER MI VIAJE"
   };
   if(["ACEPTADA","CONFIRMADA","ACEPTADA_CLIENTE"].includes(status))return {
