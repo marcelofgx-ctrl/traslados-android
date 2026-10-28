@@ -71,7 +71,19 @@
       routePromise=verifiedRoute(points,engine,api,key).catch(()=>null);
       let result=await routePromise;routePromise=null;
       if(!visible())return false;
-      if(!result){if(kind==="contract")explanation.textContent="El recorrido vial todavía no está disponible.";return false;}
+      if(!result){
+        if(kind==="contract"){
+          explanation.textContent="Recorrido vial pendiente. El mapa muestra únicamente el origen y destino seleccionados.";
+          // Never leave the accepted passenger on a blank screen if the road
+          // provider fails. Show verified address pins, never fake a road or
+          // unauthorized driver position.
+          const featured=Boolean(host.closest?.("#view-seguimiento"));
+          const height=featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
+          if(!mapHost.querySelector(".premium-real-map")&&renderer?.overview)
+            renderer.overview(mapHost,[[from.lat,from.lng],[to.lat,to.lng]],{height});
+        }
+        return false;
+      }
       const featured=Boolean(host.closest?.("#view-seguimiento"));
       const height=featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
       if(!renderer.render(mapHost,result.geometry,{

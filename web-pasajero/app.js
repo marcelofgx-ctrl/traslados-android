@@ -1968,7 +1968,9 @@ function renderPremiumTracking(){
   const meta=tripBoard.metadata(r);
   const waiting=meta.tone==="pending"&&tripBoard.isImmediateRequest(r)&&
     !tripBoard.expiredQuote(r)&&!tripBoard.expiredImmediate(r);
-  if(meta.tone!=="moving"&&!waiting){
+  // Acceptance is a real tracking phase: show the route immediately, even
+  // before the driver explicitly marks EN_CAMINO and releases authorized GPS.
+  if(meta.tone!=="moving"&&meta.tone!=="confirmed"&&!waiting){
     text(content,"p",tripBoard.guidance(r),"premium-tracking-empty");
     button(content,"Ver estado en Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
     return;
@@ -2028,13 +2030,14 @@ function renderPremiumTracking(){
   }
   const onBoard=r.status==="EN_VIAJE";
   const arrived=r.pickup_phase==="EN_PUNTO"||r.status==="EN_PUNTO";
-  const phase=onBoard?2:arrived?1:0;
+  const preparing=meta.tone==="confirmed";
+  const phase=preparing?0:onBoard?3:arrived?2:1;
   const hero=text(content,"section","","premium-tracking-hero");
   const pill=text(hero,"div","","premium-tracking-pill");
   text(pill,"span","●").setAttribute("aria-hidden","true");
   text(pill,"strong",meta.label);
-  text(hero,"h2",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":"Conductor en camino");
-  text(hero,"p",tripBoard.guidance(r));
+  text(hero,"h2",onBoard?"Tu viaje está en curso":arrived?"Tu conductor llegó":preparing?"Tu conductor aceptó el viaje":"Conductor en camino");
+  text(hero,"p",preparing?"La recogida está confirmada. Verás el automóvil apenas el conductor inicie su recorrido y el GPS esté disponible.":tripBoard.guidance(r));
   // The expanded detail shares the EXACT authorized GPS/road component used
   // in Mis traslados. No second static map that contradicts the live car route.
   const routeSummary=text(content,"section","","premium-follow-places");
@@ -2062,14 +2065,14 @@ function renderPremiumTracking(){
   text(stepHead,"strong","Estado del viaje");
   text(stepHead,"small",r.code||"Solicitud autorizada");
   const timeline=text(card,"div","","premium-tracking-timeline");
-  for(const [i,label] of ["Conductor en camino","En el punto de recogida","Durante el viaje"].entries()){
+  for(const [i,label] of ["Viaje aceptado","Conductor en camino","En el punto de recogida","Durante el viaje"].entries()){
     const step=text(timeline,"div","","premium-tracking-step");
     step.dataset.stage=i<phase?"complete":i===phase?"current":"upcoming";
     const dot=text(step,"span",i<phase?"✓":String(i+1),"premium-tracking-step-dot");
     dot.setAttribute("aria-hidden","true");
     const body=text(step,"div","","premium-tracking-step-text");
     text(body,"strong",label);
-    if(i===phase)text(body,"small",i===2?"El conductor marcó el inicio del viaje.":i===1?"El conductor informó su llegada.":"En camino según el estado informado por el conductor.");
+    if(i===phase)text(body,"small",i===0?"Esperando el inicio de la recogida; no hay posición GPS autorizada todavía.":i===3?"El conductor marcó el inicio del viaje.":i===2?"El conductor informó su llegada.":"En camino según el estado informado por el conductor.");
     if(i===phase)step.setAttribute("aria-current","step");
   }
   const plate=vehiclePlateByReservation.get(String(r.id||""))?.plate;
@@ -2292,6 +2295,16 @@ async function loadTrips({background=false}={}){
     status.textContent=rows.length+" traslado(s) · actualizado a las "+
       new Date().toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})+".";
     const autoOpened=autoFollowAccepted(rows,oldTripRows);
+    // While following a ride, a real phase transition must update the map
+    // immediately (accepted → pickup → onboard), without navigating away.
+    // Re-render ONLY on status/phase change so normal 4s GPS refreshes preserve
+    // camera position, network cadence and do not restart the live tracker.
+    if(!autoOpened&&$("view-seguimiento").classList.contains("active")){
+      const before=oldTripRows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
+      const current=rows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
+      if(current&&(!before||before.status!==current.status||
+         before.pickup_phase!==current.pickup_phase))renderPremiumTracking();
+    }
     if(updates.length&&!autoOpened)showTripNotice(updates[0]);
   }catch(e){
     if(requestEpoch!==tripQueryEpoch)return;

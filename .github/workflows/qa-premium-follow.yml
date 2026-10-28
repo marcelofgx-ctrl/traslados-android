@@ -1,7 +1,7 @@
 name: QA passenger premium live follow - isolated
 on:
   push:
-    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027]
+    branches: [qa/quicktrip-premium-follow-20261027, qa/quicktrip-map-pan-zoom-20261027, qa/quicktrip-map-reference-20261027, qa/quicktrip-routeprice-mapbottom-20261027, qa/quicktrip-accepted-follow-20261027]
     paths: ['web-pasajero/**','.github/workflows/qa-premium-follow.yml']
 permissions:
   contents: read
@@ -76,6 +76,7 @@ jobs:
           QA_DIR: artifacts/premium-follow
         run: |
           node web-pasajero/tests/premium-follow-autoopen-qa.cjs
+          node web-pasajero/tests/accepted-prepickup-follow-qa.cjs
           node web-pasajero/tests/map-pan-zoom-qa.cjs
       - name: Visual evidence
         uses: actions/upload-artifact@v4
@@ -85,5 +86,6 @@ jobs:
           path: |
             artifacts/premium-follow/
             artifacts/map-nav/
+            artifacts/accepted-follow/
           if-no-files-found: warn
           retention-days: 14
