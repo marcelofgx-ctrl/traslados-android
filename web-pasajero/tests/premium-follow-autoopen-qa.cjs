@@ -11,6 +11,8 @@ const style=fs.readFileSync(path.join(root,"web-pasajero/quicktrip-clean.css"),"
 assert(code.includes("function autoFollowAccepted(rows,previous)"));
 assert(code.includes("const autoOpened=autoFollowAccepted(rows,oldTripRows);"));
 assert(code.includes("const cadence=activeTrip||awaiting?4000:20000;"));
+assert(code.includes("Boolean(window.QuickTripMapFocus?.isTrackingOpen?.())"),
+  "Accepted tracking keeps the same 4-second reservation refresh cadence");
 assert(tracker.includes("},4000);"));
 assert(tracker.includes("previousCar:kind===\"driver\"?lastDriverPos:null"));
 assert(style.includes(".premium-follow-places"));

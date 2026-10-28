@@ -2603,7 +2603,8 @@ function init(){
     const tracked=inTracking&&tripRows.find(r=>String(r.id||r.code||"")===premiumTrackingKey);
     const awaiting=tripRows.some(r=>r.status==="PENDIENTE"&&
       !tripBoard.isHistory(r)&&Boolean(authReady()||r.__guestToken));
-    const activeTrip=(inTrips&&tripRows.some(r=>!tripBoard.isHistory(r)))||
+    const activeTrip=Boolean(window.QuickTripMapFocus?.isTrackingOpen?.())||
+      (inTrips&&tripRows.some(r=>!tripBoard.isHistory(r)))||
       Boolean(tracked&&!tripBoard.isHistory(tracked));
     // Foreground passenger can see acceptance promptly even from Tu Viaje.
     const cadence=activeTrip||awaiting?4000:20000;
