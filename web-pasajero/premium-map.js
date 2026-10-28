@@ -184,7 +184,7 @@
       // The car glyph is NEVER rendered without a fresh authorized GPS fix.
       if(vehicle){
         // Primary line is the booked route, so never paint a car at its origin.
-        drawMarker(start,"O","#49e0a7");
+        drawMarker(start,options.routeMode==="pickup"?"P":"O","#49e0a7");
         drawMarker(end,"D","#ef8f70");
         const p=project([vehicle.lat,vehicle.lng]);
         const at=[(p[0]*view.scale-view.centerX)+width/2,
