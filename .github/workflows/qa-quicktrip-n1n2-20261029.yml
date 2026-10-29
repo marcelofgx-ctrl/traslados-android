@@ -7,6 +7,7 @@ on:
       - '.github/workflows/qa-quicktrip-n1n2-20261029.yml'
       - 'web-pasajero/quicktrip-active-ride.js'
       - 'tests/quicktrip-n1n2-contract-qa.cjs'
+      - 'scripts/qa_quicktrip_n1n2_browser.cjs'
 permissions:
   contents: read
 jobs:
