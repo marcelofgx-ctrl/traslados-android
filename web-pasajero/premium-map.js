@@ -67,8 +67,11 @@
     // UI camera only: the live passenger's natural framing follows the LAST
     // verified vehicle fix, never a predicted coordinate. Manual pan/zoom
     // replaces this camera until the user presses the recenter control.
-    const liveCamera=options.followVehicle===true&&vehicle&&!camera.custom
-      ?(()=>{const p=project([vehicle.lat,vehicle.lng]);return p?{x:p[0],y:p[1],zoom:16}:null;})()
+    const carFocus=options.cameraPosition&&
+      project([options.cameraPosition.lat,options.cameraPosition.lng])
+      ?options.cameraPosition:vehicle;
+    const liveCamera=options.followVehicle===true&&carFocus&&!camera.custom
+      ?(()=>{const p=project([carFocus.lat,carFocus.lng]);return p?{x:p[0],y:p[1],zoom:16}:null;})()
       :null;
     const view=layout(geometry,width,height,fitExtra,camera.custom||liveCamera);
     if(!view)return false;
