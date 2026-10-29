@@ -21,9 +21,9 @@ public final class DriverSheetRecoveryTest {
             Arrays.asList("r1","r2"),Arrays.asList("ACEPTADA","EN_VIAJE")),"two eligible: no choice");
         eq("",DriverSheetPolicy.uniqueRecoveryId(
             Arrays.asList("r1","r1"),Arrays.asList("ACEPTADA","EN_VIAJE")),"duplicate row: no choice");
-        eq("r1",DriverSheetPolicy.uniqueRecoveryId(
-            Arrays.asList("r1","r2","r3"),Arrays.asList("PENDIENTE","ACEPTADA","FINALIZADA"))
-            .replace("r2","r1"),"pending/finished not candidates");
+        eq("r2",DriverSheetPolicy.uniqueRecoveryId(
+            Arrays.asList("r1","r2","r3"),Arrays.asList("PENDIENTE","ACEPTADA","FINALIZADA")),
+            "pending/finished not candidates");
         eq("",DriverSheetPolicy.uniqueRecoveryId(
             Arrays.asList("r1"),Arrays.asList("CANCELADA")),"canceled ignored");
         eq("",DriverSheetPolicy.uniqueRecoveryId(
