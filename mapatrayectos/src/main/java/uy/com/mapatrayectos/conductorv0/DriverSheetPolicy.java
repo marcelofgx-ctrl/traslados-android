@@ -5,6 +5,21 @@ public final class DriverSheetPolicy {
     public enum Action { NONE, GO_TO_PICKUP, ARRIVED, START_TRIP, FINISH_TRIP }
     private DriverSheetPolicy() {}
 
+    /** Recover only one real active immediate journey from an authenticated snapshot. */
+    public static boolean recoverable(String status){
+        return "ACEPTADA".equals(status) || "EN_VIAJE".equals(status);
+    }
+    public static String uniqueRecoveryId(java.util.List<String> ids,java.util.List<String> states){
+        if(ids==null||states==null||ids.size()!=states.size())return "";
+        String match="";
+        for(int i=0;i<ids.size();i++){
+            if(!recoverable(states.get(i)))continue;
+            String id=ids.get(i);
+            if(id==null||id.isEmpty()||!match.isEmpty())return "";
+            match=id;
+        }
+        return match;
+    }
     public static boolean visible(String status) {
         return "ACEPTADA".equals(status) || "ACEPTADA_CLIENTE".equals(status)
             || "CONFIRMADA".equals(status) || "EN_VIAJE".equals(status);
