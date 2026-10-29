@@ -1,0 +1,55 @@
+    public static void publishPickupPresenceAsync(boolean active,boolean paused,
+        boolean inTrip,double lat,double lng,float accuracy,long gpsTimeMs,long lastMovingAtMs){
+        if(APP==null||!pickupPresenceEnabled()||!PRESENCE_BUSY.compareAndSet(false,true))return;
+        final boolean busy=pickupManuallyBusy();
+        new Thread(()->{
+            try{
+                String[] ids=credentials();
+                JSONObject body=new JSONObject();
+                body.put("p_device_id",ids[0]);body.put("p_device_secret",ids[1]);
+                body.put("p_shift_active",active);body.put("p_shift_paused",paused);
+                body.put("p_trip_active",inTrip);body.put("p_manually_busy",busy);
+                body.put("p_lat",lat);body.put("p_lng",lng);
+                body.put("p_accuracy_m",accuracy);body.put("p_gps_at_ms",gpsTimeMs);
+                body.put("p_last_move_at_ms",lastMovingAtMs);
+                JSONObject result=new JSONObject(postRpc("mapa_presence_ping_v1",body));
+                // A second, private endpoint stores only the latest location for
+                // one uniquely active, authorized reservation. It NEVER alters
+                // public availability semantics, local GPS history or shift data.
+                // Invalid/stale fixes, disabled consent and closed journeys
+                // are rejected server-side; no position is returned in this RPC.
+                if(result.optBoolean("ok",false)&&active&&!paused
+                    &&gpsTimeMs>0&&accuracy>=0&&accuracy<=45
+                    &&lat>=-35.3&&lat<=-30&&lng>=-58.8&&lng<=-52.9
+                    &&pickupPresenceEnabled()){
+                    try {
+                        JSONObject privateBody=new JSONObject();
+                        privateBody.put("p_device_id",ids[0]);
+                        privateBody.put("p_device_secret",ids[1]);
+                        privateBody.put("p_shift_active",active);
+                        privateBody.put("p_shift_paused",paused);
+                        privateBody.put("p_lat",lat);
+                        privateBody.put("p_lng",lng);
+                        privateBody.put("p_accuracy_m",accuracy);
+                        privateBody.put("p_gps_at_ms",gpsTimeMs);
+                        postRpc("mapa_reservation_position_v1",privateBody);
+                    }catch(Exception ignored){
+                        // Optional ride tracking must not disrupt GPS collection.
+                    }
+                }
+                // The server only returns this hint after device authentication.
+                // Expire it locally even if the network later goes offline.
+                pickupDemandExpiresAt=result.optBoolean("ok",false)
+                    &&result.optBoolean("pickupDemandActive",false)
+                    &&pickupPresenceEnabled() ?
+                    System.currentTimeMillis()+75000L : 0L;
+                // Revoke local permission if a different device has been linked.
+                if(!result.optBoolean("ok",false)&&"not_authorized".equals(result.optString("reason"))){
+                    APP.getSharedPreferences("pickup_presence",Context.MODE_PRIVATE)
+                        .edit().putBoolean("enabled",false).apply();
+                }
+            }catch(Exception ignored){
+                // Server expires location after 90 s; stale position is never published.
+            }finally{PRESENCE_BUSY.set(false);}
+        },"mapa-pickup-presence").start();
+    }

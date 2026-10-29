@@ -1,0 +1,49 @@
+name: QA Private GPS P0 source contract audit - isolated
+on:
+  push:
+    branches: [qa/quicktrip-private-gps-p0-audit-20261029]
+    paths:
+      - '.github/workflows/qa-private-gps-p0-audit.yml'
+      - 'docs/QA_P0_GPS_PRIVADO_20261029.md'
+      - 'tests/private-gps-p0-contract-qa.cjs'
+      - 'tests/fixtures/private-gps-p0/**'
+permissions:
+  contents: read
+jobs:
+  offline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify only authorized QA files changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff-tree --no-commit-id --name-only -r HEAD | while IFS= read -r file; do
+            case "$file" in
+              .github/workflows/qa-private-gps-p0-audit.yml|docs/QA_P0_GPS_PRIVADO_20261029.md|tests/private-gps-p0-contract-qa.cjs|tests/fixtures/private-gps-p0/*) ;;
+              *) echo "Unauthorized changed file: $file"; exit 1 ;;
+            esac
+          done
+      - name: Frozen F1 engines
+        run: |
+          set -euo pipefail
+          node scripts/qa_functional_baseline_20261029.cjs
+      - name: Offline P0 SQL/Android/passenger contract tests
+        run: |
+          set -euo pipefail
+          node --check tests/private-gps-p0-contract-qa.cjs
+          node tests/private-gps-p0-contract-qa.cjs
+      - name: Archive synthetic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P0-Private-GPS-Offline-Audit
+          path: artifacts/private-gps-p0/
+          if-no-files-found: warn
+          retention-days: 21
