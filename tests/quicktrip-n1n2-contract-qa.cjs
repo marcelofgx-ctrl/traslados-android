@@ -57,6 +57,10 @@ check("booking view remains available by explicit choice",active.includes('view.
 check("active presentation never adds new network clients",
  !/\bfetch\(|\brpc\(|new\s+WebSocket|sendBeacon\(|\bXMLHttpRequest/.test(active));
 check("history display is still available",html.includes('data-trips-scope="history"'));
+check("home and history remain reachable when old booking form is hidden",
+ active.includes("qt-live-bottom-links")&&active.includes("actions.onHome?.()")&&
+ active.includes("actions.onList?.()")&&
+ app.includes('onHome:()=>shiftView("inicio")'));
 const output={suite:"Quick Trip N1+N2",passed:pass,failed:0,liveReservations:false,physicalSamsung:false,backendModified:false};
 fs.mkdirSync(path.join(root,"artifacts/quicktrip-n1n2"),{recursive:true});
 fs.writeFileSync(path.join(root,"artifacts/quicktrip-n1n2/contract-qa.json"),JSON.stringify(output,null,2)+"\n");
