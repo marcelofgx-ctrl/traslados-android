@@ -19,12 +19,13 @@ jobs:
           set -euo pipefail
           QA_HOST="quicktrip-live-qa-only-20261027-marcelofgx-1927.vercel.app"
           curl --fail --location --silent --show-error --max-time 25 \
-            "https://$QA_HOST/" -o /tmp/quicktrip-page.html
+            "https://$QA_HOST/web-pasajero/" -o /tmp/quicktrip-page.html
           grep -Fq 'id="quicktrip-live-trip"' /tmp/quicktrip-page.html || {
             echo "FAIL: stable QA host does not serve passenger app"; exit 1;
           }
-          echo "PASS: stable QA entry opens passenger app without obsolete public landing"
+          echo "PASS: stable QA /web-pasajero/ opens the passenger app directly"
       - name: Check Supabase Edge approved-origin CORS preflight ONLY
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
