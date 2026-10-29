@@ -7,6 +7,10 @@
   const doc=root.document;
   let screen=null,host=null,state=null,open=false,lastMapKey="";
   let trackingCtx=null,trackingStop=null,previewSubmit=null;
+  // A tracking overlay has one browser-history entry so Android Back
+  // closes the map to the active ride, not the previous history screen.
+  const notifyTrackingClosed=()=>root.dispatchEvent(
+    new root.CustomEvent("quicktrip:tracking-closed"));
   const valid=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&
     Number(p.lat)>=-35.3&&Number(p.lat)<=-30&&Number(p.lng)>=-58.8&&Number(p.lng)<=-52.9;
   const safeText=(p,fallback)=>String(p?.text||p?.label||fallback);
@@ -185,7 +189,7 @@
   }
   function show(next){
     if(!next?.origin||!next?.destination||!valid(next.origin)||!valid(next.destination))return false;
-    if(trackingCtx)close();
+    if(trackingCtx)close(true);
     setup();screen.hidden=false;open=true;lastMapKey="";
     screen.dataset.mode="preview";setSheet(false);
     screen.querySelector(".qt-focus-legend").hidden=true;
@@ -198,7 +202,7 @@
     screen.querySelector(".qt-focus-back").focus({preventScroll:true});
     return true;
   }
-  function close(){
+  function close(silent=false){
     if(!screen)return;
     const wasTracking=Boolean(trackingCtx);
     if(trackingStop)trackingStop();
@@ -210,8 +214,13 @@
     screen.querySelector(".qt-focus-handle")?.setAttribute("aria-expanded","false");
     // Release map tiles/listeners while overlay is hidden.
     host.replaceChildren();
-    (wasTracking?doc.querySelector('[data-view="viajes"]'):
-      doc.querySelector(".premium-route-expand"))?.focus({preventScroll:true});
+    (wasTracking?doc.getElementById("quicktrip-live-trip"):
+      doc.querySelector(".premium-route-expand"))?.focus?.({preventScroll:true});
+    if(wasTracking&&!silent){
+      // Only pop the marker created by this screen, never another page entry.
+      if(root.history?.state?.qtTrackingOverlayN1===true)root.history.back();
+      notifyTrackingClosed();
+    }
   }
   function bindOpenButton(button,getState){
     button.addEventListener("click",()=>{
@@ -310,7 +319,8 @@
     // the passenger's already expanded details for this SAME reservation.
     const retainSheet=Boolean(open&&trackingCtx&&screen?.dataset.sheet==="expanded"&&
       String(trackingCtx.reservation.id)===String(r.id));
-    if(open)close();
+    const continuingSameTracking=Boolean(open&&trackingCtx);
+    if(open)close(true);
     setup();open=true;trackingCtx=options;
     screen.hidden=false;screen.dataset.mode="tracking";lastMapKey="";
     doc.body.classList.add("qt-focus-open");
@@ -336,7 +346,7 @@
     screen.querySelector(".qt-focus-time").textContent="—";
     screen.querySelector(".qt-focus-message").textContent="Esperando la posición GPS autorizada del conductor…";
     const submit=screen.querySelector(".qt-focus-submit");
-    submit.disabled=false;submit.textContent="Volver a Mis traslados";submit.onclick=close;
+    submit.disabled=false;submit.textContent="Volver a tu viaje";submit.onclick=()=>close();
     screen.querySelector(".qt-focus-retry").hidden=true;
     const legend=screen.querySelector(".qt-focus-legend");legend.hidden=false;
     legend.querySelector(".qt-focus-legend-approach").hidden=true;
@@ -365,6 +375,9 @@
       }
     });
     trackingStop=typeof trackingStopFn==="function"?trackingStopFn:null;
+    if(!continuingSameTracking&&root.history?.pushState){
+      root.history.pushState({...root.history.state,qtTrackingOverlayN1:true},"",root.location.href);
+    }
     screen.querySelector(".qt-focus-back").focus({preventScroll:true});
     return true;
   }
@@ -384,6 +397,12 @@
     // re-evaluate the authorized destination; the map will re-fit that leg.
     return showTracking({...trackingCtx,reservation:r});
   }
+  root.addEventListener("popstate",()=>{
+    if(open&&trackingCtx){
+      close(true); // Browser/Android already popped our own map history entry.
+      notifyTrackingClosed();
+    }
+  });
   root.QuickTripMapFocus=Object.freeze({
     sync,show,showTracking,updateTracking,close,bindOpenButton,
     isOpen:()=>open,isTrackingOpen:()=>Boolean(trackingCtx)
