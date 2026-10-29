@@ -126,9 +126,15 @@ body.qt-clean .qtc-app #urgent-route-recap .request-recap-metrics>span{
   padding:9px 4px!important;background:#0b3035!important
 }
 body.qt-clean .qtc-app #urgent-send{
+  /* One original, validated submit action. Visible above bottom navigation
+     when route+fare make the source-controlled urgent-actions visible. */
+  position:fixed!important;
+  bottom:calc(74px + env(safe-area-inset-bottom,0px))!important;
+  left:50%!important;transform:translateX(-50%)!important;
+  width:min(calc(100vw - 28px),590px)!important;z-index:9!important;
   min-height:52px!important;border-radius:14px!important;
   background:linear-gradient(135deg,#ffe0a2,#e6bf7f)!important;
-  color:#14343a!important;box-shadow:none!important
+  color:#14343a!important;box-shadow:0 10px 24px rgba(0,12,17,.42)!important
 }
 body.qt-clean .qtc-app .qtc-bottom-nav{
   border-top:1px solid #e4ca9450!important;
