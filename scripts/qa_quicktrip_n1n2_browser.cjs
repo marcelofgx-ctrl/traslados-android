@@ -28,6 +28,14 @@ async function main(){
  await cmd("Page.navigate",{url:"http://127.0.0.1:8768/web-pasajero/?ui=clean"});
  await poll(()=>js(function(){return document.readyState==="complete"&&Boolean(window.QuickTripActiveRide)&&Boolean(document.querySelector("#qtc-app")); }),24000);
  await sleep(550);
+ // User-visible GPS welcome is unrelated to N1/N2; dismiss it through its
+ // real manual-entry action before visual capture (NO location permission).
+ await js(function(){document.getElementById("qt-gps-welcome-manual")?.click();return true;});
+ const welcomeGone=await js(function(){
+   const el=document.getElementById("qt-gps-welcome");
+   return !el||el.hidden||getComputedStyle(el).display==="none";
+ });
+ ok(welcomeGone,"Welcome overlay dismissed before screenshot; real active UI visible");
  const initial=await js(function(){
    const hero=document.getElementById("quicktrip-live-trip");
    const qtc=document.getElementById("qtc-app");
