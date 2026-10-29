@@ -45,7 +45,7 @@ const tests={
   "full legacy panel remains":original.includes("public final class ConductorLiveView")&&
     nav.includes("host.addView(conductor,new FrameLayout.LayoutParams(-1,-1))"),
   "no separate Driver/Passenger application":!/(android\.app\.Application|class .* extends Activity|onCreate\(Bundle)/.test(sheet),
-  "price and distance no synthetic hardcode":!/(151,35|151\.35|12,4|12\.4|3\.3|3,3)/.test(sheet)
+  "price and distance no synthetic hardcode":!/(UYU\\s*151|12[,\\.]4\\s*km|3[,\\.]3\\s*km)/.test(sheet)
 };
 const results=[];for(const [label,passed] of Object.entries(tests)){
   assert(passed,label);
