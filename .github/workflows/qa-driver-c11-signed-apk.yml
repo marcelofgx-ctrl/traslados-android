@@ -5,6 +5,10 @@ on:
       - 'qa/mapaqt-driver-c11-samsung-signed-20261029'
     paths:
       - '.github/workflows/qa-driver-c11-signed-apk.yml'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverRideSheet.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverSheetPolicy.java'
+      - 'tests/driver-c11-static-qa.cjs'
+      - 'tests/android-c11/DriverSheetRecoveryTest.java'
 permissions:
   contents: read
 jobs:
