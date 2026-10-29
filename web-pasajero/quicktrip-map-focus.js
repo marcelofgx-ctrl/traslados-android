@@ -264,7 +264,8 @@
         const next=verifiedBook?{
           ...opts,secondaryGeometry:geometry
         }:opts;
-        const result=renderer.render(mapHost,verifiedBook?bookedGeometry:geometry,next);
+        const result=renderer.render(mapHost,verifiedBook?bookedGeometry:geometry,
+          {...next,followVehicle:true});
         if(needsOverlay&&!bookedGeometry){
           void bookRoute()?.then(route=>{
             const follow=mapHost.closest(".reservation-live");
@@ -274,7 +275,7 @@
                follow?.dataset.gpsState!=="fresh"||
                !trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
             const merged=renderer.render(mapHost,route, {
-              ...opts,secondaryGeometry:geometry
+              ...opts,secondaryGeometry:geometry,followVehicle:true
             });
             if(merged){
               screen.querySelector(".qt-focus-message").textContent=
