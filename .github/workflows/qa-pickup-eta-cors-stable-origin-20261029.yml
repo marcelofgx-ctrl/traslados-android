@@ -1,0 +1,62 @@
+name: QA stable passenger origin - real pickup ETA CORS preflight (NO POST)
+on:
+  push:
+    branches:
+      - qa/quicktrip-n1n2-p0-eta-visual-guard-20261029
+    paths:
+      - '.github/workflows/qa-pickup-eta-cors-stable-origin-20261029.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-allowed-qa-origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check approved stable QA host serves Quick Trip passenger (GET only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_HOST="quicktrip-live-qa-only-20261027-marcelofgx-1927.vercel.app"
+          curl --fail --location --silent --show-error --max-time 25 \
+            "https://$QA_HOST/" -o /tmp/quicktrip-page.html
+          grep -Fq 'id="quicktrip-live-trip"' /tmp/quicktrip-page.html || {
+            echo "FAIL: stable QA host does not serve passenger app"; exit 1;
+          }
+          echo "PASS: stable QA entry opens passenger app without obsolete public landing"
+      - name: Check Supabase Edge approved-origin CORS preflight ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_ORIGIN="https://quicktrip-live-qa-only-20261027-marcelofgx-1927.vercel.app"
+          EDGE="https://zetaudvvutlouiqxopvg.supabase.co/functions/v1/pickup-eta"
+          STATUS=$(curl --silent --show-error --max-time 20 \
+            --request OPTIONS --dump-header /tmp/pickup-preflight.headers \
+            --output /dev/null --write-out '%{http_code}' \
+            --header "Origin: $QA_ORIGIN" \
+            --header "Access-Control-Request-Method: POST" \
+            --header "Access-Control-Request-Headers: apikey,content-type" \
+            "$EDGE")
+          if [[ "$STATUS" != "200" && "$STATUS" != "204" ]]; then
+            echo "FAIL: Edge preflight returned HTTP $STATUS"; exit 1
+          fi
+          tr -d '\r' </tmp/pickup-preflight.headers | grep -Fiqx "access-control-allow-origin: $QA_ORIGIN" || {
+            echo "FAIL: stable QA origin is not on the function CORS allowlist"; exit 1;
+          }
+          tr -d '\r' </tmp/pickup-preflight.headers | grep -Fi 'access-control-allow-methods:' | grep -Fiq 'POST' || {
+            echo "FAIL: POST not allowed by CORS preflight"; exit 1;
+          }
+          tr -d '\r' </tmp/pickup-preflight.headers | grep -Fi 'access-control-allow-headers:' | grep -Fiq 'apikey' || {
+            echo "FAIL: apikey not allowed by CORS preflight"; exit 1;
+          }
+          echo "PASS: browser CORS preflight allows existing QA stable origin"
+          echo "PASS: no POST, no reservations, no GPS, no SQL or cost-bearing services called"
+      - name: Report immutable evidence
+        if: always()
+        shell: bash
+        run: |
+          echo "QA origin: https://quicktrip-live-qa-only-20261027-marcelofgx-1927.vercel.app"
+          echo "Edge: Supabase pickup-eta (preflight only)"
+          echo "QA deployment: dpl_2DDSocPDfc5Ncxntr1T9nSbg8gv5"
+          echo "Passenger source commit: cf1693d0e6c332127e766514112474bea6b1f0b4"
+          echo "No production change; no booking/GPS calls"
