@@ -57,6 +57,8 @@ async function main(){
      text:document.getElementById("pickup-distance").textContent+" "+
        document.getElementById("pickup-minutes").textContent};
  });
+ console.log("P0 ETA visibility diagnostic",JSON.stringify(etaBefore));
+ await snap("00-eta-diagnostic-before-assert.png");
  ok(etaBefore.node&&etaBefore.visible&&etaBefore.header&&etaBefore.metrics&&
     etaBefore.text.includes("1,8")&&etaBefore.text.includes("6"),
     "Route planning preserves original visible availability, pickup km and minutes");
