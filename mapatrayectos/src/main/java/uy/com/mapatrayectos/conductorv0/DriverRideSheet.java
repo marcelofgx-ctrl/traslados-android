@@ -18,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Locale;
+import java.util.ArrayList;
 import uy.com.mapatrayectos.TransferAlerts;
 
 /**
@@ -50,6 +51,7 @@ public final class DriverRideSheet extends LinearLayout {
     private String navigationTarget="";
     private boolean expanded=true,verified=false;
     private int navigationInset=0;
+    private long actionIssuedAtSync=0L;
 
     public DriverRideSheet(Activity a,Listener callbacks){
         super(a);
@@ -141,6 +143,8 @@ public final class DriverRideSheet extends LinearLayout {
             if(verified && nextAction!=DriverSheetPolicy.Action.NONE &&
                ConductorLivePolicy.safeId(reservationId)){
                 // Freeze controls until the RPC response and snapshot arrive.
+                // Release only after a newer authenticated server snapshot.
+                actionIssuedAtSync=TransferAlerts.lastSync(activity);
                 verified=false;actionButton.setEnabled(false);
                 listener.onVerifiedAction(reservationId,nextAction);
             }
@@ -160,13 +164,15 @@ public final class DriverRideSheet extends LinearLayout {
     public void focusConfirmed(String id){
         if(!ConductorLivePolicy.safeId(id))return;
         reservationId=id;
+        actionIssuedAtSync=0L;
         setExpanded(true);
         setVisibility(VISIBLE);
         showWaiting();
         refreshFromSnapshot();
     }
-    public void refreshFromSnapshot(){
-        if(reservationId.isEmpty())return;
+    public void refreshFromSnapshot(){refreshFromSnapshot(false);}
+    public void refreshFromSnapshot(boolean operationBusy){
+        if(reservationId.isEmpty()){recoverFromSnapshot();return;}
         long now=System.currentTimeMillis(),synced=TransferAlerts.lastSync(activity);
         boolean fresh=synced>0 && now>=synced && now-synced<=45000L;
         if(!fresh){showWaiting();return;}
@@ -178,7 +184,7 @@ public final class DriverRideSheet extends LinearLayout {
                 matching=r;break;
             }
         }
-        if(matching==null){showWaiting();return;}
+        if(matching==null){hideAndClear();return;}
         String status=matching.optString("status","");
         if(!DriverSheetPolicy.visible(status)){
             if("PENDIENTE".equals(status)){showWaiting();return;}
@@ -187,7 +193,9 @@ public final class DriverRideSheet extends LinearLayout {
         String phase=matching.optString("pickup_phase","");
         DriverSheetPolicy.Action action=DriverSheetPolicy.next(status,phase,fresh);
         nextAction=action;
-        verified=action!=DriverSheetPolicy.Action.NONE;
+        verified=action!=DriverSheetPolicy.Action.NONE && !operationBusy &&
+            (actionIssuedAtSync==0L || synced>actionIssuedAtSync);
+        if(verified)actionIssuedAtSync=0L;
         stateLabel.setText("●  "+DriverSheetPolicy.statusLabel(status,phase));
         double amount=matching.optDouble("quote_final_total",0d);
         fareLabel.setText(Double.isFinite(amount)&&amount>0&&amount<=1000000
@@ -211,8 +219,23 @@ public final class DriverRideSheet extends LinearLayout {
         setContentDescription("Quick Trip, "+DriverSheetPolicy.statusLabel(status,phase)+
             ". "+personLabel.getText()+". "+fareLabel.getText());
     }
+    private void recoverFromSnapshot(){
+        long now=System.currentTimeMillis(),synced=TransferAlerts.lastSync(activity);
+        if(synced<=0 || now<synced || now-synced>45000L)return;
+        JSONArray rows=TransferAlerts.snapshot(activity);
+        ArrayList<String> ids=new ArrayList<>(),statuses=new ArrayList<>();
+        for(int i=0;i<rows.length();i++){
+            JSONObject row=rows.optJSONObject(i);
+            if(row==null)continue;
+            String id=row.optString("id","");
+            if(!ConductorLivePolicy.safeId(id))continue;
+            ids.add(id);statuses.add(row.optString("status",""));
+        }
+        String only=DriverSheetPolicy.uniqueRecoveryId(ids,statuses);
+        if(!only.isEmpty())focusConfirmed(only);
+    }
     public void hideAndClear(){
-        reservationId="";verified=false;
+        reservationId="";verified=false;actionIssuedAtSync=0L;
         nextAction=DriverSheetPolicy.Action.NONE;
         navigationTarget="";
         setVisibility(GONE);
