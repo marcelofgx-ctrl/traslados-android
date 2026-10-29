@@ -143,7 +143,10 @@ public class MainActivity extends Activity {
             if(TransferAlerts.ACTION_NEW.equals(i.getAction())){
                 updateTransferBadge();
                 showIncomingRequestInConductor();
-            }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction()))updateTransferBadge();
+            }else if(TransferAlerts.ACTION_COUNT.equals(i.getAction())){
+                updateTransferBadge();
+                if(conductorV0!=null)conductorV0.onReservationSnapshotUpdated();
+            }
         }
     };
     /**
@@ -460,7 +463,7 @@ public class MainActivity extends Activity {
 
         FrameLayout.LayoutParams bottomLp=new FrameLayout.LayoutParams(-1,dp(SHEET_PEEK_DP),Gravity.BOTTOM);bottomLp.setMargins(dp(8),0,dp(8),dp(5));root.addView(bottomSheet,bottomLp);
 
-        root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(79);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(81);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(79);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}return insets;});root.requestApplyInsets();
+        root.setOnApplyWindowInsetsListener((v,insets)->{int topInset,bottomInset;if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=insets.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=insets.getInsets(WindowInsets.Type.navigationBars());topInset=st.top;bottomInset=nb.bottom;}else{topInset=insets.getSystemWindowInsetTop();bottomInset=insets.getSystemWindowInsetBottom();}FrameLayout.LayoutParams a=(FrameLayout.LayoutParams)top.getLayoutParams();a.topMargin=topInset+dp(6);top.setLayoutParams(a);FrameLayout.LayoutParams c=(FrameLayout.LayoutParams)speedGauge.getLayoutParams();c.topMargin=topInset+dp(79);speedGauge.setLayoutParams(c);FrameLayout.LayoutParams g=(FrameLayout.LayoutParams)gpsText.getLayoutParams();g.topMargin=topInset+dp(81);gpsText.setLayoutParams(g);FrameLayout.LayoutParams co=(FrameLayout.LayoutParams)compassView.getLayoutParams();co.topMargin=topInset+dp(79);compassView.setLayoutParams(co);FrameLayout.LayoutParams z=(FrameLayout.LayoutParams)bottomSheet.getLayoutParams();z.bottomMargin=bottomInset+dp(5);bottomSheet.setLayoutParams(z);if(historySheet!=null){FrameLayout.LayoutParams hz=(FrameLayout.LayoutParams)historySheet.getLayoutParams();hz.bottomMargin=bottomInset+dp(5);historySheet.setLayoutParams(hz);}if(conductorV0!=null)conductorV0.updateBottomInset(bottomInset);return insets;});root.requestApplyInsets();
         // Conductor V0 native slide-over inside the SAME Mapa QT Activity.
         conductorV0=new uy.com.mapatrayectos.conductorv0.ConductorV0Navigator(this,root);
         setContentView(root);sheetState=Math.max(0,Math.min(2,getSharedPreferences("ui_prefs",MODE_PRIVATE).getInt("dashboard_sheet_state_r13",2)));setSheetState(sheetState,false);updateUi();

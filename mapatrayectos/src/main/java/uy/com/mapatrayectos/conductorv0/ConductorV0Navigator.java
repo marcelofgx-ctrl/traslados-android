@@ -18,6 +18,7 @@ public final class ConductorV0Navigator {
     private final SwipeHost host;
     private final ConductorLiveView conductor;
     private final ConductorLiveController live;
+    private final DriverRideSheet rideSheet;
     private boolean open;
     private int oldStatusBarColor, oldNavigationBarColor, oldDecorFlags;
 
@@ -64,7 +65,33 @@ public final class ConductorV0Navigator {
         host=new SwipeHost(activity,this::close);
         conductor=new ConductorLiveView(activity);
         live=new ConductorLiveController(activity,conductor);
-        live.setOnConfirmedImmediateDecision(this::close);
+        rideSheet=new DriverRideSheet(activity,new DriverRideSheet.Listener(){
+            @Override public void onVerifiedAction(String id,DriverSheetPolicy.Action action){
+                // Reuse exactly the existing authorized conductor operations.
+                switch(action){
+                    case GO_TO_PICKUP:live.onPickupPhase(id,"EN_CAMINO");break;
+                    case ARRIVED:live.onPickupPhase(id,"EN_PUNTO");break;
+                    case START_TRIP:live.onStartTrip(id);break;
+                    case FINISH_TRIP:live.onFinishTrip(id);break;
+                    default:break;
+                }
+            }
+            @Override public void onRoute(String destination){live.onRoute(destination);}
+            @Override public void onDetails(){
+                boolean shift=activity.getSharedPreferences("tracking_state",Activity.MODE_PRIVATE)
+                    .getBoolean("shift_active",false);
+                open(shift);
+            }
+        });
+        // Draw over the SAME live map but below the old full conductor panel.
+        // This does not replace or intercept native MapLibre gestures.
+        FrameLayout.LayoutParams rideLp=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+        rideLp.leftMargin=dp(8);rideLp.rightMargin=dp(8);rideLp.bottomMargin=dp(16);
+        root.addView(rideSheet,rideLp);
+        live.setOnConfirmedImmediateDecision((id,accepted)->{
+            close(); // preserve legacy post-decision behavior
+            if(accepted)rideSheet.focusConfirmed(id);
+        });
         host.addView(conductor,new FrameLayout.LayoutParams(-1,-1));
         host.setVisibility(View.GONE);
         host.setElevation(dp(64));
@@ -89,8 +116,10 @@ public final class ConductorV0Navigator {
         host.animate().translationX(0f).setDuration(190).start();
     }
 
-    public void onHostResume(){live.onHostResume();}
+    public void onHostResume(){live.onHostResume();rideSheet.refreshFromSnapshot();}
     public void onHostPause(){live.onHostPause();}
+    public void onReservationSnapshotUpdated(){rideSheet.refreshFromSnapshot();}
+    public void updateBottomInset(int px){rideSheet.updateInsets(px);}
     public void dispose(){live.dispose();}
 
     public boolean handleBack() {

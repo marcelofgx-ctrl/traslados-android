@@ -1,0 +1,89 @@
+name: QA Quick Trip Conductor C1 Map Sheet - no APK
+on:
+  push:
+    branches: [qa/mapaqt-driver-c1-map-sheet-20261029]
+    paths:
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/**'
+      - 'tests/driver-c1-static-qa.cjs'
+      - 'tests/android-c1/**'
+      - 'docs/QA_DRIVER_C1_MAP_SHEET_20261029.md'
+      - '.github/workflows/qa-driver-c1-map-sheet.yml'
+permissions:
+  contents: read
+jobs:
+  check-c1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Only 9 approved C1 files may differ from QA P0.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=b6ee0a56bfb8e3f1aad7f47804a48d4ab7cf369f
+          git cat-file -e "$BASE^{commit}"
+          changed="$(git diff --name-only "$BASE"..HEAD)"
+          count="$(printf '%s\n' "$changed" | grep -c .)"
+          test "$count" -eq 9
+          while IFS= read -r f; do
+            case "$f" in
+              mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverRideSheet.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverSheetPolicy.java|tests/driver-c1-static-qa.cjs|tests/android-c1/DriverSheetPolicyTest.java|docs/QA_DRIVER_C1_MAP_SHEET_20261029.md|.github/workflows/qa-driver-c1-map-sheet.yml) ;;
+              *) echo "UNAUTHORIZED: $f"; exit 1 ;;
+            esac
+          done <<< "$changed"
+          git diff --quiet "$BASE"..HEAD -- conductor/ core-reservations/ web-pasajero/ supabase/ mapatrayectos/build.gradle mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Synthetic policy and source checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/driver-c1-static-qa.cjs
+          mkdir -p "$RUNNER_TEMP/c1-java"
+          javac -d "$RUNNER_TEMP/c1-java" mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverSheetPolicy.java tests/android-c1/DriverSheetPolicyTest.java
+          java -cp "$RUNNER_TEMP/c1-java" uy.com.mapatrayectos.conductorv0.DriverSheetPolicyTest
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Restore existing temporary resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Ensure SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile Java classes, not APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:compileReleaseJavaWithJavac --no-daemon --console=plain --build-cache
+          test -d mapatrayectos/build/intermediates/javac/release/compileReleaseJavaWithJavac/classes
+          test ! -e mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk
+      - name: Preserve local QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Driver-C1-Map-Sheet-QA
+          path: artifacts/driver-c1/
+          if-no-files-found: warn
+          retention-days: 21
