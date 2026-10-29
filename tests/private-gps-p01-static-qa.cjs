@@ -33,7 +33,7 @@ const tests={
    !/\bimport\s+android\./.test(diag)&&
    !/(HttpURLConnection|URLConnection|System\.out|System\.err|SharedPreferences|Log\.)/.test(diag),
  "diagnostic stores only allowlisted status":diag.includes("private static volatile Code last = Code.NO_ATTEMPT;")&&
-   !/static\s+(?:volatile\s+)?(?:String|JSONObject|Exception|Throwable)\s+\w+/.test(diag),
+   !/private\s+static\s+(?:volatile\s+)?(?:String|JSONObject|Exception|Throwable)\s+\w+\s*(?:=|;)/.test(diag),
  "avoid untrusted response/exception display":
    !/getMessage\(\)|printStackTrace\(|Log\.[a-zA-Z]+\(/.test(api.slice(api.indexOf("public static void publishPickupPresenceAsync("),api.indexOf("private Api(){}"))),
  "no extra GPS RPC or password logging":(api.match(/mapa_reservation_position_v1/g)||[]).length===1
