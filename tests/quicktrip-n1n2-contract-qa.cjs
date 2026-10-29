@@ -50,7 +50,7 @@ check("GPS RPC untouched and running at four seconds",
  read("web-pasajero/reservation-live.js").includes('rpc("customer_reservation_position_v1"'));
 check("registered asset version bypasses old PWA cache",
  html.includes('quicktrip-active-ride.js?v=n1n2-20261029')&&
- html.includes('quicktrip-n1n2.css?v=n1n2-20261029')&&
+ html.includes('quicktrip-n1n2.css?v=p0-eta-20261029')&&
  sw.includes("traslados-pwa-quicktrip-n1n2-qa-20261029"));
 check("booking view remains available by explicit choice",active.includes('view.classList.toggle("qt-show-new-trip"')&&
  css.includes(".qt-show-new-trip"));
