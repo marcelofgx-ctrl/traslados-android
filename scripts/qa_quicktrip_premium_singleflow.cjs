@@ -84,6 +84,23 @@ async function main(){
  ok(form.mapMounted&&form.mapWidth>220&&form.mapHeight<5&&
     form.etaVisible&&form.quoteMounted&&form.sendMounted&&form.contactMounted&&form.scheduleMounted,
     "One-screen form folds duplicate map but preserves source ETA, fare and submit");
+ const cta=await js(function(){
+   const host=document.getElementById("urgent-actions");
+   const button=document.getElementById("urgent-send");
+   const wasHidden=host.hidden;
+   // Layout-only fixture: no quotation or booking is submitted.
+   host.hidden=false;
+   const box=button.getBoundingClientRect();
+   const nav=document.querySelector(".qtc-bottom-nav")?.getBoundingClientRect();
+   const result={position:getComputedStyle(button).position,
+     inViewport:box.width>200&&box.top>=0&&box.bottom<innerHeight,
+     aboveNav:!nav||box.bottom<=nav.top+5,
+     oneButton:document.querySelectorAll("#urgent-send").length===1};
+   host.hidden=wasHidden;
+   return result;
+ });
+ ok(cta.position==="fixed"&&cta.inViewport&&cta.aboveNav&&cta.oneButton,
+   "One original validated request button stays visible above bottom nav");
  const active=await js(function(){
    window.__qaOpened=0;window.__qaListed=0;
    window.QuickTripActiveRide.render([{id:"qa-synthetic-not-a-real-booking",
