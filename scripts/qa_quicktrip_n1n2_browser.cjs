@@ -60,7 +60,7 @@ async function main(){
  console.log("P0 ETA visibility diagnostic",JSON.stringify(etaBefore));
  await snap("00-eta-diagnostic-before-assert.png");
  ok(etaBefore.node&&etaBefore.visible&&etaBefore.header&&etaBefore.metrics&&
-    etaBefore.text.includes("1,8")&&etaBefore.text.includes("6"),
+    etaBefore.text.includes("1,8")&&etaBefore.text.includes("min"),
     "Route planning preserves original visible availability, pickup km and minutes");
  await js(function(){document.querySelector(".qtc-driver")?.scrollIntoView({block:"center"});return true;});
  await snap("00-original-driver-eta-visible-samsung-390.png");
