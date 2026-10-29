@@ -354,7 +354,7 @@
       if(stopsAnchorOriginal?.isConnected&&stops&&stops.previousSibling!==stopsAnchorOriginal)stopsAnchorOriginal.after(stops);
       // Restore operational card outside booking-step nodes when the user
       // enters the scheduled booking flow. No data or listeners are recreated.
-      const card=shell.querySelector(".qtc-driver"),content=shell.querySelector(".qtc-content");
+      const card=doc.querySelector(".qtc-driver"),content=shell.querySelector(".qtc-content");
       if(card&&content&&card.parentElement!==content)
         content.insertBefore(card,content.querySelector(".qtc-schedule"));
       closeHistory();
