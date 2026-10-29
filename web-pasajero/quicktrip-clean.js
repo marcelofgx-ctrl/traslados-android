@@ -295,8 +295,11 @@
     const unavailable=driver.querySelector(".qtc-driver-unavailable");
     driver.dataset.searchState=searching?mode:"settled";
     driver.dataset.availability=noDriver?"unavailable":"normal";
-    banner.hidden=!searching;
-    if(unavailable)unavailable.hidden=!noDriver;
+    // P0: the original pickup-presence card is the single operational truth.
+    // Decorative search/busy banners duplicate or contradict server states.
+    // Always retain visible title, distance, ETA, reason and retry controls.
+    banner.hidden=true;
+    if(unavailable)unavailable.hidden=true;
     if(searching){
       byId("qtc-search-title").textContent=mode==="checking"?"Buscando conductor…":"Calculando la llegada…";
       byId("qtc-search-subtitle").textContent=mode==="checking"
