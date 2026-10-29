@@ -13,10 +13,10 @@
     const created=Date.parse(String(r.created_at||""));
     if(!Number.isFinite(created)||at<created||at-created>90*60000)return false;
     const mode=String(r.pickup_mode||"");
-    if(mode==="now"||(/^\\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
+    if(mode==="now"||(/^\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
     // Same conservative fallback as existing TripBoard for older booking rows.
     const day=String(r.pickup_date||""),hour=String(r.pickup_time||"").slice(0,5);
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!/^\\d{2}:\\d{2}$/.test(hour))return false;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(hour))return false;
     const pickup=Date.parse(day+"T"+hour+":00-03:00");
     return Number.isFinite(pickup)&&pickup-created>=-120000&&pickup-created<=12*60000;
   }
