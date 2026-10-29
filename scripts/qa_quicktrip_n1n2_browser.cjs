@@ -173,6 +173,30 @@ async function main(){
      !document.getElementById("view-viaje").classList.contains("qt-has-active-ride");
  });
  ok(empty,"Terminal / empty state restores initial booking layout");
+ const scheduled=await js(function(){
+   document.querySelector('[data-service="schedule"]').click();
+   return new Promise(resolve=>requestAnimationFrame(()=>resolve({
+     view:document.getElementById("view-reservar").classList.contains("active"),
+     driverHome:document.querySelector(".qtc-driver").parentElement?.classList.contains("qtc-content"),
+     oneDriver:document.querySelectorAll(".qtc-driver").length===1,
+     oneMap:document.querySelectorAll(".premium-route-canvas").length===1,
+     onePresence:document.querySelectorAll("#pickup-presence").length===1
+   })));
+ });
+ ok(scheduled.view&&scheduled.driverHome&&scheduled.oneDriver&&scheduled.oneMap&&scheduled.onePresence,
+    "Scheduled booking restores native driver layout, without duplicate map or presence");
+ const returned=await js(function(){
+   document.querySelector('[data-service="now"]').click();
+   return new Promise(resolve=>requestAnimationFrame(()=>resolve({
+     view:document.getElementById("view-viaje").classList.contains("active"),
+     driverAboveMap:document.querySelector(".qtc-driver").getBoundingClientRect().top <
+       document.querySelector(".premium-route-canvas").getBoundingClientRect().top,
+     mapCount:document.querySelectorAll(".premium-route-canvas").length,
+     pickupCount:document.querySelectorAll("#pickup-presence").length
+   })));
+ });
+ ok(returned.view&&returned.driverAboveMap&&returned.mapCount===1&&returned.pickupCount===1,
+    "Quick journey restores same driver ahead of route map after scheduled view");
  console.log("N1/N2 CHROME PASS — only synthetic UI, no reservation created");
 }
 main().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(()=>{
