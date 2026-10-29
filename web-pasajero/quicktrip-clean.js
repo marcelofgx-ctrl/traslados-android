@@ -352,6 +352,11 @@
       if(paxAnchor?.isConnected&&pax&&pax.previousSibling!==paxAnchor)paxAnchor.after(pax);
       if(mapAnchorOriginal?.isConnected&&map&&map.previousSibling!==mapAnchorOriginal)mapAnchorOriginal.after(map);
       if(stopsAnchorOriginal?.isConnected&&stops&&stops.previousSibling!==stopsAnchorOriginal)stopsAnchorOriginal.after(stops);
+      // Restore operational card outside booking-step nodes when the user
+      // enters the scheduled booking flow. No data or listeners are recreated.
+      const card=shell.querySelector(".qtc-driver"),content=shell.querySelector(".qtc-content");
+      if(card&&content&&card.parentElement!==content)
+        content.insertBefore(card,content.querySelector(".qtc-schedule"));
       closeHistory();
       return;
     }
@@ -362,6 +367,19 @@
     const map=doc.querySelector(".premium-route-canvas");
     const destinationAnchor=routeBody?.querySelector("#destination-picker");
     if(map&&routeBody&&map.parentElement!==routeBody)routeBody.append(map);
+    // Keep the ORIGINAL source-owned pickup card visible above the map while
+    // composing a new trip; under compact active ride move only that same card
+    // outside the collapsed new-booking block. Never clone GPS or ETA nodes.
+    const driverCard=shell.querySelector(".qtc-driver");
+    const compactRide=byId("view-viaje")?.classList.contains("qt-has-active-ride")&&
+      !byId("view-viaje")?.classList.contains("qt-show-new-trip");
+    const driverHome=shell.querySelector(".qtc-content");
+    if(driverCard&&compactRide&&driverHome&&driverCard.parentElement!==driverHome){
+      driverHome.insertBefore(driverCard,driverHome.querySelector(".qtc-schedule"));
+    }else if(driverCard&&!compactRide&&map&&routeBody&&map.parentElement===routeBody&&
+      (driverCard.parentElement!==routeBody||driverCard.nextElementSibling!==map)){
+      map.before(driverCard);
+    }
     // Se conserva exactamente el mismo mapa; no hay un segundo renderizador.
     const stops=doc.querySelector(".premium-route-stops");
     if(stops&&routeBody&&stops.parentElement!==routeBody){
