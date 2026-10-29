@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="./quicktrip-clean.css?v=tracking-status-20261028">
   <link rel="stylesheet" href="./quicktrip-map-focus.css?v=canonical-follow-20261028">
   <link rel="stylesheet" href="./gps-welcome.css?v=qa-20261028">
+  <link rel="stylesheet" href="./quicktrip-n1n2.css?v=n1n2-20261029">
   <title>Quick Trip · Tu viaje y reservas</title>
 </head>
 <body>
@@ -150,6 +151,7 @@
         <p id="journey-custom-time-label" class="journey-time-note" hidden></p>
         <p class="journey-time-note">Elegí una recogida para las próximas 2 horas. Para otro día, usá Tu reserva desde Inicio: nunca cambiaremos de servicio sin que lo elijas.</p>
       </div>
+      <section id="quicktrip-live-trip" class="qt-live-card" tabindex="-1" aria-label="Tu viaje activo" hidden></section>
       <div id="journey-field-host" class="journey-form-host"></div>
     </section>
 
@@ -340,7 +342,7 @@
 
     <section id="view-seguimiento" class="view premium-tracking-view" aria-label="Seguimiento de mi traslado">
       <div class="premium-tracking-toolbar">
-        <button id="premium-tracking-back" class="premium-tracking-back" type="button">← Mis traslados</button>
+        <button id="premium-tracking-back" class="premium-tracking-back" type="button">← Tu viaje</button>
         <span class="premium-tracking-brand">TRASLADOS</span>
       </div>
       <div id="premium-tracking-content" aria-live="polite"></div>
@@ -474,13 +476,14 @@
   <script src="./guest-history.js?v=1" defer></script>
   <script src="./premium-map.js?v=fullscreen-fix-20261027" defer></script>
     <script src="./address-viewport.js?v=1" defer></script>
-  <script src="./quicktrip-map-focus.js?v=canonical-follow-20261028" defer></script>
+  <script src="./quicktrip-map-focus.js?v=n1n2-20261029" defer></script>
   <script src="./premium-route.js?v=fullscreen-20261027" defer></script>
   <script src="./reservation-live.js?v=follow1" defer></script>
   <script src="./pickup-origin-drift.js?v=1" defer></script>
   <script src="./journey-compat-v7.js?v=1" defer></script>
   <script src="./gps-welcome.js?v=qa-20261028" defer></script>
-  <script src="./app.js?v=follow1" defer></script>
+  <script src="./quicktrip-active-ride.js?v=n1n2-20261029" defer></script>
+  <script src="./app.js?v=n1n2-20261029" defer></script>
       <script src="./quicktrip-clean.js?v=6" defer></script>
 </body>
 </html>
