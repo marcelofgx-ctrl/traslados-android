@@ -104,3 +104,14 @@
 @media(prefers-reduced-motion:reduce){
  .qt-live-knob,#view-viajes .trips-tab{transition:none!important}
 }
+
+.qt-live-bottom-links{
+ display:flex;gap:12px;justify-content:space-between;align-items:center;
+ margin:16px 0 -6px;border-top:1px solid rgba(176,214,191,.17);padding-top:11px
+}
+.qt-live-nav-link{
+ border:0!important;background:transparent!important;color:#c1d9d1!important;
+ padding:10px 8px;min-height:44px;font-size:12px;font-weight:750;cursor:pointer
+}
+.qt-live-nav-link:last-child{color:#ead09a!important}
+.qt-live-nav-link:focus-visible{outline:2px solid #8bdfbf;outline-offset:1px}
