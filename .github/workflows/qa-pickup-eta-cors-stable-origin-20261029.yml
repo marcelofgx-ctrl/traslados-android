@@ -20,6 +20,12 @@ jobs:
           QA_HOST="quicktrip-live-qa-only-20261027-marcelofgx-1927.vercel.app"
           curl --fail --location --silent --show-error --max-time 25 \
             "https://$QA_HOST/web-pasajero/" -o /tmp/quicktrip-page.html
+          echo "QA passenger route HTTP status and body markers:"
+          wc -c /tmp/quicktrip-page.html
+          grep -Eo '<title>[^<]{0,110}' /tmp/quicktrip-page.html | head -1 || true
+          for marker in 'quicktrip-live-trip' 'Traslados con Reserva' 'Authentication Required' 'Vercel Authentication' 'Quick Trip' 'journey-field-host'; do
+            if grep -Fqi "$marker" /tmp/quicktrip-page.html; then echo "MARKER PRESENT: $marker"; else echo "MARKER MISSING: $marker"; fi
+          done
           grep -Fq 'id="quicktrip-live-trip"' /tmp/quicktrip-page.html || {
             echo "FAIL: stable QA host does not serve passenger app"; exit 1;
           }
