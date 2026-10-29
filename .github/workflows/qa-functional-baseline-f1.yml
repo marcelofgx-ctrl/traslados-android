@@ -31,7 +31,6 @@ jobs:
         run: |
           set -euo pipefail
           node web-pasajero/tests/route-engine-smoke.cjs
-          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
           node web-pasajero/tests/booking-contracts-smoke.cjs
           node web-pasajero/tests/public-driver-presence-smoke.cjs
           node web-pasajero/tests/reservation-live-v82-smoke.cjs

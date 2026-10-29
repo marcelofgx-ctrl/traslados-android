@@ -43,5 +43,32 @@ for(const [k,ok] of Object.entries(contracts)){
  if(ok)console.log("QA F1 PASS "+k);
  else{console.error("QA F1 FAIL "+k);problems++;}
 }
+// The legacy fixed-fare smoke expects a deprecated Driver PIN.
+// Exercise the ACTIVE pure passenger fare contract without that dependency.
+const vm=require("node:vm");
+const sandbox={window:{}};
+vm.runInNewContext(get("web-pasajero/booking-contracts.js").toString("utf8"),sandbox);
+const fixed=sandbox.window.TrasladosBookingContracts.fixedFarePickup;
+const payload={
+ pickupMode:"now",passengers:1,comments:"",name:"QA synthetic",phone:"00000000",
+ origin:{text:"QA origin",lat:-34.8,lng:-56.0,department:"Canelones"},
+ destination:{text:"QA destination",lat:-34.81,lng:-56.02,department:"Canelones"},
+ stops:[]
+};
+const verified={distanceKm:3.1,durationMin:7,referenceFareUyu:124,
+ referenceRateUyuPerKm:40,source:"openrouteservice"};
+try{
+ const p=fixed(null,payload,"qa-synthetic-not-published",verified);
+ if(p.p_expected_total!==124||p.p_route_distance_km!==3.1||p.p_expected_rate!==40)
+   throw Error("Unexpected price or route metrics");
+ try{
+  fixed(null,payload,"qa-synthetic-not-published",{...verified,referenceFareUyu:120});
+  throw Error("Tampered price was not blocked");
+ }catch(e){if(!/El precio cambió/.test(String(e)))throw e;}
+ console.log("QA F1 PASS verified fixed fare 3.1 km / 7 min / UYU 124, tampering rejected");
+}catch(e){
+ console.error("QA F1 FAIL fixed fare contract: "+e);
+ problems++;
+}
 console.log("OPEN P0: no physical proof of private driver GPS or continuous map while onboard");
 if(problems)process.exitCode=1;

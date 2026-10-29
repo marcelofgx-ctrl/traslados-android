@@ -45,3 +45,5 @@ No guardar nombres, direcciones exactas, teléfonos, matrículas, códigos de re
 - Las reglas GitHub de branch protection/required checks no se han habilitado mediante esta rama. En futuros lotes se deberá partir del SHA F1 e incorporar la suite; no afirmar protección obligatoria de main sin ruleset.
 
 CI de referencia: seguimiento simulado #40778978599; Edge QA #40809843793; Edge v9 HTTP real #40811387511.
+
+Nota técnica (29/10): el test histórico fixed-fare-v1-smoke.cjs sigue exigiendo un PIN de Conductor ya eliminado de la arquitectura. No se usa como puerta F1. En su lugar se ejecuta el contrato puro vigente fixedFarePickup, validando 3,1 km, 7 min, UYU 124 y rechazo de tarifa manipulada. Se conserva el test antiguo por trazabilidad, sin deshabilitar otras pruebas.
