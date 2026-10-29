@@ -46,6 +46,7 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
     public void setOnConfirmedImmediateDecision(DecisionListener action){
         onConfirmedImmediateDecision=action;
     }
+    public boolean isBusy(){return busy;}
     private String selection="",lastKey="";
     private final Runnable tick=new Runnable(){
         @Override public void run(){
