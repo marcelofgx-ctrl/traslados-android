@@ -170,7 +170,10 @@ public final class DriverRideSheet extends LinearLayout {
         showWaiting();
         refreshFromSnapshot();
     }
-    public void refreshFromSnapshot(){refreshFromSnapshot(false);}
+    public void refreshFromSnapshot(){
+        if(reservationId.isEmpty())return;
+        refreshFromSnapshot(false);
+    }
     public void refreshFromSnapshot(boolean operationBusy){
         if(reservationId.isEmpty()){recoverFromSnapshot();return;}
         long now=System.currentTimeMillis(),synced=TransferAlerts.lastSync(activity);
