@@ -8,6 +8,15 @@ let pass=0;function check(name,ok){assert.ok(ok,name);pass++;console.log("PASS N
 const one={id:"qa1",status:"ACEPTADA",pickup_phase:"EN_CAMINO",quote_final_total:764};
 check("unique accepted booking",policy.select([one]).ride===one);
 check("onboard booking",policy.select([{id:"qa2",status:"EN_VIAJE"}]).count===1);
+check("future scheduled confirmation is NOT an active ride",policy.select([
+ {id:"scheduled",status:"CONFIRMADA",pickup_mode:"schedule",
+  created_at:new Date().toISOString()}]).count===0);
+check("fresh immediate accepted request is active",policy.select([
+ {id:"immediate",status:"ACEPTADA",pickup_mode:"now",
+  created_at:new Date(Date.now()-60000).toISOString()}]).count===1);
+check("old unstarted accepted immediate is not current",policy.select([
+ {id:"old",status:"ACEPTADA",pickup_mode:"now",
+  created_at:new Date(Date.now()-180*60000).toISOString()}]).count===0);
 check("pending never live",policy.select([{id:"q1",status:"PENDIENTE"}]).count===0);
 check("finalized never live",policy.select([{id:"q2",status:"FINALIZADA"}]).count===0);
 check("canceled never live",policy.select([{id:"q2",status:"CANCELADA"}]).count===0);
