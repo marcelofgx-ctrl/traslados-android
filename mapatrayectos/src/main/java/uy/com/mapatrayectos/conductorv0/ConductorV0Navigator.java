@@ -2,6 +2,8 @@ package uy.com.mapatrayectos.conductorv0;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -19,7 +21,15 @@ public final class ConductorV0Navigator {
     private final ConductorLiveView conductor;
     private final ConductorLiveController live;
     private final DriverRideSheet rideSheet;
-    private boolean open;
+    private boolean open,hostResumed;
+    private final Handler ui=new Handler(Looper.getMainLooper());
+    private final Runnable rideTick=new Runnable(){
+        @Override public void run(){
+            if(!hostResumed)return;
+            rideSheet.refreshFromSnapshot(live.isBusy());
+            ui.postDelayed(this,3500L);
+        }
+    };
     private int oldStatusBarColor, oldNavigationBarColor, oldDecorFlags;
 
     public ConductorV0Navigator(Activity activity, FrameLayout root) {
@@ -116,11 +126,18 @@ public final class ConductorV0Navigator {
         host.animate().translationX(0f).setDuration(190).start();
     }
 
-    public void onHostResume(){live.onHostResume();rideSheet.refreshFromSnapshot();}
-    public void onHostPause(){live.onHostPause();}
-    public void onReservationSnapshotUpdated(){rideSheet.refreshFromSnapshot();}
+    public void onHostResume(){
+        hostResumed=true;
+        live.onHostResume();
+        ui.removeCallbacks(rideTick);
+        ui.post(rideTick);
+    }
+    public void onHostPause(){
+        hostResumed=false;ui.removeCallbacks(rideTick);live.onHostPause();
+    }
+    public void onReservationSnapshotUpdated(){rideSheet.refreshFromSnapshot(live.isBusy());}
     public void updateBottomInset(int px){rideSheet.updateInsets(px);}
-    public void dispose(){live.dispose();}
+    public void dispose(){hostResumed=false;ui.removeCallbacks(rideTick);live.dispose();}
 
     public boolean handleBack() {
         if(!open)return false;
