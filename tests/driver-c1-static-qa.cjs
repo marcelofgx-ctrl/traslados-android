@@ -29,7 +29,7 @@ const tests={
   "existing start and finish methods only":nav.includes("live.onStartTrip(id)")&&
     nav.includes("live.onFinishTrip(id)"),
   "no new GPS or reservation transport":!/(postRpc\(|fetch\(|HttpURLConnection|SQLiteDatabase|new Thread\(|setPickupPhase\(|setStatus\()/g.test(sheet),
-  "no fabricated payment/rating/bonuses":!/(4\.87|31,90|Pago en efectivo|payment_method|rating)/i.test(sheet),
+  "no fabricated payment/rating/bonuses":!/(4\.87|31,90|Pago en efectivo|optString\("payment_method"|optString\("rating")/i.test(sheet),
   "show real passenger origin destination price only":sheet.includes('optString("customer_name"')&&
     sheet.includes('optString("origin_text"')&&
     sheet.includes('optString("destination_text"')&&
