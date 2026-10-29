@@ -51,7 +51,7 @@ check("GPS RPC untouched and running at four seconds",
 check("registered asset version bypasses old PWA cache",
  html.includes('quicktrip-active-ride.js?v=n1n2-20261029')&&
  html.includes('quicktrip-n1n2.css?v=p0-eta-20261029')&&
- sw.includes("traslados-pwa-quicktrip-n1n2-qa-20261029"));
+ sw.includes("traslados-pwa-quicktrip-n1n2-p0-eta-guard-20261029"));
 check("booking view remains available by explicit choice",active.includes('view.classList.toggle("qt-show-new-trip"')&&
  css.includes(".qt-show-new-trip"));
 check("active presentation never adds new network clients",
