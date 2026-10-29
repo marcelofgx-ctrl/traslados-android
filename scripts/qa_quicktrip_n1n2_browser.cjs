@@ -55,12 +55,19 @@ async function main(){
      header:getComputedStyle(head).display!=="none",
      metrics:getComputedStyle(metrics).display!=="none",
      text:document.getElementById("pickup-distance").textContent+" "+
-       document.getElementById("pickup-minutes").textContent};
+       document.getElementById("pickup-minutes").textContent,
+     aboveMap:document.querySelector(".qtc-driver").getBoundingClientRect().top <
+       document.querySelector(".premium-route-canvas").getBoundingClientRect().top,
+     driverTop:Math.round(document.querySelector(".qtc-driver").getBoundingClientRect().top),
+     mapTop:Math.round(document.querySelector(".premium-route-canvas").getBoundingClientRect().top),
+     owner:document.querySelector(".qtc-driver").parentElement?.id,
+     identity:p===document.getElementById("pickup-presence")};
  });
  console.log("P0 ETA visibility diagnostic",JSON.stringify(etaBefore));
  await snap("00-eta-diagnostic-before-assert.png");
  ok(etaBefore.node&&etaBefore.visible&&etaBefore.header&&etaBefore.metrics&&
-    etaBefore.text.includes("1,8")&&etaBefore.text.includes("min"),
+    etaBefore.text.includes("1,8")&&etaBefore.text.includes("min")&&
+    etaBefore.aboveMap&&etaBefore.driverTop<844&&etaBefore.identity,
     "Route planning preserves original visible availability, pickup km and minutes");
  await js(function(){document.querySelector(".qtc-driver")?.scrollIntoView({block:"center"});return true;});
  await snap("00-original-driver-eta-visible-samsung-390.png");
@@ -101,7 +108,7 @@ async function main(){
  ok(click===1,"Fallback opens map exactly once without booking writes");
  const newTrip=await js(function(){
    document.querySelector(".qt-live-new-trip").click();
-   const visible=getComputedStyle(document.getElementById("qtc-app")).display!=="none";
+   const visible=getComputedStyle(document.querySelector(".qtc-places")).display!=="none";
    document.querySelector(".qt-live-new-trip").click();
    const hidden=getComputedStyle(document.querySelector(".qtc-places")).display==="none";
    const driverStillVisible=getComputedStyle(document.querySelector(".qtc-driver")).display!=="none";
