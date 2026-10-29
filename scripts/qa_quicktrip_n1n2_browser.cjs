@@ -76,25 +76,32 @@ async function main(){
    window.QuickTripActiveRide.render([{id:"qa-synthetic-not-a-real-booking",
      status:"ACEPTADA",pickup_phase:"EN_CAMINO",
      origin_text:"Origen de prueba · QA",destination_text:"Destino de prueba · QA",
-     quote_final_total:764}],{onOpen:()=>{window.__qaOpened++},onList:()=>{window.__qaListed++}});
-   const q=s=>document.querySelector(s);
-   return {
-     title:q("#quicktrip-live-trip .qt-live-title")?.textContent,
-     price:q(".qt-live-fare")?.textContent,
-     knob:!!q(".qt-live-knob"),
-     touch:getComputedStyle(q(".qt-live-knob")).touchAction,
-     fallback:!!q(".qt-live-tap"),
-     appVisible:getComputedStyle(q("#qtc-app")).display!=="none",
-      routeHidden:getComputedStyle(q(".qtc-places")).display==="none",
-      driverVisible:getComputedStyle(q(".qtc-driver")).display!=="none" &&
-        q(".qtc-driver").getBoundingClientRect().height>0,
-      etaVisible:getComputedStyle(q("#pickup-presence")).display!=="none" &&
-        getComputedStyle(q("#pickup-presence .pickup-card-header")).display!=="none",
-      metricsVisible:getComputedStyle(q("#pickup-presence-metrics")).display!=="none",
-     overflow:document.documentElement.scrollWidth-innerWidth,
-     cardWidth:q("#quicktrip-live-trip").getBoundingClientRect().width
-   };
+     quote_final_total:764}],{onOpen:()=>{window.__qaOpened++},
+       onList:()=>{window.__qaListed++}});
+   // The existing visual observer re-parents the SAME original ETA card once
+   // the active ride class folds the new-booking form.
+   return new Promise(resolve=>requestAnimationFrame(()=>{
+     const q=x=>document.querySelector(x);
+     resolve({
+       title:q("#quicktrip-live-trip .qt-live-title")?.textContent,
+       price:q(".qt-live-fare")?.textContent,
+       knob:!!q(".qt-live-knob"),
+       touch:getComputedStyle(q(".qt-live-knob")).touchAction,
+       fallback:!!q(".qt-live-tap"),
+       appVisible:getComputedStyle(q("#qtc-app")).display!=="none",
+       routeHidden:getComputedStyle(q(".qtc-places")).display==="none",
+       driverVisible:getComputedStyle(q(".qtc-driver")).display!=="none" &&
+         q(".qtc-driver").getBoundingClientRect().height>0,
+       etaVisible:getComputedStyle(q("#pickup-presence")).display!=="none" &&
+         getComputedStyle(q("#pickup-presence .pickup-card-header")).display!=="none",
+       metricsVisible:getComputedStyle(q("#pickup-presence-metrics")).display!=="none",
+       overflow:document.documentElement.scrollWidth-innerWidth,
+       cardWidth:q("#quicktrip-live-trip").getBoundingClientRect().width,
+       parent:q(".qtc-driver").parentElement?.className
+     });
+   }));
  });
+ console.log("P0 active visibility diagnostic",JSON.stringify(active));
  ok(active.title==="Tu viaje activo"&&active.price.includes("764"),"Live ride title and source-only fare");
  ok(active.knob&&active.touch==="none"&&active.fallback,"Accessible slide plus tap fallback");
  ok(active.appVisible&&active.routeHidden&&active.driverVisible&&active.etaVisible&&active.metricsVisible,
