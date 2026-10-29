@@ -5,6 +5,13 @@ on:
       - qa/quicktrip-n1n2-p0-eta-visual-guard-20261029
     paths:
       - '.github/workflows/qa-quicktrip-p0-eta-guard-20261029.yml'
+      - 'tests/quicktrip-n1n2-contract-qa.cjs'
+      - 'scripts/qa_quicktrip_n1n2_browser.cjs'
+      - 'web-pasajero/quicktrip-n1n2.css'
+      - 'web-pasajero/quicktrip-clean.css'
+      - 'web-pasajero/quicktrip-clean.js'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/sw.js'
 permissions:
   contents: read
 jobs:
