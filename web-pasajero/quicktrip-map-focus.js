@@ -25,7 +25,7 @@
     host=make("div","qt-focus-map");host.setAttribute("aria-label","Mapa interactivo de origen y destino");
     const top=make("header","qt-focus-top");
     const back=make("button","qt-focus-back","←");back.type="button";
-    back.setAttribute("aria-label","Volver a Tu viaje");back.onclick=close;
+    back.setAttribute("aria-label","Volver a Tu viaje");back.onclick=()=>close();
     const address=make("div","qt-focus-address");
     address.append(make("small","", "DESTINO"),make("strong","qt-focus-address-text","Elegí destino"));
     const brand=make("span","qt-focus-brand","Quick Trip");
