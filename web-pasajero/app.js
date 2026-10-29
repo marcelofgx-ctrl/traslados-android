@@ -1154,6 +1154,7 @@ function clearPassengerSessionLocally(){
   session=null;localStorage.removeItem(SESSION_KEY);
   vehiclePlateByReservation.clear();vehiclePlatePending.clear();
   closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripsRefreshPending=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+  window.QuickTripActiveRide?.render([]);
   $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
   $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
   for(const tab of document.querySelectorAll("[data-trips-scope]")){
@@ -1242,6 +1243,7 @@ async function accountSubmit(){
     session={token:result.session_token,customer:result.customer};
     expiredPassengerSessionNotice=false;
     closeTripChat();$("trip-chat-dialog-content").replaceChildren();tripQueryEpoch++;tripsLoading=false;tripsRefreshPending=false;tripRows=[];tripLoaded=false;tripSnap=null;tripRenderedSignature=null;
+  window.QuickTripActiveRide?.render([]);
     $("trips-list").replaceChildren();$("trips-status").textContent="Actualizá Mis traslados para consultar esta sesión.";
     $("trips-focus").textContent="";$("trips-attention-count").hidden=true;
     for(const tab of document.querySelectorAll("[data-trips-scope]")){
@@ -1557,6 +1559,13 @@ async function submitBooking(){
 const tripBoard=window.TrasladosTripBoard;
 let tripRows=[],tripLoaded=false,tripsLoading=false,tripSnap=null,tripsRefreshPending=false;
 const autoFollowSeen=new Set();
+function syncActiveTripUi(){
+  // Present only reservations authorized by the existing account/guest read.
+  return window.QuickTripActiveRide?.render(tripRows,{
+    onOpen:ride=>openPremiumTracking(ride),
+    onList:()=>shiftView("viajes")
+  });
+}
 function autoFollowAccepted(rows,previous){
   if(document.visibilityState!=="visible"||navigator.onLine===false||
      !$("trip-chat-sheet").hidden||!$("trip-alert-overlay").hidden)return false;
@@ -1828,22 +1837,9 @@ function reservationView(r,guestToken){
     follow.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();});
   }
   if(meta.tone==="moving"||meta.tone==="confirmed"){
-    // Trip cards are for discovery, not a second active tracking dashboard.
-    // One canonical full-map view owns GPS and the interactive route.
-    const onboard=r.status==="EN_VIAJE";
-    const arrived=r.pickup_phase==="EN_PUNTO";
-    const summary=text(top,"div","","trip-live-spotlight");
-    summary.dataset.stage=onboard?"trip":arrived?"arrived":"approach";
-    text(summary,"span",onboard?"◆":arrived?"✓":"●","trip-live-symbol")
-      .setAttribute("aria-hidden","true");
-    const copy=text(summary,"div","","trip-live-copy");
-    text(copy,"strong",onboard?"Tu viaje está en curso":
-      arrived?"Tu conductor llegó":r.pickup_phase==="EN_CAMINO"?
-      "Tu conductor está en camino":"Tu viaje fue aceptado");
-    text(copy,"span",onboard?"Seguimiento hasta destino":
-      arrived?"En el punto de recogida":"Abrí el mapa para seguir el traslado");
-    const follow=button(top,"↗ Abrir seguimiento en mapa","trip-open-canonical",()=>openPremiumTracking(r));
-    follow.setAttribute("aria-label","Abrir mapa grande de seguimiento de este traslado");
+    // One compact entry; only the full-screen map owns verified live GPS.
+    const follow=button(top,"↗ Ver mapa en vivo","trip-open-canonical",()=>openPremiumTracking(r));
+    follow.setAttribute("aria-label","Abrir mapa de tu viaje activo");
     follow.addEventListener("click",event=>event.stopPropagation());
   }
   const route=text(top,"div","","trip-route");
@@ -1864,8 +1860,8 @@ function reservationView(r,guestToken){
 
   const inner=text(d,"div","","trip-detail");
   const guidance=tripBoard.guidance(r);
-  text(inner,"p",guidance,"trip-focus-message");
-  if(fixedFare&&price>0)text(inner,"p","Precio cerrado: "+tripMoney(price)+". El conductor acepta o rechaza tu viaje, sin enviarte otro presupuesto.","trip-focus-message");
+  if(!acceptedOrMoving)text(inner,"p",guidance,"trip-focus-message");
+  if(fixedFare&&price>0&&!acceptedOrMoving)text(inner,"p","Precio cerrado: "+tripMoney(price)+". El conductor acepta o rechaza tu viaje, sin enviarte otro presupuesto.","trip-focus-message");
   if(quoteExpired)text(inner,"p","⌛ Horario vencido. No es posible aceptar este presupuesto para la recogida anterior.","trip-expired-note");
   else if(immediateExpired)text(inner,"p","⌛ El horario de esta solicitud inmediata ya venció sin confirmación. Si necesitás viajar, pedí una nueva recogida.","trip-expired-note");
 
@@ -1945,7 +1941,7 @@ function renderPremiumTracking(){
   const r=tripRows.find(row=>String(row.id||row.code||"")===premiumTrackingKey);
   if(!r){
     text(content,"p","Ya no se encuentra este traslado entre tus solicitudes autorizadas.","premium-tracking-empty");
-    button(content,"← Volver a Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    button(content,"← Volver a Tu viaje","premium-tracking-return",()=>shiftView("viaje"));
     return;
   }
   const meta=tripBoard.metadata(r);
@@ -1955,7 +1951,7 @@ function renderPremiumTracking(){
   // before the driver explicitly marks EN_CAMINO and releases authorized GPS.
   if(meta.tone!=="moving"&&meta.tone!=="confirmed"&&!waiting){
     text(content,"p",tripBoard.guidance(r),"premium-tracking-empty");
-    button(content,"Ver estado en Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    button(content,"Volver a Tu viaje","premium-tracking-return",()=>shiftView("viaje"));
     return;
   }
   if(waiting){
@@ -2009,7 +2005,7 @@ function renderPremiumTracking(){
     const amount=Number(r.quote_final_total);
     if(Number.isFinite(amount)&&amount>0)
       text(details,"p","Importe indicado: "+tripMoney(amount),"premium-tracking-wait-fare");
-    button(content,"← Volver a Mis traslados","premium-tracking-return",()=>shiftView("viajes"));
+    button(content,"← Volver a Tu viaje","premium-tracking-return",()=>shiftView("viaje"));
     return;
   }
   const onBoard=r.status==="EN_VIAJE";
@@ -2258,6 +2254,7 @@ async function loadTrips({background=false}={}){
     const needsRender=!tripLoaded||nextRenderKey!==tripRenderedSignature;
     const updates=tripSnap?tripBoard.notifications(tripSnap,rows):[];
     tripRows=rows;tripLoaded=true;tripSnap=tripBoard.snapshot(rows);
+    syncActiveTripUi();
     tripRenderedSignature=nextRenderKey;
     if(!tripsScopeChosen&&rows.length){
       const actionable=rows.some(r=>tripBoard.metadata(r).tone==="attention");
@@ -2445,6 +2442,10 @@ function init(){
     onNavigate:target=>target==="reservar"?enterService("schedule"):shiftView(target)
   });
   for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>tab.dataset.view==="reservar"?enterService("schedule"):shiftView(tab.dataset.view));
+  window.addEventListener("quicktrip:tracking-closed",()=>{
+    // N1: never route back into history when leaving an active map.
+    shiftView("viaje");syncActiveTripUi();
+  });
   $("journey-when-select").addEventListener("change",()=>{
     const mode=$("journey-when-select").value;
     if(mode==="custom"){$("journey-clock-action").click();return;}
@@ -2585,7 +2586,7 @@ function init(){
   // Nunca reproducir sonidos sin el consentimiento guardado.
   document.addEventListener("pointerdown",armTripSound,{once:true});
   document.addEventListener("keydown",armTripSound,{once:true});
-  $("premium-tracking-back").addEventListener("click",()=>shiftView("viajes"));
+  $("premium-tracking-back").addEventListener("click",()=>shiftView("viaje"));
   $("trip-alert-close").addEventListener("click",closeTripNotice);
   $("trip-alert-open").addEventListener("click",()=>{
     const target=tripFocused;closeTripNotice();
