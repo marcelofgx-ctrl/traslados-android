@@ -1,0 +1,64 @@
+name: QA Quick Trip F1 functional baseline - isolated
+on:
+  push:
+    branches:
+      - 'qa/quicktrip-functional-baseline-20261029'
+      - 'qa/quicktrip-functional-baseline-*'
+    paths:
+      - 'web-pasajero/**'
+      - 'scripts/qa_functional_baseline_20261029.cjs'
+      - 'docs/BASELINE_FUNCIONAL_SAMSUNG_20261029.md'
+      - '.github/workflows/qa-functional-baseline-f1.yml'
+permissions:
+  contents: read
+jobs:
+  stable-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify F1 protected engines
+        run: |
+          set -euo pipefail
+          node --check scripts/qa_functional_baseline_20261029.cjs
+          node scripts/qa_functional_baseline_20261029.cjs
+      - name: Local-only route, fare, booking, ETA, and GPS contracts
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node web-pasajero/tests/booking-contracts-smoke.cjs
+          node web-pasajero/tests/public-driver-presence-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+  simulated-follow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare local browser
+        run: |
+          set -euo pipefail
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+          npm install --prefix /tmp/quicktrip-f1-playwright --no-save --no-audit --no-fund playwright-core@1.56.1
+          echo "NODE_PATH=/tmp/quicktrip-f1-playwright/node_modules" >> "$GITHUB_ENV"
+      - name: Five-stage mocked follow on two Samsung-size viewports
+        run: node web-pasajero/tests/continuous-follow-audit-qa.cjs
+      - name: Keep simulated screenshots and JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-F1-Synthetic-Follow-Evidence
+          path: artifacts/continuous-follow-audit/
+          if-no-files-found: warn
+          retention-days: 21
