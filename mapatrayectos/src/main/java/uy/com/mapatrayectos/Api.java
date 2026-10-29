@@ -82,10 +82,19 @@ public final class Api {
                         privateBody.put("p_lng",lng);
                         privateBody.put("p_accuracy_m",accuracy);
                         privateBody.put("p_gps_at_ms",gpsTimeMs);
-                        postRpc("mapa_reservation_position_v1",privateBody);
+                        JSONObject privateResult=new JSONObject(postRpc("mapa_reservation_position_v1",privateBody));
+                        PrivateGpsDiagnostic.recordRpcResult(
+                            privateResult.optBoolean("ok",false),
+                            privateResult.optString("reason",""));
                     }catch(Exception ignored){
-                        // Optional ride tracking must not disrupt GPS collection.
+                        // Never retain/log exception text, request or response: it
+                        // may contain GPS, device secrets or reservation metadata.
+                        PrivateGpsDiagnostic.privateTransportError();
                     }
+                }else if(!result.optBoolean("ok",false)){
+                    PrivateGpsDiagnostic.publicRejected();
+                }else{
+                    PrivateGpsDiagnostic.skippedConditions();
                 }
                 // The server only returns this hint after device authentication.
                 // Expire it locally even if the network later goes offline.
@@ -100,6 +109,8 @@ public final class Api {
                 }
             }catch(Exception ignored){
                 // Server expires location after 90 s; stale position is never published.
+                // Do not expose an exception message or any identifying payload.
+                PrivateGpsDiagnostic.publicTransportError();
             }finally{PRESENCE_BUSY.set(false);}
         },"mapa-pickup-presence").start();
     }

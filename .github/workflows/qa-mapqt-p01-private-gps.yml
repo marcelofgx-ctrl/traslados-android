@@ -1,0 +1,65 @@
+name: QA Mapa QT R25.38 Private GPS P0.1 Diagnostic - offline only
+on:
+  push:
+    branches:
+      - 'qa/mapaqt-r2538-private-gps-diagnostics-p01-20261029'
+    paths:
+      - '.github/workflows/qa-mapqt-p01-private-gps.yml'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/PrivateGpsDiagnostic.java'
+      - 'mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusActivity.java'
+      - 'tests/android-p01/**'
+      - 'tests/private-gps-p01-static-qa.cjs'
+      - 'docs/QA_P01_MAPA_GPS_PRIVATE_DIAGNOSTIC_20261029.md'
+permissions:
+  contents: read
+jobs:
+  offline-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm change set limited to source diagnostics and offline tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff-tree --no-commit-id --name-only -r HEAD | while IFS= read -r file; do
+            case "$file" in
+              .github/workflows/qa-mapqt-p01-private-gps.yml|mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/PrivateGpsDiagnostic.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusActivity.java|tests/android-p01/PrivateGpsDiagnosticTest.java|tests/private-gps-p01-static-qa.cjs|docs/QA_P01_MAPA_GPS_PRIVATE_DIAGNOSTIC_20261029.md) ;;
+              *) echo "UNAUTHORIZED: $file"; exit 1 ;;
+            esac
+          done
+      - name: Check preserved GPS and backend contracts without making requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tests/private-gps-p01-static-qa.cjs
+          node tests/private-gps-p01-static-qa.cjs
+      - name: Compile and test ONLY the dependency-free diagnostic Java class
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/p01-classes"
+          javac -encoding UTF-8 -d "$RUNNER_TEMP/p01-classes" \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PrivateGpsDiagnostic.java \
+            tests/android-p01/PrivateGpsDiagnosticTest.java
+          java -cp "$RUNNER_TEMP/p01-classes" uy.com.mapatrayectos.PrivateGpsDiagnosticTest
+      - name: Keep sanitized offline QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-MapaQT-R2538-P01-GPS-Diagnostic-QA
+          path: artifacts/private-gps-p01/
+          if-no-files-found: warn
+          retention-days: 21
+# No gradle tasks, no APKs, no Supabase or Android remote sessions.

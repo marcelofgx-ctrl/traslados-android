@@ -37,7 +37,7 @@ public final class SystemStatusActivity extends Activity {
     private static final int TEXT=Color.rgb(247,246,241), MUTED=Color.rgb(181,200,201);
     private static final int GREEN=Color.rgb(88,211,154), AMBER=Color.rgb(245,184,93);
     private static final int RED=Color.rgb(232,109,109);
-    private TextView cloudValue,cloudNote,cloudState,cloudUpdated,cloudRows,localRows,connectivity,versionLine;
+    private TextView cloudValue,cloudNote,cloudState,cloudUpdated,cloudRows,localRows,connectivity,versionLine,privateGpsLine;
     private ProgressBar capacityBar;
     private Button reload;
     private String sessionPin="";
@@ -142,7 +142,14 @@ public final class SystemStatusActivity extends Activity {
         connectivity=text("Comprobando…",12.5f,TEXT,false);
         connectivity.setLineSpacing(dp(6),1f);status.addView(connectivity);
 
-        LinearLayout app=section(content,"04 · APLICACIÓN","Versión y mantenimiento",
+        LinearLayout privateGps=section(content,"04 · QA GPS PRIVADO","Resultado de publicación",
+            "Solo códigos locales de esta ejecución; sin coordenadas, tokens, reservas ni conexión adicional.");
+        privateGpsLine=text(PrivateGpsDiagnostic.message(Api.pickupPresenceEnabled()),
+            12.3f,TEXT,false);
+        privateGpsLine.setLineSpacing(dp(5),1f);
+        privateGps.addView(privateGpsLine);
+
+        LinearLayout app=section(content,"05 · APLICACIÓN","Versión y mantenimiento",
             "Solo lectura: no modifica reservas, jornadas, GPS ni configuraciones.");
         versionLine=text("Mapa Trayectos",12.5f,TEXT,false);app.addView(versionLine);
 
@@ -203,6 +210,7 @@ public final class SystemStatusActivity extends Activity {
                 if(isFinishing()||isDestroyed())return;
                 localRows.setText(localReport);
                 connectivity.setText(connectionReport);
+                privateGpsLine.setText(PrivateGpsDiagnostic.message(Api.pickupPresenceEnabled()));
                 versionLine.setText(appReport);
                 if(answer!=null)showCloud(answer);else{
                     cloudValue.setText("Sin datos");
