@@ -570,7 +570,22 @@ function setWhen(kind){
 }
 // Dos experiencias de presentación independientes, con el mismo motor validado
 // de búsqueda, GPS, identidad y contratos. Mover nodos conserva listeners y valores.
+// Only a single authenticated/guest-owned IMMEDIATE ride can open the
+// map directly. A future scheduled booking never hijacks Tu viaje.
+function currentVerifiedRide(){
+  const selected=window.QuickTripActiveRide?.select?.(tripRows);
+  const ride=selected?.count===1?selected.ride:null;
+  return ride&&(authReady()||ride.__guestToken)?ride:null;
+}
 function enterService(kind){
+  if(kind==="now"){
+    const active=currentVerifiedRide();
+    if(active){
+      shiftView("viaje");
+      openPremiumTracking(active);
+      return;
+    }
+  }
   accountJourneyReturn=null;
   const quick=kind!=="schedule";
   const host=$(quick?"journey-field-host":"reserve-field-host");
@@ -1452,8 +1467,11 @@ function renderBookingSuccess(result,mode="schedule"){
     const dateLabel=reviewDate(result.pickup_date,result.pickup_time);
     text(box,"p",(mode==="now"?"Recogida pedida para ahora · ":"Recogida solicitada · ")+dateLabel,"success-time");
   }
-  text(box,"p","Seguí la respuesta en Mis traslados. No se realiza ningún cobro al enviar.","success-footer");
-  button(box,"VER MIS TRASLADOS","primary full",()=>shiftView("viajes"));
+  text(box,"p",urgent
+    ?"Estamos esperando la aceptación del conductor. Si acepta, se abrirá tu mapa automáticamente. No se realiza ningún cobro al enviar."
+    :"Consultá tu reserva programada en Mis traslados. No se realiza ningún cobro al enviar.","success-footer");
+  button(box,urgent?"VOLVER AL INICIO":"VER MIS TRASLADOS","primary full",
+    ()=>shiftView(urgent?"inicio":"viajes"));
   for(const id of ["booking-preview","booking-final","review-booking","submit-actions","urgent-actions"])
     $(id).hidden=true;
   pendingReview=null;
@@ -1577,7 +1595,8 @@ function autoFollowAccepted(rows,previous){
   const accepted=new Set(["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"]);
   const earlier=new Map(previous.map(r=>[String(r.id||r.code),r]));
   const candidate=rows.find(r=>{
-    if(!accepted.has(String(r.status))||!r.id||!(authReady()||r.__guestToken))return false;
+    if(!accepted.has(String(r.status))||!r.id||!(authReady()||r.__guestToken)||
+       window.QuickTripActiveRide?.select?.([r]).count!==1)return false;
     const id=String(r.id),seen=autoFollowSeen.has(id);
     if(seen||premiumTrackingKey===id&&$("view-seguimiento").classList.contains("active"))return false;
     const was=earlier.get(id);
@@ -2440,12 +2459,15 @@ function init(){
   // keep full responsibility for preparing and sending transport requests.
   window.TrasladosServiceHome.mount(document,{
     onSelect:kind=>enterService(kind),
-    onNavigate:target=>target==="reservar"?enterService("schedule"):shiftView(target)
+    onNavigate:target=>target==="reservar"?enterService("schedule"):
+      target==="viaje"?enterService("now"):shiftView(target)
   });
-  for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>tab.dataset.view==="reservar"?enterService("schedule"):shiftView(tab.dataset.view));
+  for(const tab of document.querySelectorAll(".tab"))tab.addEventListener("click",()=>tab.dataset.view==="reservar"?enterService("schedule"):
+    tab.dataset.view==="viaje"?enterService("now"):shiftView(tab.dataset.view));
   window.addEventListener("quicktrip:tracking-closed",()=>{
-    // N1: never route back into history when leaving an active map.
-    shiftView("viaje");syncActiveTripUi();
+    // Explicit Back always goes home and never auto-reopens the overlay.
+    // A NEW tap on Tu viaje will reopen the verified active map directly.
+    shiftView("inicio");syncActiveTripUi();
   });
   $("journey-when-select").addEventListener("change",()=>{
     const mode=$("journey-when-select").value;
