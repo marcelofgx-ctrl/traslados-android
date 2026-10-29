@@ -427,6 +427,14 @@
     });
     doc.addEventListener("traslados:route-updated",updateSummary);
     installVisualObservers();
+    // The service router can move the original route card after an observer
+    // callback has already run. Reconcile once after a completed navigation,
+    // so scheduled trips never inherit the quick-map pickup card layout.
+    doc.addEventListener("click",event=>{
+      const nav=event.target?.closest?.(
+        '[data-service="schedule"],[data-service="now"],[data-qtc-nav="schedule"],[data-view="reservar"]');
+      if(nav)win.requestAnimationFrame(reconcile);
+    });
     reconcile();
     // Abrir el servicio NATIVO por su acción ya registrada. Sin llamadas RPC.
     const open=doc.querySelector('[data-service="now"]');
