@@ -1,0 +1,61 @@
+name: QA Quick Trip P0 ETA and Visual Stability (READ ONLY)
+on:
+  push:
+    branches:
+      - qa/quicktrip-n1n2-p0-eta-visual-guard-20261029
+    paths:
+      - '.github/workflows/qa-quicktrip-p0-eta-guard-20261029.yml'
+permissions:
+  contents: read
+jobs:
+  check-pickup-eta-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Gate QA baseline and strict source whitelist
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=148664fa20d2ce1906373dc3e692abfbcc516020
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 9
+          for path in "${files[@]}"; do
+            case "$path" in
+              .github/workflows/qa-quicktrip-p0-eta-guard-20261029.yml|docs/QA_QUICKTRIP_P0_ETA_VISUAL_GUARD_20261029.md|scripts/qa_quicktrip_n1n2_browser.cjs|tests/quicktrip-n1n2-contract-qa.cjs|web-pasajero/quicktrip-n1n2.css|web-pasajero/quicktrip-clean.css|web-pasajero/quicktrip-clean.js|web-pasajero/index.html|web-pasajero/sw.js) ;;
+              *) echo "FAIL: unauthorized change $path"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ web-pasajero/eta-engine.js web-pasajero/reservation-live.js web-pasajero/route-engine.js web-pasajero/rpc-client.js web-pasajero/premium-map.js web-pasajero/app.js web-pasajero/quicktrip-active-ride.js
+          echo "PASS: no engine, backend, native or active ride control changes"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax of all touched JS
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-clean.js
+          node --check web-pasajero/sw.js
+          node --check scripts/qa_quicktrip_n1n2_browser.cjs
+          node --check tests/quicktrip-n1n2-contract-qa.cjs
+      - name: Offline booking, GPS and ETA visibility regression
+        run: node tests/quicktrip-n1n2-contract-qa.cjs
+      - name: Run live Chromium UI verification at Samsung size, no backend writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_n1n2_browser.cjs
+      - name: Upload screenshots and read-only QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P0-ETA-Visibility-390px-QA
+          path: artifacts/quicktrip-n1n2/
+          if-no-files-found: warn
+          retention-days: 21
