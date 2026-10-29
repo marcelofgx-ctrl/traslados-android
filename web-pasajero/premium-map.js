@@ -64,7 +64,13 @@
       ?options.driverPosition:null;
     const fitExtra=extra.map(m=>[m.lat,m.lng])
       .concat(secondary||[],vehicle?[[vehicle.lat,vehicle.lng]]:[]);
-    const view=layout(geometry,width,height,fitExtra,camera.custom);
+    // UI camera only: the live passenger's natural framing follows the LAST
+    // verified vehicle fix, never a predicted coordinate. Manual pan/zoom
+    // replaces this camera until the user presses the recenter control.
+    const liveCamera=options.followVehicle===true&&vehicle&&!camera.custom
+      ?(()=>{const p=project([vehicle.lat,vehicle.lng]);return p?{x:p[0],y:p[1],zoom:16}:null;})()
+      :null;
+    const view=layout(geometry,width,height,fitExtra,camera.custom||liveCamera);
     if(!view)return false;
     host.replaceChildren();
     const frame=document.createElement("div");
@@ -80,6 +86,7 @@
     frame.dataset.zoom=String(view.zoom);
     frame.dataset.manual=String(Boolean(camera.custom));
     frame.dataset.explore=String(camera.explore);
+    frame.dataset.followVehicle=String(Boolean(liveCamera));
     // Leave vertical swipes to page scrolling until Explorar is enabled.
     frame.style.touchAction=camera.explore?"none":"pan-y";
     const tiles=document.createElement("div");tiles.className="premium-map-tiles";
@@ -229,10 +236,16 @@
     }
     control("+","Acercar mapa","premium-map-control-zoom-in",()=>zoomBy(1));
     control("−","Alejar mapa","premium-map-control-zoom-out",()=>zoomBy(-1));
-    control("◎","Centrar la ruta","premium-map-control-reset",()=>applyCamera(null));
+    control("◎",options.followVehicle?"Recentrar y seguir el vehículo":"Centrar la ruta",
+      "premium-map-control-reset",()=>applyCamera(null));
     control(camera.explore?"✓":"✥","Activar o desactivar arrastrar y pellizcar el mapa",
       "premium-map-control-explore",()=>{
         camera.explore=!camera.explore;
+        // Exploring freezes the current viewport, preventing the verified
+        // GPS poll from fighting a passenger's pan / pinch gestures.
+        if(camera.explore&&!camera.custom){
+          camera.custom={x:view.centerX/view.scale,y:view.centerY/view.scale,zoom:view.zoom};
+        }
         cameras.set(host,camera);
         render(host,geometry,options);
       });
