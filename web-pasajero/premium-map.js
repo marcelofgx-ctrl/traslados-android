@@ -241,6 +241,12 @@
     control("−","Alejar mapa","premium-map-control-zoom-out",()=>zoomBy(-1));
     control("◎",options.followVehicle?"Recentrar y seguir el vehículo":"Centrar la ruta",
       "premium-map-control-reset",()=>applyCamera(null));
+    if(options.followVehicle){
+      control("◇","Mostrar todo el recorrido","premium-map-control-route-all",()=>{
+        const fit=layout(geometry,width,height,fitExtra,null);
+        if(fit)applyCamera({x:fit.centerX/fit.scale,y:fit.centerY/fit.scale,zoom:fit.zoom});
+      });
+    }
     control(camera.explore?"✓":"✥","Activar o desactivar arrastrar y pellizcar el mapa",
       "premium-map-control-explore",()=>{
         camera.explore=!camera.explore;
