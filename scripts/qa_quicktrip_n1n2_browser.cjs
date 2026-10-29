@@ -183,6 +183,7 @@ async function main(){
      onePresence:document.querySelectorAll("#pickup-presence").length===1
    })));
  });
+ console.log("P0 scheduled transition diagnostic",JSON.stringify(scheduled));
  ok(scheduled.view&&scheduled.driverHome&&scheduled.oneDriver&&scheduled.oneMap&&scheduled.onePresence,
     "Scheduled booking restores native driver layout, without duplicate map or presence");
  const returned=await js(function(){
