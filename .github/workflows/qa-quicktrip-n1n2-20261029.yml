@@ -5,6 +5,8 @@ on:
       - qa/quicktrip-n1n2-active-slide-premium-20261029
     paths:
       - '.github/workflows/qa-quicktrip-n1n2-20261029.yml'
+      - 'web-pasajero/quicktrip-active-ride.js'
+      - 'tests/quicktrip-n1n2-contract-qa.cjs'
 permissions:
   contents: read
 jobs:
