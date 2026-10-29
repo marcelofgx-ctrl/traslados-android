@@ -134,6 +134,15 @@
       other.textContent=expandedNewTrip?"Ocultar nuevo viaje":"Preparar otro viaje";
     });
     controls.append(open,other);host.append(controls);
+    // The standard bottom tabs belong to the optionally hidden booking form;
+    // retain independent navigation while the active ride is in focus.
+    const nav=mk(doc,"nav","qt-live-bottom-links");
+    nav.setAttribute("aria-label","Navegación del viaje activo");
+    const home=mk(doc,"button","qt-live-nav-link","Inicio");
+    home.type="button";home.addEventListener("click",()=>actions.onHome?.());
+    const list=mk(doc,"button","qt-live-nav-link","Mis traslados");
+    list.type="button";list.addEventListener("click",()=>actions.onList?.());
+    nav.append(home,list);host.append(nav);
     return picked;
   }
   const api=Object.freeze({select,stage,render});
