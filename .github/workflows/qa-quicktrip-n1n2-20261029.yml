@@ -1,0 +1,69 @@
+name: QA Quick Trip N1 N2 Active Journey / Slide UI (NO DEPLOY)
+on:
+  push:
+    branches:
+      - qa/quicktrip-n1n2-active-slide-premium-20261029
+    paths:
+      - '.github/workflows/qa-quicktrip-n1n2-20261029.yml'
+permissions:
+  contents: read
+jobs:
+  qa-passenger-n1n2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Enforce exact isolated QA baseline and source whitelist
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=bdcc0925021c6888f966e849fa029a62d1fdfcf0
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 10
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-n1n2-20261029.yml|docs/QA_QUICKTRIP_N1N2_ACTIVE_FLOW_20261029.md|scripts/qa_quicktrip_n1n2_browser.cjs|tests/quicktrip-n1n2-contract-qa.cjs|web-pasajero/app.js|web-pasajero/index.html|web-pasajero/quicktrip-active-ride.js|web-pasajero/quicktrip-map-focus.js|web-pasajero/quicktrip-n1n2.css|web-pasajero/sw.js) ;;
+              *) echo "OUT-OF-SCOPE: $f"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ web-pasajero/reservation-live.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/premium-map.js web-pasajero/rpc-client.js web-pasajero/booking-contracts.js
+          echo "PASS: authorized N1/N2 presentation-only changes; real engines untouched"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check all changed JS syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/quicktrip-map-focus.js
+          node --check web-pasajero/quicktrip-active-ride.js
+          node --check web-pasajero/sw.js
+          node --check tests/quicktrip-n1n2-contract-qa.cjs
+          node --check scripts/qa_quicktrip_n1n2_browser.cjs
+      - name: Run offline regression for unique active ride, swipe, back and PWA
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-n1n2-contract-qa.cjs
+      - name: Verify Chromium available on runner
+        shell: bash
+        run: |
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Samsung-width Chrome QA without real bookings
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_n1n2_browser.cjs
+      - name: Upload screenshots and test evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-N1N2-QA-Mobile-390px-Screenshots-Tests
+          path: artifacts/quicktrip-n1n2/
+          if-no-files-found: warn
+          retention-days: 21
