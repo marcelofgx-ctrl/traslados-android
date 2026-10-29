@@ -1563,6 +1563,7 @@ function syncActiveTripUi(){
   // Present only reservations authorized by the existing account/guest read.
   return window.QuickTripActiveRide?.render(tripRows,{
     onOpen:ride=>openPremiumTracking(ride),
+    onHome:()=>shiftView("inicio"),
     onList:()=>shiftView("viajes")
   });
 }
