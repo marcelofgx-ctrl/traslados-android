@@ -1,0 +1,132 @@
+name: QA Mapa QT C1.1 signed Samsung APK - isolated
+on:
+  push:
+    branches:
+      - 'qa/mapaqt-driver-c11-samsung-signed-20261029'
+    paths:
+      - '.github/workflows/qa-driver-c11-signed-apk.yml'
+permissions:
+  contents: read
+jobs:
+  signed-c11:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Guard source lineage, exact scope and in-place update
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=ba08fdb6a19576e69d2968e6380a6c22c5bf2b61
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 10
+          for file in "${files[@]}"; do
+            case "$file" in
+              .github/workflows/qa-driver-c11-signed-apk.yml|docs/QA_DRIVER_C11_SIGNED_20261029.md|mapatrayectos/build.gradle|mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorLiveController.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/ConductorV0Navigator.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverRideSheet.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverSheetPolicy.java|tests/android-c11/DriverSheetRecoveryTest.java|tests/driver-c11-static-qa.cjs) ;;
+              *) echo "Out of authorized C1.1 scope: $file"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ conductor/ core-reservations/ web-pasajero/ mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackingService.java mapatrayectos/src/main/java/uy/com/mapatrayectos/TransferAlerts.java
+          grep -Fq "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
+          grep -Fq 'versionCode 93' mapatrayectos/build.gradle
+          grep -Fq "versionName 'MapaQT-R25.38-C1.1-QA'" mapatrayectos/build.gradle
+          ! grep -q 'applicationIdSuffix' mapatrayectos/build.gradle
+          echo "PASS: isolated C1.1 inherits signed P0.1 through C1"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline C1 and C1.1 source and policy regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/driver-c1-static-qa.cjs
+          node tests/driver-c11-static-qa.cjs
+          mkdir -p "$RUNNER_TEMP/driver-policy"
+          javac -encoding UTF-8 -d "$RUNNER_TEMP/driver-policy" \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/conductorv0/DriverSheetPolicy.java \
+            tests/android-c1/DriverSheetPolicyTest.java \
+            tests/android-c11/DriverSheetRecoveryTest.java
+          java -cp "$RUNNER_TEMP/driver-policy" uy.com.mapatrayectos.conductorv0.DriverSheetPolicyTest
+          java -cp "$RUNNER_TEMP/driver-policy" uy.com.mapatrayectos.conductorv0.DriverSheetRecoveryTest
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Restore existing app assets only into runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restore original signing keystore in temporary runner only
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Build only the single existing Mapa QT signed APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleRelease --no-daemon --build-cache --console=plain --stacktrace
+      - name: Verify Android identity, original signing certificate and SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=mapatrayectos/build/outputs/apk/release
+          APK="$(find "$out" -maxdepth 1 -name '*.apk' -type f | head -1)"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee "$out/BADGING.txt"
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='93' versionName='MapaQT-R25.38-C1.1-QA'" "$out/BADGING.txt"
+          grep -q "application-label:'Mapa QT'" "$out/BADGING.txt"
+          grep -q "sdkVersion:'26'" "$out/BADGING.txt"
+          grep -q "targetSdkVersion:'35'" "$out/BADGING.txt"
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee "$out/SIGNING.txt"
+          grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' "$out/SIGNING.txt"
+          grep -qi 'Signer #1 certificate SHA-256 digest: d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d' "$out/SIGNING.txt"
+          sha256sum "$APK" | tee "$out/SHA256SUMS.txt"
+          printf 'C1.1 QA no production; source SHA %s; previous installed versionCode 92; same Android signing certificate\n' "$(git rev-parse HEAD)" > "$out/QA-SOURCE.txt"
+      - name: Upload signed APK and human-readable QA evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: MapaQT-R25.38-C1.1-QA-Signed-Samsung
+          path: |
+            mapatrayectos/build/outputs/apk/release/*.apk
+            mapatrayectos/build/outputs/apk/release/BADGING.txt
+            mapatrayectos/build/outputs/apk/release/SIGNING.txt
+            mapatrayectos/build/outputs/apk/release/SHA256SUMS.txt
+            mapatrayectos/build/outputs/apk/release/QA-SOURCE.txt
+            artifacts/driver-c1/c1-static-qa.json
+            artifacts/driver-c11/c11-static-qa.json
+          if-no-files-found: error
+          retention-days: 21
