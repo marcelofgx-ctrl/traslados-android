@@ -1,0 +1,129 @@
+name: QA Mapa QT R25.38 P0.1 GPS diagnostico firmado (NO DEPLOY)
+on:
+  push:
+    branches:
+      - qa/mapaqt-r2538-private-gps-diagnostics-p01-20261029
+    paths:
+      - '.github/workflows/qa-mapqt-p01-signed-apk.yml'
+      - 'mapatrayectos/build.gradle'
+permissions:
+  contents: read
+jobs:
+  signed-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Proteger base R25.38, alcance QA P0.1 y version de actualizacion
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = cb858db0363a338e22e6351feeb11b1058002eeb
+          base=38bc41349a9e3a799b54652e080ad867df60f3db
+          git cat-file -e "${base}^{commit}"
+          mapfile -t changed < <(git diff --name-only "$base"..HEAD | LC_ALL=C sort)
+          test "${#changed[@]}" -eq 9
+          for file in "${changed[@]}"; do
+            case "$file" in
+              .github/workflows/qa-mapqt-p01-private-gps.yml|.github/workflows/qa-mapqt-p01-signed-apk.yml|docs/QA_P01_MAPA_GPS_PRIVATE_DIAGNOSTIC_20261029.md|mapatrayectos/build.gradle|mapatrayectos/src/main/java/uy/com/mapatrayectos/Api.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/PrivateGpsDiagnostic.java|mapatrayectos/src/main/java/uy/com/mapatrayectos/SystemStatusActivity.java|tests/android-p01/PrivateGpsDiagnosticTest.java|tests/private-gps-p01-static-qa.cjs) ;;
+              *) echo "Out-of-scope change: $file"; exit 1 ;;
+            esac
+          done
+          grep -Fq "applicationId 'uy.com.mapatrayectos'" mapatrayectos/build.gradle
+          grep -Fq 'versionCode 92' mapatrayectos/build.gradle
+          grep -Fq "versionName 'MapaQT-0.1-R25.38-P0.1-QA'" mapatrayectos/build.gradle
+          ! grep -q 'applicationIdSuffix' mapatrayectos/build.gradle
+          test "$(git diff --name-only "$base"..HEAD -- conductor web-pasajero core-reservations)" = ''
+          echo "PASS: same APK identity, diagnostic-only changes, version 92"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar P0.1 sin Android SDK ni conexion remota
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/private-gps-p01-static-qa.cjs
+          mkdir -p "$RUNNER_TEMP/p01-classes"
+          javac -encoding UTF-8 -d "$RUNNER_TEMP/p01-classes" \
+            mapatrayectos/src/main/java/uy/com/mapatrayectos/PrivateGpsDiagnostic.java \
+            tests/android-p01/PrivateGpsDiagnosticTest.java
+          java -cp "$RUNNER_TEMP/p01-classes" uy.com.mapatrayectos.PrivateGpsDiagnosticTest
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-read-only: true
+      - name: Restaurar recursos existentes sin alterar fuentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/assets mapatrayectos/src/main/res/raw mapatrayectos/src/main/res/drawable-nodpi
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+      - name: Asegurar Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -name sdkmanager -type f | sort -V | tail -1)"; fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restaurar keystore original solo en runner temporal
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compilar solamente APK unica Mapa QT Release con firma original
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleRelease --no-daemon --build-cache --console=plain --stacktrace
+      - name: Verificar APK, identidad de instalacion, firma y SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=mapatrayectos/build/outputs/apk/release
+          APK="$(find "$out" -maxdepth 1 -name '*.apk' -type f | head -1)"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          "$SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | tee "$out/BADGING.txt"
+          grep -q "package: name='uy.com.mapatrayectos' versionCode='92' versionName='MapaQT-0.1-R25.38-P0.1-QA'" "$out/BADGING.txt"
+          grep -q "application-label:'Mapa QT'" "$out/BADGING.txt"
+          grep -q "sdkVersion:'26'" "$out/BADGING.txt"
+          grep -q "targetSdkVersion:'35'" "$out/BADGING.txt"
+          "$SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | tee "$out/SIGNING.txt"
+          grep -Eq 'Verified using v2 scheme.*true|Verified using v3 scheme.*true' "$out/SIGNING.txt"
+          grep -qi 'Signer #1 certificate SHA-256 digest: d91f4b9a37f4c77653fdf18fe792e7011a046dd2c09fded1e13fd29d4267269d' "$out/SIGNING.txt"
+          sha256sum "$APK" | tee "$out/SHA256SUMS.txt"
+          printf "QA ONLY; no deployment; source commit %s; prior versionCode 91\n" "$(git rev-parse HEAD)" > "$out/QA-SOURCE.txt"
+      - name: Subir exclusivamente artefacto QA privado en GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: MapaQT-R25.38-P0.1-QA-Signed-GPS-Diagnostic
+          path: |
+            mapatrayectos/build/outputs/apk/release/*.apk
+            mapatrayectos/build/outputs/apk/release/BADGING.txt
+            mapatrayectos/build/outputs/apk/release/SIGNING.txt
+            mapatrayectos/build/outputs/apk/release/SHA256SUMS.txt
+            mapatrayectos/build/outputs/apk/release/QA-SOURCE.txt
+          if-no-files-found: error
+          retention-days: 21
