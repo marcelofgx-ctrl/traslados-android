@@ -42,6 +42,26 @@ async function main(){
    return hero?.hidden===true&&!!qtc&&getComputedStyle(qtc).display!=="none";
  });
  ok(initial,"No active ride means original booking screen is preserved");
+ const etaBefore=await js(function(){
+   const p=document.getElementById("pickup-presence");
+   p.hidden=false;
+   paintPickupCard({presence:"online",title:"Conductor conectado",
+     subtitle:"Llegada aproximada hasta tu origen.",km:1.8,minutes:6,
+     estimateNote:"Estimación visual QA, no GPS",phase:"ready"});
+   const head=p.querySelector(".pickup-card-header");
+   const metrics=document.getElementById("pickup-presence-metrics");
+   return {node:p.parentElement?.classList.contains("qtc-driver-slot"),
+     visible:getComputedStyle(p).display!=="none"&&p.getBoundingClientRect().height>0,
+     header:getComputedStyle(head).display!=="none",
+     metrics:getComputedStyle(metrics).display!=="none",
+     text:document.getElementById("pickup-distance").textContent+" "+
+       document.getElementById("pickup-minutes").textContent};
+ });
+ ok(etaBefore.node&&etaBefore.visible&&etaBefore.header&&etaBefore.metrics&&
+    etaBefore.text.includes("1,8")&&etaBefore.text.includes("6"),
+    "Route planning preserves original visible availability, pickup km and minutes");
+ await js(function(){document.querySelector(".qtc-driver")?.scrollIntoView({block:"center"});return true;});
+ await snap("00-original-driver-eta-visible-samsung-390.png");
  const active=await js(function(){
    window.__qaOpened=0;window.__qaListed=0;
    window.QuickTripActiveRide.render([{id:"qa-synthetic-not-a-real-booking",
@@ -55,14 +75,21 @@ async function main(){
      knob:!!q(".qt-live-knob"),
      touch:getComputedStyle(q(".qt-live-knob")).touchAction,
      fallback:!!q(".qt-live-tap"),
-     hiddenForm:getComputedStyle(q("#qtc-app")).display==="none",
+     appVisible:getComputedStyle(q("#qtc-app")).display!=="none",
+      routeHidden:getComputedStyle(q(".qtc-places")).display==="none",
+      driverVisible:getComputedStyle(q(".qtc-driver")).display!=="none" &&
+        q(".qtc-driver").getBoundingClientRect().height>0,
+      etaVisible:getComputedStyle(q("#pickup-presence")).display!=="none" &&
+        getComputedStyle(q("#pickup-presence .pickup-card-header")).display!=="none",
+      metricsVisible:getComputedStyle(q("#pickup-presence-metrics")).display!=="none",
      overflow:document.documentElement.scrollWidth-innerWidth,
      cardWidth:q("#quicktrip-live-trip").getBoundingClientRect().width
    };
  });
  ok(active.title==="Tu viaje activo"&&active.price.includes("764"),"Live ride title and source-only fare");
  ok(active.knob&&active.touch==="none"&&active.fallback,"Accessible slide plus tap fallback");
- ok(active.hiddenForm,"Active ride leads, new booking form behind explicit option");
+ ok(active.appVisible&&active.routeHidden&&active.driverVisible&&active.etaVisible&&active.metricsVisible,
+   "Active ride keeps conductor, ETA and origin distance visible with form folded");
  ok(active.overflow<=6&&active.cardWidth<=390,"No Samsung horizontal overflow");
  await snap("01-active-trip-synthetic-samsung-390.png");
  const click=await js(function(){
@@ -74,10 +101,39 @@ async function main(){
    document.querySelector(".qt-live-new-trip").click();
    const visible=getComputedStyle(document.getElementById("qtc-app")).display!=="none";
    document.querySelector(".qt-live-new-trip").click();
-   const hidden=getComputedStyle(document.getElementById("qtc-app")).display==="none";
-   return {visible,hidden};
+   const hidden=getComputedStyle(document.querySelector(".qtc-places")).display==="none";
+   const driverStillVisible=getComputedStyle(document.querySelector(".qtc-driver")).display!=="none";
+   return {visible,hidden,driverStillVisible};
  });
- ok(newTrip.visible&&newTrip.hidden,"Prepare another trip toggles without dropping current ride");
+ ok(newTrip.visible&&newTrip.hidden&&newTrip.driverStillVisible,
+   "New trip toggles form but never hides the real conductor/ETA area");
+ const unavailable=await js(function(){
+   const p=document.getElementById("pickup-presence");
+   p.hidden=false;
+   paintPickupCard({presence:"busy",title:"Recogida por confirmar",
+     subtitle:"No podemos asegurar una recogida ahora.",phase:"blocked"});
+   return new Promise(resolve=>requestAnimationFrame(()=>{
+     resolve({visible:getComputedStyle(p).display!=="none"&&p.getBoundingClientRect().height>0,
+       header:getComputedStyle(p.querySelector(".pickup-card-header")).display!=="none",
+       title:document.getElementById("pickup-presence-title").textContent,
+       duplicate:!document.querySelector(".qtc-driver-unavailable")?.hidden,
+       spinner:!document.querySelector(".qtc-driver-search")?.hidden});
+   }));
+ });
+ ok(unavailable.visible&&unavailable.header&&unavailable.title==="Recogida por confirmar"&&
+    !unavailable.duplicate&&!unavailable.spinner,
+    "Unavailable pickup keeps backend-state wording and never shows a false denial");
+ await js(function(){document.querySelector(".qtc-driver")?.scrollIntoView({block:"center"});return true;});
+ await snap("03-unavailable-no-false-denial-samsung-390.png");
+ const networkIssue=await js(function(){
+   paintPickupCard({presence:"unknown",title:"No pudimos comprobar la disponibilidad",
+     subtitle:"Reintentaremos la consulta.",phase:"issue"});
+   const p=document.getElementById("pickup-presence");
+   return {visible:getComputedStyle(p).display!=="none",
+     label:document.getElementById("pickup-presence-title").textContent};
+ });
+ ok(networkIssue.visible&&networkIssue.label.includes("No pudimos comprobar"),
+    "Transport failure stays distinct from real unavailable status");
  const ambiguous=await js(function(){
    const shared={status:"EN_VIAJE"};
    window.QuickTripActiveRide.render([{...shared,id:"qa-one"},{...shared,id:"qa-two"}],{
