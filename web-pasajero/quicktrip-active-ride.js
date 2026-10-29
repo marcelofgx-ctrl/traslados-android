@@ -5,9 +5,23 @@
  */
 (function(root){
   const LIVE=new Set(["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"]);
+  function isCurrentRide(r,at=Date.now()){
+    if(!r?.id||!LIVE.has(String(r.status||"")))return false;
+    if(r.status==="EN_VIAJE"||["EN_CAMINO","EN_PUNTO"].includes(r.pickup_phase))return true;
+    // Confirmed future scheduled bookings are NOT the trip happening now.
+    if(r.pickup_mode==="schedule")return false;
+    const created=Date.parse(String(r.created_at||""));
+    if(!Number.isFinite(created)||at<created||at-created>90*60000)return false;
+    const mode=String(r.pickup_mode||"");
+    if(mode==="now"||(/^\\d{1,3}$/.test(mode)&&Number(mode)>=1&&Number(mode)<=120))return true;
+    // Same conservative fallback as existing TripBoard for older booking rows.
+    const day=String(r.pickup_date||""),hour=String(r.pickup_time||"").slice(0,5);
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(day)||!/^\\d{2}:\\d{2}$/.test(hour))return false;
+    const pickup=Date.parse(day+"T"+hour+":00-03:00");
+    return Number.isFinite(pickup)&&pickup-created>=-120000&&pickup-created<=12*60000;
+  }
   function select(rows){
-    const active=(Array.isArray(rows)?rows:[]).filter(r=>
-      r&&r.id&&LIVE.has(String(r.status||"")));
+    const active=(Array.isArray(rows)?rows:[]).filter(r=>isCurrentRide(r));
     return {ride:active.length===1?active[0]:null,count:active.length};
   }
   function stage(ride){
