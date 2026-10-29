@@ -1,0 +1,63 @@
+name: QA Quick Trip Premium Single Flow + GPS UI (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-premium-singleflow-map-20261029
+    paths:
+      - '.github/workflows/qa-quicktrip-premium-singleflow-20261029.yml'
+      - 'web-pasajero/**'
+      - 'tests/quicktrip-premium-singleflow-contract.cjs'
+      - 'scripts/qa_quicktrip_premium_singleflow.cjs'
+permissions:
+  contents: read
+jobs:
+  premium-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Strict isolated QA source, no backend or engine mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=cf1693d0e6c332127e766514112474bea6b1f0b4
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 12
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-premium-singleflow-20261029.yml|docs/QA_QUICKTRIP_PREMIUM_SINGLEFLOW_20261029.md|scripts/qa_quicktrip_premium_singleflow.cjs|tests/quicktrip-premium-singleflow-contract.cjs|web-pasajero/app.js|web-pasajero/index.html|web-pasajero/premium-map.js|web-pasajero/quicktrip-active-ride.js|web-pasajero/quicktrip-map-focus.js|web-pasajero/quicktrip-singleflow-premium.css|web-pasajero/reservation-live.js|web-pasajero/sw.js) ;;
+              *) echo "FAIL: out of authorized QA scope: $f"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ web-pasajero/eta-engine.js web-pasajero/premium-route.js web-pasajero/route-engine.js web-pasajero/quicktrip-clean.js web-pasajero/pickup-cadence.js web-pasajero/pickup-observability.js web-pasajero/booking-contracts.js
+          echo "PASS: only approved UI camera, single-flow and tests; real backend unchanged"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check for all changed JS
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in web-pasajero/app.js web-pasajero/premium-map.js web-pasajero/quicktrip-active-ride.js web-pasajero/quicktrip-map-focus.js web-pasajero/reservation-live.js web-pasajero/sw.js tests/quicktrip-premium-singleflow-contract.cjs scripts/qa_quicktrip_premium_singleflow.cjs; do
+            node --check "$p"
+          done
+      - name: Offline reservation, pricing, ETA, GPS ownership and UX contracts
+        run: node tests/quicktrip-premium-singleflow-contract.cjs
+      - name: Chromium real-screen presentation and camera controls, no booking writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_premium_singleflow.cjs
+      - name: QA evidence and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-Premium-Singleflow-Samsung-390px-QA
+          path: artifacts/quicktrip-premium/
+          retention-days: 21
+          if-no-files-found: warn
