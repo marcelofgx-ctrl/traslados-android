@@ -1,8 +1,41 @@
 /* N1+N2 QA — distinct active journey, touch slider and refined premium accents.
    Presentation only; GPS, price and booking engines are unchanged. */
 #quicktrip-live-trip[hidden]{display:none!important}
-#view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app{display:none!important}
-#view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .journey-form-host{display:none!important}
+/* P0 invariant: NEVER hide #journey-field-host / .qtc-app wholesale.
+   Those nodes own the original availability, GPS and ETA UI, whose events
+   must survive visual restyling and reservation status transitions. */
+body.qt-clean #view-viaje.qt-has-active-ride .journey-form-host,
+body.qt-clean #view-viaje.qt-has-active-ride .qtc-app{
+ display:block!important
+}
+/* With one ongoing ride, show its verified operational status beneath the
+   compact ride summary. The form/map for a NEW ride stays an explicit choice.
+   Driver pickup/ETA cards must remain in the live DOM and visible. */
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-header,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-places,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-schedule,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-contact,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-submit-region,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-success-slot,
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-bottom-nav{
+ display:none!important
+}
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-content{
+ padding:0 12px 12px!important;display:block!important
+}
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-driver{
+ display:block!important;margin:0 auto 14px;max-width:720px
+}
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app #pickup-presence:not([hidden]){
+ display:block!important
+}
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app #pickup-presence[hidden]{
+ display:none!important
+}
+/* Keep one map: the live card opens the verified fullscreen tracker. */
+body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-owned-tracking{
+ display:none!important
+}
 #view-viaje.qt-has-active-ride .journey-hero,#view-viaje.qt-has-active-ride .journey-when-compact{
  display:none!important
 }
