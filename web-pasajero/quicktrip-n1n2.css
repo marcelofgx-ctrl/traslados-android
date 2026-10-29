@@ -1,0 +1,106 @@
+/* N1+N2 QA — distinct active journey, touch slider and refined premium accents.
+   Presentation only; GPS, price and booking engines are unchanged. */
+#quicktrip-live-trip[hidden]{display:none!important}
+#view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app{display:none!important}
+#view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .journey-form-host{display:none!important}
+#view-viaje.qt-has-active-ride .journey-hero,#view-viaje.qt-has-active-ride .journey-when-compact{
+ display:none!important
+}
+#view-viaje .qt-live-card{
+ position:relative;overflow:hidden;isolation:isolate;box-sizing:border-box;
+ max-width:720px;margin:12px auto 32px;padding:23px 21px 20px;
+ border:1px solid rgba(225,197,127,.4);border-radius:28px;
+ background:radial-gradient(ellipse at 92% 5%,rgba(71,149,135,.28),transparent 52%),
+ linear-gradient(156deg,#173f44 0%,#092e34 54%,#06252d 100%);
+ color:#f5f6ed;box-shadow:0 16px 40px rgba(0,13,17,.31),inset 0 1px rgba(255,255,255,.08);
+ font-family:Manrope,system-ui,-apple-system,sans-serif
+}
+#view-viaje .qt-live-card:before{
+ content:"";position:absolute;inset:0;z-index:-1;opacity:.14;pointer-events:none;
+ background:repeating-linear-gradient(125deg,transparent 0 31px,rgba(207,233,211,.16) 32px,transparent 33px)
+}
+.qt-live-head{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.qt-live-kicker{display:block;font-size:10px;letter-spacing:.17em;font-weight:800;color:#e9cb8e}
+.qt-live-title{font-size:clamp(25px,5vw,33px)!important;line-height:1.13!important;letter-spacing:-.045em!important;
+ margin:7px 0 0!important;color:#f9faf4!important}
+.qt-live-pulse{white-space:nowrap;border:1px solid #a7e8c050;border-radius:999px;
+ background:#174c42;color:#c7f3db;padding:8px 10px;font-size:9px;font-weight:800;letter-spacing:.05em}
+.qt-live-pulse::first-letter{color:#7de9ad}
+.qt-live-status{display:flex;align-items:center;gap:9px;font-size:15px;line-height:1.4;
+ color:#d7f5e9;font-weight:700;margin:20px 0 14px!important}
+.qt-live-status:before{content:"";width:9px;height:9px;border-radius:50%;background:#5bddad;
+ box-shadow:0 0 0 6px rgba(93,221,173,.13)}
+.qt-live-route{position:relative;display:grid;gap:15px;padding:18px 16px;
+ border-radius:19px;background:rgba(2,33,39,.55);border:1px solid rgba(159,211,198,.19)}
+.qt-live-route:before{content:"";position:absolute;left:25px;top:37px;bottom:35px;
+ border-left:2px dashed rgba(225,196,127,.6);pointer-events:none}
+.qt-live-stop{display:flex;align-items:center;gap:14px;min-width:0}
+.qt-live-pin{position:relative;z-index:1;flex:none;font-size:19px;line-height:1}
+.qt-live-pin-origin{color:#70e5af}.qt-live-pin-destination{color:#ebc984}
+.qt-live-stop-copy{font-size:13px;line-height:1.5;font-weight:700;color:#f3f4ef;min-width:0;overflow-wrap:anywhere}
+.qt-live-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;
+ padding:17px 3px 16px;border-bottom:1px solid rgba(191,219,211,.14)}
+.qt-live-fare{font-size:26px;color:#f3d497;font-weight:830;letter-spacing:-.035em}
+.qt-live-price-note{font-size:10px;color:#b0c8c3}
+.qt-live-rail{position:relative;display:flex;align-items:center;height:62px;border-radius:999px;
+ margin-top:18px;padding:6px;box-sizing:border-box;overflow:hidden;
+ background:linear-gradient(100deg,rgba(91,202,164,.19),rgba(5,48,55,.95));
+ border:1px solid rgba(149,214,184,.45);box-shadow:inset 0 3px 8px rgba(0,15,20,.33)}
+.qt-live-rail-caption{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;
+ padding-left:34px;pointer-events:none;letter-spacing:.03em;color:#d3ede3;font-weight:750;font-size:13px}
+.qt-live-knob{position:relative;z-index:1;width:49px;height:49px;flex:none;border:0;border-radius:50%;
+ font-size:24px;font-weight:800;background:linear-gradient(150deg,#f6d99f,#d7ae65);
+ color:#12363c;box-shadow:0 3px 12px #0006;touch-action:none;
+ cursor:grab;transition:transform .18s ease}
+.qt-sliding .qt-live-knob{cursor:grabbing;transition:none}
+.qt-live-knob:focus-visible,.qt-live-tap:focus-visible,.qt-live-new-trip:focus-visible{
+ outline:3px solid #a6e9c9;outline-offset:3px
+}
+.qt-live-aux{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
+.qt-live-tap,.qt-live-new-trip,.qt-live-secondary{
+ min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+ padding:9px 12px;font-size:12px;font-weight:750;border-radius:13px;cursor:pointer
+}
+.qt-live-tap{background:#214d50;border:1px solid #83c9b475;color:#e9f7ef}
+.qt-live-new-trip{background:transparent;border:1px solid #d5c0845a;color:#edd49b}
+.qt-live-secondary{margin-top:10px;background:#d8b676;color:#123438;border:0}
+#view-viajes .trips-board{border-radius:23px!important;box-shadow:0 14px 32px rgba(0,13,21,.18)}
+#view-viajes .trip-card{border-radius:20px!important;overflow:hidden}
+#view-viajes .trip-open-canonical{
+ min-height:46px!important;width:100%;font-weight:800!important;
+ border-radius:14px!important;background:linear-gradient(90deg,#1f514c,#143d42)!important;
+ color:#d7f3e2!important;border:1px solid #95d3b678!important;
+ text-align:center;letter-spacing:.025em
+}
+#view-viajes .trips-tabs{overflow-x:auto;scroll-snap-type:x proximity;overscroll-behavior-inline:contain;
+ -webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;gap:7px!important;
+ scrollbar-width:none}
+#view-viajes .trips-tabs::-webkit-scrollbar{display:none}
+#view-viajes .trips-tab{scroll-snap-align:center;transition:background .18s,color .18s,transform .18s}
+#view-viajes .trips-tab:active{transform:scale(.98)}
+#view-viajes .trips-day{border-radius:19px!important}
+#qt-focus[data-mode="tracking"] .qt-focus-sheet{
+ background:linear-gradient(165deg,#123b3c,#071f27)!important;
+ border:1px solid rgba(234,204,143,.34)!important;
+ box-shadow:0 -12px 38px rgba(0,0,0,.36)!important;
+ border-radius:25px 25px 0 0!important
+}
+#qt-focus[data-mode="tracking"] .qt-focus-option{
+ background:rgba(29,80,77,.72)!important;
+ border-color:rgba(225,200,148,.27)!important;
+ border-radius:17px!important
+}
+#qt-focus[data-mode="tracking"] .qt-focus-back{
+ background:rgba(5,37,43,.94)!important;border:1px solid rgba(239,213,156,.4)!important;
+ color:#f4deb3!important
+}
+#qt-focus[data-mode="tracking"] .qt-focus-grab{background:#d1c49a}
+#qt-focus[data-mode="tracking"] .qt-focus-fare{color:#f0d092!important}
+@media(max-width:380px){
+ #view-viaje .qt-live-card{margin:9px 10px 25px;padding:19px 16px}
+ .qt-live-pulse{font-size:8px;padding:7px 8px}
+ .qt-live-route{padding:15px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .qt-live-knob,#view-viajes .trips-tab{transition:none!important}
+}
