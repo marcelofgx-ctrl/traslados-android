@@ -347,7 +347,7 @@
     screen.querySelector(".qt-focus-time").textContent="—";
     screen.querySelector(".qt-focus-message").textContent="Esperando la posición GPS autorizada del conductor…";
     const submit=screen.querySelector(".qt-focus-submit");
-    submit.disabled=false;submit.textContent="Volver a tu viaje";submit.onclick=()=>close();
+    submit.disabled=false;submit.textContent="Volver al inicio";submit.onclick=()=>close();
     screen.querySelector(".qt-focus-retry").hidden=true;
     const legend=screen.querySelector(".qt-focus-legend");legend.hidden=false;
     legend.querySelector(".qt-focus-legend-approach").hidden=true;
