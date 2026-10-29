@@ -101,6 +101,9 @@
         routeMode:mode,
         secondaryGeometry:dual?result.geometry:null,
         driverPosition:dual?points[0]:null,
+        // UI-only camera hint from the SAME private authenticated GPS fix.
+        // Never changes coordinates, route, ETA, polling or marker semantics.
+        cameraPosition:kind==="driver"?points[0]:null,
         previousCar:kind==="driver"?lastDriverPos:null,
         // Keep three distinct points for orientation while the route line
         // still follows the active leg (car→pickup or car→destination).
