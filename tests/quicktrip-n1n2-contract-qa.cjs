@@ -57,6 +57,28 @@ check("booking view remains available by explicit choice",active.includes('view.
 check("active presentation never adds new network clients",
  !/\bfetch\(|\brpc\(|new\s+WebSocket|sendBeacon\(|\bXMLHttpRequest/.test(active));
 check("history display is still available",html.includes('data-trips-scope="history"'));
+const clean=read("web-pasajero/quicktrip-clean.js");
+const cleanCss=read("web-pasajero/quicktrip-clean.css");
+check("entire booking driver container NEVER hidden in active mode",
+ !css.includes("not(.qt-show-new-trip) .qtc-app{display:none")&&
+ !css.includes("not(.qt-show-new-trip) .journey-form-host{display:none")&&
+ css.includes(".qtc-app #pickup-presence:not([hidden])"));
+check("only new booking inputs can fold while ETA is preserved",
+ css.includes(".qtc-app .qtc-places")&&css.includes(".qtc-app .qtc-driver"));
+check("original pickup status always shown even during loading",
+ cleanCss.includes('data-search-state="routing"] #pickup-presence .pickup-card-header')&&
+ cleanCss.includes("display:flex!important"));
+check("no duplicate faux unavailable or searching banners",
+ clean.includes("banner.hidden=true;")&&clean.includes("unavailable.hidden=true;"));
+check("real pickup RPC and 25/45s cadence remain unchanged",
+ app.includes("publicDriverAvailability(force)")&&
+ app.includes("window.TrasladosETA.pickup({")&&
+ app.includes("window.TrasladosPickupCadence.intervalMs(driver.motionHint)"));
+check("new CSS and PWA cache version loaded",
+ html.includes("quicktrip-clean.css?v=p0-eta-20261029")&&
+ html.includes("quicktrip-n1n2.css?v=p0-eta-20261029")&&
+ sw.includes("traslados-pwa-quicktrip-n1n2-p0-eta-guard-20261029"));
+
 check("home and history remain reachable when old booking form is hidden",
  active.includes("qt-live-bottom-links")&&active.includes("actions.onHome?.()")&&
  active.includes("actions.onList?.()")&&
