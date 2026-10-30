@@ -22,12 +22,32 @@ jobs:
           set -euo pipefail
           BASE=0d0654d54923cd0683ac844123986bd29c648ee2
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 11
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p14-estimates-20261030.yml|docs/QA_QUICKTRIP_P14_ESTIMATES_RECOVERY_20261030.md|scripts/qa_quicktrip_p14_estimation_e2e.cjs|tests/quicktrip-p14-approved-contract.cjs|tests/quicktrip-p14-auto-map-contract.cjs|tests/quicktrip-p14-baseline-regression.cjs|tests/quicktrip-p14-photo1-contract.cjs|web-pasajero/index.html|web-pasajero/quicktrip-clean.js|web-pasajero/quicktrip-p14-estimate-recovery.css|web-pasajero/sw.js) ;;
+              *) echo "FAIL unauthorized changed path $f"; exit 1;;
+            esac
+          done
           git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ \
-            web-pasajero/route-engine.js web-pasajero/eta-engine.js \
+            web-pasajero/app.js web-pasajero/route-engine.js web-pasajero/eta-engine.js \
             web-pasajero/pickup-cadence.js web-pasajero/booking-contracts.js \
             web-pasajero/premium-map.js web-pasajero/quicktrip-map-focus.js \
-            web-pasajero/reservation-live.js web-pasajero/premium-route.js
+            web-pasajero/reservation-live.js web-pasajero/premium-route.js \
+            web-pasajero/quicktrip-p13-approved.css web-pasajero/pickup-origin-drift.js
+          echo "PASS: Approved P1.3 CSS, all GPS/ETA/route/fare and Supabase unchanged"
           node --check scripts/qa_quicktrip_p14_estimation_e2e.cjs
+          node --check web-pasajero/quicktrip-clean.js
+          for test in tests/quicktrip-p14-{approved-contract,baseline-regression,photo1-contract,auto-map-contract}.cjs; do node --check "$test"; done
+      - name: Original P1.3 approved visual, P1.2 auto-tracking and route/pickup source contracts
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p14-approved-contract.cjs
+          node tests/quicktrip-p14-baseline-regression.cjs
+          node tests/quicktrip-p14-photo1-contract.cjs
+          node tests/quicktrip-p14-auto-map-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
       - name: Real passenger UI and controllers against fully stubbed public HTTP
         run: |
           set -euo pipefail
