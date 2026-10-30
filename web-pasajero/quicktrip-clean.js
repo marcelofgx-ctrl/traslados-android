@@ -18,6 +18,7 @@
   let shell=null,historyPanel=null,historyButton=null,historyBusy=false;
   let ownedRouteKey="",ownedCode="",mountedTrackingKey="";
   let paxAnchor=null,mapAnchorOriginal=null,stopsAnchorOriginal=null;
+  let stopBodyAnchorOriginal=null,stopLoginAnchorOriginal=null;
   const navigate=view=>doc.querySelector('.tab[data-view="'+view+'"]')?.click();
 
   function historyPlace(row){
@@ -128,6 +129,15 @@
     const pax=byId("passengers")?.closest("label");
     const originalMap=doc.querySelector(".premium-route-canvas");
     const originalStops=doc.querySelector(".premium-route-stops");
+    const originalStopBody=byId("stop-wrap"),originalStopLogin=byId("login-for-stops");
+    if(originalStopBody&&!stopBodyAnchorOriginal){
+      stopBodyAnchorOriginal=doc.createComment("qtc-stop-fields-native");
+      originalStopBody.before(stopBodyAnchorOriginal);
+    }
+    if(originalStopLogin&&!stopLoginAnchorOriginal){
+      stopLoginAnchorOriginal=doc.createComment("qtc-stop-login-native");
+      originalStopLogin.before(stopLoginAnchorOriginal);
+    }
     if(pax&&!paxAnchor){paxAnchor=doc.createComment("qtc-pax-native");pax.before(paxAnchor);}
     if(originalMap&&!mapAnchorOriginal){mapAnchorOriginal=doc.createComment("qtc-map-native");originalMap.before(mapAnchorOriginal);}
     if(originalStops&&!stopsAnchorOriginal){stopsAnchorOriginal=doc.createComment("qtc-stops-native");originalStops.before(stopsAnchorOriginal);}
@@ -162,6 +172,7 @@
       '<details class="qtc-contact"><summary><span>♙</span><strong>Tus datos</strong>'+
       '<small>Nombre, teléfono y pasajeros</small><span class="qtc-chevron">⌄</span></summary>'+
       '<div class="qtc-contact-slot"></div></details>'+
+      '<div class="qtc-stops-slot" aria-label="Paradas adicionales"></div>'+
       '<section class="qtc-submit-region" aria-label="Resumen del viaje y solicitud">'+
       '<div class="qtc-summary-title"><span>Tu recorrido</span><small>Precio del viaje</small></div>'+
       '<p id="qtc-summary-wait">Elegí origen y destino para calcular kilómetros, duración y precio.</p>'+
@@ -352,6 +363,11 @@
       if(paxAnchor?.isConnected&&pax&&pax.previousSibling!==paxAnchor)paxAnchor.after(pax);
       if(mapAnchorOriginal?.isConnected&&map&&map.previousSibling!==mapAnchorOriginal)mapAnchorOriginal.after(map);
       if(stopsAnchorOriginal?.isConnected&&stops&&stops.previousSibling!==stopsAnchorOriginal)stopsAnchorOriginal.after(stops);
+      const stopBody=byId("stop-wrap"),stopLogin=byId("login-for-stops");
+      if(stopBodyAnchorOriginal?.isConnected&&stopBody&&stopBody.previousSibling!==stopBodyAnchorOriginal)
+        stopBodyAnchorOriginal.after(stopBody);
+      if(stopLoginAnchorOriginal?.isConnected&&stopLogin&&stopLogin.previousSibling!==stopLoginAnchorOriginal)
+        stopLoginAnchorOriginal.after(stopLogin);
       // Restore operational card outside booking-step nodes when the user
       // enters the scheduled booking flow. No data or listeners are recreated.
       const card=doc.querySelector(".qtc-driver"),content=shell.querySelector(".qtc-content");
@@ -381,12 +397,15 @@
       map.before(driverCard);
     }
     // Se conserva exactamente el mismo mapa; no hay un segundo renderizador.
+    // Reuse the exact stop button and original stop inputs; only their
+    // presentation slot changes for the approved one-screen layout.
+    // Booking, selected stops, callbacks and route calculation stay intact.
     const stops=doc.querySelector(".premium-route-stops");
-    if(stops&&routeBody&&stops.parentElement!==routeBody){
-      const history=byId("qtc-history");
-      if(history?.parentElement===routeBody)history.after(stops);
-      else destinationAnchor?.after(stops);
-    }
+    const stopsSlot=shell.querySelector(".qtc-stops-slot");
+    if(stops&&stopsSlot&&stops.parentElement!==stopsSlot)stopsSlot.append(stops);
+    const stopBody=byId("stop-wrap"),stopLogin=byId("login-for-stops");
+    if(stopBody&&stopsSlot&&stopBody.parentElement!==stopsSlot)stopsSlot.append(stopBody);
+    if(stopLogin&&stopsSlot&&stopLogin.parentElement!==stopsSlot)stopsSlot.append(stopLogin);
     const presence=byId("pickup-presence");
     const driver=shell.querySelector(".qtc-driver-slot");
     if(presence&&driver&&presence.parentElement!==driver)driver.append(presence);
