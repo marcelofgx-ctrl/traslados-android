@@ -1,4 +1,4 @@
-/* N1+N2 QA — distinct active journey, touch slider and refined premium accents.
+/* P1.2 QA — noninteractive active-trip summary; direct map on server acceptance.
    Presentation only; GPS, price and booking engines are unchanged. */
 #quicktrip-live-trip[hidden]{display:none!important}
 /* P0 invariant: NEVER hide #journey-field-host / .qtc-app wholesale.
@@ -32,7 +32,7 @@ body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app #pi
 body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app #pickup-presence[hidden]{
  display:none!important
 }
-/* Keep one map: the live card opens the verified fullscreen tracker. */
+/* Keep one fullscreen map: only server acceptance or the Tu viaje tab opens it. */
 body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qtc-owned-tracking{
  display:none!important
 }
@@ -75,26 +75,12 @@ body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qt
  padding:17px 3px 16px;border-bottom:1px solid rgba(191,219,211,.14)}
 .qt-live-fare{font-size:26px;color:#f3d497;font-weight:830;letter-spacing:-.035em}
 .qt-live-price-note{font-size:10px;color:#b0c8c3}
-.qt-live-rail{position:relative;display:flex;align-items:center;height:62px;border-radius:999px;
- margin-top:18px;padding:6px;box-sizing:border-box;overflow:hidden;
- background:linear-gradient(100deg,rgba(91,202,164,.19),rgba(5,48,55,.95));
- border:1px solid rgba(149,214,184,.45);box-shadow:inset 0 3px 8px rgba(0,15,20,.33)}
-.qt-live-rail-caption{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;
- padding-left:34px;pointer-events:none;letter-spacing:.03em;color:#d3ede3;font-weight:750;font-size:13px}
-.qt-live-knob{position:relative;z-index:1;width:49px;height:49px;flex:none;border:0;border-radius:50%;
- font-size:24px;font-weight:800;background:linear-gradient(150deg,#f6d99f,#d7ae65);
- color:#12363c;box-shadow:0 3px 12px #0006;touch-action:none;
- cursor:grab;transition:transform .18s ease}
-.qt-sliding .qt-live-knob{cursor:grabbing;transition:none}
-.qt-live-knob:focus-visible,.qt-live-tap:focus-visible,.qt-live-new-trip:focus-visible{
- outline:3px solid #a6e9c9;outline-offset:3px
-}
+.qt-live-new-trip:focus-visible{outline:3px solid #a6e9c9;outline-offset:3px}
 .qt-live-aux{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
-.qt-live-tap,.qt-live-new-trip,.qt-live-secondary{
+.qt-live-new-trip,.qt-live-secondary{
  min-height:44px;display:inline-flex;align-items:center;justify-content:center;
  padding:9px 12px;font-size:12px;font-weight:750;border-radius:13px;cursor:pointer
 }
-.qt-live-tap{background:#214d50;border:1px solid #83c9b475;color:#e9f7ef}
 .qt-live-new-trip{background:transparent;border:1px solid #d5c0845a;color:#edd49b}
 .qt-live-secondary{margin-top:10px;background:#d8b676;color:#123438;border:0}
 #view-viajes .trips-board{border-radius:23px!important;box-shadow:0 14px 32px rgba(0,13,21,.18)}
@@ -135,7 +121,7 @@ body.qt-clean #view-viaje.qt-has-active-ride:not(.qt-show-new-trip) .qtc-app .qt
  .qt-live-route{padding:15px 12px}
 }
 @media(prefers-reduced-motion:reduce){
- .qt-live-knob,#view-viajes .trips-tab{transition:none!important}
+ #view-viajes .trips-tab{transition:none!important}
 }
 
 .qt-live-bottom-links{
