@@ -184,6 +184,18 @@
       '<button type="button" data-qtc-nav="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M4 11h16M8 3v6m8-6v6M9 15h2m2 0h2m-6 3h2"/></svg><span>Programar</span></button>'+
       '</nav>';
     host.prepend(shell);
+    // Availability errors were only rechecked by the background cadence.
+    // Expose a single manual recovery button when the native public query
+    // explicitly failed, reusing the EXISTING availability/ETA controller.
+    const driver=shell.querySelector(".qtc-driver");
+    if(driver&&!byId("qtc-presence-retry")){
+      const retry=node("button","qtc-presence-retry","↻ Comprobar conductor");
+      retry.id="qtc-presence-retry";retry.type="button";retry.hidden=true;
+      retry.addEventListener("click",()=>{
+        if(typeof refreshPickupPresence==="function")void refreshPickupPresence(true);
+      });
+      driver.append(retry);
+    }
     const back=screen.querySelector(".journey-back");
     if(back){
       // Never put a long wrapping label inside a 34px navigation slot.
@@ -311,6 +323,9 @@
     // Always retain visible title, distance, ETA, reason and retry controls.
     banner.hidden=true;
     if(unavailable)unavailable.hidden=true;
+    const retry=byId("qtc-presence-retry");
+    if(retry)retry.hidden=!(instant&&!owned&&!presence.hidden&&
+      presence.dataset.presence==="unknown");
     if(searching){
       byId("qtc-search-title").textContent=mode==="checking"?"Buscando conductor…":"Calculando la llegada…";
       byId("qtc-search-subtitle").textContent=mode==="checking"
