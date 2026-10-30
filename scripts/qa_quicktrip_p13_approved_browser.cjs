@@ -156,6 +156,49 @@ async function main(){
  });
  ok(cta.position==="static"&&cta.oneButton,
    "One original request button uses normal flow rather than covering source route metrics");
+ const photo=await js(function(){
+   const q=s=>document.querySelector(s),r=e=>e?.getBoundingClientRect();
+   const o=q("#origin-picker"),d=q("#destination-picker"),driver=q(".qtc-driver");
+   const when=q(".qtc-schedule"),contact=q(".qtc-contact"),stops=q(".qtc-stops-slot"),fare=q(".qtc-submit-region");
+   return {
+     css:Array.from(document.styleSheets).some(x=>(x.href||"").includes("quicktrip-p13-approved.css")),
+     greenPin:getComputedStyle(o,"::before").transform!=="none",
+     coralPin:getComputedStyle(d,"::before").transform!=="none",
+     connector:getComputedStyle(o,"::after").content!=="none",
+     order:r(o).top<r(d).top&&r(d).top<=r(driver).top&&r(driver).top<r(when).top&&
+       r(when).top<r(contact).top&&r(contact).top<r(stops).top&&r(stops).top<r(fare).top,
+     stopButton:q(".premium-route-stops")?.parentElement===stops,
+     stopForm:q("#stop-wrap")?.parentElement===stops,
+     stopLogin:q("#login-for-stops")?.parentElement===stops,
+     allNative:[q("#pickup-presence"),q("#pickup-distance"),q("#pickup-minutes"),
+       q("#urgent-route-recap [data-final-route-distance]"),
+       q("#urgent-route-recap [data-final-route-duration]"),
+       q("#urgent-route-recap [data-final-route-fare]")].every(Boolean),
+     oneSubmit:document.querySelectorAll("#urgent-send").length===1,
+     oneStop:document.querySelectorAll(".premium-route-stops").length===1,
+     width:document.documentElement.scrollWidth-innerWidth
+   };
+ });
+ console.log("P1.3 APPROVED MOCK LAYOUT",JSON.stringify(photo));
+ ok(photo.css&&photo.greenPin&&photo.coralPin&&photo.connector&&photo.order&&
+    photo.stopButton&&photo.stopForm&&photo.stopLogin&&photo.allNative&&
+    photo.oneSubmit&&photo.oneStop&&photo.width<=6,
+    "Approved photo: original pins, conductor ETA source, schedule, passenger, stops, route and one request button");
+ const approvedPrice=await js(function(){
+   const host=document.getElementById("urgent-actions"),recap=document.getElementById("urgent-route-recap");
+   const old=[host.hidden,recap.hidden];host.hidden=false;recap.hidden=false;
+   const boxes=Array.from(recap.querySelectorAll(".request-recap-metrics>span")).map(x=>x.getBoundingClientRect());
+   const button=document.getElementById("urgent-send");
+   const bb=button.getBoundingClientRect();
+   const result={priceAbove:boxes[2].bottom<=boxes[0].top+4&&boxes[2].bottom<=boxes[1].top+4,
+     sideBySide:Math.abs(boxes[0].top-boxes[1].top)<3&&boxes[1].left>boxes[0].left,
+     buttonAfterMetrics:bb.top>=Math.max(boxes[0].bottom,boxes[1].bottom),
+     fixed:getComputedStyle(button).position==="fixed"};
+   host.hidden=old[0];recap.hidden=old[1];return result;
+ });
+ console.log("P1.3 APPROVED FARE HIERARCHY",JSON.stringify(approvedPrice));
+ ok(approvedPrice.priceAbove&&approvedPrice.sideBySide&&approvedPrice.buttonAfterMetrics&&!approvedPrice.fixed,
+    "Source fare in route header, native kilometers and minutes alongside; CTA never covers those values");
  const active=await js(function(){
    window.__qaOpened=0;window.__qaListed=0;
    window.QuickTripActiveRide.render([{id:"qa-synthetic-not-a-real-booking",
@@ -277,6 +320,12 @@ async function main(){
    })));
  });
  console.log("P0 scheduled transition diagnostic",JSON.stringify(scheduled));
+ const originalStops=await js(function(){
+   return document.querySelector(".premium-route-stops")?.parentElement?.id==="booking-step-route"&&
+     document.getElementById("stop-wrap")?.parentElement?.id==="booking-step-route"&&
+     document.getElementById("login-for-stops")?.parentElement?.id==="booking-step-route";
+ });
+ ok(originalStops,"Programar restores original native stop button, inputs, login hint and events");
  ok(scheduled.view&&scheduled.driverHome&&scheduled.oneDriver&&scheduled.oneMap&&scheduled.onePresence,
     "Scheduled booking restores native driver layout, without duplicate map or presence");
  const returned=await js(function(){
@@ -289,6 +338,11 @@ async function main(){
      pickupCount:document.querySelectorAll("#pickup-presence").length
    })));
  });
+ const movedAgain=await js(function(){
+   return document.querySelector(".premium-route-stops")?.parentElement?.classList.contains("qtc-stops-slot")&&
+     document.getElementById("stop-wrap")?.parentElement?.classList.contains("qtc-stops-slot");
+ });
+ ok(movedAgain,"Tu viaje reuses the original stop controls in the approved location on return");
  ok(returned.view&&returned.driverAboveMap&&returned.mapCount===1&&returned.pickupCount===1,
     "Quick journey restores same driver ahead of route map after scheduled view");
  const camera=await js(function(){
