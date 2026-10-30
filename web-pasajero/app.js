@@ -2013,7 +2013,8 @@ function renderPremiumTracking(){
       text(cell,"span",index===0?"✓":String(index+1)).setAttribute("aria-hidden","true");
       text(cell,"small",label);
     }
-    button(content,"↗ Abrir mapa grande · dos recorridos","premium-tracking-open-full",()=>openFullscreenTracking(r));
+    // A pending request is not a GPS-tracked ride. No map-opening CTA here:
+    // the verified server acceptance opens fullscreen tracking automatically.
   const mapHost=text(content,"section","","premium-tracking-map");
     mapHost.setAttribute("aria-label","Mapa del recorrido solicitado");
     const from=[Number(r.origin_lat),Number(r.origin_lng)];
