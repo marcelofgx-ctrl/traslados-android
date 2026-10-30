@@ -7,6 +7,9 @@ on:
       - .github/workflows/qa-quicktrip-tracking-metrics-20261030.yml
       - web-pasajero/quicktrip-map-focus.js
       - web-pasajero/reservation-live.js
+      - web-pasajero/index.html
+      - web-pasajero/sw.js
+      - tests/quicktrip-tracking-baseline-regression.cjs
       - scripts/qa_quicktrip_tracking_metrics_browser.cjs
       - tests/quicktrip-tracking-metrics-contract.cjs
       - docs/QA_QUICKTRIP_TRACKING_METRICS_FALLBACK_20261030.md
@@ -28,10 +31,10 @@ jobs:
           BASE=cd5d99e2ca21b2e720fdc37a7f694cbd44421cb3
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#files[@]}" -eq 6
+          test "${#files[@]}" -eq 9
           for f in "${files[@]}"; do
             case "$f" in
-              .github/workflows/qa-quicktrip-tracking-metrics-20261030.yml|docs/QA_QUICKTRIP_TRACKING_METRICS_FALLBACK_20261030.md|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-tracking-metrics-contract.cjs|web-pasajero/quicktrip-map-focus.js|web-pasajero/reservation-live.js) ;;
+              .github/workflows/qa-quicktrip-tracking-metrics-20261030.yml|docs/QA_QUICKTRIP_TRACKING_METRICS_FALLBACK_20261030.md|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-tracking-metrics-contract.cjs|tests/quicktrip-tracking-baseline-regression.cjs|web-pasajero/quicktrip-map-focus.js|web-pasajero/reservation-live.js|web-pasajero/index.html|web-pasajero/sw.js) ;;
               *) echo "FAIL unauthorized file: $f"; exit 1;;
             esac
           done
@@ -51,12 +54,13 @@ jobs:
           node --check web-pasajero/reservation-live.js
           node --check scripts/qa_quicktrip_tracking_metrics_browser.cjs
           node --check tests/quicktrip-tracking-metrics-contract.cjs
+          node --check tests/quicktrip-tracking-baseline-regression.cjs
       - name: No spoofing or stale tracking contracts
         run: node tests/quicktrip-tracking-metrics-contract.cjs
       - name: Existing actual routing/fare/ETA and return regression
         run: |
           set -euo pipefail
-          node tests/quicktrip-p11-baseline-regression.cjs
+          node tests/quicktrip-tracking-baseline-regression.cjs
           node web-pasajero/tests/route-engine-smoke.cjs
           node tests/quicktrip-p1-fixedfare-pure.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
