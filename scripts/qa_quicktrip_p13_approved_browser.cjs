@@ -156,7 +156,7 @@ async function main(){
  });
  ok(cta.position==="static"&&cta.oneButton,
    "One original request button uses normal flow rather than covering source route metrics");
- const photo=await js(function(){
+ const approvedMock=await js(function(){
    const q=s=>document.querySelector(s),r=e=>e?.getBoundingClientRect();
    const o=q("#origin-picker"),d=q("#destination-picker"),driver=q(".qtc-driver");
    const when=q(".qtc-schedule"),contact=q(".qtc-contact"),stops=q(".qtc-stops-slot"),fare=q(".qtc-submit-region");
@@ -179,10 +179,10 @@ async function main(){
      width:document.documentElement.scrollWidth-innerWidth
    };
  });
- console.log("P1.3 APPROVED MOCK LAYOUT",JSON.stringify(photo));
- ok(photo.css&&photo.greenPin&&photo.coralPin&&photo.connector&&photo.order&&
-    photo.stopButton&&photo.stopForm&&photo.stopLogin&&photo.allNative&&
-    photo.oneSubmit&&photo.oneStop&&photo.width<=6,
+ console.log("P1.3 APPROVED MOCK LAYOUT",JSON.stringify(approvedMock));
+ ok(approvedMock.css&&approvedMock.greenPin&&approvedMock.coralPin&&approvedMock.connector&&approvedMock.order&&
+    approvedMock.stopButton&&approvedMock.stopForm&&approvedMock.stopLogin&&approvedMock.allNative&&
+    approvedMock.oneSubmit&&approvedMock.oneStop&&approvedMock.width<=6,
     "Approved photo: original pins, conductor ETA source, schedule, passenger, stops, route and one request button");
  const approvedPrice=await js(function(){
    const host=document.getElementById("urgent-actions"),recap=document.getElementById("urgent-route-recap");
