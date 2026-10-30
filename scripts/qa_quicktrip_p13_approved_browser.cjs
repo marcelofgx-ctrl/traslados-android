@@ -328,7 +328,7 @@ async function main(){
        previous:e?.previousSibling?.nodeType===8?e.previousSibling.textContent:null};};
    const button=par(".premium-route-stops"),form=par("#stop-wrap"),login=par("#login-for-stops");
    return {button,form,login,view:document.body.className,pass:
-     button.parent==="booking-step-route"&&form.parent==="booking-step-route"&&
+     button.parent.includes("booking-step-card")&&form.parent==="booking-step-route"&&
      login.parent==="booking-step-route"};
  });
  console.log("P1.3 SCHEDULED NATIVE STOPS",JSON.stringify(originalStops));
