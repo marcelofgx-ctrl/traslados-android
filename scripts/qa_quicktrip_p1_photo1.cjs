@@ -180,6 +180,14 @@ async function main(){
        etaVisible:getComputedStyle(q("#pickup-presence")).display!=="none" &&
          getComputedStyle(q("#pickup-presence .pickup-card-header")).display!=="none",
        metricsVisible:getComputedStyle(q("#pickup-presence-metrics")).display!=="none",
+       metricsCanRender:(()=>{
+         const el=q("#pickup-presence-metrics"),saved=el.hidden;
+         el.hidden=false;
+         const visible=getComputedStyle(el).display!=="none"&&el.getBoundingClientRect().height>0;
+         el.hidden=saved;return visible;
+       })(),
+       metricsSourcePresent:!!q("#pickup-distance")&&!!q("#pickup-minutes"),
+       metricsHiddenBySource:q("#pickup-presence-metrics").hidden,
        overflow:document.documentElement.scrollWidth-innerWidth,
        cardWidth:q("#quicktrip-live-trip").getBoundingClientRect().width,
        parent:q(".qtc-driver").parentElement?.className
@@ -189,8 +197,8 @@ async function main(){
  console.log("P0 active visibility diagnostic",JSON.stringify(active));
  ok(active.title==="Tu viaje activo"&&active.price.includes("764"),"Live ride title and source-only fare");
  ok(active.knob&&active.touch==="none"&&active.fallback,"Accessible slide plus tap fallback");
- ok(active.appVisible&&active.routeHidden&&active.driverVisible&&active.etaVisible&&active.metricsVisible,
-   "Active ride keeps conductor, ETA and origin distance visible with form folded");
+ ok(active.appVisible&&active.routeHidden&&active.driverVisible&&active.etaVisible&&active.metricsCanRender&&active.metricsSourcePresent,
+   "Active ride preserves original ETA fields without displaying stale prebooking numbers");
  ok(active.overflow<=6&&active.cardWidth<=390,"No Samsung horizontal overflow");
  await snap("01-active-trip-synthetic-samsung-390.png");
  const click=await js(function(){
