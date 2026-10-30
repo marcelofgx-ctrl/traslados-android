@@ -1,0 +1,101 @@
+name: QA Quick Trip P1.3 · Approved Premium Screen (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p13-approved-mock-compact-20261030
+    paths:
+      - .github/workflows/qa-quicktrip-p13-approved-20261030.yml
+      - docs/QA_QUICKTRIP_P13_APROBADO_20261030.md
+      - web-pasajero/quicktrip-clean.js
+      - web-pasajero/quicktrip-p13-approved.css
+      - web-pasajero/index.html
+      - web-pasajero/sw.js
+      - scripts/qa_quicktrip_p13_approved_browser.cjs
+      - tests/quicktrip-p13-approved-contract.cjs
+      - tests/quicktrip-p13-baseline-regression.cjs
+      - tests/quicktrip-p13-photo1-contract.cjs
+      - tests/quicktrip-p13-auto-map-contract.cjs
+permissions:
+  contents: read
+jobs:
+  premium-mobile-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Block edits to stable engines, production, Android and main
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=9c6a4625062cfcb02558960aa7d476ecdc4873c4
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 11
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p13-approved-20261030.yml|docs/QA_QUICKTRIP_P13_APROBADO_20261030.md|web-pasajero/quicktrip-clean.js|web-pasajero/quicktrip-p13-approved.css|web-pasajero/index.html|web-pasajero/sw.js|scripts/qa_quicktrip_p13_approved_browser.cjs|tests/quicktrip-p13-approved-contract.cjs|tests/quicktrip-p13-baseline-regression.cjs|tests/quicktrip-p13-photo1-contract.cjs|tests/quicktrip-p13-auto-map-contract.cjs) ;;
+              *) echo "FAIL unauthorized path: $f";exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- \
+            supabase/ mapatrayectos/ \
+            web-pasajero/app.js web-pasajero/route-engine.js \
+            web-pasajero/eta-engine.js web-pasajero/pickup-cadence.js \
+            web-pasajero/pickup-observability.js web-pasajero/pickup-origin-drift.js \
+            web-pasajero/premium-route.js web-pasajero/premium-map.js \
+            web-pasajero/reservation-live.js web-pasajero/quicktrip-map-focus.js \
+            web-pasajero/booking-contracts.js web-pasajero/quicktrip-active-ride.js
+          echo "PASS no road-route, fare, GPS, ETA, driver availability, reservation or Android engine edits"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node syntax
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-clean.js
+          node --check tests/quicktrip-p13-approved-contract.cjs
+          node --check tests/quicktrip-p13-baseline-regression.cjs
+          node --check tests/quicktrip-p13-photo1-contract.cjs
+          node --check tests/quicktrip-p13-auto-map-contract.cjs
+          node --check scripts/qa_quicktrip_p13_approved_browser.cjs
+      - name: Original component binding, UI integrity and acceptance contracts
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p13-approved-contract.cjs
+          node tests/quicktrip-p13-baseline-regression.cjs
+          node tests/quicktrip-p13-photo1-contract.cjs
+          node tests/quicktrip-p13-auto-map-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+      - name: Pure road, fixed fare, private pickup ETA, cadence and GPS-origin regressions
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node tests/quicktrip-p1-cadence-pure.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+      - name: Chrome 390 x 844 approved mock and scheduled booking transitions
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p13_approved_browser.cjs
+      - name: Chrome 390 x 844 route contract vs GPS ETA source regression
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Attach QA evidence, never deploy nor send booking
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P13-Approved-Premium-Samsung-390px-QA
+          path: |
+            artifacts/quicktrip-p13-approved/
+            artifacts/quicktrip-premium/
+            artifacts/quicktrip-p1-photo1/
+            artifacts/quicktrip-p12-auto-map/
+            artifacts/quicktrip-tracking-metrics/
+          retention-days: 21
+          if-no-files-found: warn
