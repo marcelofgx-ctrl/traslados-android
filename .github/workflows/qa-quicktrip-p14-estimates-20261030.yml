@@ -1,0 +1,52 @@
+name: QA Quick Trip P1.4 — E2E Pickup + Route Diagnosis (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p14-repair-estimates-preserve-design-20261030
+permissions:
+  contents: read
+jobs:
+  diagnose-and-protect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and strictly unchanged business motors
+        run: |
+          set -euo pipefail
+          BASE=0d0654d54923cd0683ac844123986bd29c648ee2
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ \
+            web-pasajero/route-engine.js web-pasajero/eta-engine.js \
+            web-pasajero/pickup-cadence.js web-pasajero/booking-contracts.js \
+            web-pasajero/premium-map.js web-pasajero/quicktrip-map-focus.js \
+            web-pasajero/reservation-live.js web-pasajero/premium-route.js
+          node --check scripts/qa_quicktrip_p14_estimation_e2e.cjs
+      - name: Real passenger UI and controllers against fully stubbed public HTTP
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p14_estimation_e2e.cjs
+      - name: Preserve existing pure routing, ETA, fare and GPS tests
+        if: success()
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node tests/quicktrip-p1-cadence-pure.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+      - name: Evidence synthetic only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P14-Estimates-EndToEnd-Samsung-QA
+          path: artifacts/quicktrip-p14-estimates/
+          if-no-files-found: warn
+          retention-days: 21
