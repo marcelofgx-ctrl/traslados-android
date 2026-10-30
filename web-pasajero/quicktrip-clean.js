@@ -426,9 +426,85 @@
     if(success&&successSlot&&success.parentElement!==successSlot)successSlot.append(success);
     updateSummary();syncDriverSearch();cleanMapCaption();
   }
+  // P1.4: A route service error was invisible in the approved compact UI.
+  // #route-overview is intentionally hidden in the premium photo, so its
+  // original retry cannot be clicked. Surface a SAFE, source-owned retry
+  // without replacing the route engine, fare or the approved normal layout.
+  let lastAutoRouteRetryAt=0;
+  function syncRouteRecovery(){
+    const card=byId("qtc-route-recovery"),message=byId("qtc-route-recovery-text");
+    if(!card||!message)return false;
+    const overview=byId("route-overview");
+    const retry=overview?.querySelector(".route-retry");
+    const routeReady=Boolean(record.origin&&record.destination&&
+      record.stops.every(Boolean));
+    const validTrip=doc.body.classList.contains("journey-mode-quick")&&
+      byId("view-viaje")?.classList.contains("active")&&
+      byId("booking-success")?.hidden!==false;
+    const roadFailure=Boolean(routeReady&&retry&&!retry.hidden);
+    const fare=byId("urgent-route-recap")?.querySelector("[data-final-route-fare]")?.textContent||"";
+    const roadStatus=overview?.querySelector(".route-summary-indicator")?.textContent||"";
+    const priceFailure=routeReady&&roadStatus==="Ruta verificada"&&
+      (!fare.trim()||fare.includes("confirmar"));
+    const issue=Boolean(validTrip&&(roadFailure||priceFailure));
+    card.hidden=!issue;
+    if(issue)message.textContent=roadFailure
+      ?"No se pudo verificar el recorrido por calles. Conservamos tus direcciones."
+      :"La ruta está verificada, pero el precio sigue sin confirmar.";
+    return issue;
+  }
+  function retryOriginalRoad(){
+    if(!syncRouteRecovery())return false;
+    const original=byId("route-overview")?.querySelector(".route-retry");
+    if(original&&!original.hidden){
+      original.click(); // exact native invalidation + renderRouteSummary
+      return true;
+    }
+    // A verified route may lack a quote if its *separate* RPC was unavailable.
+    // Retry the ORIGINAL controller; never estimate a fare from GPS or DOM.
+    if(typeof roadEngine==="undefined"||typeof routeKeyOf!=="function"||
+       typeof selectedRoadPoints!=="function"||typeof renderRouteSummary!=="function")return false;
+    const points=selectedRoadPoints();
+    if(points.length<2)return false;
+    roadEngine.invalidate(routeKeyOf(points));
+    renderRouteSummary();
+    return true;
+  }
+  function retryRoadOnReconnect(){
+    if(doc.visibilityState!=="visible"||win.navigator.onLine===false||
+       Date.now()-lastAutoRouteRetryAt<90000)return;
+    if(!syncRouteRecovery())return;
+    lastAutoRouteRetryAt=Date.now();
+    retryOriginalRoad();
+  }
+  function installRouteRecovery(){
+    if(byId("qtc-route-recovery"))return;
+    const recap=byId("urgent-route-recap"),overview=byId("route-overview");
+    if(!recap||!overview)return;
+    const help=node("div","qtc-route-recovery");
+    help.id="qtc-route-recovery";
+    help.hidden=true;help.setAttribute("role","status");
+    const message=node("span","qtc-route-recovery-text");
+    message.id="qtc-route-recovery-text";
+    const button=node("button","qtc-route-retry","↻ Reintentar cálculo");
+    button.type="button";
+    button.addEventListener("click",retryOriginalRoad);
+    help.append(message,button);recap.after(help);
+    new MutationObserver(syncRouteRecovery).observe(overview,{
+      childList:true,subtree:true,characterData:true,
+      attributes:true,attributeFilter:["hidden"]
+    });
+    win.addEventListener("online",retryRoadOnReconnect);
+    doc.addEventListener("visibilitychange",()=>{
+      if(doc.visibilityState==="visible")retryRoadOnReconnect();
+    });
+    win.addEventListener("pageshow",e=>{if(e.persisted)retryRoadOnReconnect();});
+    syncRouteRecovery();
+  }
   function updateSummary(){
     const recap=byId("urgent-route-recap"),wait=byId("qtc-summary-wait");
     if(wait&&recap)wait.hidden=!recap.hidden;
+    syncRouteRecovery();
   }
   function boot(){
     if(!skinReady()){
@@ -438,6 +514,7 @@
       return;
     }
     if(!build())return;
+    installRouteRecovery();
     const host=byId("journey-field-host");
     new MutationObserver(reconcile).observe(host,{childList:true});
     new MutationObserver(reconcile).observe(byId("view-viaje"),{
