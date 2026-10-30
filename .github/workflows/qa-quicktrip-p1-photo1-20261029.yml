@@ -1,0 +1,85 @@
+name: QA Quick Trip P1 Photo One · Strict Visual-Only Regression
+on:
+  push:
+    branches:
+      - qa/quicktrip-p1-photo1-visual-only-20261029
+    paths:
+      - '.github/workflows/qa-quicktrip-p1-photo1-20261029.yml'
+      - 'web-pasajero/quicktrip-p1-photo1.css'
+      - 'web-pasajero/index.html'
+      - 'web-pasajero/sw.js'
+      - 'tests/quicktrip-p1-photo1-contract.cjs'
+      - 'scripts/qa_quicktrip_p1_photo1.cjs'
+permissions:
+  contents: read
+jobs:
+  regressions-and-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Strict source protection and base pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=cc44b2f0d0312cac62bee2f9f550c45d418a2acb
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 7
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p1-photo1-20261029.yml|docs/QA_QUICKTRIP_P1_PHOTO1_20261029.md|scripts/qa_quicktrip_p1_photo1.cjs|tests/quicktrip-p1-photo1-contract.cjs|web-pasajero/quicktrip-p1-photo1.css|web-pasajero/index.html|web-pasajero/sw.js) ;;
+              *) echo "FAIL: out-of-scope file changed: $f"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- \
+            supabase/ mapatrayectos/ \
+            web-pasajero/app.js web-pasajero/eta-engine.js \
+            web-pasajero/route-engine.js web-pasajero/premium-route.js \
+            web-pasajero/premium-map.js web-pasajero/reservation-live.js \
+            web-pasajero/quicktrip-clean.js \
+            web-pasajero/pickup-observability.js \
+            web-pasajero/pickup-cadence.js \
+            web-pasajero/pickup-origin-drift.js \
+            web-pasajero/booking-contracts.js \
+            web-pasajero/quicktrip-active-ride.js \
+            web-pasajero/quicktrip-map-focus.js
+          echo "PASS: route, price, GPS, ETA, booking and driver availability untouched"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check P1 visual test syntax
+        run: |
+          node --check tests/quicktrip-p1-photo1-contract.cjs
+          node --check scripts/qa_quicktrip_p1_photo1.cjs
+      - name: Original single-flow and new photo-one visual contracts
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-premium-singleflow-contract.cjs
+          node tests/quicktrip-p1-photo1-contract.cjs
+      - name: Original independent route, price, pickup-ETA and origin GPS regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node web-pasajero/tests/pickup-cadence-smoke.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+      - name: Run actual Chrome with 390x844 Samsung viewport, QA visual fixtures only
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p1_photo1.cjs
+      - name: Upload screenshots and QA evidence, no deployment or live bookings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P1-Photo1-Strict-QA-Samsung-390
+          path: artifacts/quicktrip-p1-photo1/
+          retention-days: 21
+          if-no-files-found: warn
