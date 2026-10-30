@@ -2,7 +2,7 @@
 // Pure regression: no backend writes, no network, no PIN exposure.
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
-const root=path.join(__dirname,".."),source=n=>fs.readFileSync(path.join(root,n),"utf8");
+const root=path.join(__dirname,"..","web-pasajero"),source=n=>fs.readFileSync(path.join(root,n),"utf8");
 const env={window:{},Date,Number,Math,Set,Map,Intl};
 vm.runInNewContext(source("booking-contracts.js"),env);
 vm.runInNewContext(source("trip-board.js"),env);
