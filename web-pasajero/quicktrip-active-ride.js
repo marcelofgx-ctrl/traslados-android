@@ -1,7 +1,8 @@
 "use strict";
-/* N1+N2: presentation of ONE already-authorized active booking. No RPCs,
- * write operations, location polling, price calculation or fictitious journey.
- * Keyboard/tap remains available alongside the optional swipe gesture.
+/* Quick Trip P1.2: status-only fallback for an already-authorized active ride.
+ * No swipe or manual map-opening CTA: acceptance itself enters fullscreen
+ * tracking; Tu viaje re-enters it when an eligible ride is active.
+ * No RPC, location polling, booking writes or price calculation here.
  */
 (function(root){
   const LIVE=new Set(["ACEPTADA","ACEPTADA_CLIENTE","CONFIRMADA","EN_VIAJE"]);
@@ -88,43 +89,7 @@
     footer.append(mk(doc,"strong","qt-live-fare",formatMoney(r.quote_final_total)),
       mk(doc,"span","qt-live-price-note","Importe informado en tu reserva"));
     host.append(footer);
-    const rail=mk(doc,"div","qt-live-rail");
-    rail.setAttribute("role","group");
-    rail.setAttribute("aria-label","Deslizá para abrir el mapa de seguimiento");
-    rail.append(mk(doc,"span","qt-live-rail-caption","Deslizá para ver el mapa"));
-    const knob=mk(doc,"button","qt-live-knob","➜");
-    knob.type="button";knob.setAttribute("aria-label","Abrir mapa de seguimiento");
-    knob.setAttribute("title","Deslizá o presioná Enter para abrir el mapa");
-    rail.append(knob);host.append(rail);
-    let pressed=false,start=0,travel=0;
-    const reset=()=>{pressed=false;travel=0;knob.style.transform="";rail.classList.remove("qt-sliding")};
-    knob.addEventListener("pointerdown",e=>{
-      if(e.pointerType==="mouse"&&e.button!==0)return;
-      pressed=true;start=e.clientX;travel=0;
-      knob.setPointerCapture?.(e.pointerId);rail.classList.add("qt-sliding");
-    });
-    knob.addEventListener("pointermove",e=>{
-      if(!pressed)return;
-      const max=Math.max(0,rail.clientWidth-knob.offsetWidth-12);
-      travel=Math.min(max,Math.max(0,e.clientX-start));
-      knob.style.transform="translateX("+travel+"px)";
-    });
-    knob.addEventListener("pointerup",()=>{
-      if(!pressed)return;
-      const max=Math.max(0,rail.clientWidth-knob.offsetWidth-12);
-      const done=max>0&&travel>=max*.72;
-      reset();
-      if(done)actions.onOpen?.(r);
-    });
-    knob.addEventListener("pointercancel",reset);
-    knob.addEventListener("keydown",e=>{
-      if(e.key==="Enter"||e.key===" "){
-        e.preventDefault();actions.onOpen?.(r);
-      }
-    });
     const controls=mk(doc,"div","qt-live-aux");
-    const open=mk(doc,"button","qt-live-tap","Ver mapa sin deslizar");
-    open.type="button";open.addEventListener("click",()=>actions.onOpen?.(r));
     const other=mk(doc,"button","qt-live-new-trip","Preparar otro viaje");
     other.type="button";other.setAttribute("aria-expanded",String(expandedNewTrip));
     other.addEventListener("click",()=>{
@@ -133,7 +98,7 @@
       other.setAttribute("aria-expanded",String(expandedNewTrip));
       other.textContent=expandedNewTrip?"Ocultar nuevo viaje":"Preparar otro viaje";
     });
-    controls.append(open,other);host.append(controls);
+    controls.append(other);host.append(controls);
     // The standard bottom tabs belong to the optionally hidden booking form;
     // retain independent navigation while the active ride is in focus.
     const nav=mk(doc,"nav","qt-live-bottom-links");
