@@ -1,0 +1,38 @@
+/* P1.4 repair of real estimate failure states ONLY. The P1.3 approved
+   appearance, origin/destination markers, card layout and metric sources remain
+   byte-for-byte unchanged in quicktrip-p13-approved.css. */
+body.qt-clean.qt-clean-active #view-viaje #qtc-route-recovery:not([hidden]) {
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:8px!important;flex-wrap:wrap!important;
+  padding:8px 10px!important;margin:4px 0 8px!important;
+  background:#12393a!important;color:#f3e1bb!important;
+  border:1px solid rgba(235,202,144,.55)!important;border-radius:12px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #qtc-route-recovery[hidden],
+body.qt-clean.qt-clean-active #view-viaje #qtc-presence-retry[hidden] {
+  display:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #qtc-route-recovery-text {
+  flex:1 1 160px!important;font-size:11px!important;line-height:1.35!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-route-retry,
+body.qt-clean.qt-clean-active #view-viaje #qtc-presence-retry,
+body.qt-clean.qt-clean-active #view-viaje #pickup-eta-retry:not([hidden]) {
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-height:42px!important;padding:8px 10px!important;
+  border-radius:10px!important;background:#163f41!important;
+  color:#ffe1ab!important;border:1px solid rgba(237,203,142,.65)!important;
+  font-size:11px!important;font-weight:740!important;
+  box-shadow:none!important;touch-action:manipulation!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #qtc-presence-retry:not([hidden]) {
+  margin-top:7px!important;max-width:100%!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #pickup-eta-retry:disabled {
+  opacity:.6!important;cursor:wait!important;
+}
+@media(max-width:410px){
+  body.qt-clean.qt-clean-active #view-viaje .qtc-route-retry {
+    width:100%!important;
+  }
+}
