@@ -610,7 +610,23 @@ function enterService(kind){
   shiftView(quick?"viaje":"reservar");
   if(quick)premiumJourney?.activate();
 }
+// A return to the booking view must re-evaluate the SAME approved pickup
+// contract. It must not wait for the next 15s heartbeat or create a second
+// ETA engine. The existing cadence, in-flight lock and backend quota apply.
+let lastPickupReturnRefreshAt=0;
+function refreshPickupOnReturn(){
+  if(document.visibilityState!=="visible"||selectedPickupMode==="schedule"||
+     !$("view-viaje")?.classList.contains("active")||
+     !($("booking-success")?.hidden??false)||currentVerifiedRide())return false;
+  // Prevent duplicate view/visibility/pageshow events from resetting the
+  // in-flight availability sequence several times in the same animation.
+  if(Date.now()-lastPickupReturnRefreshAt<1200)return false;
+  lastPickupReturnRefreshAt=Date.now();
+  void refreshPickupPresence(); // no forced availability or ETA rate bypass
+  return true;
+}
 function shiftView(name){
+  const wasJourneyVisible=Boolean($("view-viaje")?.classList.contains("active"));
   for(const panel of document.querySelectorAll(".view"))panel.classList.toggle("active",panel.id==="view-"+name);
   for(const tab of document.querySelectorAll(".tab")){
     const active=tab.dataset.view===name;tab.classList.toggle("active",active);
@@ -619,6 +635,7 @@ function shiftView(name){
   if(name==="viajes")void loadTrips();
   if(name==="seguimiento")renderPremiumTracking();
   if(name==="cuenta")renderAccount();
+  if(name==="viaje"&&!wasJourneyVisible)refreshPickupOnReturn();
   window.scrollTo({top:0,behavior:"smooth"});
   pickupOriginMonitor?.sync();
 }
@@ -2656,7 +2673,18 @@ function init(){
   $("mode-login").addEventListener("click",()=>setAccountMode(false));
   $("mode-register").addEventListener("click",()=>setAccountMode(true));
   $("account-submit").addEventListener("click",()=>void accountSubmit());
-  window.addEventListener("online",updateConnectivity);window.addEventListener("offline",updateConnectivity);
+  window.addEventListener("online",()=>{
+    updateConnectivity();
+    // Foreground reconnection updates only the currently selected origin.
+    refreshPickupOnReturn();
+  });
+  window.addEventListener("offline",updateConnectivity);
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible")refreshPickupOnReturn();
+  });
+  window.addEventListener("pageshow",event=>{
+    if(event.persisted)refreshPickupOnReturn();
+  });
   syncAuthUI();setAccountMode(false);updateConnectivity();refreshBookingSteps();installUI();
   // Public homepage deep link opens the PWA installer view, not a separate app.
   if(window.location.hash==="#instalar")shiftView("instalar");
