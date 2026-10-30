@@ -132,9 +132,11 @@ async function main(){
      valuesFromNative:!!recap.querySelector("[data-final-route-distance]")&&
        !!recap.querySelector("[data-final-route-duration]")&&
        !!recap.querySelector("[data-final-route-fare]"),
-     oneButton:document.querySelectorAll("#urgent-send").length===1};
+     oneButton:document.querySelectorAll("#urgent-send").length===1,
+     positions:a.map(x=>({top:x.top,bottom:x.bottom,left:x.left,width:x.width}))};
    host.hidden=prevHost;recap.hidden=prevRecap;return data;
  });
+ console.log("P1.3 FARE GEOMETRY",JSON.stringify(price));
  ok(price.fareAbove&&price.valuesFromNative&&price.oneButton,
     "Photo1 financial hierarchy preserves source-bound route kilometers, minutes, fare and one action");
  await js(function(){document.querySelector(".qtc-driver")?.scrollIntoView({block:"center"});return true;});
