@@ -323,11 +323,16 @@ async function main(){
  });
  console.log("P0 scheduled transition diagnostic",JSON.stringify(scheduled));
  const originalStops=await js(function(){
-   return document.querySelector(".premium-route-stops")?.parentElement?.id==="booking-step-route"&&
-     document.getElementById("stop-wrap")?.parentElement?.id==="booking-step-route"&&
-     document.getElementById("login-for-stops")?.parentElement?.id==="booking-step-route";
+   const par=id=>{const e=typeof id==="string"?document.querySelector(id):id;
+     return {parent:e?.parentElement?.id||e?.parentElement?.className||null,
+       previous:e?.previousSibling?.nodeType===8?e.previousSibling.textContent:null};};
+   const button=par(".premium-route-stops"),form=par("#stop-wrap"),login=par("#login-for-stops");
+   return {button,form,login,view:document.body.className,pass:
+     button.parent==="booking-step-route"&&form.parent==="booking-step-route"&&
+     login.parent==="booking-step-route"};
  });
- ok(originalStops,"Programar restores original native stop button, inputs, login hint and events");
+ console.log("P1.3 SCHEDULED NATIVE STOPS",JSON.stringify(originalStops));
+ ok(originalStops.pass,"Programar restores original native stop button, inputs, login hint and events");
  ok(scheduled.view&&scheduled.driverHome&&scheduled.oneDriver&&scheduled.oneMap&&scheduled.onePresence,
     "Scheduled booking restores native driver layout, without duplicate map or presence");
  const returned=await js(function(){
