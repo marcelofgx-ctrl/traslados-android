@@ -34,7 +34,7 @@ body.qt-clean.qt-clean-active #view-viaje .qtc-header-copy h1 {
 }
 body.qt-clean.qt-clean-active #view-viaje .qtc-content {
   display:flex!important;flex-direction:column!important;
-  gap:6px!important;padding:9px 12px 13px!important;
+  gap:6px!important;padding:9px 12px calc(86px + env(safe-area-inset-bottom,0px))!important;
   width:100%;max-width:610px;margin:0 auto;
 }
 body.qt-clean.qt-clean-active #view-viaje .qtc-places {
@@ -331,7 +331,7 @@ body.qt-clean.qt-clean-active #view-viaje .qtc-bottom-nav button {
     height:37px!important;width:143px!important;
   }
   body.qt-clean.qt-clean-active #view-viaje .qtc-content{
-    padding:6px 10px 12px!important;gap:5px!important;
+    padding:6px 10px calc(82px + env(safe-area-inset-bottom,0px))!important;gap:5px!important;
   }
   body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker,
   body.qt-clean.qt-clean-active #view-viaje .qtc-places #destination-picker{
