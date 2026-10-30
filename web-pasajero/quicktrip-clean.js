@@ -368,6 +368,9 @@
         stopBodyAnchorOriginal.after(stopBody);
       if(stopLoginAnchorOriginal?.isConnected&&stopLogin&&stopLogin.previousSibling!==stopLoginAnchorOriginal)
         stopLoginAnchorOriginal.after(stopLogin);
+      const drift=doc.querySelector(".pickup-origin-drift-notice");
+      const origin=byId("origin-picker");
+      if(drift&&origin&&drift.previousElementSibling!==origin)origin.after(drift);
       // Restore operational card outside booking-step nodes when the user
       // enters the scheduled booking flow. No data or listeners are recreated.
       const card=doc.querySelector(".qtc-driver"),content=shell.querySelector(".qtc-content");
@@ -382,6 +385,9 @@
     const routeBody=byId("booking-step-route");
     const map=doc.querySelector(".premium-route-canvas");
     const destinationAnchor=routeBody?.querySelector("#destination-picker");
+    const drift=doc.querySelector(".pickup-origin-drift-notice");
+    if(drift&&destinationAnchor&&drift.previousElementSibling!==destinationAnchor)
+      destinationAnchor.after(drift);
     if(map&&routeBody&&map.parentElement!==routeBody)routeBody.append(map);
     // Keep the ORIGINAL source-owned pickup card visible above the map while
     // composing a new trip; under compact active ride move only that same card
