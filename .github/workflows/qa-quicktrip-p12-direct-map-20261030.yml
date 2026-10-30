@@ -1,0 +1,97 @@
+name: QA Quick Trip P1.2 · Confirmed Ride Opens Map Automatically (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p12-auto-map-no-swipe-20261030
+    paths:
+      - .github/workflows/qa-quicktrip-p12-direct-map-20261030.yml
+      - docs/QA_QUICKTRIP_P12_DIRECT_MAP_20261030.md
+      - scripts/qa_quicktrip_p12_direct_map_browser.cjs
+      - tests/quicktrip-p12-auto-map-contract.cjs
+      - tests/quicktrip-p12-baseline-regression.cjs
+      - tests/quicktrip-p12-photo1-contract.cjs
+      - web-pasajero/app.js
+      - web-pasajero/index.html
+      - web-pasajero/quicktrip-active-ride.js
+      - web-pasajero/quicktrip-n1n2.css
+      - web-pasajero/sw.js
+permissions:
+  contents: read
+jobs:
+  auto-map-and-no-swipe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Strict QA-only allowlist, core engines unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=4c0a3b68d9069cc03c13d23e2de2d913f5003292
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 11
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p12-direct-map-20261030.yml|docs/QA_QUICKTRIP_P12_DIRECT_MAP_20261030.md|scripts/qa_quicktrip_p12_direct_map_browser.cjs|tests/quicktrip-p12-auto-map-contract.cjs|tests/quicktrip-p12-baseline-regression.cjs|tests/quicktrip-p12-photo1-contract.cjs|web-pasajero/app.js|web-pasajero/index.html|web-pasajero/quicktrip-active-ride.js|web-pasajero/quicktrip-n1n2.css|web-pasajero/sw.js) ;;
+              *) echo "FAIL unauthorized source path: $f";exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- \
+            supabase/ mapatrayectos/ \
+            web-pasajero/eta-engine.js web-pasajero/pickup-cadence.js \
+            web-pasajero/pickup-observability.js web-pasajero/pickup-origin-drift.js \
+            web-pasajero/route-engine.js web-pasajero/premium-route.js \
+            web-pasajero/premium-map.js web-pasajero/reservation-live.js \
+            web-pasajero/quicktrip-map-focus.js web-pasajero/booking-contracts.js
+          echo "PASS no GPS/ETA/distance/fare/booking engine changes"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/quicktrip-active-ride.js
+          node --check tests/quicktrip-p12-auto-map-contract.cjs
+          node --check tests/quicktrip-p12-baseline-regression.cjs
+          node --check tests/quicktrip-p12-photo1-contract.cjs
+          node --check scripts/qa_quicktrip_p12_direct_map_browser.cjs
+      - name: Exact automatic acceptance and absence of map swipe
+        run: node tests/quicktrip-p12-auto-map-contract.cjs
+      - name: Preserve previous single-screen and premium layout contracts
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p12-baseline-regression.cjs
+          node tests/quicktrip-p12-photo1-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+      - name: Protect original real road distance, fixed fare, pickup ETA and GPS drift
+        run: |
+          set -euo pipefail
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node tests/quicktrip-p1-cadence-pure.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+      - name: Chrome 390px passenger flow, synthetic UI only
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p12_direct_map_browser.cjs
+      - name: Chrome 390px full GPS/map route and contract metrics regression
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Upload evidence, never deploy or submit reservations
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: QuickTrip-P12-Auto-Map-No-Swipe-QA-Samsung-390
+          path: |
+            artifacts/quicktrip-p12-auto-map/
+            artifacts/quicktrip-tracking-metrics/
+          retention-days: 21
+          if-no-files-found: warn
