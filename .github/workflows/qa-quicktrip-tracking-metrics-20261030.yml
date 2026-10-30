@@ -1,0 +1,77 @@
+name: QA Quick Trip Tracking Distance Duration (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-tracking-metrics-contract-fallback-20261030
+    paths:
+      - .github/workflows/qa-quicktrip-tracking-metrics-20261030.yml
+      - web-pasajero/quicktrip-map-focus.js
+      - web-pasajero/reservation-live.js
+      - scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - tests/quicktrip-tracking-metrics-contract.cjs
+      - docs/QA_QUICKTRIP_TRACKING_METRICS_FALLBACK_20261030.md
+permissions:
+  contents: read
+jobs:
+  secure-tracking-metrics-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Strict source allowlist and immutable real motors
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=cd5d99e2ca21b2e720fdc37a7f694cbd44421cb3
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 6
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-tracking-metrics-20261030.yml|docs/QA_QUICKTRIP_TRACKING_METRICS_FALLBACK_20261030.md|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-tracking-metrics-contract.cjs|web-pasajero/quicktrip-map-focus.js|web-pasajero/reservation-live.js) ;;
+              *) echo "FAIL unauthorized file: $f"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- \
+            supabase/ mapatrayectos/ \
+            web-pasajero/app.js web-pasajero/route-engine.js \
+            web-pasajero/eta-engine.js web-pasajero/pickup-cadence.js \
+            web-pasajero/quicktrip-clean.js web-pasajero/premium-map.js \
+            web-pasajero/premium-route.js web-pasajero/booking-contracts.js
+          echo "PASS: pricing, roadside routing, GPS RPC, Supabase, app, Android unchanged"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript source syntax
+        run: |
+          node --check web-pasajero/quicktrip-map-focus.js
+          node --check web-pasajero/reservation-live.js
+          node --check scripts/qa_quicktrip_tracking_metrics_browser.cjs
+          node --check tests/quicktrip-tracking-metrics-contract.cjs
+      - name: No spoofing or stale tracking contracts
+        run: node tests/quicktrip-tracking-metrics-contract.cjs
+      - name: Existing actual routing/fare/ETA and return regression
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p11-baseline-regression.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node tests/quicktrip-p1-cadence-pure.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+      - name: Samsung-size Chrome visual test with FAKE in-memory GPS only
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Upload QA artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: QuickTrip-Tracking-Trip-vs-Pickup-Metrics-390px-QA
+          path: artifacts/quicktrip-tracking-metrics/
+          retention-days: 21
+          if-no-files-found: warn
