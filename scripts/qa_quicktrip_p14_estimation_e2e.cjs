@@ -27,8 +27,8 @@ async function main(){
  await cmd("Emulation.setTouchEmulationEnabled",{enabled:true,maxTouchPoints:1});
  await cmd("Page.addScriptToEvaluateOnNewDocument",{source:`(()=>{
    const original=window.fetch.bind(window);
-   const calls=[],exceptions=[];
-   window.__qaEstimations={calls,exceptions};
+   const calls=[],exceptions=[],modes={roadFail:false,presenceFail:false,etaFail:false};
+   window.__qaEstimations={calls,exceptions,modes};
    window.addEventListener("error",e=>exceptions.push(String(e.message||"error").slice(0,170)));
    window.addEventListener("unhandledrejection",e=>exceptions.push(String(e.reason?.message||e.reason||"promise").slice(0,170)));
    const response=data=>Promise.resolve(new Response(JSON.stringify(data),{status:200,headers:{"Content-Type":"application/json"}}));
@@ -36,6 +36,7 @@ async function main(){
      const request=String(url?.url||url),path=new URL(request,location.href).pathname;
      if(path.includes("/api/public/route-estimate")||path==="/api/testing-road"){
        calls.push("road");
+       if(modes.roadFail)return response({available:false,reason:"temporarily_unavailable"});
        return response({available:true,source:"openrouteservice",distanceKm:18.8,durationMin:26,
          geometry:[[-34.9,-56.15],[-34.905,-56.16],[-34.91,-56.19]]});
      }
@@ -45,10 +46,12 @@ async function main(){
      }
      if(path.endsWith("/public_driver_availability_v1")){
        calls.push("availability");
+       if(modes.presenceFail)return response({available:"unverified",status:"not_available"});
        return response({available:true,status:"available_for_requests",checkedAt:new Date().toISOString(),motionHint:"stationary"});
      }
      if(path.endsWith("/pickup-eta")){
        calls.push("eta");
+       if(modes.etaFail)return response({available:false,reason:"route_unavailable"});
        return response({available:true,distanceKm:1.8,etaMin:5,estimateType:"coarse"});
      }
      if(path.startsWith("/rest/v1/rpc/")||path.startsWith("/functions/v1/")){
@@ -107,7 +110,68 @@ async function main(){
    result.pickupDuration?.includes("min")&&!result.pickupHidden,
    "Available driver, pickup km and ETA reach original passenger card");
  ok(result.photoLoaded,"Premium photo P1.3 preserved during both working flows");
- console.log("P14 E2E PASS: mocked backend response through original application controllers, no bookings");
+ // Force one real controller error and use the premium-only retry to
+ // recover through the original public road+price pipeline.
+ await js(function(){
+   window.__qaEstimations.modes.roadFail=true;
+   roadEngine.invalidate();
+   renderRouteSummary();
+   return true;
+ });
+ const failedRoute=await poll(()=>js(function(){
+   const x=document.getElementById("qtc-route-recovery");
+   return x&&!x.hidden?{shown:true,text:x.textContent,
+     nativeHidden:document.querySelector("#route-overview .route-retry")?.hidden}:null;
+ }),12000).catch(()=>null);
+ console.log("P14 FAILURE ROUTE",JSON.stringify(failedRoute));
+ ok(failedRoute?.shown&&failedRoute.nativeHidden===false,
+    "Failed road estimates have a visible premium retry linked to original native controller");
+ await snap("p14-route-error-retry-visible-390.png");
+ await js(function(){
+   window.__qaEstimations.modes.roadFail=false;
+   document.querySelector("#qtc-route-recovery button").click();
+   return true;
+ });
+ const recoveredRoad=await poll(()=>js(function(){
+   return latestRoad&&roadEngine.verified(latestRoad.data)&&
+      document.getElementById("urgent-route-recap").querySelector("[data-final-route-fare]")?.textContent?.includes("752");
+ }),14000).catch(()=>false);
+ ok(recoveredRoad,"Native road and quote recover after clicking minimal P1.4 error-only retry");
+
+ await js(function(){
+   window.__qaEstimations.modes.presenceFail=true;
+   publicPresenceCache=null;publicPresenceAt=0;
+   void refreshPickupPresence(true);
+   return true;
+ });
+ const failedPresence=await poll(()=>js(function(){
+   const x=document.getElementById("qtc-presence-retry"),p=document.getElementById("pickup-presence");
+   return p?.dataset.presence==="unknown"&&x&&!x.hidden;
+ }),12000).catch(()=>false);
+ ok(failedPresence,"Availability failure visibly offers original-controller retry, no invented driver");
+ await js(function(){
+   window.__qaEstimations.modes.presenceFail=false;
+   document.getElementById("qtc-presence-retry").click();
+   return true;
+ });
+ const recoveredPickup=await poll(()=>js(function(){
+   const p=document.getElementById("pickup-presence");
+   return publicPresenceCache?.available===true&&p?.dataset.presence==="online"&&
+     document.getElementById("pickup-distance")?.textContent?.includes("1,8");
+ }),12000).catch(()=>false);
+ ok(recoveredPickup,"Verified availability and pickup metrics recover on same original ETA controller");
+ const final=await js(function(){return {
+   route:document.getElementById("urgent-route-recap").querySelector("[data-final-route-distance]").textContent,
+   duration:document.getElementById("urgent-route-recap").querySelector("[data-final-route-duration]").textContent,
+   fare:document.getElementById("urgent-route-recap").querySelector("[data-final-route-fare]").textContent,
+   driver:document.getElementById("pickup-distance").textContent,
+   eta:document.getElementById("pickup-minutes").textContent,
+   errors:window.__qaEstimations.exceptions
+ };});
+ fs.writeFileSync(path.join(OUT,"p14-estimates-recovery.json"),JSON.stringify(final,null,2)+"\n");
+ console.log("P14 RECOVERED 5 FIELDS",JSON.stringify(final));
+ await snap("p14-recovered-premium-390.png");
+ console.log("P14 E2E PASS: failed road + driver availability restored without new engines; no real reservations");
 }
 main().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(()=>{
  try{socket?.close()}catch{}
