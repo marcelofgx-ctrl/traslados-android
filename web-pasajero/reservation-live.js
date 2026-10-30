@@ -130,6 +130,13 @@
         etaTitle.textContent="DURACIÓN PREVISTA";
         distance.textContent=Number.isFinite(km)&&km>=0?formatKm(km):"—";
         eta.textContent=Number.isFinite(mins)&&mins>=0?Math.max(1,Math.ceil(mins))+" min":"—";
+        // The booked road route is already verified and displayed. Publish its
+        // independently VERIFIED trip metrics to the fullscreen sheet now,
+        // even while private driver GPS is pending. These are NOT pickup ETA.
+        if(Number.isFinite(km)&&km>0&&Number.isFinite(mins)&&mins>=0){
+          notify({stage:"contract",gps:false,tripMetrics:true,
+            distanceKm:km,durationMin:mins});
+        }
       }
       return true;
     }
