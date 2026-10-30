@@ -343,8 +343,34 @@
       ?UYU(Number(r.quote_final_total)):"Importe confirmado pendiente";
     screen.querySelector(".qt-focus-origin").textContent="● "+safeText({text:r.origin_text},"Origen");
     screen.querySelector(".qt-focus-destination").textContent="◆ "+safeText({text:r.destination_text},"Destino");
-    screen.querySelector(".qt-focus-distance").textContent="—";
-    screen.querySelector(".qt-focus-time").textContent="—";
+    const tripDistance=screen.querySelector(".qt-focus-distance");
+    const tripTime=screen.querySelector(".qt-focus-time");
+    const statisticLabels=screen.querySelectorAll(".qt-focus-stat small");
+    const setMetricLabels=(a,b)=>{
+      if(statisticLabels[0])statisticLabels[0].textContent=a;
+      if(statisticLabels[1])statisticLabels[1].textContent=b;
+    };
+    let bookedMetrics=null;
+    // Never label the full origin→destination road distance as a driver pickup
+    // distance. Contract metrics become visible as soon as the VERIFIED white
+    // route is drawn. Authenticated GPS can later replace them with live leg
+    // metrics, with different labels and no fabricated values.
+    const presentMetrics=(data,source)=>{
+      const km=Number(data?.distanceKm),mins=Number(data?.durationMin);
+      if(!Number.isFinite(km)||km<0||!Number.isFinite(mins)||mins<0)return false;
+      setMetricLabels(source==="contract"?"DISTANCIA DEL VIAJE":
+        onboard?"AL DESTINO":"A RECOGIDA",
+        source==="contract"?"DURACIÓN DEL VIAJE":
+          onboard?"TIEMPO AL DESTINO":"LLEGADA ESTIMADA");
+      tripDistance.textContent=km.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
+      tripTime.textContent=Math.max(1,Math.ceil(mins))+" min";
+      screen.dataset.metricsSource=source;
+      return true;
+    };
+    tripDistance.textContent="—";
+    tripTime.textContent="—";
+    setMetricLabels("DISTANCIA DEL VIAJE","DURACIÓN DEL VIAJE");
+    screen.dataset.metricsSource="pending";
     screen.querySelector(".qt-focus-message").textContent="Esperando la posición GPS autorizada del conductor…";
     const submit=screen.querySelector(".qt-focus-submit");
     submit.disabled=false;submit.textContent="Volver al inicio";submit.onclick=()=>close();
@@ -359,19 +385,30 @@
       key:options.key,renderer:twoLegRenderer,
       onUpdate:data=>{
         if(!trackingCtx||String(trackingCtx.reservation.id)!==String(r.id))return;
+        if(data.tripMetrics===true&&data.stage==="contract"){
+          // Initial booked route: real road distance and duration, not GPS ETA.
+          const km=Number(data.distanceKm),min=Number(data.durationMin);
+          if(Number.isFinite(km)&&km>0&&Number.isFinite(min)&&min>=0){
+            bookedMetrics={distanceKm:km,durationMin:min};
+            if(screen.dataset.metricsSource!=="live")presentMetrics(bookedMetrics,"contract");
+          }
+          return;
+        }
         screen.querySelector(".qt-focus-message").textContent=data.gps?
           onboard?"GPS verificado · conductor rumbo al destino":
             data.dual?"GPS verificado · dos recorridos reales":
               "GPS verificado · verificando recorrido hasta recogida":
           data.message||"Esperando GPS reciente para mostrar el vehículo";
         legend.querySelector(".qt-focus-legend-approach").hidden=onboard||!data.gps;
-        if(data.gps){
-          if(Number.isFinite(data.distanceKm)&&data.distanceKm>=0)
-            screen.querySelector(".qt-focus-distance").textContent=
-              data.distanceKm.toLocaleString("es-UY",{maximumFractionDigits:1})+" km";
-          if(Number.isFinite(data.durationMin)&&data.durationMin>=0)
-            screen.querySelector(".qt-focus-time").textContent=
-              Math.max(1,Math.ceil(data.durationMin))+" min";
+        if(data.gps&&presentMetrics(data,"live"))return;
+        // GPS missing/stale or live route cannot be verified: never retain an
+        // obsolete driver-to-pickup ETA. Fall back to the *labeled* booked trip.
+        if(bookedMetrics)presentMetrics(bookedMetrics,"contract");
+        else{
+          tripDistance.textContent="—";
+          tripTime.textContent="—";
+          setMetricLabels("DISTANCIA DEL VIAJE","DURACIÓN DEL VIAJE");
+          screen.dataset.metricsSource="pending";
         }
       }
     });
