@@ -278,3 +278,14 @@ body.qt-clean.qt-clean-active #view-viaje .qtc-bottom-nav button{
 @media(prefers-reduced-motion:reduce){
   body.qt-clean.qt-clean-active #view-viaje *{scroll-behavior:auto!important}
 }
+
+/* P1.1: No duplicative freshness/confirmation paragraphs in the passenger
+   card. The original accessible live status, truthful phase, error subtitle,
+   GPS pickup kilometers/minutes and retry control remain untouched. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver #pickup-presence-meta,
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver #pickup-estimate-note {
+  display:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver .pickup-card-heading p {
+  margin:4px 0 0!important;
+}
