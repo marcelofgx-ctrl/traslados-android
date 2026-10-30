@@ -10,6 +10,7 @@ on:
       - 'web-pasajero/sw.js'
       - 'tests/quicktrip-p1-photo1-contract.cjs'
       - 'tests/quicktrip-p1-baseline-regression.cjs'
+      - 'tests/quicktrip-p1-fixedfare-pure.cjs'
       - 'scripts/qa_quicktrip_p1_photo1.cjs'
 permissions:
   contents: read
@@ -29,10 +30,10 @@ jobs:
           BASE=cc44b2f0d0312cac62bee2f9f550c45d418a2acb
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#files[@]}" -eq 8
+          test "${#files[@]}" -eq 9
           for f in "${files[@]}"; do
             case "$f" in
-              .github/workflows/qa-quicktrip-p1-photo1-20261029.yml|docs/QA_QUICKTRIP_P1_PHOTO1_20261029.md|scripts/qa_quicktrip_p1_photo1.cjs|tests/quicktrip-p1-photo1-contract.cjs|tests/quicktrip-p1-baseline-regression.cjs|web-pasajero/quicktrip-p1-photo1.css|web-pasajero/index.html|web-pasajero/sw.js) ;;
+              .github/workflows/qa-quicktrip-p1-photo1-20261029.yml|docs/QA_QUICKTRIP_P1_PHOTO1_20261029.md|scripts/qa_quicktrip_p1_photo1.cjs|tests/quicktrip-p1-photo1-contract.cjs|tests/quicktrip-p1-baseline-regression.cjs|tests/quicktrip-p1-fixedfare-pure.cjs|web-pasajero/quicktrip-p1-photo1.css|web-pasajero/index.html|web-pasajero/sw.js) ;;
               *) echo "FAIL: out-of-scope file changed: $f"; exit 1 ;;
             esac
           done
@@ -66,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           node web-pasajero/tests/route-engine-smoke.cjs
-          node web-pasajero/tests/fixed-fare-v1-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
           node web-pasajero/tests/eta-engine-smoke.cjs
           node web-pasajero/tests/pickup-cadence-smoke.cjs
           node web-pasajero/tests/pickup-origin-drift-smoke.cjs
