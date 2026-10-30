@@ -1,0 +1,367 @@
+/*
+ QUICK TRIP — P1.3 APPROVED PHOTO, QA-only visual system.
+ The exact same source-owned controls, pricing, GPS/ETA and booking actions
+ remain alive. This stylesheet never computes or supplies business values.
+ Parent: P1.2 QA 9c6a4625062cfcb02558960aa7d476ecdc4873c4.
+*/
+body.qt-clean.qt-clean-active #view-viaje .qtc-app {
+  --qt-approved-gold:#efd3a0;
+  --qt-approved-muted:#b8cec6;
+  --qt-approved-teal:#0a3036;
+  --qt-approved-line:rgba(216,195,147,.28);
+  background:linear-gradient(165deg,#062a30,#092f34 64%,#07232d)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-header {
+  position:relative;
+  min-height:65px!important;
+  padding:9px 13px 8px!important;
+  border-bottom:1px solid rgba(224,193,140,.2)!important;
+  box-shadow:none!important;
+  background:linear-gradient(130deg,#0a353b,#082b32)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-header .qtc-logo {
+  width:160px!important;height:43px!important;max-width:calc(100% - 90px)!important;
+  object-fit:contain;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-header-copy {
+  margin:0 1px 0 7px!important;
+  align-items:flex-end!important;justify-content:flex-end!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-header-copy small {display:none!important}
+body.qt-clean.qt-clean-active #view-viaje .qtc-header-copy h1 {
+  font-size:15px!important;line-height:1.25!important;
+  font-weight:770!important;color:#fff4de!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-content {
+  display:flex!important;flex-direction:column!important;
+  gap:6px!important;padding:9px 12px 13px!important;
+  width:100%;max-width:610px;margin:0 auto;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places {
+  margin:0!important;padding:0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #booking-step-route {
+  gap:0!important;display:flex!important;flex-direction:column!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker,
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #destination-picker {
+  flex:0 0 auto;
+  margin:0!important;min-height:66px!important;
+  padding:8px 8px 8px 49px!important;
+  border:1px solid rgba(172,207,193,.26)!important;
+  background:linear-gradient(130deg,#103d41,#0d343b)!important;
+  box-shadow:inset 0 1px rgba(248,255,243,.045)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker {
+  border-radius:17px 17px 0 0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #destination-picker {
+  border-radius:0 0 17px 17px!important;
+  border-top-color:rgba(180,202,187,.15)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places .location-title {
+  margin:0 0 2px!important;font-size:9.5px!important;
+  line-height:1.2!important;letter-spacing:.10em!important;
+  color:#c7ded4!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places .location-selected-label {
+  font-size:13.5px!important;line-height:1.27!important;
+  color:#fff7ed!important;font-weight:770!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places .location-selected-hint {
+  margin:3px 0 0!important;font-size:10px!important;
+  line-height:1.22!important;color:#b6cbc3!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places .location-edit {
+  min-height:42px!important;min-width:45px!important;
+  font-size:11px!important;font-weight:730!important;
+  padding:6px!important;text-decoration:underline!important;
+  text-underline-offset:3px;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker:before,
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #destination-picker:before{
+  /* Retain EXACT P1 green/coral pointed location markers. */
+  left:12px!important;top:16px!important;width:29px!important;height:29px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker:after {
+  left:25px!important;top:49px!important;bottom:-20px!important;
+}
+/* Compact GPS drift warning: same handlers, only composition changes. */
+body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-notice:not([hidden]){
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-areas:"title buttons" "message buttons"!important;
+  align-items:center!important;gap:2px 8px!important;
+  padding:8px 10px!important;margin:7px 0 3px!important;
+  border-radius:13px!important;
+  border:1px solid rgba(221,183,123,.58)!important;
+  background:#15393c!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-notice strong{
+  font-size:10.5px!important;line-height:1.3!important;color:#f0d39f!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-notice p{
+  font-size:9.5px!important;line-height:1.33!important;color:#d3dfd7!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-actions{
+  gap:5px!important;justify-content:end!important;align-content:center;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-actions button{
+  min-height:39px!important;padding:6px 9px!important;
+  border-radius:10px!important;font-size:10px!important;white-space:normal;
+}
+/* Professional driver panel: original availability and ETA nodes, no cloned values. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver {
+  margin:7px 0 0!important;padding:9px 10px 10px!important;
+  border-radius:17px!important;
+  border:1px solid rgba(219,193,142,.58)!important;
+  background:linear-gradient(150deg,#114347,#0a3037)!important;
+  box-shadow:0 4px 16px rgba(0,20,23,.17),inset 0 1px rgba(230,255,229,.06)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-section-name{
+  min-height:30px!important;gap:9px!important;
+  padding:0 0 7px!important;margin:0 0 6px!important;
+  border-bottom:1px solid rgba(182,206,186,.17)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-section-name .qtc-live-dot {
+  flex:0 0 33px!important;width:33px!important;height:33px!important;
+  border-color:rgba(215,185,125,.56)!important;
+  background:radial-gradient(circle,#175258,#10363b)!important;
+  box-shadow:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-section-name .qtc-live-dot:after {
+  content:"♙";font-family:serif;font-size:23px;line-height:1;
+  color:var(--qt-approved-gold);filter:none;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-section-name strong {
+  font-size:16px!important;line-height:1.15!important;
+  color:#fff4df!important;font-weight:800!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-section-name small {
+  margin-left:auto!important;max-width:128px!important;
+  font-size:9px!important;line-height:1.2!important;
+  color:var(--qt-approved-muted)!important;text-align:right!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #pickup-presence:not([hidden]){
+  display:block!important;margin:0!important;
+  padding:6px 8px!important;border-radius:12px!important;
+  background:#0a3339a8!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-card-header {
+  gap:7px!important;align-items:center!important;min-height:20px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-card-heading strong{
+  font-size:11.5px!important;font-weight:750!important;
+  line-height:1.25!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-card-heading p{
+  font-size:10px!important;line-height:1.24!important;
+  margin:2px 0 0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-presence-metrics:not([hidden]){
+  margin-top:7px!important;gap:7px!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-presence-metric {
+  gap:2px!important;min-height:47px!important;
+  padding:7px 8px!important;border-radius:10px!important;
+  background:#092e34!important;border:1px solid rgba(184,209,180,.18)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-metric-label {
+  font-size:9px!important;line-height:1.2!important;
+  color:#c7d6cb!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .pickup-presence-metric strong {
+  font-size:17px!important;line-height:1.22!important;
+  font-weight:820!important;color:#f3d5a0!important;
+}
+/* Secondary, user-editable native accordions ordered exactly like mock. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-schedule,
+body.qt-clean.qt-clean-active #view-viaje .qtc-contact,
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops{
+  width:100%;min-width:0;margin:0!important;
+  background:#0f353b!important;
+  border:1px solid rgba(172,203,184,.26)!important;
+  border-radius:13px!important;
+  box-shadow:inset 0 1px rgba(250,255,238,.035)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-schedule>summary,
+body.qt-clean.qt-clean-active #view-viaje .qtc-contact>summary {
+  min-height:44px!important;padding:7px 11px!important;gap:8px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-schedule .qtc-time-icon,
+body.qt-clean.qt-clean-active #view-viaje .qtc-contact>summary>span:first-child{
+  font-size:20px!important;min-width:26px!important;
+  width:26px!important;flex:0 0 26px!important;
+  line-height:1!important;color:var(--qt-approved-gold)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-schedule>summary strong,
+body.qt-clean.qt-clean-active #view-viaje .qtc-contact>summary strong{
+  font-size:12px!important;line-height:1.18!important;
+  color:#f9f2e4!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-time-copy small,
+body.qt-clean.qt-clean-active #view-viaje .qtc-contact>summary small{
+  font-size:9.5px!important;line-height:1.2!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot {
+  display:block!important;margin:0!important;padding:0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops{
+  display:flex!important;align-items:center!important;
+  justify-content:space-between!important;
+  text-align:left!important;min-height:44px!important;
+  padding:8px 11px 8px 47px!important;
+  position:relative!important;
+  font-size:12px!important;color:#f5e9d7!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops:before{
+  content:"♧";position:absolute;left:14px;top:8px;
+  color:var(--qt-approved-gold);font-size:23px;line-height:1;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops:after{
+  content:"⌄";font-size:19px;line-height:1;
+  color:var(--qt-approved-gold);
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops[aria-expanded="true"]:after{
+  content:"⌃";
+}
+/* Native intermediate-stop fields remain adjacent to the original button. */
+body.qt-clean.journey-mode-quick #view-viaje:has(.premium-stops-open)
+  .qtc-stops-slot #stop-wrap:not([hidden]),
+body.qt-clean.journey-mode-quick #view-viaje:has(.premium-stops-open)
+  .qtc-stops-slot #login-for-stops:not([hidden]){
+  display:block!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot #stop-wrap,
+body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot #login-for-stops{
+  margin:4px 0 0!important;border:1px solid rgba(190,213,181,.22)!important;
+  background:#103941!important;border-radius:12px!important;padding:10px!important;
+}
+/* Fare: the original verified fare DOM stays INSIDE #urgent-route-recap.
+   Its last span is positioned as the price at the right of the header.
+   The first two spans retain the unchanged source distance and duration. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region {
+  position:relative!important;
+  border:1px solid rgba(226,192,129,.72)!important;
+  border-radius:17px!important;
+  background:linear-gradient(140deg,#0e373c,#092b32)!important;
+  padding:10px 10px 8px!important;
+  box-shadow:0 5px 18px rgba(0,16,21,.17)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title{
+  min-height:49px!important;align-items:flex-start!important;
+  margin:0 0 5px!important;padding:3px 1px 5px!important;
+  border:0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title span{
+  font-size:15px!important;font-weight:790!important;line-height:1.25!important;
+  color:#f7eddc!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title span:before{
+  content:"♧";margin-right:8px;color:var(--qt-approved-gold);
+  font-size:18px;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title small{
+  font-size:9px!important;color:#c8d9d0!important;line-height:1.2;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap{
+  margin:0 0 8px!important;position:static!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;align-items:stretch!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span{
+  grid-row:1!important;grid-column:auto!important;
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;
+  gap:3px!important;min-height:49px!important;
+  padding:7px 5px!important;border-radius:10px!important;
+  background:#0a3037!important;
+  border:1px solid rgba(173,197,174,.2)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span small{
+  font-size:9px!important;letter-spacing:.045em;color:#c3d5ca!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span strong{
+  font-size:17px!important;color:#f7efe0!important;font-weight:810!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child{
+  position:absolute!important;right:11px!important;top:24px!important;
+  display:block!important;width:auto!important;height:auto!important;min-height:0!important;
+  max-width:58%!important;padding:0!important;border:0!important;
+  background:transparent!important;text-align:right!important;
+  box-shadow:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child small{
+  display:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child strong{
+  color:#efd09a!important;font-size:21px!important;
+  white-space:nowrap!important;letter-spacing:-.02em!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-send{
+  /* Replaces prior overlaying fixed CTA: original button in normal flow. */
+  position:static!important;inset:auto!important;
+  left:auto!important;bottom:auto!important;transform:none!important;
+  display:flex!important;width:100%!important;
+  min-height:52px!important;margin:7px 0 0!important;
+  border-radius:14px!important;padding:10px!important;
+  background:linear-gradient(110deg,#ffe2ad,#eac083)!important;
+  box-shadow:0 2px 0 rgba(136,101,52,.85)!important;
+  color:#15363a!important;z-index:auto!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-send .booking-cta-label{
+  font-size:15px!important;font-weight:850!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-bottom-nav {
+  border-top:1px solid rgba(221,187,127,.31)!important;
+  background:#062b31f5!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-bottom-nav button {
+  min-height:45px!important;
+}
+/* Short Android viewport: preserve one-button legibility, allow accessible
+   vertical scrolling rather than covering data or shrinking touch targets. */
+@media (max-height:790px) {
+  body.qt-clean.qt-clean-active #view-viaje .qtc-header{
+    min-height:57px!important;padding:6px 10px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-header .qtc-logo{
+    height:37px!important;width:143px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-content{
+    padding:6px 10px 12px!important;gap:5px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-places #origin-picker,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-places #destination-picker{
+    min-height:58px!important;padding-top:6px!important;padding-bottom:6px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver{
+    margin-top:5px!important;padding:7px 9px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-schedule>summary,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-contact>summary,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-stops-slot>.premium-route-stops{
+    min-height:42px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje #urgent-send{
+    min-height:49px!important;
+  }
+}
+@media(max-width:410px){
+  body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-notice:not([hidden]){
+    grid-template-columns:1fr!important;
+    grid-template-areas:"title" "message" "buttons"!important;
+    gap:3px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-actions {
+    justify-content:flex-start!important;flex-wrap:wrap!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .pickup-origin-drift-actions button{
+    min-height:40px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  body.qt-clean.qt-clean-active #view-viaje *{scroll-behavior:auto!important}
+}
