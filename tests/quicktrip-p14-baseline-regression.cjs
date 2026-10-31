@@ -81,8 +81,8 @@ check("Fullscreen back is home, not history",
 check("PWA assets and scoped styles have fresh names",
  html.includes("quicktrip-singleflow-premium.css?v=premium-20261029-a")&&
  html.includes("premium-map.js?v=premium-20261029-a")&&
- html.includes("app.js?v=p12-direct-map-20261030")&&
- sw.includes("traslados-pwa-quicktrip-p14-recovery-20261030")&&
+ html.includes("app.js?v=p15-cycle-20261031")&&
+ sw.includes("traslados-pwa-quicktrip-p15-eta-cycle-20261031")&&
  html.includes("quicktrip-map-focus.js?v=trip-metrics-20261030")&&
  html.includes("reservation-live.js?v=trip-metrics-20261030"));
 check("No presentation mock of GPS, price or ETA in production code",

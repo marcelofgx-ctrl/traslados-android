@@ -48,8 +48,8 @@ ok("One accepted immediate selected, two not arbitrarily selected",
 ok("PWA cache revisions include modified user-facing JS/CSS",
  html.includes("quicktrip-active-ride.js?v=p12-direct-map-20261030")&&
  html.includes("quicktrip-n1n2.css?v=p12-direct-map-20261030")&&
- html.includes("app.js?v=p12-direct-map-20261030")&&
- sw.includes('traslados-pwa-quicktrip-p14-recovery-20261030'));
+ html.includes("app.js?v=p15-cycle-20261031")&&
+ sw.includes('traslados-pwa-quicktrip-p15-eta-cycle-20261031'));
 fs.mkdirSync(path.join(root,"artifacts/quicktrip-p12-auto-map"),{recursive:true});
 fs.writeFileSync(path.join(root,"artifacts/quicktrip-p12-auto-map/p12-static-contract.json"),
  JSON.stringify({suite:"P1.2 direct map without swipe",passed:checks,checks,

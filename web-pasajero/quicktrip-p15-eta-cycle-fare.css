@@ -1,0 +1,60 @@
+/* P1.5 QA: compact active-search ribbon with real state only.
+ * P1.3 approved photo and all motor-controlled prices remain untouched. */
+body.qt-clean.qt-clean-active #view-viaje #qtc-p15-cycle[hidden]{display:none!important}
+body.qt-clean.qt-clean-active #view-viaje #qtc-p15-cycle:not([hidden]){
+  display:flex!important;align-items:center!important;gap:8px!important;
+  min-width:0!important;margin:7px 2px 0!important;padding:7px 8px!important;
+  border:1px solid rgba(126,204,174,.28)!important;border-radius:10px!important;
+  background:rgba(8,41,46,.55)!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-p15-cycle-mark{
+  display:block;flex:0 0 19px;width:19px;height:19px;
+  border:2px solid rgba(119,210,176,.29);border-top-color:#88d7b4;
+  border-radius:50%;animation:qtc-p15-cycle-spin 1.6s linear infinite;
+}
+body.qt-clean.qt-clean-active #view-viaje #qtc-p15-cycle[data-phase="issue"] .qtc-p15-cycle-mark,
+body.qt-clean.qt-clean-active #view-viaje #qtc-p15-cycle[data-phase="waiting"] .qtc-p15-cycle-mark{
+  border-color:rgba(239,205,147,.33);border-top-color:#efd09a;
+  animation:qtc-p15-cycle-spin 3.5s linear infinite;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-p15-cycle-copy{
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-p15-cycle-copy strong{
+  color:#f8ebd0!important;font-weight:750!important;font-size:10px!important;
+  line-height:1.25!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-p15-cycle-copy small{
+  color:#d0dfd7!important;font-size:9px!important;line-height:1.35!important;
+  overflow-wrap:anywhere;
+}
+@keyframes qtc-p15-cycle-spin{to{transform:rotate(360deg)}}
+/* Keep ORIGINAL verified fare visible in a full-width grid row: no clipping
+ * in narrow Samsung viewports; distance and duration remain the next row. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region,
+body.qt-clean.qt-clean-active #view-viaje #urgent-actions,
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap{
+  min-width:0!important;max-width:100%!important;overflow:visible!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%!important;min-width:0!important;overflow:visible!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child{
+  grid-row:1!important;grid-column:1/-1!important;
+  justify-self:end!important;align-self:end!important;
+  max-width:100%!important;min-width:0!important;
+  padding:2px 1px!important;overflow:visible!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics>span:last-child strong{
+  display:block!important;font-size:clamp(20px,6vw,31px)!important;
+  line-height:1.22!important;white-space:normal!important;
+  overflow-wrap:anywhere!important;word-break:normal!important;
+  text-align:right!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region{
+  scroll-margin-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;
+}
+@media(prefers-reduced-motion:reduce){
+  body.qt-clean.qt-clean-active #view-viaje .qtc-p15-cycle-mark{animation:none!important}
+}

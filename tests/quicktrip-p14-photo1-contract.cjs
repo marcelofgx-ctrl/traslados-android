@@ -9,7 +9,7 @@ const sw=read("web-pasajero/sw.js");
 let ok=0;function check(name,p){assert.ok(p,name);ok++;console.log("PASS P1",name);}
 check("P1 is appended AFTER verified single-flow CSS",html.indexOf('quicktrip-singleflow-premium.css')<html.indexOf('quicktrip-p1-photo1.css?v=p11-return-20261030'));
 check("Only CSS stylesheet is loaded; no extra business JS",!html.includes('quicktrip-p1-photo1.js'));
-check("PWA cache is versioned and contains photo1 file",sw.includes('traslados-pwa-quicktrip-p14-recovery-20261030')&&sw.includes('./quicktrip-p1-photo1.css'));
+check("PWA cache is versioned and contains photo1 file",sw.includes('traslados-pwa-quicktrip-p15-eta-cycle-20261031')&&sw.includes('./quicktrip-p1-photo1.css'));
 check("P1 selectors scoped to active quick journey",css.includes('body.qt-clean.qt-clean-active #view-viaje .qtc-app')&&
  !css.includes('body:not(')&&!css.includes('#view-reservar .qtc-app'));
 check("Origin and destination use LARGE teardrop pins",css.includes('#origin-picker:before')&&css.includes('#destination-picker:before')&&

@@ -10,7 +10,7 @@ check("Approved CSS loaded LAST, after photo1 and no new operational JS",
  html.indexOf("quicktrip-p1-photo1.css")<html.indexOf("quicktrip-p13-approved.css")&&
  !html.includes("quicktrip-p13-approved.js"));
 check("Fresh cache and shell script forced into PWA",
- sw.includes('traslados-pwa-quicktrip-p14-recovery-20261030')&&
+ sw.includes('traslados-pwa-quicktrip-p15-eta-cycle-20261031')&&
  sw.includes("./quicktrip-p13-approved.css")&&
  sw.includes("./quicktrip-p14-estimate-recovery.css")&&
  html.includes("quicktrip-clean.js?v=p14-recovery-20261030"));

@@ -1,0 +1,69 @@
+name: QA Quick Trip P1.5 — ETA activity and fare viewport (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p15-eta-cycle-fare-20261031
+permissions:
+  contents: read
+jobs:
+  qa-p15:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: QA isolation and source engines unchanged
+        run: |
+          set -euo pipefail
+          BASE=b47296a981dd93ef593b8bcf19aa3a4adae4f4a9
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 13
+          for f in "${files[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p15-eta-cycle-fare-20261031.yml|docs/QA_QUICKTRIP_P15_ETA_CYCLE_FARE_20261031.md|scripts/qa_quicktrip_p15_cycle_fare_e2e.cjs|tests/quicktrip-p15-cycle-fare-contract.cjs|tests/quicktrip-p14-approved-contract.cjs|tests/quicktrip-p14-baseline-regression.cjs|tests/quicktrip-p14-photo1-contract.cjs|tests/quicktrip-p14-auto-map-contract.cjs|web-pasajero/app.js|web-pasajero/index.html|web-pasajero/sw.js|web-pasajero/pickup-cycle-ui.js|web-pasajero/quicktrip-p15-eta-cycle-fare.css) ;;
+              *) echo "FAIL unauthorized changed path $f"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ mapatrayectos/ \
+            web-pasajero/eta-engine.js web-pasajero/route-engine.js \
+            web-pasajero/pickup-cadence.js web-pasajero/geo-search.js \
+            web-pasajero/address-engine.js web-pasajero/booking-contracts.js \
+            web-pasajero/quicktrip-clean.js web-pasajero/quicktrip-p13-approved.css \
+            web-pasajero/quicktrip-p14-estimate-recovery.css \
+            web-pasajero/premium-route.js web-pasajero/premium-map.js \
+            web-pasajero/reservation-live.js
+          echo "PASS: source motors, QA photo and backend unchanged"
+          for f in web-pasajero/app.js web-pasajero/pickup-cycle-ui.js scripts/qa_quicktrip_p15_cycle_fare_e2e.cjs tests/quicktrip-p15-cycle-fare-contract.cjs; do node --check "$f"; done
+      - name: Previous photo, route, ETA and pickup QA regressions
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p14-approved-contract.cjs
+          node tests/quicktrip-p14-baseline-regression.cjs
+          node tests/quicktrip-p14-photo1-contract.cjs
+          node tests/quicktrip-p14-auto-map-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node web-pasajero/tests/route-engine-smoke.cjs
+          node tests/quicktrip-p1-fixedfare-pure.cjs
+          node web-pasajero/tests/eta-engine-smoke.cjs
+          node tests/quicktrip-p1-cadence-pure.cjs
+          node web-pasajero/tests/pickup-origin-drift-smoke.cjs
+          node tests/quicktrip-p15-cycle-fare-contract.cjs
+      - name: Actual passenger controllers, synthetic HTTP only, viewport 390 and 360
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p15_cycle_fare_e2e.cjs
+      - name: Save synthetic evidence, never private location
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuickTrip-P15-ETA-Cycle-Fare-Samsung-QA
+          path: artifacts/quicktrip-p15/
+          if-no-files-found: warn
+          retention-days: 21
