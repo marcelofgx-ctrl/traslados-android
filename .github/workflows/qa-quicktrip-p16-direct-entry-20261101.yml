@@ -23,15 +23,16 @@ jobs:
           BASE=ee22375f00dc9f71cb3ca633aafe06adce862aec
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#changed[@]}" -eq 4
+          test "${#changed[@]}" -eq 5
           for f in "${changed[@]}"; do
             case "$f" in
-              index.html|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml|tests/quicktrip-p16-direct-entry-contract.cjs|docs/QA_QUICKTRIP_P16_DIRECT_ENTRY_20261101.md) ;;
+              index.html|vercel.json|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml|tests/quicktrip-p16-direct-entry-contract.cjs|docs/QA_QUICKTRIP_P16_DIRECT_ENTRY_20261101.md) ;;
               *) echo "UNEXPECTED FILE $f"; exit 1 ;;
             esac
           done
           git diff --quiet "$BASE"..HEAD -- web-pasajero/ mapatrayectos/ supabase/ android/ backend/ 
           node --check tests/quicktrip-p16-direct-entry-contract.cjs
+          node -e 'const assert=require("node:assert/strict");assert.deepEqual(require("./vercel.json"),{$schema:"https://openapi.vercel.sh/vercel.json",rewrites:[{source:"/api/testing-road",destination:"https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate"}]});'
       - name: Direct entry and existing P1.4/P1.6 regression
         run: |
           set -euo pipefail
