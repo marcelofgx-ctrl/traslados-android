@@ -172,6 +172,50 @@ async function main(){
  console.log("P14 RECOVERED 5 FIELDS",JSON.stringify(final));
  await snap("p14-recovered-premium-390.png");
 
+ // P1.7 regression: the ORIGINAL fare aligns beneath "Precio del viaje",
+ // never floating between rows or colliding with kilometre / duration cards.
+ // Everything remains synthetic in Chromium; no booking, API or GPS real.
+ const fareLayouts=[];
+ for(const width of [360,390,412]){
+   await cmd("Emulation.setDeviceMetricsOverride",{width,height:844,
+     deviceScaleFactor:1,mobile:true,screenWidth:width,screenHeight:844});
+   await sleep(140);
+   const layout=await js(function(){
+     const q=s=>document.querySelector(s),rect=e=>{const a=e.getBoundingClientRect();
+       return {top:a.top,bottom:a.bottom,left:a.left,right:a.right,width:a.width}};
+     const card=q(".qtc-submit-region"),title=q(".qtc-summary-title"),
+       label=q(".qtc-summary-title small"),
+       fare=q("#urgent-route-recap .request-recap-metrics>span:last-child"),
+       km=q("#urgent-route-recap [data-final-route-distance]")?.parentElement,
+       duration=q("#urgent-route-recap [data-final-route-duration]")?.parentElement,
+       send=q("#urgent-send");
+     return {width:innerWidth,card:rect(card),title:rect(title),label:rect(label),
+       fareBox:rect(fare),km:rect(km),duration:rect(duration),send:rect(send),
+       fareText:q("#urgent-route-recap [data-final-route-fare]")?.textContent,
+       farePosition:getComputedStyle(fare).position,
+       cssLoaded:Array.from(document.styleSheets).some(s=>(s.href||"").includes("quicktrip-p17-fare-align.css"))};
+   });
+   fareLayouts.push(layout);
+   console.log("P17 FARE GEOMETRY",JSON.stringify(layout));
+   ok(layout.cssLoaded&&layout.farePosition==="absolute"&&layout.fareText?.includes("752"),
+      "P1.7 verified source fare and isolated stylesheet at "+width+"px");
+   ok(layout.fareBox.left>=layout.card.left&&layout.fareBox.right<=layout.card.right&&
+      Math.abs(layout.fareBox.right-layout.label.right)<8&&
+      layout.fareBox.top>layout.label.top&&
+      layout.fareBox.bottom<=layout.km.top-3&&
+      Math.abs(layout.km.top-layout.duration.top)<4&&
+      layout.km.bottom<layout.send.top,
+      "P1.7 fare under its right-hand label, above two aligned metrics at "+width+"px");
+   await js(function(){document.querySelector(".qtc-submit-region")?.scrollIntoView({block:"center"});return true;});
+   await sleep(100);
+   await snap("p17-fare-header-"+width+".png");
+ }
+ await cmd("Emulation.setDeviceMetricsOverride",{width:390,height:844,
+   deviceScaleFactor:1,mobile:true,screenWidth:390,screenHeight:844});
+ fs.writeFileSync(path.join(OUT,"p17-fare-header-layouts.json"),
+   JSON.stringify(fareLayouts,null,2)+"\\n");
+
+
 // P1.6 CSS-only: inspect original DOM. No new requests, events or controls.
 const motion=await js(function(){
   const p=document.getElementById("pickup-presence"),
