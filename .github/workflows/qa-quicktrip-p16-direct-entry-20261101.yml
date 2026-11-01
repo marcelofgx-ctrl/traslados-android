@@ -1,12 +1,12 @@
-name: QA Quick Trip P1.6 — entrada directa sin landing (NO RELEASE)
+name: QA Quick Trip P1.7 — precio alineado sin tocar motores (NO RELEASE)
 on:
   push:
     branches:
-      - qa/quicktrip-p16-direct-entry-20261101
+      - qa/quicktrip-p17-fare-header-align-20261101
 permissions:
   contents: read
 jobs:
-  root-passenger-redirect:
+  p17-fare-align-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -20,20 +20,21 @@ jobs:
       - name: Strict QA-only scope
         run: |
           set -euo pipefail
-          BASE=ee22375f00dc9f71cb3ca633aafe06adce862aec
+          BASE=33503492e43640df290357f25b16aad573fec8db
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
           test "${#changed[@]}" -eq 5
           for f in "${changed[@]}"; do
             case "$f" in
-              index.html|vercel.json|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml|tests/quicktrip-p16-direct-entry-contract.cjs|docs/QA_QUICKTRIP_P16_DIRECT_ENTRY_20261101.md) ;;
+              web-pasajero/index.html|web-pasajero/sw.js|web-pasajero/quicktrip-p17-fare-align.css|scripts/qa_quicktrip_p16_motion_e2e.cjs|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml) ;;
               *) echo "UNEXPECTED FILE $f"; exit 1 ;;
             esac
           done
-          git diff --quiet "$BASE"..HEAD -- web-pasajero/ mapatrayectos/ supabase/ android/ backend/ 
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ supabase/ android/ backend/ web-pasajero/app.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/quicktrip-p13-approved.css web-pasajero/quicktrip-p16-conductor-motion.css vercel.json 
           node --check tests/quicktrip-p16-direct-entry-contract.cjs
+          node --check scripts/qa_quicktrip_p16_motion_e2e.cjs
           node -e 'const assert=require("node:assert/strict");assert.deepEqual(require("./vercel.json"),{$schema:"https://openapi.vercel.sh/vercel.json",rewrites:[{source:"/api/testing-road",destination:"https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate"}]});'
-      - name: Direct entry and existing P1.4/P1.6 regression
+      - name: P1.4/P1.6 functional regression and P1.7 responsive visual layout
         run: |
           set -euo pipefail
           node tests/quicktrip-p16-direct-entry-contract.cjs
@@ -42,3 +43,4 @@ jobs:
           node tests/quicktrip-p14-photo1-contract.cjs
           node tests/quicktrip-p14-auto-map-contract.cjs
           node tests/quicktrip-p16-motion-contract.cjs
+          node scripts/qa_quicktrip_p16_motion_e2e.cjs
