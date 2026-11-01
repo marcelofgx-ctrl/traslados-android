@@ -1,8 +1,8 @@
-name: QA Quick Trip P1.8 — precio sin recorte y nuevos íconos (NO RELEASE)
+name: QA Quick Trip P1.9 — precio sin bordes cortados (NO RELEASE)
 on:
   push:
     branches:
-      - qa/quicktrip-p18-fare-flow-icons-20261101
+      - qa/quicktrip-p19-fare-seams-20261101
 permissions:
   contents: read
 jobs:
@@ -20,21 +20,21 @@ jobs:
       - name: Strict QA-only scope
         run: |
           set -euo pipefail
-          BASE=33503492e43640df290357f25b16aad573fec8db
+          BASE=6d51b9f0854e679854d79e2a8fb820e2bdb0a9d2
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#changed[@]}" -eq 5
+          test "${#changed[@]}" -eq 3
           for f in "${changed[@]}"; do
             case "$f" in
-              web-pasajero/index.html|web-pasajero/sw.js|web-pasajero/quicktrip-p18-fare-flow-icons.css|scripts/qa_quicktrip_p16_motion_e2e.cjs|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml) ;;
+              web-pasajero/quicktrip-p18-fare-flow-icons.css|scripts/qa_quicktrip_p16_motion_e2e.cjs|.github/workflows/qa-quicktrip-p16-direct-entry-20261101.yml) ;;
               *) echo "UNEXPECTED FILE $f"; exit 1 ;;
             esac
           done
-          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ supabase/ android/ backend/ web-pasajero/app.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/quicktrip-p13-approved.css web-pasajero/quicktrip-p16-conductor-motion.css vercel.json 
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ supabase/ android/ backend/ web-pasajero/app.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/quicktrip-p13-approved.css web-pasajero/quicktrip-p16-conductor-motion.css web-pasajero/index.html web-pasajero/sw.js vercel.json 
           node --check tests/quicktrip-p16-direct-entry-contract.cjs
           node --check scripts/qa_quicktrip_p16_motion_e2e.cjs
           node -e 'const assert=require("node:assert/strict");assert.deepEqual(require("./vercel.json"),{$schema:"https://openapi.vercel.sh/vercel.json",rewrites:[{source:"/api/testing-road",destination:"https://traslados-web.marcelof-gx.workers.dev/api/public/route-estimate"}]});'
-      - name: P1.4/P1.6 functional contracts and P1.8 screenshot checks
+      - name: P1.4/P1.6 functional contracts and P1.9 seamless border checks
         run: |
           set -euo pipefail
           node tests/quicktrip-p16-direct-entry-contract.cjs
