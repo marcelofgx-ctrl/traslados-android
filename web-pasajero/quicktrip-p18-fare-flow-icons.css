@@ -121,3 +121,28 @@ body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title>span:before {
     font-size:18px!important;
   }
 }
+
+/* P1.9 seam fix: the source photo shows a detached top divider and an inner
+   price border with visually disconnected corners. Keep just the ONE outer
+   golden section outline and the two metric-card outlines. No overlay. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region .qtc-summary-title {
+  border:0!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  margin-bottom:3px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child {
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  outline:0!important;
+  background:transparent!important;
+  padding:5px 12px 8px!important;
+  min-height:40px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child small {
+  background:none!important;
+}
