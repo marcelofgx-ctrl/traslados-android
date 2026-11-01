@@ -1,0 +1,123 @@
+/* Quick Trip P1.8 QA — small visual-only patch on verified P1.6.
+   Reflow the ORIGINAL fare node in normal grid flow, never position it absolutely.
+   Replace the two clover glyphs with crisp route/waypoint SVG masks.
+   No JavaScript, values, timeouts, geocoding, GPS, ETA or reservation changes. */
+
+/* One truthful label beside the original fare; remove the redundant header label. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region .qtc-summary-title>small {
+  display:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region .qtc-summary-title {
+  min-height:30px!important;
+  padding-bottom:5px!important;
+  margin-bottom:2px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics {
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding:0 1px 1px!important;
+  align-items:stretch!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:not(:last-child) {
+  grid-row:2!important;
+  grid-column:auto!important;
+  min-width:0!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child {
+  position:static!important;
+  inset:auto!important;
+  transform:none!important;
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:7px 14px!important;
+  border:1px solid rgba(218,191,137,.25)!important;
+  border-radius:11px!important;
+  background:rgba(10,46,53,.57)!important;
+  text-align:left!important;
+  box-shadow:none!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child small {
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  letter-spacing:0!important;
+  color:#bfcec8!important;
+  text-align:left!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child strong {
+  display:block!important;
+  flex:0 0 auto!important;
+  width:auto!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0 3px 0 0!important;
+  font-size:clamp(18px,5vw,23px)!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  letter-spacing:-.025em!important;
+  font-variant-numeric:tabular-nums!important;
+  color:#efd09a!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  overflow-wrap:normal!important;
+  text-align:right!important;
+}
+
+/* Two line icons, aligned with the existing text instead of unicode clubs. */
+body.qt-clean.qt-clean-active #view-viaje
+  .qtc-stops-slot>.premium-route-stops:before {
+  content:""!important;
+  top:50%!important;
+  left:14px!important;
+  width:22px!important;
+  height:22px!important;
+  margin-top:-11px!important;
+  display:block!important;
+  background-color:var(--qt-approved-gold)!important;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%226%22%20cy%3D%225%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2219%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%207v5a3%203%200%200%200%203%203h6a3%203%200%200%201%203%202%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2215%22%20r%3D%221%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat!important;
+  mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%226%22%20cy%3D%225%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2219%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%207v5a3%203%200%200%200%203%203h6a3%203%200%200%201%203%202%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2215%22%20r%3D%221%22%20fill%3D%22black%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat!important;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-summary-title>span:before {
+  content:""!important;
+  display:inline-block!important;
+  vertical-align:-4px!important;
+  width:21px!important;
+  height:21px!important;
+  margin-right:9px!important;
+  background-color:var(--qt-approved-gold)!important;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%226%22%20cy%3D%225%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2219%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%207v2a4%204%200%200%200%204%204h4a4%204%200%200%201%204%204%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat!important;
+  mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.85%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%226%22%20cy%3D%225%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2219%22%20r%3D%222%22%2F%3E%3Cpath%20d%3D%22M6%207v2a4%204%200%200%200%204%204h4a4%204%200%200%201%204%204%22%2F%3E%3C%2Fsvg%3E") center / contain no-repeat!important;
+}
+
+/* Small viewport and accessible text scaling: nothing floats over the fare. */
+@media (max-width:375px) {
+  body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+    .request-recap-metrics>span:last-child {
+    padding-left:10px!important;
+    padding-right:10px!important;
+    gap:7px!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+    .request-recap-metrics>span:last-child strong {
+    font-size:18px!important;
+  }
+}
