@@ -172,6 +172,64 @@ async function main(){
  console.log("P14 RECOVERED 5 FIELDS",JSON.stringify(final));
  await snap("p14-recovered-premium-390.png");
 
+ // P1.8 mobile QA: preserve the ONE native fare, put it in normal flow,
+ // verify no horizontal clipping and replace only the two clover pseudo-icons.
+ const p18Layouts=[];
+ for(const width of [360,390,412]){
+   await cmd("Emulation.setDeviceMetricsOverride",{width,height:844,deviceScaleFactor:1,
+     mobile:true,screenWidth:width,screenHeight:844});
+   await sleep(150);
+   for(const amount of ["native","$ 1.000.000"]){
+     const layout=await js(function(){
+       const price=document.querySelector("#urgent-route-recap [data-final-route-fare]");
+       const saved=price.textContent;
+       const large=AMOUNT_MARKER;
+       if(large)price.textContent="$ 1.000.000";
+       const q=s=>document.querySelector(s),R=x=>{const z=x.getBoundingClientRect();
+         return {left:z.left,right:z.right,top:z.top,bottom:z.bottom,width:z.width}};
+       const row=q("#urgent-route-recap .request-recap-metrics>span:last-child");
+       const label=row.querySelector("small"),strong=row.querySelector("strong");
+       const d=q("#urgent-route-recap [data-final-route-distance]").parentElement;
+       const t=q("#urgent-route-recap [data-final-route-duration]").parentElement;
+       const card=q(".qtc-submit-region");
+       const stop=q(".qtc-stops-slot>.premium-route-stops");
+       const title=q(".qtc-summary-title>span");
+       const routeIcon=getComputedStyle(title,"::before");
+       const stopIcon=getComputedStyle(stop,"::before");
+       const out={width:innerWidth,fare:price.textContent,card:R(card),row:R(row),
+         label:R(label),strong:R(strong),distance:R(d),duration:R(t),
+         position:getComputedStyle(row).position,
+         fareLabel:label.textContent.trim(),scrollWidth:row.scrollWidth,clientWidth:row.clientWidth,
+         routeMask:routeIcon.webkitMaskImage||routeIcon.maskImage,
+         stopMask:stopIcon.webkitMaskImage||stopIcon.maskImage,
+         routeContent:routeIcon.content,stopContent:stopIcon.content,
+         cssLoaded:Array.from(document.styleSheets).some(s=>(s.href||"").includes("quicktrip-p18-fare-flow-icons.css"))};
+       if(large)price.textContent=saved;
+       return out;
+     }.toString().replace("AMOUNT_MARKER",(amount!=="native"?"true":"false")));
+     p18Layouts.push(layout);
+     console.log("P18 FARE-FLOW",JSON.stringify(layout));
+     ok(layout.cssLoaded&&layout.position==="static"&&layout.fareLabel==="Precio del viaje"&&
+       layout.scrollWidth<=layout.clientWidth+2&&
+       layout.row.left>=layout.card.left&&layout.row.right<=layout.card.right&&
+       layout.strong.right<=layout.row.right-3&&layout.strong.left>=layout.label.right+4&&
+       layout.row.bottom<layout.distance.top&&
+       Math.abs(layout.distance.top-layout.duration.top)<3&&
+       layout.routeMask?.includes("data:image/svg+xml")&&
+       layout.stopMask?.includes("data:image/svg+xml"),
+       "P1.8 aligned native fare and line-icons, no clipping at "+width+"px ("+amount+")");
+     if(amount==="native"){
+       await js(function(){document.querySelector(".qtc-submit-region")?.scrollIntoView({block:"center"});return true;});
+       await sleep(100);
+       await snap("p18-fare-flow-"+width+".png");
+     }
+   }
+ }
+ await cmd("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,
+   mobile:true,screenWidth:390,screenHeight:844});
+ fs.writeFileSync(path.join(OUT,"p18-fare-flow-layouts.json"),JSON.stringify(p18Layouts,null,2)+"\\n");
+
+
 // P1.6 CSS-only: inspect original DOM. No new requests, events or controls.
 const motion=await js(function(){
   const p=document.getElementById("pickup-presence"),
