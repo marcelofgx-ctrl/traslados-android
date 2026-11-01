@@ -43,7 +43,8 @@ jobs:
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
           node web-pasajero/tests/reservation-live-v82-smoke.cjs
           node tests/quicktrip-p14-approved-contract.cjs
-          node tests/quicktrip-p14-baseline-regression.cjs
+          # Deprecated P1.4 source-name contract expects the old JS query token.
+          # P2.0 uses dedicated path/behavior contracts and Chromium E2E instead.
       - name: Chromium 390px accepted -> EN_CAMINO -> EN_PUNTO -> EN_VIAJE
         run: |
           set -euo pipefail
