@@ -1,0 +1,52 @@
+/* Quick Trip P1.7 QA: align the ORIGINAL verified fare beneath its header label.
+   No cloned numbers, no script, no change to route, pickup, bookings or rates.
+   P1.3 approved design and P1.6 driver animation remain unchanged. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-submit-region .qtc-summary-title {
+  min-height:44px!important;
+  margin-bottom:2px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap .request-recap-metrics {
+  position:relative!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  padding-top:9px!important;
+  gap:7px!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:not(:last-child) {
+  grid-row:1!important;
+  grid-column:auto!important;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child {
+  /* Anchored to the metrics wrapper, not to the viewport or booking CTA.
+     The native text remains updated by app.js in its existing DOM node. */
+  position:absolute!important;
+  top:-31px!important;
+  right:0!important;
+  left:auto!important;
+  bottom:auto!important;
+  grid-row:auto!important;
+  grid-column:auto!important;
+  align-self:auto!important;
+  justify-self:auto!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  max-width:calc(100% - 130px)!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  transform:none!important;
+  background:transparent!important;
+  text-align:right!important;
+  pointer-events:none;
+}
+body.qt-clean.qt-clean-active #view-viaje #urgent-route-recap
+  .request-recap-metrics>span:last-child strong {
+  display:block!important;
+  font-size:clamp(17px,5vw,21px)!important;
+  line-height:1.22!important;
+  white-space:nowrap!important;
+  overflow-wrap:normal!important;
+  font-variant-numeric:tabular-nums;
+}
