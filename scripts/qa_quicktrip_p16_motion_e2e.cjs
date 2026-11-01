@@ -199,6 +199,8 @@ async function main(){
        const out={width:innerWidth,fare:price.textContent,card:R(card),row:R(row),
          label:R(label),strong:R(strong),distance:R(d),duration:R(t),
          position:getComputedStyle(row).position,
+         fareBorder:[getComputedStyle(row).borderTopWidth,getComputedStyle(row).borderRightWidth,getComputedStyle(row).borderBottomWidth,getComputedStyle(row).borderLeftWidth],
+         titleDivider:getComputedStyle(q(".qtc-summary-title")).borderBottomWidth,
          fareLabel:label.textContent.trim(),scrollWidth:row.scrollWidth,clientWidth:row.clientWidth,
          routeMask:routeIcon.webkitMaskImage||routeIcon.maskImage,
          stopMask:stopIcon.webkitMaskImage||stopIcon.maskImage,
@@ -211,13 +213,14 @@ async function main(){
      console.log("P18 FARE-FLOW",JSON.stringify(layout));
      ok(layout.cssLoaded&&layout.position==="static"&&layout.fareLabel==="Precio del viaje"&&
        layout.scrollWidth<=layout.clientWidth+2&&
+       layout.fareBorder.every(x=>x==="0px")&&layout.titleDivider==="0px"&&
        layout.row.left>=layout.card.left&&layout.row.right<=layout.card.right&&
        layout.strong.right<=layout.row.right-3&&layout.strong.left>=layout.label.right+4&&
        layout.row.bottom<layout.distance.top&&
        Math.abs(layout.distance.top-layout.duration.top)<3&&
        layout.routeMask?.includes("data:image/svg+xml")&&
        layout.stopMask?.includes("data:image/svg+xml"),
-       "P1.8 aligned native fare and line-icons, no clipping at "+width+"px ("+amount+")");
+       "P1.9 seam-free native fare and line-icons, no clipping at "+width+"px ("+amount+")");
      if(amount==="native"){
        await js(function(){document.querySelector(".qtc-submit-region")?.scrollIntoView({block:"center"});return true;});
        await sleep(100);
