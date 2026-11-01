@@ -1,0 +1,93 @@
+/* Quick Trip P1.6 · QA only.
+   Micro-animación discreta sobre nodos NATIVOS del conductor.
+   No JavaScript, no timers de consulta, no GPS, tarifas ni ETA simuladas.
+   El controlador original aporta data-phase; ready/issue/blocked/owned no animan. */
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver
+  #pickup-presence:is([data-phase="checking"],[data-phase="routing"],[data-phase="waiting"])
+  .pickup-live-indicator {
+  animation:qt-p16-dot-breathe 3.2s ease-in-out infinite;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver
+  #pickup-presence:is([data-phase="checking"],[data-phase="routing"],[data-phase="waiting"])
+  .pickup-live-indicator::after {
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:50%;
+  border:1px solid rgba(171,222,190,.40);
+  box-shadow:0 0 0 0 rgba(171,222,190,.06);
+  pointer-events:none;
+  animation:qt-p16-halo 3.2s ease-out infinite;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver
+  #pickup-presence:is([data-phase="checking"],[data-phase="routing"],[data-phase="waiting"])
+  .pickup-card-header {
+  position:relative;
+}
+body.qt-clean.qt-clean-active #view-viaje .qtc-driver
+  #pickup-presence:is([data-phase="checking"],[data-phase="routing"],[data-phase="waiting"])
+  .pickup-card-header::after {
+  content:"";
+  position:absolute;
+  left:21px;
+  right:0;
+  bottom:-5px;
+  height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(138,206,180,.06) 35%,rgba(240,211,153,.43) 50%,rgba(138,206,180,.06) 65%,transparent 100%);
+  background-size:220% 100%;
+  background-position:100% 50%;
+  opacity:.75;
+  pointer-events:none;
+  animation:qt-p16-light-thread 5s ease-in-out infinite;
+}
+/* Halo de borde apenas perceptible, sin superponer ni mover controles. */
+@supports selector(:has(*)) {
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver {
+    position:relative;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver::before {
+    content:"";
+    position:absolute;
+    inset:-1px;
+    border:1px solid rgba(231,207,155,.30);
+    border-radius:inherit;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .55s ease;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver:has(
+    #pickup-presence:is([data-phase="checking"],[data-phase="routing"],[data-phase="waiting"])
+  )::before {
+    opacity:.35;
+    animation:qt-p16-border-breathe 5s ease-in-out infinite;
+  }
+}
+@keyframes qt-p16-dot-breathe {
+  0%,100%{box-shadow:0 0 0 5px rgba(169,220,184,.10)}
+  50%{box-shadow:0 0 0 7px rgba(169,220,184,.18)}
+}
+@keyframes qt-p16-halo {
+  0%{opacity:0;transform:scale(.82)}
+  32%{opacity:.63}
+  76%,100%{opacity:0;transform:scale(1.38)}
+}
+@keyframes qt-p16-light-thread {
+  0%{background-position:100% 50%;opacity:.12}
+  20%,78%{opacity:.75}
+  100%{background-position:-100% 50%;opacity:.12}
+}
+@keyframes qt-p16-border-breathe {
+  0%,100%{opacity:.12}
+  50%{opacity:.36}
+}
+@media(prefers-reduced-motion:reduce) {
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver .pickup-live-indicator,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver .pickup-live-indicator::after,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver .pickup-card-header::after,
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver::before{
+    animation:none!important;
+    transition:none!important;
+  }
+  body.qt-clean.qt-clean-active #view-viaje .qtc-driver
+    #pickup-presence .pickup-card-header::after{opacity:0!important}
+}

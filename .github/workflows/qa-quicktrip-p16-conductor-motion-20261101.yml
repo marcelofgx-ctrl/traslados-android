@@ -1,0 +1,67 @@
+name: QA Quick Trip P1.6 - microanimacion conductor CSS only (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p16-conductor-motion-css-only-20261101
+permissions:
+  contents: read
+jobs:
+  qa-visual-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Strict P1.4 base and CSS-only source change gate
+        run: |
+          set -euo pipefail
+          BASE=b47296a981dd93ef593b8bcf19aa3a4adae4f4a9
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#changed[@]}" -eq 7
+          for file in "${changed[@]}"; do
+            case "$file" in
+              .github/workflows/qa-quicktrip-p16-conductor-motion-20261101.yml|docs/QA_QUICKTRIP_P16_CONDUCTOR_MOTION_20261101.md|scripts/qa_quicktrip_p16_motion_e2e.cjs|tests/quicktrip-p16-motion-contract.cjs|web-pasajero/quicktrip-p16-conductor-motion.css|web-pasajero/index.html|web-pasajero/sw.js) ;;
+              *) echo "BLOCKED unexpected change: $file";exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- \
+            web-pasajero/app.js web-pasajero/quicktrip-clean.js \
+            web-pasajero/eta-engine.js web-pasajero/route-engine.js \
+            web-pasajero/pickup-cadence.js web-pasajero/booking-contracts.js \
+            web-pasajero/quicktrip-p13-approved.css \
+            web-pasajero/quicktrip-p14-estimate-recovery.css \
+            web-pasajero/public-config.js web-pasajero/vercel.json \
+            web-pasajero/geo-search.js web-pasajero/address-engine.js \
+            web-pasajero/premium-map.js web-pasajero/reservation-live.js \
+            mapatrayectos/ supabase/ android/ backend/
+          node --check tests/quicktrip-p16-motion-contract.cjs
+          node --check scripts/qa_quicktrip_p16_motion_e2e.cjs
+          echo "PASS only CSS and passive asset references; business/driver/ETA unchanged"
+      - name: Existing P1.4 and P1.6 source regression gates
+        run: |
+          set -euo pipefail
+          node tests/quicktrip-p14-approved-contract.cjs
+          node tests/quicktrip-p14-baseline-regression.cjs
+          node tests/quicktrip-p14-photo1-contract.cjs
+          node tests/quicktrip-p14-auto-map-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node tests/quicktrip-p16-motion-contract.cjs
+      - name: Real Chromium rendering with synthetic route and pickup inputs
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+          node scripts/qa_quicktrip_p16_motion_e2e.cjs
+      - name: Attach only synthetic visual evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: QuickTrip-P16-Conductor-Premium-Motion-QA
+          path: artifacts/quicktrip-p16-driver-motion/
+          if-no-files-found: warn
+          retention-days: 21
