@@ -1,0 +1,58 @@
+name: QA Quick Trip P2.0 — activar seguimiento en camino (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p20-pickup-live-activation-20261101
+permissions:
+  contents: read
+jobs:
+  pickup-live-activation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: P2.0 QA-only allowlist and immutable real engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=c5e4f942ff6ac65022d71349ac5b6441123e33ab
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#changed[@]}" -eq 5
+          for f in "${changed[@]}"; do
+            case "$f" in
+              .github/workflows/qa-quicktrip-p20-pickup-activation-20261101.yml|web-pasajero/quicktrip-map-focus.js|web-pasajero/index.html|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-p20-pickup-activation-contract.cjs) ;;
+              *) echo "FAIL unexpected file: $f"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ conductor/ core-reservations/ db/ qa/ backend/ web-pasajero/app.js web-pasajero/reservation-live.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/premium-map.js web-pasajero/quicktrip-p18-fare-flow-icons.css web-pasajero/sw.js vercel.json
+      - name: Syntax and original source-bound tracking contract
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/quicktrip-map-focus.js
+          node --check scripts/qa_quicktrip_tracking_metrics_browser.cjs
+          node --check tests/quicktrip-p20-pickup-activation-contract.cjs
+          node tests/quicktrip-p20-pickup-activation-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+          node tests/quicktrip-p14-approved-contract.cjs
+          node tests/quicktrip-p14-baseline-regression.cjs
+      - name: Chromium 390px accepted -> EN_CAMINO -> EN_PUNTO -> EN_VIAJE
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Retain screenshots and synthetic-only QA evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quicktrip-p20-pickup-activation-qa
+          path: artifacts/quicktrip-tracking-metrics/
+          retention-days: 14
+          if-no-files-found: warn
