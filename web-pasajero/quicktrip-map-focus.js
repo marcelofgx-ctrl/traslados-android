@@ -294,8 +294,11 @@
     const onboard=r.status==="EN_VIAJE";
     const arrived=r.pickup_phase==="EN_PUNTO";
     const moving=r.pickup_phase==="EN_CAMINO";
+    // Only a confirmed private GPS fix + verified road leg may claim "GPS REAL".
+    // The reservation status alone does not prove the driver's location.
+    const gpsVerified=screen.dataset.gpsVerified==="true";
     screen.querySelector(".qt-focus-kicker").textContent=
-      onboard?"EN VIAJE · GPS REAL":"RECOGIDA · GPS REAL";
+      (onboard?"EN VIAJE":"RECOGIDA")+(gpsVerified?" · GPS REAL":" · GPS PENDIENTE");
     screen.querySelector(".qt-focus-sheet-heading h2").textContent=
       onboard?"Viaje en curso":arrived?"En tu recogida":
       moving?"Conductor en camino":"Viaje aceptado";
@@ -327,6 +330,7 @@
     doc.body.classList.add("qt-focus-open");
     setSheet(retainSheet);
     const onboard=String(r.status)==="EN_VIAJE";
+    screen.dataset.gpsVerified="false";
     syncTrackingStage(r);
     screen.querySelector(".qt-focus-tracking-origin-text").textContent=
       safeText({text:r.origin_text},"Origen pendiente");
@@ -394,6 +398,10 @@
           }
           return;
         }
+        // The LIVE indicator is driven only by an authorized GPS/road result.
+        // A stale or missing car location removes the real-GPS claim immediately.
+        screen.dataset.gpsVerified=data.gps===true?"true":"false";
+        syncTrackingStage(trackingCtx.reservation);
         screen.querySelector(".qt-focus-message").textContent=data.gps?
           onboard?"GPS verificado · conductor rumbo al destino":
             data.dual?"GPS verificado · dos recorridos reales":
@@ -425,8 +433,15 @@
       r.pickup_phase===trackingCtx.reservation.pickup_phase)return false;
     const previous=trackingCtx.reservation;
     if(previous.status!=="EN_VIAJE"&&r.status!=="EN_VIAJE"){
-      // Same pickup leg: keep the live tracker, camera and sheet mounted.
-      // Only its display label changes. The real GPS refresh timer continues.
+      // Entering EN_CAMINO must ACTIVATE the private pickup tracker now,
+      // not merely change its title while showing the booked route.
+      // EN_PUNTO also needs the updated arrival labels. Reuse the ORIGINAL
+      // mount/RPC and 4 s cadence, with no extra GPS endpoint or polling timer.
+      if(previous.pickup_phase!==r.pickup_phase&&
+         ["EN_CAMINO","EN_PUNTO"].includes(String(r.pickup_phase))){
+        return showTracking({...trackingCtx,reservation:r});
+      }
+      // No phase change: keep the existing camera and GPS timer untouched.
       trackingCtx={...trackingCtx,reservation:r};
       syncTrackingStage(r);
       return true;
