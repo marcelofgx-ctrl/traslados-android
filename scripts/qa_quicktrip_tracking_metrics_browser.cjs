@@ -31,7 +31,7 @@ async function main(){
   const setup=await js(function(){
     const ready=!!window.QuickTripMapFocus?.showTracking&&!!window.TrasladosReservationLive?.mount;
     if(!ready)return {ready};
-    const flags={mode:"waiting",calls:0};
+    const flags={mode:"waiting",calls:0,routeCalls:[]};
     const routeFor=points=>{
       const isContract=points[0].lat===-34.9;
       return {
@@ -42,7 +42,7 @@ async function main(){
       };
     };
     const engine={
-      estimate:async points=>routeFor(points),
+      estimate:async points=>{flags.routeCalls.push(points.map(p=>[p.lat,p.lng]));return routeFor(points);},
       verified:route=>route?.valid===true&&Array.isArray(route.geometry)&&route.geometry.length>=2
     };
     const renderer={
@@ -64,7 +64,7 @@ async function main(){
       return {available:false,reason:"no_recent_gps"};
     };
     const reservation={
-      id:"qa-contract-metrics-not-a-real-id",status:"ACEPTADA",pickup_phase:"EN_CAMINO",
+      id:"qa-contract-metrics-not-a-real-id",status:"ACEPTADA",pickup_phase:"SIN_INICIAR",
       origin_lat:-34.9,origin_lng:-56.1,
       destination_lat:-34.89,destination_lng:-56.19,
       origin_text:"Origen QA",destination_text:"Destino QA",quote_final_total:616
@@ -90,6 +90,8 @@ async function main(){
       mode:window.__qtVisual.flags.mode,
       calls:window.__qtVisual.flags.calls,
       status:e(".qt-focus-sheet-heading h2")?.textContent,
+      kicker:e(".qt-focus-kicker")?.textContent,
+      routeCalls:window.__qtVisual.flags.routeCalls,
       carVisible:!!e(".reservation-live-map .premium-real-map")
     };
   });
@@ -101,12 +103,28 @@ async function main(){
       booked.distanceTitle==="DISTANCIA DEL VIAJE"&&
       booked.durationTitle==="DURACIÓN DEL VIAJE"&&booked.calls>=1,
       "Verified booked road route immediately feeds travel metrics without any driver GPS");
+  ok(booked.kicker==="RECOGIDA · GPS PENDIENTE",
+     "Before EN_CAMINO no GPS is claimed even with an accepted booking");
   await snap("01-booked-trip-metrics-no-gps-390.png");
-  await js(function(){window.__qtVisual.flags.mode="fresh";return true;});
+  const immediate=await js(function(){
+    const v=window.__qtVisual;
+    v.flags.mode="fresh";
+    const next={...v.reservation,pickup_phase:"EN_CAMINO"};
+    v.reservation=next;
+    const previous=v.flags.calls;
+    const length=history.length;
+    const changed=window.QuickTripMapFocus.updateTracking(next);
+    return {changed,previous,length};
+  });
+  ok(immediate.changed,"EN_CAMINO triggers the same authorized tracker, not only a title");
   const live=await poll(async()=>{
     const x=await read();return x.source==="live"?x:null;
-  },12000);
+  },2500);
   console.log("LIVE GPS QA ONLY",JSON.stringify(live));
+  ok(live.calls>immediate.previous&&live.kicker==="RECOGIDA · GPS REAL"&&
+     live.status==="Conductor en camino"&&
+     live.routeCalls.some(points=>points[0][0]===-34.87&&points[1][0]===-34.9),
+     "EN_CAMINO requests GPS immediately and routes driver to passenger origin");
   ok(live.distance==="2,7 km"&&live.duration==="6 min"&&
      live.distanceTitle==="A RECOGIDA"&&live.durationTitle==="LLEGADA ESTIMADA",
      "Authenticated GPS leg replaces booked distance with explicitly labeled pickup km and ETA");
@@ -116,11 +134,42 @@ async function main(){
     const x=await read();return x.source==="contract"&&x.calls>live.calls?x:null;
   },12000);
   console.log("GPS STALE QA ONLY",JSON.stringify(returned));
-  ok(returned.distance==="15,4 km"&&returned.duration==="26 min"&&
+  ok(returned.kicker==="RECOGIDA · GPS PENDIENTE"&&
+     returned.distance==="15,4 km"&&returned.duration==="26 min"&&
     returned.distanceTitle==="DISTANCIA DEL VIAJE"&&
     returned.durationTitle==="DURACIÓN DEL VIAJE",
     "GPS expires: remove stale pickup km/ETA; display only authentic booked trip metrics");
   await snap("03-private-gps-stale-booked-route-only-390.png");
+  // The arrival transition and trip start must each use the SAME live GPS
+  // service, changing only the destination leg after EN_VIAJE.
+  const towardRide=await js(function(){
+    const v=window.__qtVisual;
+    v.flags.mode="fresh";
+    const arrived={...v.reservation,pickup_phase:"EN_PUNTO"};
+    const result1=window.QuickTripMapFocus.updateTracking(arrived);
+    v.reservation=arrived;
+    return {result1};
+  });
+  ok(towardRide.result1,"EN_PUNTO updates the existing pickup tracker");
+  const atOrigin=await poll(async()=>{
+    const x=await read();return x.status==="En tu recogida"&&x.source==="live"?x:null;
+  },2500);
+  ok(atOrigin.kicker==="RECOGIDA · GPS REAL",
+    "Arrival keeps verified pickup GPS tracking active");
+  const started=await js(function(){
+    const v=window.__qtVisual;
+    const ride={...v.reservation,status:"EN_VIAJE"};
+    v.reservation=ride;
+    return window.QuickTripMapFocus.updateTracking(ride);
+  });
+  ok(started,"EN_VIAJE changes to passenger destination leg");
+  const onboard=await poll(async()=>{
+    const x=await read();return x.status==="Viaje en curso"&&x.source==="live"?x:null;
+  },2600);
+  ok(onboard.kicker==="EN VIAJE · GPS REAL"&&
+     onboard.distanceTitle==="AL DESTINO"&&
+     onboard.routeCalls.some(points=>points[0][0]===-34.87&&points[1][0]===-34.89),
+     "Trip start keeps same tracker but changes active route to destination");
   const close=await js(function(){
     window.QuickTripMapFocus.close(true);
     return !window.QuickTripMapFocus.isTrackingOpen();
