@@ -1,0 +1,54 @@
+name: QA Quick Trip P2.5 private GPS pending explanation (NO RELEASE)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p25-pickup-gps-diagnostics-20261102
+permissions:
+  contents: read
+jobs:
+  p25-private-gps-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Require exact P2.4 lineage and diagnostics-only file list
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=ee07c39258ac8cb6cf869209adf5facc0151049f
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 6
+          for file in "${files[@]}"; do
+            case "$file" in
+              web-pasajero/reservation-live.js|web-pasajero/quicktrip-map-focus.js|web-pasajero/index.html|web-pasajero/sw.js|tests/quicktrip-p25-gps-pending-contract.cjs|.github/workflows/qa-quicktrip-p25-gps-pending.yml) ;;
+              *) echo "FAIL unauthorized change: $file"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ conductor/ db/ supabase/ core-reservations/ web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/premium-map.js web-pasajero/quicktrip-p24-tracking-polish.css vercel.json
+          echo "PASS: GPS source/permissions, ETA, pricing, native driver, databases untouched"
+      - name: Source contracts and old GPS fallback regressions
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/reservation-live.js
+          node --check web-pasajero/quicktrip-map-focus.js
+          node tests/quicktrip-p25-gps-pending-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+      - name: Browser acceptance with synthetic GPS and status transitions
+        run: node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Save QA-only screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quicktrip-p25-gps-pending-qa
+          path: artifacts/quicktrip-tracking-metrics/
+          retention-days: 14
+          if-no-files-found: warn
