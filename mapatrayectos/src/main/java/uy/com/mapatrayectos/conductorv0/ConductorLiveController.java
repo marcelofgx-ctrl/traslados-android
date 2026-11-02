@@ -20,6 +20,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import uy.com.mapatrayectos.DriverIdentity;
 import uy.com.mapatrayectos.TransferAlerts;
+import uy.com.mapatrayectos.TrackingService;
 
 /**
  * Uses the existing authenticated Conductor RPC pipeline, never raw table access.
@@ -334,9 +335,31 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
                 busy=false;view.setBusy(false);
                 view.setFeedback(done?("EN_CAMINO".equals(phase)?"En camino confirmado":"Llegada confirmada"):
                     "No se confirmó el cambio; verificá conexión o estado.",done);
-                if(done){playTone(true);TransferAlerts.refreshAsync(activity);}
+                if(done){playTone(true);requestPrivatePickupGpsOnce();TransferAlerts.refreshAsync(activity);}
             });
         },"quicktrip-live-pickup").start();
+    }
+    /** Request a single CURRENT location publication after server-confirmed
+     * pickup phase. Never start a jornada, turn on GPS or bypass consent.
+     * Normal 15/25/30s heartbeat continues unchanged. */
+    private void requestPrivatePickupGpsOnce(){
+        android.content.SharedPreferences shift=activity.getSharedPreferences(
+            "tracking_state",Context.MODE_PRIVATE);
+        android.content.SharedPreferences consent=activity.getSharedPreferences(
+            "pickup_presence",Context.MODE_PRIVATE);
+        if(!shift.getBoolean("shift_active",false)||
+           shift.getBoolean("shift_paused",false)||
+           !consent.getBoolean("enabled",false)||
+           consent.getBoolean("manually_busy",false))return;
+        try{
+            Intent sync=new Intent(activity,TrackingService.class)
+                .setAction(TrackingService.ACTION_PRESENCE_SYNC);
+            if(Build.VERSION.SDK_INT>=26)activity.startForegroundService(sync);
+            else activity.startService(sync);
+        }catch(RuntimeException ignored){
+            // Existing periodic presence publisher stays responsible for retry.
+            // Never report a GPS fix from a failed service request.
+        }
     }
     @Override public void onPrepareQuote(String id){
         if(busy)return;
