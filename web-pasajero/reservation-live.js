@@ -28,6 +28,15 @@
     return route;
   }
   function formatKm(km){return Number(km).toLocaleString("es-UY",{maximumFractionDigits:1})+" km";}
+  // Fixed text only: never expose private RPC payloads, identifiers or raw errors.
+  function gpsPendingLabel(reason){
+    if(reason==="preparing_pickup")return "Esperando activación del GPS del conductor";
+    if(reason==="stale_gps"||reason==="no_recent_gps"||reason==="gps_unavailable")
+      return "Sin posición GPS reciente del conductor";
+    if(reason==="no_unique_active_reservation"||reason==="not_authorized")
+      return "Seguimiento privado de esta reserva aún no disponible";
+    return "Esperando ubicación autorizada del conductor";
+  }
   function mount(host,{reservation:r,guestToken=null,sessionToken=null,rpc,engine,api,key,renderer,onUpdate=null}={}){
     if(!host||!r||!activeStatus.has(String(r.status))||typeof rpc!=="function")return;
     let stopped=false,timer=null,contractRoute=null;
@@ -100,6 +109,9 @@
           const height=featured?Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55))):208;
           if(!mapHost.querySelector(".premium-real-map")&&renderer?.overview)
             renderer.overview(mapHost,[[from.lat,from.lng],[to.lat,to.lng]],{height});
+          // No route is claimed as verified: notify the existing UI without
+          // inventing a distance or starting a second retry timer.
+          if(host.dataset.liveDriver!=="true")notify({stage:"contract_pending",routePending:true});
         }
         return false;
       }
@@ -202,13 +214,11 @@
             void paint([from,to],"contract");
           }
           host.dataset.gpsState="waiting";
-          status.textContent=ride?"Posición del vehículo pendiente":
-            atPickup?"Conductor llegó · posición GPS pendiente":
-            value?.reason==="preparing_pickup"?"Viaje aceptado · preparando recogida":
-              "Recogida confirmada · posición pendiente";
-          explanation.textContent="Vista del origen y destino contratados. Todavía no tenemos una posición GPS reciente del auto.";
-          privacy.textContent="La llegada del conductor no puede estimarse sin su ubicación verificada.";
-          notify({stage:ride?"en_viaje":"recogida",gps:false,message:status.textContent});
+          status.textContent=gpsPendingLabel(value?.reason);
+          explanation.textContent="Vista del origen y destino contratados. La traza conductor → recogida solo aparece con GPS real autorizado.";
+          privacy.textContent="Sin GPS reciente no se calculan distancia ni llegada del conductor. Reintentando automáticamente.";
+          notify({stage:ride?"en_viaje":"recogida",gps:false,
+            message:status.textContent,routePending:host.dataset.mapRoute!=="contract|"+keyOf([from,to])});
           return;
         }
         const destination=ride?to:from;
