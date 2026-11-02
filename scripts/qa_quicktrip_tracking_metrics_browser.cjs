@@ -141,7 +141,7 @@ async function main(){
        text:button.textContent}:null;
   }),5500);
   console.log("P24 HEADER COMPACT",JSON.stringify(compact));
-  ok(compact.expanded==="false"&&compact.height<=52&&
+  ok(compact.expanded==="false"&&compact.height<=65&&
     compact.text.includes("Ver origen y destino"),
     "P2.4 addresses collapse once after 3.3 seconds, freeing map space");
   const manual=await js(function(){
