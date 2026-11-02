@@ -145,6 +145,19 @@
           leg.setAttribute("stroke-linejoin","round");leg.setAttribute("stroke-linecap","round");
           leg.setAttribute("class",klass);svg.append(leg);
         }
+        // Light running along the VERIFIED car → pickup polyline, never a
+        // simulated car position or a new GPS / ETA calculation.
+        if(options.routeMode==="pickup"&&vehicle){
+          const flow=document.createElementNS(NS,"polyline");
+          flow.setAttribute("points",pathString);
+          flow.setAttribute("fill","none");
+          flow.setAttribute("stroke","#ddfff2");
+          flow.setAttribute("stroke-width","2.8");
+          flow.setAttribute("stroke-linecap","round");
+          flow.setAttribute("stroke-linejoin","round");
+          flow.setAttribute("class","premium-map-approach-flow");
+          svg.append(flow);
+        }
       }
     }
     const start=view.points[0],end=view.points[view.points.length-1];
@@ -180,6 +193,43 @@
         }
       }
     }
+
+    function drawCarMarker(p){
+      // Compact north-facing top-view silhouette. A graphic marker is not
+      // a vehicle heading estimate: the center stays at the LAST verified GPS.
+      const g=document.createElementNS(NS,"g");
+      g.setAttribute("class","premium-map-driver");
+      g.setAttribute("transform","translate("+p[0]+" "+p[1]+")");
+      function shape(tag,attrs){
+        const el=document.createElementNS(NS,tag);
+        for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));
+        g.append(el);return el;
+      }
+      shape("circle",{cx:0,cy:0,r:21,fill:"#07353d",stroke:"#edcc92","stroke-width":2.2});
+      shape("rect",{x:-12,y:-10,width:4,height:17,rx:2,fill:"#bdcbd0"});
+      shape("rect",{x:8,y:-10,width:4,height:17,rx:2,fill:"#bdcbd0"});
+      shape("rect",{x:-9,y:-14,width:18,height:29,rx:6.5,fill:"#f5e8cb",stroke:"#123e48","stroke-width":1.7});
+      shape("path",{d:"M-6 -7 Q0 -11 6 -7 L6 -1 Q0 1 -6 -1 Z",fill:"#388d91"});
+      shape("path",{d:"M-6 6 L6 6 L5 10 L-5 10 Z",fill:"#7bb7b2"});
+      shape("rect",{x:-7.5,y:-12,width:4,height:2,rx:1,fill:"#f5cc83"});
+      shape("rect",{x:3.5,y:-12,width:4,height:2,rx:1,fill:"#f5cc83"});
+      svg.append(g);
+      if(options.previousCar&&!options.overview&&typeof g.animate==="function"&&
+         !root.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches){
+        const old=project([options.previousCar.lat,options.previousCar.lng]);
+        if(old){
+          const at=[(old[0]*view.scale-view.centerX)+width/2,
+                    (old[1]*view.scale-view.centerY)+height/2];
+          const dx=at[0]-p[0],dy=at[1]-p[1],pixels=Math.hypot(dx,dy);
+          if(pixels>3&&pixels<170){
+            // Only interpolate BETWEEN two authenticated fixes, never forward.
+            g.animate([{transform:"translate("+dx+"px,"+dy+"px)"},
+                       {transform:"translate(0px,0px)"}],
+                      {duration:1200,easing:"ease-out",fill:"none"});
+          }
+        }
+      }
+    }
     // In preview mode show only verified pickup/destination COORDINATES.
     // A pending or failed routing engine must never draw a fabricated road.
     if(options.overview){
@@ -199,9 +249,9 @@
         const p=project([vehicle.lat,vehicle.lng]);
         const at=[(p[0]*view.scale-view.centerX)+width/2,
                   (p[1]*view.scale-view.centerY)+height/2];
-        drawMarker(at,"🚘","#f6e0ae",true);
+        drawCarMarker(at);
       }else{
-        if(live)drawMarker(start,"🚘","#f6e0ae",true);
+        if(live)drawCarMarker(start);
         else drawMarker(start,"O","#49e0a7");
         drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
       }
