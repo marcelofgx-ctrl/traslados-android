@@ -24,10 +24,10 @@ jobs:
           BASE=5e53fc9e70db6c02f822a11553e6f9f99c5543c5
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#files[@]}" -eq 8
+          test "${#files[@]}" -eq 9
           for file in "${files[@]}"; do
             case "$file" in
-              web-pasajero/quicktrip-p24-tracking-polish.css|web-pasajero/premium-map.js|web-pasajero/quicktrip-map-focus.js|web-pasajero/index.html|web-pasajero/sw.js|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-p24-tracking-polish-contract.cjs|.github/workflows/qa-quicktrip-p23-follow-leg-readability.yml) ;;
+              web-pasajero/quicktrip-p24-tracking-polish.css|web-pasajero/premium-map.js|web-pasajero/quicktrip-map-focus.js|web-pasajero/index.html|web-pasajero/sw.js|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-p24-tracking-polish-contract.cjs|web-pasajero/tests/tracking-fases-gps-real-smoke.cjs|.github/workflows/qa-quicktrip-p23-follow-leg-readability.yml) ;;
               *) echo "FAIL unauthorized QA change: $file"; exit 1;;
             esac
           done
