@@ -859,6 +859,28 @@ public class MainActivity extends Activity {
         });
     }
 
+    /** In the one integrated Mapa QT APK, refresh existing pickup presence
+     * right after EN_CAMINO / EN_PUNTO is acknowledged. The standalone
+     * Conductor backup has no Mapa tracking service and is left unchanged.
+     * This never starts a shift, grants consent or changes GPS cadence. */
+    private void requestIntegratedPickupGpsOnce(){
+        if(!"uy.com.mapatrayectos".equals(getPackageName()))return;
+        android.content.SharedPreferences shift=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        android.content.SharedPreferences consent=getSharedPreferences("pickup_presence",MODE_PRIVATE);
+        if(!shift.getBoolean("shift_active",false)||
+           shift.getBoolean("shift_paused",false)||
+           !consent.getBoolean("enabled",false)||
+           consent.getBoolean("manually_busy",false))return;
+        try{
+            Intent sync=new Intent("uy.com.mapatrayectos.PRESENCE_SYNC");
+            sync.setClassName(getPackageName(),"uy.com.mapatrayectos.TrackingService");
+            if(Build.VERSION.SDK_INT>=26)startForegroundService(sync);
+            else startService(sync);
+        }catch(RuntimeException ignored){
+            // Regular GPS presence heartbeat performs the safe retry.
+        }
+    }
+
     private void changePickupPhase(JSONObject r,String phase){
         String id=r.optString("id","");
         if(id.isEmpty()||!driverStatusInFlight.add("phase-"+id))return;
@@ -872,6 +894,7 @@ public class MainActivity extends Activity {
                         toast("No se pudo comprobar el estado enviado");
                     }else{
                         vibrateAcceptedPickupPhase();
+                        requestIntegratedPickupGpsOnce();
                         toast("EN_CAMINO".equals(phase)?"Aviso enviado: En camino":"Aviso enviado: Llegué al origen");
                     }
                     expandedId=id;loadActive(true);
