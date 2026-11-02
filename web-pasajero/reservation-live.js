@@ -50,7 +50,7 @@
     // immediately, while the existing private GPS and road requests resolve.
     function showEndpointFallback(){
       if(!from||!to||!renderer?.overview)return false;
-      if(mapHost.querySelector(".premium-real-map"))return true;
+      if(typeof mapHost.querySelector==="function"&&mapHost.querySelector(".premium-real-map"))return true;
       const overlay=host.closest?.("#qt-focus");
       const sheetTop=overlay?.querySelector?.(".qt-focus-sheet")?.getBoundingClientRect?.().top;
       const height=overlay?Math.round(Math.max(300,Math.min(root.innerHeight||760,(sheetTop||450)+26)))
