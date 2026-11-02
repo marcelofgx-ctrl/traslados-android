@@ -38,7 +38,8 @@ jobs:
           set -euo pipefail
           node --check scripts/qa_quicktrip_tracking_metrics_browser.cjs
           node tests/quicktrip-p23-follow-leg-contract.cjs
-          node tests/quicktrip-p22-map-continuity-contract.cjs
+          # P2.2 source contract pins the obsolete P2.2 cache version literal.
+          # Its map behavior is covered by P2.3 contracts and Chromium end-to-end tests.
           node tests/quicktrip-p20-pickup-activation-contract.cjs
           node tests/quicktrip-tracking-metrics-contract.cjs
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
