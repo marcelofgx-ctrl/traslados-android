@@ -28,6 +28,7 @@ const way={estimate:async points=>({geometry:points.map(x=>[x.lat,x.lng]),distan
 function flatten(el){return [el,...(el.children||[]).flatMap(flatten)];}
 function pickMap(host){return flatten(host).find(x=>x.className==="premium-real-map");}
 function labels(host){return flatten(host).filter(x=>x.tag==="text").map(x=>x.textContent);}
+function hasCar(host){return flatten(host).some(x=>x.tag==="g"&&x.attrs?.class==="premium-map-driver");}
 const tick=()=>new Promise(resolve=>setTimeout(resolve,35));
 async function show(row,response){
   const host=node();
@@ -42,23 +43,23 @@ async function show(row,response){
   const pickup=await show(r,{available:true,driverLat:-34.81,driverLng:-56.04,gpsAgeSec:9});
   assert.equal(pickup.dataset.liveDriver,"true","Live routing only with recent authorized GPS");
   assert.match(pickMap(pickup).attrs["aria-label"],/recogida/);
-  assert(labels(pickup).includes("🚘")&&labels(pickup).includes("P")&&labels(pickup).includes("D"),
+  assert(hasCar(pickup)&&labels(pickup).includes("P")&&labels(pickup).includes("D"),
     "Pickup should locate car, passenger and final destination separately");
   assert(flatten(pickup).some(x=>x.textContent==="AUTO → RECOGIDA"));
   const ride=await show({...r,status:"EN_VIAJE",pickup_phase:"EN_PUNTO"},
     {available:true,driverLat:-34.81,driverLng:-56.04,gpsAgeSec:4});
   assert.equal(ride.dataset.liveDriver,"true");
   assert.match(pickMap(ride).attrs["aria-label"],/pasajero a bordo/);
-  assert(labels(ride).includes("🚘")&&labels(ride).includes("O")&&labels(ride).includes("D"),
+  assert(hasCar(ride)&&labels(ride).includes("O")&&labels(ride).includes("D"),
     "Onboard mode shows car headed to destination, plus original pickup");
   assert(flatten(ride).some(x=>x.textContent==="AUTO → DESTINO"));
   const stale=await show(r,{available:true,driverLat:-34.81,driverLng:-56.04,gpsAgeSec:150});
   assert.equal(stale.dataset.liveDriver,"false");
-  assert(!labels(stale).includes("🚘"),"Stale GPS may never appear as a moving car");
+  assert(!hasCar(stale),"Stale GPS may never appear as a moving car");
   assert(labels(stale).includes("O")&&labels(stale).includes("D"));
   assert(flatten(stale).some(x=>x.textContent==="RECORRIDO PREVISTO"));
   const absent=await show(r,{available:false,reason:"preparing_pickup"});
-  assert(!labels(absent).includes("🚘"),"No GPS means no car marker");
+  assert(!hasCar(absent),"No GPS means no car marker");
   assert.equal(follow.coordinates(0,0),null);
   console.log("PASS real GPS tracking phases: private live car→pickup, onboard car→destination, honest static fallback");
 })().catch(error=>{console.error(error);process.exitCode=1;});
