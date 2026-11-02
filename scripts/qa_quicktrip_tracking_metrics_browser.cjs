@@ -67,7 +67,7 @@ async function main(){
       id:"qa-contract-metrics-not-a-real-id",status:"ACEPTADA",pickup_phase:"SIN_INICIAR",
       origin_lat:-34.9,origin_lng:-56.1,
       destination_lat:-34.89,destination_lng:-56.19,
-      origin_text:"Origen QA",destination_text:"Destino QA",quote_final_total:616
+      origin_text:"AVENIDA INGENIERO LUIS GIANNATTASIO 9000",destination_text:"Aeropuerto Internacional de Carrasco · Terminal de pasajeros",quote_final_total:616
     };
     window.__qtVisual={flags,reservation,engine,renderer,rpc};
     const opened=window.QuickTripMapFocus.showTracking({
@@ -78,6 +78,38 @@ async function main(){
   });
   ok(setup.ready&&setup.opened&&setup.immediateMap&&setup.overviewCalls>=1,
       "P2.2 shows verified-origin/destination map synchronously, before routing/GPS");
+  // P2.3 mobile regression: long Uruguayan addresses remain fully visible,
+  // with right-hand clearance for the floating assistant icon.
+  for(const width of [360,390,412]){
+    await cmd("Emulation.setDeviceMetricsOverride",{width,height:844,
+      deviceScaleFactor:1,mobile:true,screenWidth:width,screenHeight:844});
+    await sleep(135);
+    const layout=await js(function(){
+      const o=document.querySelector("#qt-focus");
+      const card=o.querySelector(".qt-focus-tracking-route");
+      const origin=o.querySelector(".qt-focus-tracking-origin-text");
+      const dest=o.querySelector(".qt-focus-tracking-destination-text");
+      const rect=e=>{const r=e.getBoundingClientRect();
+        return {top:r.top,bottom:r.bottom,left:r.left,right:r.right}};
+      return {width:innerWidth,card:rect(card),origin:rect(origin),dest:rect(dest),
+        scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,
+        paddingRight:getComputedStyle(card).paddingRight,
+        visible:getComputedStyle(card).display!=="none",
+        originText:origin.textContent,destText:dest.textContent,
+        stylesheet:[...document.styleSheets].some(sheet=>(sheet.href||"").includes("quicktrip-p23-follow-leg-readability.css"))};
+    });
+    console.log("P23 ADDRESS LAYOUT",JSON.stringify(layout));
+    ok(layout.stylesheet&&layout.visible&&layout.scrollHeight<=layout.clientHeight+2&&
+      layout.dest.bottom<=layout.card.bottom+2&&
+      layout.origin.top>=layout.card.top&&
+      layout.card.right-layout.dest.right>=59&&
+      layout.originText.includes("GIANNATTASIO 9000")&&
+      layout.destText.includes("Terminal de pasajeros"),
+      "P2.3 origin and destination fully visible, icon clearance at "+width+"px");
+    await snap("p23-tracking-addresses-"+width+".png");
+  }
+  await cmd("Emulation.setDeviceMetricsOverride",{width:390,height:844,
+    deviceScaleFactor:1,mobile:true,screenWidth:390,screenHeight:844});
   const read=()=>js(function(){
     const overlay=document.getElementById("qt-focus");
     const e=selector=>overlay.querySelector(selector);
