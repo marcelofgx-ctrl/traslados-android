@@ -43,7 +43,7 @@ jobs:
           node tests/quicktrip-tracking-metrics-contract.cjs
           node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
           node web-pasajero/tests/reservation-live-v82-smoke.cjs
-      - name: Chromium QA: auto-collapse, manual toggle, vector car, animation and ride phases
+      - name: Chromium QA auto-collapse, manual toggle, vector car, animation and ride phases
         shell: bash
         run: |
           set -euo pipefail
