@@ -1,0 +1,44 @@
+name: QA Mapa QT P2.1 — deslizar estados Conductor (NO APK)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p21-driver-slide-haptic-20261101
+permissions:
+  contents: read
+jobs:
+  native-slide-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Verify strictly scoped Conductor visual-only changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=330f15bc09bfccdbd7b592831fea17b55bcc0ffb
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 3
+          for file in "${files[@]}"; do
+            case "$file" in
+              conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java|tests/quicktrip-p21-driver-slide-haptic-contract.cjs|.github/workflows/qa-quicktrip-p21-driver-slide-haptic.yml) ;;
+              *) echo "FAIL unexpected edit: $file"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- web-pasajero/ mapatrayectos/ core-reservations/ db/ conductor/src/main/java/uy/com/traslados/conductor/Api.java conductor/src/main/java/uy/com/traslados/conductor/TripTelemetryService.java conductor/src/main/java/uy/com/traslados/conductor/ReservationMonitorService.java conductor/src/main/AndroidManifest.xml
+          echo "PASS: no operational, backend, GPS, fare or APK changes"
+      - name: Verify haptic slider behavior contracts
+        run: |
+          node --check tests/quicktrip-p21-driver-slide-haptic-contract.cjs
+          node tests/quicktrip-p21-driver-slide-haptic-contract.cjs
+      - name: Reuse native pure Java regression suite (NO Android build)
+        run: bash scripts/ci_fast_contracts.sh all
+      - name: Confirm QA has no Android packaging
+        run: |
+          echo "Source/contract validation only. No Gradle, assembleDebug, assembleRelease, APK or deployment."
