@@ -443,6 +443,14 @@
           }
           return;
         }
+        if(data.routePending===true&&data.stage==="contract_pending"){
+          // Temporary road-provider failure is NOT evidence of missing GPS.
+          // Never erase a known private GPS state or invent any route metrics.
+          if(screen.dataset.metricsSource==="pending")
+            screen.querySelector(".qt-focus-message").textContent=
+              "Esperando cálculo vial; seguimos consultando el GPS del conductor.";
+          return;
+        }
         // The LIVE indicator is driven only by an authorized GPS/road result.
         // A stale or missing car location removes the real-GPS claim immediately.
         screen.dataset.gpsVerified=data.gps===true?"true":"false";
@@ -453,6 +461,9 @@
               "GPS verificado · verificando recorrido hasta recogida":
           data.message||"Esperando GPS reciente para mostrar el vehículo";
         legend.querySelector(".qt-focus-legend-approach").hidden=onboard||!data.gps;
+        screen.querySelector(".qt-focus-car-detail").textContent=data.gps?
+          onboard?"GPS real · hacia destino":"GPS real · hacia recogida":
+          "GPS pendiente · esperando conductor";
         if(data.gps&&presentMetrics(data,"live"))return;
         // GPS missing/stale or live route cannot be verified: never retain an
         // obsolete driver-to-pickup ETA. Fall back to the *labeled* booked trip.
@@ -460,7 +471,10 @@
         else{
           tripDistance.textContent="—";
           tripTime.textContent="—";
-          setMetricLabels("DISTANCIA DEL VIAJE","DURACIÓN DEL VIAJE");
+          // In EN_CAMINO do not mislabel the contracted trip distance as
+          // driver→pickup. If neither road nor GPS is verified, show why.
+          setMetricLabels(onboard?"AL DESTINO":"A RECOGIDA",
+            onboard?"TIEMPO AL DESTINO":"LLEGADA ESTIMADA");
           screen.dataset.metricsSource="pending";
         }
       }
