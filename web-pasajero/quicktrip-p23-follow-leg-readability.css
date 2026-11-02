@@ -1,0 +1,82 @@
+/* Quick Trip P2.3 QA — presentation only: complete stop labels, distinguish route legs.
+   No GPS changes, no new coordinates, no route requests or reservation writes. */
+
+/* Long Spanish street names need more than the old 110/136px cap.
+   Reserve the right edge for the floating assistant bubble on Samsung. */
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-route {
+  box-sizing:border-box!important;
+  max-height:min(42dvh,310px)!important;
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  padding:12px 69px 12px 13px!important;
+  row-gap:8px!important;
+  align-content:start!important;
+  scrollbar-width:thin;
+}
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-point {
+  min-height:0!important;
+  align-items:start!important;
+  grid-template-columns:18px minmax(0,1fr)!important;
+  gap:7px!important;
+}
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-point + .qt-focus-tracking-point {
+  padding-top:8px!important;
+}
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-copy {
+  min-width:0!important;
+}
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-copy strong {
+  display:block!important;
+  max-width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+  font-size:clamp(11px,3.1vw,13px)!important;
+  line-height:1.36!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+}
+#qt-focus[data-mode="tracking"] .qt-focus-tracking-copy small {
+  line-height:1.35!important;
+}
+@media (max-width:365px) {
+  #qt-focus[data-mode="tracking"] .qt-focus-tracking-route {
+    padding-right:61px!important;
+  }
+}
+@media (max-height:700px) {
+  #qt-focus[data-mode="tracking"] .qt-focus-tracking-route {
+    max-height:min(44dvh,300px)!important;
+  }
+}
+
+/* Only when a REAL driver GPS leg and BOTH route polylines exist:
+   soften the future passenger journey (white) and prioritize the
+   short driver-to-pickup leg (green). If GPS/approach is absent, the
+   verified booked route remains unchanged, never impersonating a car. */
+#qt-focus[data-mode="tracking"][data-gps-verified="true"][data-follow-stage="pickup"]
+  .qt-focus-map:has(.premium-map-approach) .premium-map-route {
+  stroke:#dce8e5!important;
+  stroke-width:3.5!important;
+  opacity:.58!important;
+}
+#qt-focus[data-mode="tracking"][data-gps-verified="true"][data-follow-stage="pickup"]
+  .qt-focus-map:has(.premium-map-approach) .premium-map-route-shadow {
+  stroke-width:6!important;
+  opacity:.50!important;
+}
+#qt-focus[data-mode="tracking"][data-gps-verified="true"][data-follow-stage="pickup"]
+  .qt-focus-map .premium-map-approach {
+  stroke:#47ebae!important;
+  stroke-width:8!important;
+  opacity:1!important;
+}
+#qt-focus[data-mode="tracking"][data-gps-verified="true"][data-follow-stage="pickup"]
+  .qt-focus-map .premium-map-approach-shadow {
+  stroke:#073835!important;
+  stroke-width:12!important;
+  opacity:1!important;
+}
