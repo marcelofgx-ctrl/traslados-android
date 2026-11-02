@@ -7,6 +7,35 @@
   const doc=root.document;
   let screen=null,host=null,state=null,open=false,lastMapKey="";
   let trackingCtx=null,trackingStop=null,previewSubmit=null;
+  // Header-only timer: no GPS/ETA/reservation polling changes.
+  let routeCollapseTimer=null;
+  let routePreference={id:"",manual:false,compact:false,deadline:0};
+  function setRouteCompact(compact,manual=false){
+    if(!screen)return;
+    if(manual){
+      routePreference.manual=true;
+      if(routeCollapseTimer!==null)root.clearTimeout(routeCollapseTimer);
+      routeCollapseTimer=null;
+    }
+    routePreference.compact=Boolean(compact);
+    screen.classList.toggle("qt-route-compact",routePreference.compact);
+    const toggle=screen.querySelector(".qt-focus-route-toggle");
+    if(toggle){
+      toggle.setAttribute("aria-expanded",String(!routePreference.compact));
+      toggle.textContent=routePreference.compact?
+        "Ver origen y destino ⌄":"Ocultar direcciones ⌃";
+    }
+  }
+  function scheduleRouteCollapse(id){
+    if(routeCollapseTimer!==null)root.clearTimeout(routeCollapseTimer);
+    routeCollapseTimer=null;
+    if(routePreference.manual||routePreference.compact)return;
+    routeCollapseTimer=root.setTimeout(()=>{
+      routeCollapseTimer=null;
+      if(open&&trackingCtx&&String(trackingCtx.reservation.id)===String(id)&&
+         !routePreference.manual)setRouteCompact(true);
+    },Math.max(0,routePreference.deadline-Date.now()));
+  }
   // A tracking overlay has one browser-history entry so Android Back
   // closes the map to the active ride, not the previous history screen.
   const notifyTrackingClosed=()=>root.dispatchEvent(
@@ -40,6 +69,12 @@
       copy.append(make("small","",label),make("strong","qt-focus-tracking-"+kind+"-text","—"));
       point.append(pin,copy);trackingRoute.append(point);
     }
+    const routeToggle=make("button","qt-focus-route-toggle","Ocultar direcciones ⌃");
+    routeToggle.type="button";
+    routeToggle.setAttribute("aria-label","Mostrar u ocultar origen y destino");
+    routeToggle.setAttribute("aria-expanded","true");
+    routeToggle.addEventListener("click",()=>setRouteCompact(!routePreference.compact,true));
+    trackingRoute.append(routeToggle);
     top.append(back,address,brand,trackingRoute);
     const sheet=make("section","qt-focus-sheet");
     const handle=make("button","qt-focus-handle");handle.type="button";
@@ -51,7 +86,8 @@
     heading.append(make("small","qt-focus-kicker","TU VIAJE · URUGUAY"),
       make("h2","", "Elegí tu viaje"));
     const option=make("section","qt-focus-option");
-    const car=make("span","qt-focus-car","🚗");car.setAttribute("aria-hidden","true");
+    // Consistent stylized vehicle marker in sheet and on the live map.
+    const car=make("span","qt-focus-car","");car.setAttribute("aria-hidden","true");
     const copy=make("div","qt-focus-car-copy");
     copy.append(make("strong","", "Quick Trip"),make("small","qt-focus-car-detail","Traslado privado"));
     const fare=make("strong","qt-focus-fare","A confirmar");
@@ -206,6 +242,8 @@
     if(!screen)return;
     const wasTracking=Boolean(trackingCtx);
     if(trackingStop)trackingStop();
+    if(routeCollapseTimer!==null)root.clearTimeout(routeCollapseTimer);
+    routeCollapseTimer=null;
     trackingStop=null;trackingCtx=null;
     screen.hidden=true;open=false;lastMapKey="";
     delete screen.dataset.mode;
@@ -324,9 +362,16 @@
     const retainSheet=Boolean(open&&trackingCtx&&screen?.dataset.sheet==="expanded"&&
       String(trackingCtx.reservation.id)===String(r.id));
     const continuingSameTracking=Boolean(open&&trackingCtx);
+    const sameReservation=Boolean(continuingSameTracking&&
+      String(trackingCtx.reservation.id)===String(r.id));
+    if(!sameReservation)routePreference={
+      id:String(r.id),manual:false,compact:false,deadline:Date.now()+3300
+    };
     if(open)close(true);
     setup();open=true;trackingCtx=options;
     screen.hidden=false;screen.dataset.mode="tracking";lastMapKey="";
+    setRouteCompact(routePreference.compact);
+    scheduleRouteCollapse(r.id);
     doc.body.classList.add("qt-focus-open");
     setSheet(retainSheet);
     const onboard=String(r.status)==="EN_VIAJE";
