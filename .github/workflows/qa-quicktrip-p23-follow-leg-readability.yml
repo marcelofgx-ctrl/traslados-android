@@ -1,0 +1,58 @@
+name: QA Quick Trip P2.3 — leg hierarchy and long pickup addresses (NO DEPLOY)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p23-follow-leg-readability-20261102
+permissions:
+  contents: read
+jobs:
+  p23-follow-leg-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Strict P2.2 QA lineage and no GPS route or database changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=b1e0b91fa1d96de2ac38bae250587631f3b20e30
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 6
+          for file in "${files[@]}"; do
+            case "$file" in
+              web-pasajero/quicktrip-p23-follow-leg-readability.css|web-pasajero/index.html|web-pasajero/sw.js|scripts/qa_quicktrip_tracking_metrics_browser.cjs|tests/quicktrip-p23-follow-leg-contract.cjs|.github/workflows/qa-quicktrip-p23-follow-leg-readability.yml) ;;
+              *) echo "FAIL unauthorized QA change: $file"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ conductor/ supabase/ core-reservations/ web-pasajero/app.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/premium-map.js web-pasajero/reservation-live.js web-pasajero/quicktrip-map-focus.js web-pasajero/quicktrip-map-focus.css vercel.json
+      - name: Source integrity contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/qa_quicktrip_tracking_metrics_browser.cjs
+          node tests/quicktrip-p23-follow-leg-contract.cjs
+          node tests/quicktrip-p22-map-continuity-contract.cjs
+          node tests/quicktrip-p20-pickup-activation-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          node web-pasajero/tests/reservation-live-v82-smoke.cjs
+      - name: Chromium QA long origin/destination at 360/390/412px and pickup state transitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_tracking_metrics_browser.cjs
+      - name: Retain responsive screenshots (synthetic booking only)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quicktrip-p23-follow-leg-qa
+          path: artifacts/quicktrip-tracking-metrics/
+          retention-days: 14
+          if-no-files-found: warn
