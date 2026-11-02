@@ -26,10 +26,10 @@ jobs:
           BASE=79ff8815134100e1ebe2de17238c2f86bc4d8dee
           test "$(git merge-base "$BASE" HEAD)" = "$BASE"
           mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
-          test "${#files[@]}" -eq 4
+          test "${#files[@]}" -eq 5
           for file in "${files[@]}"; do
             case "$file" in
-              .github/workflows/qa-mapaqt-c11-p21-sliders-signed.yml|conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java|mapatrayectos/build.gradle|tests/quicktrip-p21-driver-slide-haptic-contract.cjs) ;;
+              .github/workflows/qa-mapaqt-c11-p21-sliders-signed.yml|conductor/src/main/java/uy/com/traslados/conductor/MainActivity.java|mapatrayectos/build.gradle|tests/quicktrip-p21-driver-slide-haptic-contract.cjs|tests/driver-c11-static-qa.cjs) ;;
               *) echo "FAIL unauthorized QA scope: $file"; exit 1;;
             esac
           done
