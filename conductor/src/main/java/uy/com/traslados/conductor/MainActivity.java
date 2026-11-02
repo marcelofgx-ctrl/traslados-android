@@ -859,6 +859,23 @@ public class MainActivity extends Activity {
         });
     }
 
+    /** In the integrated Mapa QT only, request the EXISTING presence
+     * heartbeat after the server acknowledges EN_CAMINO/EN_PUNTO.
+     * The standalone Conductor is untouched. No new sampling or timer. */
+    private void requestPickupGpsAfterPhaseAck(){
+        if(!"uy.com.mapatrayectos".equals(getPackageName()))return;
+        if(!getSharedPreferences("pickup_presence",MODE_PRIVATE).getBoolean("enabled",false))return;
+        android.content.SharedPreferences state=getSharedPreferences("tracking_state",MODE_PRIVATE);
+        if(!state.getBoolean("shift_active",false)||state.getBoolean("shift_paused",false))return;
+        try{
+            Intent sync=new Intent("uy.com.mapatrayectos.PRESENCE_SYNC");
+            sync.setClassName(getPackageName(),"uy.com.mapatrayectos.TrackingService");
+            startService(sync);
+        }catch(RuntimeException ignored){
+            // Existing normal GPS heartbeat remains unchanged.
+        }
+    }
+
     private void changePickupPhase(JSONObject r,String phase){
         String id=r.optString("id","");
         if(id.isEmpty()||!driverStatusInFlight.add("phase-"+id))return;
@@ -872,6 +889,7 @@ public class MainActivity extends Activity {
                         toast("No se pudo comprobar el estado enviado");
                     }else{
                         vibrateAcceptedPickupPhase();
+                        requestPickupGpsAfterPhaseAck();
                         toast("EN_CAMINO".equals(phase)?"Aviso enviado: En camino":"Aviso enviado: Llegué al origen");
                     }
                     expandedId=id;loadActive(true);
