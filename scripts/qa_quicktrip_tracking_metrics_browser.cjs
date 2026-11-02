@@ -31,7 +31,7 @@ async function main(){
   const setup=await js(function(){
     const ready=!!window.QuickTripMapFocus?.showTracking&&!!window.TrasladosReservationLive?.mount;
     if(!ready)return {ready};
-    const flags={mode:"waiting",calls:0,routeCalls:[]};
+    const flags={mode:"waiting",calls:0,routeCalls:[],overviewCalls:0};
     const routeFor=points=>{
       const isContract=points[0].lat===-34.9;
       return {
@@ -48,12 +48,12 @@ async function main(){
     const renderer={
       render:(node,geometry)=>{
         const div=document.createElement("div");
-        div.className="premium-real-map";
+        div.className="premium-real-map";div.dataset.source="road";
         div.textContent="QA ONLY — synthetic polyline (no network)";
         node.replaceChildren(div);
         return true;
       },
-      overview:(node)=>{node.textContent="QA route pending";return true}
+      overview:(node)=>{flags.overviewCalls++;const v=document.createElement("div");v.className="premium-real-map";v.dataset.source="verified-endpoints";v.textContent="QA endpoints only (no car or invented road)";node.replaceChildren(v);return true}
     };
     const rpc=async(name)=>{
       if(name!=="customer_reservation_position_v1")throw Error("Unexpected RPC "+name);
@@ -74,9 +74,10 @@ async function main(){
       reservation,guestToken:"qa-test-not-a-real-guest-token",
       rpc,engine,renderer,api:null,key:null
     });
-    return {ready,opened};
+    return {ready,opened,immediateMap:!!document.querySelector("#qt-focus .reservation-live-map .premium-real-map[data-source=\"verified-endpoints\"]"),overviewCalls:flags.overviewCalls};
   });
-  ok(setup.ready&&setup.opened,"Mount exact private tracking module with sandbox RPC and road engine (no backend writes)");
+  ok(setup.ready&&setup.opened&&setup.immediateMap&&setup.overviewCalls>=1,
+      "P2.2 shows verified-origin/destination map synchronously, before routing/GPS");
   const read=()=>js(function(){
     const overlay=document.getElementById("qt-focus");
     const e=selector=>overlay.querySelector(selector);
@@ -92,7 +93,9 @@ async function main(){
       status:e(".qt-focus-sheet-heading h2")?.textContent,
       kicker:e(".qt-focus-kicker")?.textContent,
       routeCalls:window.__qtVisual.flags.routeCalls,
-      carVisible:!!e(".reservation-live-map .premium-real-map")
+      carVisible:!!e(".reservation-live-map .premium-real-map"),
+      mapSource:e(".reservation-live-map .premium-real-map")?.dataset.source,
+      overviewCalls:window.__qtVisual.flags.overviewCalls
     };
   });
   const booked=await poll(async()=>{
@@ -148,9 +151,10 @@ async function main(){
     const arrived={...v.reservation,pickup_phase:"EN_PUNTO"};
     const result1=window.QuickTripMapFocus.updateTracking(arrived);
     v.reservation=arrived;
-    return {result1};
+    return {result1,immediateMap:!!document.querySelector("#qt-focus .reservation-live-map .premium-real-map[data-source=\"verified-endpoints\"]")};
   });
-  ok(towardRide.result1,"EN_PUNTO updates the existing pickup tracker");
+  ok(towardRide.result1&&towardRide.immediateMap,
+     "P2.2 EN_PUNTO transition NEVER produces a blank map before GPS or route promises resolve");
   const atOrigin=await poll(async()=>{
     const x=await read();return x.status==="En tu recogida"&&x.source==="live"?x:null;
   },2500);
