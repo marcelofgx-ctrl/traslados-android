@@ -43,8 +43,8 @@ const checks={
    main.includes("setContentView(root);root.requestApplyInsets()"),
  "same APK package, monotonic version, no suffix":
    gradle.includes("applicationId 'uy.com.mapatrayectos'") &&
-   gradle.includes("versionCode 94") &&
-   gradle.includes("versionName 'MapaQT-R25.38-C1.1-P2.1-QA'") &&
+   gradle.includes("versionCode 95") &&
+   gradle.includes("versionName 'MapaQT-R25.38-C1.1-P2.6-QA'") &&
    !gradle.includes("applicationIdSuffix"),
  "no fictitious prices, GPS, routes or customer data":
    !/quote_final_total",120|GeoJsonSource|LineLayer|Math\.random\(/.test(sheet)
