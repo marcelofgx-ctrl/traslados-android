@@ -311,6 +311,21 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
         TransferAlerts.refreshAsync(activity);
         loadHistory();
     }
+    /** On acknowledged pickup phase, reuse Mapa QT's EXISTING GPS presence
+     * heartbeat immediately; do not sample new GPS or change its cadence.
+     * No consent, inactive/paused shift or service failure => no new request. */
+    private void requestPickupGpsAfterPhaseAck(){
+        if(!uy.com.mapatrayectos.Api.pickupPresenceEnabled())return;
+        android.content.SharedPreferences state=activity.getSharedPreferences("tracking_state",Context.MODE_PRIVATE);
+        if(!state.getBoolean("shift_active",false)||state.getBoolean("shift_paused",false))return;
+        try{
+            Intent sync=new Intent(activity,uy.com.mapatrayectos.TrackingService.class);
+            sync.setAction(uy.com.mapatrayectos.TrackingService.ACTION_PRESENCE_SYNC);
+            activity.startService(sync);
+        }catch(RuntimeException ignored){
+            // The normal bounded heartbeat remains available.
+        }
+    }
     @Override public void onPickupPhase(String id,String phase){
         if(busy||!ConductorLivePolicy.safeId(id)||(!"EN_CAMINO".equals(phase)&&!"EN_PUNTO".equals(phase)))return;
         String credential=DriverIdentity.pin(activity);
@@ -334,7 +349,7 @@ public final class ConductorLiveController implements ConductorLiveView.Listener
                 busy=false;view.setBusy(false);
                 view.setFeedback(done?("EN_CAMINO".equals(phase)?"En camino confirmado":"Llegada confirmada"):
                     "No se confirmó el cambio; verificá conexión o estado.",done);
-                if(done){playTone(true);TransferAlerts.refreshAsync(activity);}
+                if(done){requestPickupGpsAfterPhaseAck();playTone(true);TransferAlerts.refreshAsync(activity);}
             });
         },"quicktrip-live-pickup").start();
     }
