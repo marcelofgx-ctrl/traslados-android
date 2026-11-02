@@ -130,6 +130,28 @@ async function main(){
       overviewCalls:window.__qtVisual.flags.overviewCalls
     };
   });
+  // P2.4: show complete addresses briefly, then compact automatically
+  // without swallowing the user's own manual expansion.
+  const compact=await poll(()=>js(function(){
+    const root=document.querySelector("#qt-focus");
+    const button=root.querySelector(".qt-focus-route-toggle");
+    const card=root.querySelector(".qt-focus-tracking-route");
+    return root.classList.contains("qt-route-compact")?
+      {expanded:button.getAttribute("aria-expanded"),height:card.getBoundingClientRect().height,
+       text:button.textContent}:null;
+  }),5500);
+  ok(compact.expanded==="false"&&compact.height<=52&&
+    compact.text.includes("Ver origen y destino"),
+    "P2.4 addresses collapse once after 3.3 seconds, freeing map space");
+  const manual=await js(function(){
+    const root=document.querySelector("#qt-focus");
+    const button=root.querySelector(".qt-focus-route-toggle");
+    button.click();
+    return {expanded:button.getAttribute("aria-expanded"),
+      compact:root.classList.contains("qt-route-compact")};
+  });
+  ok(manual.expanded==="true"&&!manual.compact,
+    "P2.4 compact header is manually expandable with accessible state");
   const booked=await poll(async()=>{
     const x=await read();return x.source==="contract"?x:null;
   },9000);
@@ -163,6 +185,43 @@ async function main(){
   ok(live.distance==="2,7 km"&&live.duration==="6 min"&&
      live.distanceTitle==="A RECOGIDA"&&live.durationTitle==="LLEGADA ESTIMADA",
      "Authenticated GPS leg replaces booked distance with explicitly labeled pickup km and ETA");
+  const p24Marker=await js(function(){
+    // Local synthetic GPS/route only. No external driver data or reservations.
+    const root=document.querySelector("#qt-focus");
+    const scratch=document.createElement("div");
+    scratch.className="qa-p24-marker-preview";
+    scratch.style.cssText="position:absolute;left:-10000px;top:0;width:390px;height:440px";
+    root.querySelector(".qt-focus-map").append(scratch);
+    const r=window.TrasladosPremiumMap.render(scratch,
+      [[-34.9,-56.1],[-34.89,-56.19]],{
+      height:440,fullscreen:true,routeMode:"pickup",
+      secondaryGeometry:[[-34.87,-56.13],[-34.9,-56.1]],
+      driverPosition:{lat:-34.87,lng:-56.13}
+    });
+    const flow=scratch.querySelector(".premium-map-approach-flow");
+    const car=scratch.querySelector(".premium-map-driver");
+    const info={rendered:r,flow:!!flow,car:!!car,
+      carElements:car?.querySelectorAll("rect,path,circle")?.length||0,
+      animation:flow?getComputedStyle(flow).animationName:null,
+      solid:!!scratch.querySelector(".premium-map-approach")};
+    window.TrasladosPremiumMap.render(scratch,
+      [[-34.9,-56.1],[-34.89,-56.19]],{height:440,routeMode:"contract"});
+    info.contractNoFakeCar=!scratch.querySelector(".premium-map-driver,.premium-map-approach-flow");
+    scratch.remove();
+    return info;
+  });
+  console.log("P24 ROUTE MOTION AND CAR",JSON.stringify(p24Marker));
+  ok(p24Marker.rendered&&p24Marker.flow&&p24Marker.car&&
+    p24Marker.carElements>=6&&p24Marker.solid&&
+    p24Marker.animation==="qt-p24-flow"&&p24Marker.contractNoFakeCar,
+    "P2.4 animated verified pickup flow and vector car; no fake car without GPS");
+  const manualRetained=await js(function(){
+    const r=document.querySelector("#qt-focus");
+    return {compact:r.classList.contains("qt-route-compact"),
+      aria:r.querySelector(".qt-focus-route-toggle").getAttribute("aria-expanded")};
+  });
+  ok(!manualRetained.compact&&manualRetained.aria==="true",
+    "P2.4 respects manual address expansion across EN_CAMINO remount");
   await snap("02-driver-pickup-metrics-mocked-gps-390.png");
   await js(function(){window.__qtVisual.flags.mode="waiting";return true;});
   const returned=await poll(async()=>{
