@@ -45,6 +45,19 @@
     }
     const from=coordinates(r.origin_lat,r.origin_lng);
     const to=coordinates(r.destination_lat,r.destination_lng);
+    // QA P2.2: route/phase transitions must never erase the only cartography.
+    // Draw only VERIFIED booked endpoint coordinates (no road, no car, no GPS)
+    // immediately, while the existing private GPS and road requests resolve.
+    function showEndpointFallback(){
+      if(!from||!to||!renderer?.overview)return false;
+      if(mapHost.querySelector(".premium-real-map"))return true;
+      const overlay=host.closest?.("#qt-focus");
+      const sheetTop=overlay?.querySelector?.(".qt-focus-sheet")?.getBoundingClientRect?.().top;
+      const height=overlay?Math.round(Math.max(300,Math.min(root.innerHeight||760,(sheetTop||450)+26)))
+        :Math.min(560,Math.max(320,Math.round((root.innerHeight||760)*0.55)));
+      return renderer.overview(mapHost,[[from.lat,from.lng],[to.lat,to.lng]],
+        {height,fullscreen:Boolean(overlay)});
+    }
     host.classList.add("reservation-live");
     host.setAttribute("aria-label","Mapa y seguimiento de este traslado");
     const heading=css(host,"reservation-live-heading");
@@ -56,6 +69,8 @@
     const mapHost=css(host,"reservation-live-map");
     mapHost.setAttribute("role","group");
     mapHost.setAttribute("aria-label","Cartografía de la recogida o viaje");
+    // The fallback draws before any asynchronous road or GPS fetch.
+    showEndpointFallback();
     const metrics=css(host,"reservation-live-metrics");
     const distanceBox=css(metrics,"reservation-live-metric");
     const distanceTitle=place(distanceBox,"small","","RECORRIDO PREVISTO");
@@ -148,6 +163,9 @@
       // Never leave an obsolete car location visible when its authorization
       // expires or the updated road calculation fails.
       mapHost.replaceChildren();
+      // A stale/unauthorized car disappears immediately, but the known
+      // passenger origin and destination remain represented on a real map.
+      showEndpointFallback();
       distanceTitle.textContent="RECORRIDO PREVISTO";
       etaTitle.textContent="DURACIÓN PREVISTA";
       distance.textContent="—";eta.textContent="—";
