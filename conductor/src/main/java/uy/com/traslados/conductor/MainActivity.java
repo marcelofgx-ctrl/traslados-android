@@ -574,20 +574,11 @@ public class MainActivity extends Activity {
                 // Estado operativo explícito: no deducir «En camino» por el GPS.
                 String pickupPhase=r.optString("pickup_phase","SIN_INICIAR");
                 if("SIN_INICIAR".equals(pickupPhase)){
-                    Button moving=primaryButton("↗ VOY EN CAMINO");
-                    moving.setTextSize(12);
-                    bodyBox.addView(moving,lpMatch(dp(49),5,2));
-                    moving.setOnClickListener(v->showDriverConfirm("Avisar al pasajero",
-                        "¿Indicar que estás en camino al punto de recogida?",
-                        "VOLVER","EN CAMINO",()->changePickupPhase(r,"EN_CAMINO")));
+                    // Same deliberate slide gesture as start/finish: no accidental tap.
+                    bodyBox.addView(pickupSlideControl(r,false),lpMatch(dp(54),5,2));
                 }else if("EN_CAMINO".equals(pickupPhase)){
                     addDetail(bodyBox,"car","RECOGIDA EN CURSO","El pasajero puede ver que vas en camino.");
-                    Button arrived=primaryButton("✓ LLEGUÉ AL ORIGEN");
-                    arrived.setTextSize(12);
-                    bodyBox.addView(arrived,lpMatch(dp(49),5,2));
-                    arrived.setOnClickListener(v->showDriverConfirm("Avisar llegada",
-                        "¿Ya estás en el punto de recogida del pasajero?",
-                        "VOLVER","YA LLEGUÉ",()->changePickupPhase(r,"EN_PUNTO")));
+                    bodyBox.addView(pickupSlideControl(r,true),lpMatch(dp(54),5,2));
                 }else if("EN_PUNTO".equals(pickupPhase)){
                     addDetail(bodyBox,"pin","CONDUCTOR EN ORIGEN","Llegada comunicada al pasajero.");
                 }
@@ -877,7 +868,7 @@ public class MainActivity extends Activity {
                     if(!phase.equals(result.optString("pickup_phase"))){
                         toast("No se pudo comprobar el estado enviado");
                     }else{
-                        hapticTick();
+                        vibrateAcceptedPickupPhase();
                         toast("EN_CAMINO".equals(phase)?"Aviso enviado: En camino":"Aviso enviado: Llegué al origen");
                     }
                     expandedId=id;loadActive(true);
@@ -1398,16 +1389,43 @@ public class MainActivity extends Activity {
         return c;
     }
 
+    private android.view.View pickupSlideControl(org.json.JSONObject reservation,boolean arrived){
+        TripSlideControl c=new TripSlideControl(this,reservation,arrived?2:1);
+        c.setContentDescription(arrived?"Deslizar para confirmar llegada al origen":
+            "Deslizar para informar que voy en camino");
+        return c;
+    }
+
+    private void vibrateAcceptedPickupPhase(){
+        // Only after Supabase confirms the exact pickup_phase, honoring alert settings.
+        if(!getSharedPreferences("driver_alert_settings",MODE_PRIVATE).getBoolean("vibrate",true))return;
+        try{
+            android.os.Vibrator v=(android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
+            if(v==null||!v.hasVibrator())return;
+            if(android.os.Build.VERSION.SDK_INT>=26)
+                v.vibrate(android.os.VibrationEffect.createOneShot(95,android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+            else v.vibrate(95);
+        }catch(Exception ignored){}
+    }
+
     private class TripSlideControl extends android.view.View{
         private final org.json.JSONObject reservation;
         private final boolean finishMode;
+        // 0=start/finish native trip, 1=EN_CAMINO, 2=EN_PUNTO.
+        private final int pickupAction;
         private final android.graphics.Paint paint=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private final android.graphics.Paint stroke=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         private float knobLeft=-1f,downX,startLeft;
         private boolean dragging=false,locked=false;
 
         TripSlideControl(android.content.Context context,org.json.JSONObject r,boolean finish){
-            super(context);reservation=r;finishMode=finish;
+            this(context,r,finish,0);
+        }
+        TripSlideControl(android.content.Context context,org.json.JSONObject r,int pickup){
+            this(context,r,false,pickup);
+        }
+        private TripSlideControl(android.content.Context context,org.json.JSONObject r,boolean finish,int pickup){
+            super(context);reservation=r;finishMode=finish;pickupAction=pickup;
             setClickable(true);setFocusable(true);
             setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
         }
@@ -1424,8 +1442,14 @@ public class MainActivity extends Activity {
             super.onDraw(canvas);
             float w=getWidth(),h=getHeight(),radius=dp(17);
             android.graphics.RectF track=new android.graphics.RectF(0,0,w,h);
-            int c1=finishMode?android.graphics.Color.rgb(225,86,96):android.graphics.Color.rgb(57,196,153);
-            int c2=finishMode?android.graphics.Color.rgb(176,54,65):android.graphics.Color.rgb(29,151,118);
+            int c1=finishMode?android.graphics.Color.rgb(225,86,96):
+                pickupAction==1?android.graphics.Color.rgb(93,182,191):
+                pickupAction==2?android.graphics.Color.rgb(231,191,123):
+                android.graphics.Color.rgb(57,196,153);
+            int c2=finishMode?android.graphics.Color.rgb(176,54,65):
+                pickupAction==1?android.graphics.Color.rgb(54,136,155):
+                pickupAction==2?android.graphics.Color.rgb(204,154,88):
+                android.graphics.Color.rgb(29,151,118);
             paint.setStyle(android.graphics.Paint.Style.FILL);
             paint.setShader(new android.graphics.LinearGradient(0,0,w,0,c1,c2,android.graphics.Shader.TileMode.CLAMP));
             canvas.drawRoundRect(track,radius,radius,paint);paint.setShader(null);
@@ -1443,7 +1467,9 @@ public class MainActivity extends Activity {
             paint.setTextSize(14f*getResources().getDisplayMetrics().scaledDensity);
             paint.setTextAlign(android.graphics.Paint.Align.CENTER);
             paint.setColor(finishMode?android.graphics.Color.WHITE:android.graphics.Color.rgb(8,49,42));
-            String label=finishMode?"Deslizar para finalizar":"Deslizar para iniciar";
+            String label=pickupAction==1?"Deslizar · En camino":
+                pickupAction==2?"Deslizar · Ya llegué":
+                finishMode?"Deslizar para finalizar":"Deslizar para iniciar";
             android.graphics.Paint.FontMetrics fm=paint.getFontMetrics();
             float ty=h/2f-(fm.ascent+fm.descent)/2f;
             canvas.drawText(label,w/2f,ty,paint);
@@ -1451,7 +1477,8 @@ public class MainActivity extends Activity {
             // Tirador oscuro, pequeño y redondeado como pieza separada.
             float top=slidePad(),bottom=h-slidePad();
             android.graphics.RectF knob=new android.graphics.RectF(knobLeft,top,knobLeft+knobWidth(),bottom);
-            paint.setColor(finishMode?android.graphics.Color.rgb(83,31,38):android.graphics.Color.rgb(5,66,57));
+            paint.setColor(finishMode?android.graphics.Color.rgb(83,31,38):
+                pickupAction>0?android.graphics.Color.rgb(12,64,73):android.graphics.Color.rgb(5,66,57));
             canvas.drawRoundRect(knob,dp(14),dp(14),paint);
             stroke.setColor(android.graphics.Color.argb(80,255,255,255));stroke.setStrokeWidth(dp(1));
             canvas.drawRoundRect(knob,dp(14),dp(14),stroke);
@@ -1459,7 +1486,10 @@ public class MainActivity extends Activity {
             // Flecha de avance.
             float cx=knob.centerX(),cy=knob.centerY();
             stroke.setStyle(android.graphics.Paint.Style.STROKE);stroke.setStrokeCap(android.graphics.Paint.Cap.ROUND);stroke.setStrokeJoin(android.graphics.Paint.Join.ROUND);
-            stroke.setStrokeWidth(dp(3));stroke.setColor(finishMode?android.graphics.Color.rgb(255,214,216):android.graphics.Color.rgb(88,218,181));
+            stroke.setStrokeWidth(dp(3));stroke.setColor(finishMode?android.graphics.Color.rgb(255,214,216):
+                pickupAction==2?android.graphics.Color.rgb(252,220,162):
+                pickupAction==1?android.graphics.Color.rgb(142,235,237):
+                android.graphics.Color.rgb(88,218,181));
             android.graphics.Path arrow=new android.graphics.Path();
             arrow.moveTo(cx-dp(9),cy);arrow.lineTo(cx+dp(8),cy);
             arrow.moveTo(cx+dp(2),cy-dp(6));arrow.lineTo(cx+dp(9),cy);arrow.lineTo(cx+dp(2),cy+dp(6));
@@ -1494,11 +1524,29 @@ public class MainActivity extends Activity {
             va.start();
         }
 
+        @Override public boolean performClick(){
+            // TalkBack/keyboard: explicit confirmation rather than an accidental tap.
+            super.performClick();
+            if(locked)return true;
+            String title=pickupAction==1?"Avisar al pasajero":
+                pickupAction==2?"Confirmar llegada":
+                finishMode?"Finalizar viaje":"Iniciar viaje";
+            String question=pickupAction==1?"¿Confirmás que estás en camino al origen?":
+                pickupAction==2?"¿Confirmás que llegaste al punto de recogida?":
+                finishMode?"¿Confirmás que el viaje finalizó?":
+                    "¿Confirmás que el pasajero está a bordo?";
+            showDriverConfirm(title,question,"VOLVER","CONFIRMAR",this::completeSlide);
+            return true;
+        }
+
         private void completeSlide(){
             if(locked)return;locked=true;
-            try{performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);}catch(Exception ignored){}
-            changeStatus(reservation,finishMode?"FINALIZADA":"EN_VIAJE");
-            // Si la red falla, el control vuelve a quedar utilizable para reintentar.
+            // Do not vibrate before the server acknowledges the transition.
+            // Existing changeStatus() vibrates on successful start/finish only.
+            if(pickupAction==1)changePickupPhase(reservation,"EN_CAMINO");
+            else if(pickupAction==2)changePickupPhase(reservation,"EN_PUNTO");
+            else changeStatus(reservation,finishMode?"FINALIZADA":"EN_VIAJE");
+            // Network errors leave the control usable for retry, no false success.
             postDelayed(()->{if(isAttachedToWindow()){locked=false;knobLeft=slidePad();invalidate();}},2200);
         }
     }
