@@ -1,0 +1,32 @@
+/* Quick Trip P2.7 QA — explicit passenger account boundary.
+   No changes to GPS, route, prices, availability, or reservation transport. */
+#view-viaje .passenger-auth-gate,
+#view-reservar .passenger-auth-gate {
+  display:grid;
+  gap:12px;
+  border:1px solid rgba(230,201,141,.50);
+  border-radius:20px;
+  background:linear-gradient(150deg,rgba(21,76,77,.76),rgba(7,45,55,.92));
+  padding:20px 16px 17px;
+  color:#f2ebd8;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+.passenger-auth-gate[hidden] { display:none!important; }
+.passenger-auth-gate-title {
+  font-size:clamp(18px,4.4vw,22px);
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:-.015em;
+}
+.passenger-auth-gate p { margin:0;line-height:1.5;font-size:14px;color:#d2e0dc; }
+.passenger-auth-gate small {font-size:12px;line-height:1.45;color:#c2d5d0;}
+.passenger-auth-gate .passenger-auth-action {
+  display:flex;align-items:center;justify-content:center;
+  white-space:normal;min-height:54px;
+  color:#153e42;background:#f2d59f;
+  font-size:15px;font-weight:800;border-radius:14px;
+}
+.passenger-auth-gate .passenger-auth-action:focus-visible {
+ outline:3px solid #72d9b6;outline-offset:3px;
+}
+@media(max-width:390px) { .passenger-auth-gate {padding:16px 13px!important;} }
