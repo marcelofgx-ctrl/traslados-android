@@ -1,0 +1,59 @@
+name: QA Quick Trip P2.7 — passenger account required (NO PRODUCTION)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p27-auth-before-request-20261103
+permissions:
+  contents: read
+jobs:
+  account-first-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Check QA lineage and source allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=cec9f3c3c66121faeb4accf229ea328de3520861
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t files < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#files[@]}" -eq 8
+          for file in "${files[@]}"; do
+            case "$file" in
+              .github/workflows/qa-quicktrip-p27-auth-first.yml|web-pasajero/index.html|web-pasajero/app.js|web-pasajero/sw.js|web-pasajero/quicktrip-p27-auth-gate.css|tests/quicktrip-p27-account-auth-contract.cjs|scripts/qa_quicktrip_p27_auth_browser.cjs|docs/qa/p27-account-required-review-only.sql) ;;
+              *) echo "FAIL unexpected file $file"; exit 1 ;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- mapatrayectos/ conductor/ supabase/ core-reservations/ web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/premium-map.js web-pasajero/reservation-live.js web-pasajero/quicktrip-map-focus.js vercel.json
+          echo "PASS P27 only passenger account UI, source contracts and non-applied SQL draft"
+      - name: Authenticate first — no guest booking, syntax, backend staged only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check scripts/qa_quicktrip_p27_auth_browser.cjs
+          node tests/quicktrip-p27-account-auth-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+          node web-pasajero/tests/tracking-fases-gps-real-smoke.cjs
+          grep -Fq "NOT APPLIED TO ANY SUPABASE PROJECT" docs/qa/p27-account-required-review-only.sql
+          grep -Fq "Iniciá sesión para solicitar tu viaje" docs/qa/p27-account-required-review-only.sql
+      - name: Chromium Samsung guest to login account flow without booking writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/qa_quicktrip_p27_auth_browser.cjs
+      - name: Upload screenshots (non-live synthetic data only)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quicktrip-p27-auth-first-mobile-qa
+          path: artifacts/quicktrip-p27-account-qa/
+          if-no-files-found: warn
+          retention-days: 14
