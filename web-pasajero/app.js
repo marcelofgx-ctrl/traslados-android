@@ -90,8 +90,8 @@ function refreshBookingSteps(){
   bookingSteps.summary("when",label,p>=1&&p<=8&&(!scheduled||validSchedule));
   const name=authReady()?session.customer?.full_name:$("person-name")?.value;
   const phone=authReady()?session.customer?.phone:$("person-phone")?.value;
-  const ready=Boolean(name?.trim().length>=2&&String(phone||"").replace(/\D/g,"").length>=8);
-  bookingSteps.summary("passenger",ready?"Datos de contacto completos":authReady()?"Completá tus datos de cuenta":"Nombre y teléfono",ready);
+  const ready=Boolean(authReady()&&name?.trim().length>=2&&String(phone||"").replace(/\D/g,"").length>=8);
+  bookingSteps.summary("passenger",ready?"Datos de cuenta confirmados":authReady()?"Completá tus datos de cuenta":"Iniciá sesión para solicitar",ready);
 }
 function suggestBookingStep(error){
   if(!bookingSteps)return;
@@ -1176,8 +1176,16 @@ function authReady(){return !!session?.token&&!!session?.customer;}
 function syncAuthUI(){
   const logged=authReady();
   $("stop-wrap").hidden=!logged;$("login-for-stops").hidden=logged;
-  $("passenger-identification").hidden=logged;
+  // Before login, show a clear identity gate, NOT editable guest contact
+  // fields that imply a passenger can make an anonymous reservation.
+  $("passenger-identification").hidden=true;
+  $("passenger-auth-gate").hidden=logged;
+  $("booking-passenger-hint").hidden=!logged;
   $("passenger-account-summary").hidden=!logged;
+  const cta=$("urgent-send")?.querySelector(".booking-cta-label");
+  if(cta)cta.textContent=logged?"SOLICITAR VIAJE":"INGRESAR PARA SOLICITAR";
+  const scheduleCta=$("review-booking")?.querySelector(".booking-cta-label");
+  if(scheduleCta)scheduleCta.textContent=logged?"REVISAR Y CONFIRMAR":"INGRESAR PARA SOLICITAR";
   $("passenger-account-name").textContent=logged?(session.customer.full_name||"Sin nombre"):"";
   $("passenger-account-phone").textContent=logged?(session.customer.phone||"Sin teléfono"):"";
   renderAccount();renderStops();refreshBookingSteps();
@@ -1317,7 +1325,8 @@ function bookingData(){
   const origin=record.origin,destination=record.destination;
   const name=authReady()?(session.customer.full_name||"").trim():$("person-name").value.trim();
   const phone=authReady()?(session.customer.phone||"").trim():$("person-phone").value.trim();
-  if(!name||name.length<2||phone.replace(/\D/g,"").length<8)throw new Error("Faltan nombre o teléfono válidos.");
+  if(!authReady())throw new Error("Iniciá sesión antes de solicitar tu viaje.");
+  if(!name||name.length<2||phone.replace(/\D/g,"").length<8)throw new Error("Faltan datos válidos en tu cuenta.");
   if(scheduled&&(!date||!time))throw new Error("Elegí fecha y hora.");
   if(scheduled&&new Date(date+"T"+time+":00-03:00").getTime()<Date.now()-20000)throw new Error("El horario elegido quedó en el pasado.");
   if(!Number.isInteger(passengers)||passengers<1||passengers>8)throw new Error("Cantidad de pasajeros inválida.");
@@ -1352,6 +1361,7 @@ function previewLocation(parent,kind,address){
 }
 function showPreview(){
   if(selectedPickupMode!=="schedule"){tell("Usá Enviar solicitud para pedir una recogida inmediata.");return;}
+  if(!requireAccountForNewTrip())return;
   clearBookingFeedback();
   try{
     pendingReview=bookingData();
@@ -2566,6 +2576,7 @@ function init(){
     $(key).addEventListener("change",refreshBookingSteps);
   }
   $("passenger-view-account").addEventListener("click",()=>shiftView("cuenta"));
+  $("passenger-auth-action").addEventListener("click",()=>requireAccountForNewTrip());
   $("urgent-send").addEventListener("click",()=>void submitUrgentPickup());
   $("pickup-existing-open").addEventListener("click",()=>{
     const code=$("pickup-existing-open").dataset.code;
