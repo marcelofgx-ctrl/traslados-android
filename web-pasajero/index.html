@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="./quicktrip-p18-fare-flow-icons.css?v=p18-qa-20261101">
   <link rel="stylesheet" href="./quicktrip-p23-follow-leg-readability.css?v=p23-20261102">
   <link rel="stylesheet" href="./quicktrip-p24-tracking-polish.css?v=p24-20261102">
+  <link rel="stylesheet" href="./quicktrip-p27-auth-gate.css?v=p27-20261103">
   <title>Quick Trip · Tu viaje y reservas</title>
 </head>
 <body>
@@ -292,6 +293,12 @@
           </div>
           <button id="passenger-view-account" type="button" class="passenger-account-link">Ver mi cuenta <span aria-hidden="true">↗</span></button>
         </div>
+        <div id="passenger-auth-gate" class="passenger-auth-gate" role="group" aria-label="Identificación necesaria para solicitar el viaje">
+          <div class="passenger-auth-gate-title">Iniciá sesión para pedir tu viaje</div>
+          <p>Podés consultar recorridos, distancias y precios sin cuenta. Para enviar una solicitud, ingresá o creá una cuenta con teléfono y PIN.</p>
+          <button id="passenger-auth-action" type="button" class="primary full passenger-auth-action">INGRESAR O CREAR CUENTA →</button>
+          <small>Conservaremos el origen, destino y la estimación mientras te identificás.</small>
+        </div>
         <div id="passenger-identification" class="two-cols">
           <label>Nombre y apellido<input id="person-name" autocomplete="name" placeholder="Ej.: Ana Rodríguez" maxlength="120"></label>
           <label>Teléfono<input id="person-phone" autocomplete="tel" inputmode="tel" placeholder="Ej.: 099 123 456"></label>
@@ -491,7 +498,7 @@
   <script src="./journey-compat-v7.js?v=1" defer></script>
   <script src="./gps-welcome.js?v=qa-20261028" defer></script>
   <script src="./quicktrip-active-ride.js?v=p12-direct-map-20261030" defer></script>
-  <script src="./app.js?v=p12-direct-map-20261030" defer></script>
+  <script src="./app.js?v=p27-auth-first-20261103" defer></script>
       <script src="./quicktrip-clean.js?v=p14-recovery-20261030" defer></script>
 </body>
 </html>
