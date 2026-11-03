@@ -52,7 +52,7 @@ async function main(){
   const gate=document.getElementById("passenger-auth-gate"),inputs=document.getElementById("passenger-identification");
   const cta=document.getElementById("urgent-send");
   return {gate:!gate.hidden&&gate.getBoundingClientRect().height>60,inputsHidden:inputs.hidden,
-    cta:cta.innerText,gateText:gate.innerText,guest:!authReady(),
+    cta:cta.innerText,gateText:gate.textContent,guest:!authReady(),
     preserved:record.origin.text};
  });
  console.log("P27 GUEST UI",JSON.stringify(initial));
