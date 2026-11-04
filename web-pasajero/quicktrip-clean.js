@@ -553,9 +553,9 @@
       if(nav)win.requestAnimationFrame(reconcile);
     });
     reconcile();
-    // Abrir el servicio NATIVO por su acción ya registrada. Sin llamadas RPC.
-    const open=doc.querySelector('[data-service="now"]');
-    if(open&&!byId("view-viaje")?.classList.contains("active"))open.click();
+    // P2.8 QA: respect the existing Quick Trip home with three entry
+    // choices. Only a REAL passenger tap on the service card may open
+    // Tu viaje; never auto-enter a form on page load.
     win.requestAnimationFrame(reconcile);
   }
   if(doc.readyState==="complete")boot();
