@@ -609,6 +609,10 @@ function enterService(kind){
   bookingSteps.open("route");
   shiftView(quick?"viaje":"reservar");
   if(quick)premiumJourney?.activate();
+  // Ask for location only AFTER a passenger chooses a service.
+  // Keep the current origin picker as the one GPS/geocoder engine.
+  window.QuickTripGpsWelcome?.mount({hasOrigin:()=>Boolean(record.origin),
+    start:callback=>originPicker.requestGps(callback)});
 }
 // A return to the booking view must re-evaluate the SAME approved pickup
 // contract. It must not wait for the next 15s heartbeat or create a second
@@ -2701,8 +2705,5 @@ function init(){
   // Public homepage deep link opens the PWA installer view, not a separate app.
   if(window.location.hash==="#instalar")shiftView("instalar");
   if(authReady()||jsonStorage(GUEST_KEY,[]).length)void loadTrips({background:true});
-  // Consent-first QA only: existing origin picker is the single GPS and address engine.
-  window.QuickTripGpsWelcome?.mount({hasOrigin:()=>Boolean(record.origin),
-    start:callback=>originPicker.requestGps(callback)});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
