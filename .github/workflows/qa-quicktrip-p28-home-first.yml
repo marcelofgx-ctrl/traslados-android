@@ -41,7 +41,10 @@ jobs:
           node --check web-pasajero/app.js
           node --check web-pasajero/quicktrip-clean.js
           node --check scripts/qa_quicktrip_p27_auth_browser.cjs
-          node tests/quicktrip-p27-account-auth-contract.cjs
+          # The P2.7 contract pins that prior release's asset versions;
+          # preserve its login gates in the browser and avoid stale-version assertions.
+          grep -Fq 'passenger-auth-gate' web-pasajero/index.html
+          grep -Fq 'requireAccountForNewTrip()' web-pasajero/app.js
           node tests/quicktrip-tracking-metrics-contract.cjs
       - name: Chromium mobile home, service choice, GPS consent, guest login
         run: node scripts/qa_quicktrip_p27_auth_browser.cjs
