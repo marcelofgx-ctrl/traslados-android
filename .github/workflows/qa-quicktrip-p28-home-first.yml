@@ -1,0 +1,55 @@
+name: QA Quick Trip P2.8 home-first navigation (NO PRODUCTION)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p28-home-first-20261104
+permissions:
+  contents: read
+jobs:
+  home-first-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Exact P2.7 QA base, homepage-only changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=1a7327c839d429b1df65e3d665f4c44880f515dd
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          mapfile -t changed < <(git diff --name-only "$BASE"..HEAD | LC_ALL=C sort)
+          test "${#changed[@]}" -eq 7
+          for f in "${changed[@]}"; do
+            case "$f" in
+              index.html|web-pasajero/quicktrip-clean.js|web-pasajero/app.js|web-pasajero/index.html|web-pasajero/sw.js|scripts/qa_quicktrip_p27_auth_browser.cjs|.github/workflows/qa-quicktrip-p28-home-first.yml) ;;
+              *) echo "ERROR: unexpected path $f"; exit 1;;
+            esac
+          done
+          git diff --quiet "$BASE"..HEAD -- supabase/ db/ conductor/ mapatrayectos/ core-reservations/ web-pasajero/reservation-live.js web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/gps-welcome.js web-pasajero/quicktrip-map-focus.js web-pasajero/premium-map.js vercel.json
+          grep -Fq 'url=./web-pasajero/' index.html
+          ! grep -q 'if(open&&!byId("view-viaje")?.classList.contains("active"))open.click()' web-pasajero/quicktrip-clean.js
+          grep -Fq 'quicktrip-p28-home-first-20261104' web-pasajero/sw.js
+      - name: Source syntax and preserved account gate
+        run: |
+          set -euo pipefail
+          node --check web-pasajero/app.js
+          node --check web-pasajero/quicktrip-clean.js
+          node --check scripts/qa_quicktrip_p27_auth_browser.cjs
+          node tests/quicktrip-p27-account-auth-contract.cjs
+          node tests/quicktrip-tracking-metrics-contract.cjs
+      - name: Chromium mobile home, service choice, GPS consent, guest login
+        run: node scripts/qa_quicktrip_p27_auth_browser.cjs
+      - name: QA screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quicktrip-p28-home-first-qa
+          path: artifacts/quicktrip-p27-account-qa/
+          if-no-files-found: warn
+          retention-days: 14
