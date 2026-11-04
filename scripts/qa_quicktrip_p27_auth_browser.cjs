@@ -33,7 +33,40 @@ async function main(){
  await cmd("Emulation.setTouchEmulationEnabled",{enabled:true,maxTouchPoints:1});
  await cmd("Page.navigate",{url:"http://127.0.0.1:8784/web-pasajero/?ui=clean"});
  await poll(()=>js(function(){return document.readyState==="complete"&&document.getElementById("urgent-send")&&document.getElementById("passenger-auth-action")&&typeof syncAuthUI==="function"}));
+ // P2.8 QA: the public entry must show the REAL three-service home,
+ // without jumping to Tu Viaje or prompting GPS before service selection.
+ const home=await js(function(){
+   const cards=[...document.querySelectorAll("#view-inicio [data-service]")];
+   return {isHome:document.getElementById("view-inicio").classList.contains("active"),
+     inTrip:document.getElementById("view-viaje").classList.contains("active"),
+     cardKinds:cards.map(c=>c.dataset.service),
+     gpsOpen:window.QuickTripGpsWelcome?.isOpen?.()||false};
+ });
+ console.log("P28 FIRST OPEN",JSON.stringify(home));
+ ok(home.isHome&&!home.inTrip&&!home.gpsOpen&&
+   ["now","schedule","delivery"].every(x=>home.cardKinds.includes(x)),
+   "P2.8 opens Quick Trip home with three choices and no GPS permission pop-up");
+ await snap("p28-01-quicktrip-home-390.png");
+ const selection=await js(function(){
+   document.querySelector('[data-service="now"]').click();
+   return {inTrip:document.getElementById("view-viaje").classList.contains("active"),
+     gpsOpen:window.QuickTripGpsWelcome?.isOpen?.()||false};
+ });
+ ok(selection.inTrip&&selection.gpsOpen,
+   "P2.8 passenger opens Tu Viaje by choice, then receives the existing GPS consent prompt");
  await js(function(){document.getElementById("qt-gps-welcome-manual")?.click();return true;});
+ const returned=await js(function(){
+   shiftView("inicio");
+   return {home:document.getElementById("view-inicio").classList.contains("active"),
+     inTrip:document.getElementById("view-viaje").classList.contains("active")};
+ });
+ ok(returned.home&&!returned.inTrip,"P2.8 back to Quick Trip home retains the three entry points");
+ const scheduled=await js(function(){
+   document.querySelector('[data-service="schedule"]').click();
+   return document.getElementById("view-reservar").classList.contains("active");
+ });
+ ok(scheduled,"P2.8 scheduled choice opens its existing form without guest booking");
+
  // Intercept any attempt to write a real booking, even if a future bug calls it.
  const initial=await js(function(){
   window.__p27BookingWrites=0;
