@@ -61,11 +61,11 @@ async function main(){
      inTrip:document.getElementById("view-viaje").classList.contains("active")};
  });
  ok(returned.home&&!returned.inTrip,"P2.8 back to Quick Trip home retains the three entry points");
- const scheduled=await js(function(){
+ const scheduledEntry=await js(function(){
    document.querySelector('[data-service="schedule"]').click();
    return document.getElementById("view-reservar").classList.contains("active");
  });
- ok(scheduled,"P2.8 scheduled choice opens its existing form without guest booking");
+ ok(scheduledEntry,"P2.8 scheduled choice opens its existing form without guest booking");
 
  // Intercept any attempt to write a real booking, even if a future bug calls it.
  const initial=await js(function(){
