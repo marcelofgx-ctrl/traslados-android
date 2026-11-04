@@ -66,6 +66,8 @@ async function main(){
    return document.getElementById("view-reservar").classList.contains("active");
  });
  ok(scheduledEntry,"P2.8 scheduled choice opens its existing form without guest booking");
+ // Reenter via existing service router to move the original booking fields.
+ await js(function(){document.querySelector('[data-service="now"]').click();return true;});
 
  // Intercept any attempt to write a real booking, even if a future bug calls it.
  const initial=await js(function(){
