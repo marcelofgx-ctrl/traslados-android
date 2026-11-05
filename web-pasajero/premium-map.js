@@ -70,8 +70,22 @@
     const carFocus=options.cameraPosition&&
       project([options.cameraPosition.lat,options.cameraPosition.lng])
       ?options.cameraPosition:vehicle;
+    // P2.9 viewport-only framing. At pickup, include the *verified*
+    // driver-to-pickup line instead of cropping the route around the car.
+    // During the trip show roughly twice the street area of P2.8.
+    // User pan/pinch still takes precedence over auto-follow.
     const liveCamera=options.followVehicle===true&&carFocus&&!camera.custom
-      ?(()=>{const p=project([carFocus.lat,carFocus.lng]);return p?{x:p[0],y:p[1],zoom:16}:null;})()
+      ?(()=>{
+        const current=project([carFocus.lat,carFocus.lng]);
+        if(!current)return null;
+        if(options.routeMode==="pickup"&&secondary&&secondary.length>=2){
+          const fitted=layout(secondary,width,height,
+            [[carFocus.lat,carFocus.lng]],null);
+          if(fitted)return {x:fitted.centerX/fitted.scale,
+            y:fitted.centerY/fitted.scale,zoom:Math.min(14,fitted.zoom)};
+        }
+        return {x:current[0],y:current[1],zoom:14};
+      })()
       :null;
     const view=layout(geometry,width,height,fitExtra,camera.custom||liveCamera);
     if(!view)return false;
@@ -195,39 +209,56 @@
     }
 
     function drawCarMarker(p){
-      // Compact north-facing top-view silhouette. A graphic marker is not
-      // a vehicle heading estimate: the center stays at the LAST verified GPS.
+      // P2.9 white top-view sedan; the icon is not a synthetic GPS point.
+      // Heading comes ONLY from two actual authorized GPS fixes.
+      // No forward prediction or additional location polling.
       const g=document.createElementNS(NS,"g");
-      g.setAttribute("class","premium-map-driver");
+      g.setAttribute("class","premium-map-driver premium-map-driver-p29");
       g.setAttribute("transform","translate("+p[0]+" "+p[1]+")");
+      const old=options.previousCar&&!options.overview
+        ?project([options.previousCar.lat,options.previousCar.lng]):null;
+      let dx=0,dy=0,pixels=0;
+      if(old){
+        dx=(old[0]*view.scale-view.centerX)+width/2-p[0];
+        dy=(old[1]*view.scale-view.centerY)+height/2-p[1];
+        pixels=Math.hypot(dx,dy);
+        if(pixels>4&&pixels<160){
+          // In screen coordinates, angle 0 points north; east is +90 degrees.
+          camera.heading=Math.atan2(-dx,dy)*180/Math.PI;
+        }
+      }
+      const shell=document.createElementNS(NS,"g");
+      shell.setAttribute("transform","rotate("+(camera.heading||0)+")");
       function shape(tag,attrs){
         const el=document.createElementNS(NS,tag);
         for(const [key,value] of Object.entries(attrs))el.setAttribute(key,String(value));
-        g.append(el);return el;
+        shell.append(el);return el;
       }
-      shape("circle",{cx:0,cy:0,r:21,fill:"#07353d",stroke:"#edcc92","stroke-width":2.2});
-      shape("rect",{x:-12,y:-10,width:4,height:17,rx:2,fill:"#bdcbd0"});
-      shape("rect",{x:8,y:-10,width:4,height:17,rx:2,fill:"#bdcbd0"});
-      shape("rect",{x:-9,y:-14,width:18,height:29,rx:6.5,fill:"#f5e8cb",stroke:"#123e48","stroke-width":1.7});
-      shape("path",{d:"M-6 -7 Q0 -11 6 -7 L6 -1 Q0 1 -6 -1 Z",fill:"#388d91"});
-      shape("path",{d:"M-6 6 L6 6 L5 10 L-5 10 Z",fill:"#7bb7b2"});
-      shape("rect",{x:-7.5,y:-12,width:4,height:2,rx:1,fill:"#f5cc83"});
-      shape("rect",{x:3.5,y:-12,width:4,height:2,rx:1,fill:"#f5cc83"});
-      svg.append(g);
-      if(options.previousCar&&!options.overview&&typeof g.animate==="function"&&
+      // Discreet ground shadow, round white body, tyres, glass and details.
+      shape("ellipse",{cx:0,cy:2,rx:15.5,ry:23,fill:"#03262c",opacity:.24});
+      shape("rect",{x:-14.5,y:-12,width:5.5,height:11,rx:2.3,fill:"#202f36"});
+      shape("rect",{x:9,y:-12,width:5.5,height:11,rx:2.3,fill:"#202f36"});
+      shape("rect",{x:-14.5,y:5,width:5.5,height:11,rx:2.3,fill:"#202f36"});
+      shape("rect",{x:9,y:5,width:5.5,height:11,rx:2.3,fill:"#202f36"});
+      shape("path",{d:"M-10.5 -17 Q-9 -20 0 -20 Q9 -20 10.5 -17 L12.5 -6 L12.5 13 Q11 19 6.5 20 L-6.5 20 Q-11 19 -12.5 13 L-12.5 -6 Z",
+        fill:"#ffffff",stroke:"#71858d","stroke-width":1.2,"stroke-linejoin":"round"});
+      shape("path",{d:"M-8 -12 Q0 -15 8 -12 L9 -5 Q0 -3 -9 -5 Z",fill:"#4c7789"});
+      shape("path",{d:"M-9 4 Q0 1 9 4 L8 13 Q0 15 -8 13 Z",fill:"#638999"});
+      shape("path",{d:"M-9 -3 Q0 -1 9 -3",fill:"none",stroke:"#dfe8ed","stroke-width":1});
+      shape("path",{d:"M-8 16 Q0 17 8 16",fill:"none",stroke:"#c0d0d7","stroke-width":1});
+      shape("rect",{x:-9.5,y:-17,width:4.2,height:2,rx:.9,fill:"#fff2b7"});
+      shape("rect",{x:5.3,y:-17,width:4.2,height:2,rx:.9,fill:"#fff2b7"});
+      shape("rect",{x:-9,y:17,width:4.2,height:1.8,rx:.7,fill:"#e26f70"});
+      shape("rect",{x:4.8,y:17,width:4.2,height:1.8,rx:.7,fill:"#e26f70"});
+      g.append(shell);svg.append(g);
+      if(old&&pixels>4&&pixels<160&&
+         typeof g.animate==="function"&&
          !root.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches){
-        const old=project([options.previousCar.lat,options.previousCar.lng]);
-        if(old){
-          const at=[(old[0]*view.scale-view.centerX)+width/2,
-                    (old[1]*view.scale-view.centerY)+height/2];
-          const dx=at[0]-p[0],dy=at[1]-p[1],pixels=Math.hypot(dx,dy);
-          if(pixels>3&&pixels<170){
-            // Only interpolate BETWEEN two authenticated fixes, never forward.
-            g.animate([{transform:"translate("+dx+"px,"+dy+"px)"},
-                       {transform:"translate(0px,0px)"}],
-                      {duration:1200,easing:"ease-out",fill:"none"});
-          }
-        }
+        // Interpolate between real fixes; never continue driving after GPS stops.
+        g.animate([
+          {transform:"translate("+((p[0]+dx).toFixed(2))+"px,"+((p[1]+dy).toFixed(2))+"px)"},
+          {transform:"translate("+p[0]+"px,"+p[1]+"px)"}
+        ],{duration:1100,easing:"ease-out",fill:"none"});
       }
     }
     // In preview mode show only verified pickup/destination COORDINATES.
@@ -251,8 +282,8 @@
                   (p[1]*view.scale-view.centerY)+height/2];
         drawCarMarker(at);
       }else{
-        if(live)drawCarMarker(start);
-        else drawMarker(start,"O","#49e0a7");
+        // No car without recent authorized driver GPS.
+        drawMarker(start,options.routeMode==="pickup"?"P":"O","#49e0a7");
         drawMarker(end,options.routeMode==="pickup"?"P":"D","#ef8f70");
       }
       for(const marker of extra){
