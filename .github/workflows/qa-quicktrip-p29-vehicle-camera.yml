@@ -1,0 +1,44 @@
+name: QA Quick Trip P2.9 vehicle and wide camera (NO PRODUCTION)
+on:
+  push:
+    branches:
+      - qa/quicktrip-p29-vehicle-camera-20261104
+permissions:
+  contents: read
+jobs:
+  visual-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Scope guard against P2.8 (no GPS ETA reservations prices or backend changes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=47108d31a60857ddb0514b2d5f935b5d02ed6e6c
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          git diff --name-only "$BASE"..HEAD > /tmp/p29-changed.txt
+          while IFS= read -r file; do
+            case "$file" in
+              web-pasajero/premium-map.js|web-pasajero/index.html|web-pasajero/sw.js|tests/quicktrip-p29-vehicle-camera-contract.cjs|.github/workflows/qa-quicktrip-p29-vehicle-camera.yml) ;;
+              *) echo "ERROR: unexpected functional change $file"; exit 1 ;;
+            esac
+          done < /tmp/p29-changed.txt
+          git diff --quiet "$BASE"..HEAD -- supabase/ db/ conductor/ mapatrayectos/ core-reservations/ web-pasajero/route-engine.js web-pasajero/eta-engine.js web-pasajero/reservation-live.js web-pasajero/app.js web-pasajero/quicktrip-map-focus.js
+      - name: JavaScript syntax
+        run: |
+          node --check web-pasajero/premium-map.js
+          node --check tests/quicktrip-p29-vehicle-camera-contract.cjs
+          node --check web-pasajero/sw.js
+      - name: Real map geometry and QA P2.9 presentation contract
+        run: |
+          node web-pasajero/tests/premium-map-smoke.cjs
+          node tests/quicktrip-p29-vehicle-camera-contract.cjs
+      - name: Existing tracking metrics regression
+        run: node tests/quicktrip-tracking-metrics-contract.cjs
