@@ -1,0 +1,166 @@
+name: Mapa R25.26 compatible review (same package and signer)
+on:
+  push:
+    branches:
+      - feature/mapa-datos-sin-borrado-20261017
+    paths:
+      - '.github/workflows/build-mapa-r25-26-compatible-review.yml'
+      - 'mapatrayectos/src/**'
+      - 'mapatrayectos/build.gradle'
+      - 'core-reservations/**'
+      - 'conductor/src/**'
+      - 'scripts/test_mapa_datos.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: mapa-r25-26-compatible-review
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android SDK 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -1)"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools' >/dev/null
+      - name: Verify conservative data policy and non-destructive exports
+        run: |
+          set -euo pipefail
+          python3 scripts/test_mapa_datos.py
+          test -s mapatrayectos/src/main/java/uy/com/mapatrayectos/TrackDb.java
+          grep -q 'DatabaseBackup.importBackup' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+          grep -q 'CloudDataBackup.export' mapatrayectos/src/main/java/uy/com/mapatrayectos/MainActivity.java
+      - name: Same official app ID; increment versionCode ONLY inside runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mapatrayectos/build.gradle')
+          src=p.read_text()
+          assert src.count("applicationId 'uy.com.mapatrayectos'")==1, 'Unexpected app ID'
+          assert src.count('versionCode 77')==1, 'Unexpected baseline version'
+          assert src.count("versionName '0.1-R25.25'")==1, 'Unexpected baseline name'
+          src=src.replace('versionCode 77', 'versionCode 78').replace(
+            "versionName '0.1-R25.25'", "versionName '0.1-R25.26'")
+          p.write_text(src)
+          print('PASS: official Android ID uy.com.mapatrayectos, code78, R25.26')
+          PY
+      - name: Restore exact checked brand and audio assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mapatrayectos/src/main/res/drawable-nodpi mapatrayectos/src/main/res/raw mapatrayectos/src/main/assets
+          base64 -d mapatrayectos/assets/logo_c_avatar.jpg.base64 > mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg
+          base64 -d mapatrayectos/assets/reminder_bubbles_elevenlabs.mp3.base64 > mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3
+          base64 -d mapatrayectos/assets/manrope.ttf.base64 > mapatrayectos/src/main/assets/manrope.ttf
+          echo 'a71f22c701189b3f0ef90a5405a285246e3d8ab80ffe2a528e01b19273737c15  mapatrayectos/src/main/res/drawable-nodpi/logo_c.jpg' | sha256sum -c
+          echo '5cc7d452cb5f265bf6544486c52f3e8b57d3a292e77af38cbb5e3df0e9875bb0  mapatrayectos/src/main/res/raw/reminder_bubbles_elevenlabs.mp3' | sha256sum -c
+          test "$(git hash-object mapatrayectos/src/main/assets/manrope.ttf)" = '75274da58537d6123b14f2cd0c355ad4681fc2b3'
+      - name: Restore original production signing key
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.TRASLADOS_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/traslados-release.jks"
+          test -s "$RUNNER_TEMP/traslados-release.jks"
+      - name: Compile signed non-debug APK
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/traslados-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+          ANDROID_KEY_ALIAS: traslados-conductor
+          ANDROID_KEY_PASSWORD: ${{ secrets.TRASLADOS_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          gradle :mapatrayectos:assembleRelease --stacktrace --no-daemon --console=plain
+      - name: Verify UPDATE-compatible version/signature against official R25.25
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          AAPT="$SDK_ROOT/build-tools/35.0.0/aapt"
+          SIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
+          APK='mapatrayectos/build/outputs/apk/release/mapatrayectos-release.apk'
+          BASE='web-pasajero/downloads/mapa-trayectos-r25.25.apk'
+          test -s "$APK" && test -s "$BASE"
+          mkdir -p artifacts
+          "$AAPT" dump badging "$APK" > artifacts/APK_INFO.txt
+          "$AAPT" dump badging "$BASE" > /tmp/mapa-base-apk-info.txt
+          "$SIGNER" verify --verbose --print-certs "$APK" > artifacts/SIGNING.txt
+          "$SIGNER" verify --verbose --print-certs "$BASE" > /tmp/mapa-base-apk-signing.txt
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          def identity(path):
+            txt=Path(path).read_text()
+            m=re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'",txt)
+            assert m, f'Cannot read package info: {path}'
+            return m.groups()
+          old=identity('/tmp/mapa-base-apk-info.txt')
+          new=identity('artifacts/APK_INFO.txt')
+          assert old[0]=='uy.com.mapatrayectos' and old[1]=='77', old
+          assert new==('uy.com.mapatrayectos','78','0.1-R25.26'), new
+          def signer(path):
+            txt=Path(path).read_text()
+            m=re.search(r'certificate SHA-256 digest:\s*([0-9a-fA-F]{64})',txt)
+            assert m, f'Missing signer: {path}'
+            assert re.search(r'Verified using v[23] scheme.*: true',txt), f'No V2/V3 verification: {path}'
+            return m.group(1).lower()
+          assert signer('/tmp/mapa-base-apk-signing.txt')==signer('artifacts/SIGNING.txt'), 'CRITICAL: Android update signer mismatch'
+          print('PASS: SAME package and signing certificate as R25.25; code 78 > 77')
+          PY
+          cp "$APK" artifacts/Mapa_Trayectos_R25_26_Datos_Compatible_REVIEW.apk
+          (cd artifacts && sha256sum Mapa_Trayectos_R25_26_Datos_Compatible_REVIEW.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          git rev-parse HEAD > artifacts/SOURCE_COMMIT.txt
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > artifacts/BUILT_AT_UTC.txt
+      - name: Save signed QA artifact (does not publish website)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mapa-R25-26-Compatible-SIGNED
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 60
+      - name: Publish separate review prerelease and verify remote bytes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='mapa-r25.26-compatible-review-20261017'
+          FILE='artifacts/Mapa_Trayectos_R25_26_Datos_Compatible_REVIEW.apk'
+          NOTES='REVIEW (NO producción): Mapa R25.26 datos/export. Firma oficial, applicationId uy.com.mapatrayectos, versionCode 78, actualiza R25.25 sin segundo ícono. Ninguna purga ni limpieza automática, datos locales conservados por actualización normal de Android. Antes de probar, exportar ZIP de respaldo. Si hay una app previa datosreview, esa es una instalación distinta y no se elimina automáticamente. No publicar a pasajeros sin pruebas Samsung.'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --clobber
+          else
+            gh release create "$TAG" "$FILE" artifacts/SHA256SUMS.txt artifacts/APK_INFO.txt artifacts/SIGNING.txt --target "$GITHUB_SHA" --title 'Mapa R25.26 · Compatible para probar' --notes "$NOTES" --prerelease
+          fi
+          gh release view "$TAG" --json url,isPrerelease,assets
+          mkdir -p /tmp/mapa-remote
+          gh release download "$TAG" -p 'Mapa_Trayectos_R25_26_Datos_Compatible_REVIEW.apk' -D /tmp/mapa-remote
+          cmp "$FILE" /tmp/mapa-remote/Mapa_Trayectos_R25_26_Datos_Compatible_REVIEW.apk
+          echo 'PASS: published prerelease APK bytes match signed and verified build'

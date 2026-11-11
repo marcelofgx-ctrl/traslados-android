@@ -115,6 +115,26 @@ public final class Api {
         return new JSONObject(postRpc("driver_system_status_v1",b));
     }
 
+    /** Pair this APK's unique device secret with the server before archiving. */
+    public static void registerCloudBackupDevice() throws Exception {registerDevice();}
+
+    /** Authenticated, read-only page for archive creation. The PIN is never saved. */
+    public static JSONObject getCloudHistoryPage(String pin,String dataset,String cursor,long cutoffMs,int limit)
+        throws Exception {
+        if(pin==null||!pin.matches("[0-9]{4,10}"))
+            throw new IllegalArgumentException("PIN requerido");
+        JSONObject b=new JSONObject();
+        String[] c=credentials();
+        b.put("p_device_id",c[0]);
+        b.put("p_device_secret",c[1]);
+        b.put("p_pin",pin);
+        b.put("p_dataset",dataset);
+        b.put("p_after_cursor",cursor==null?"":cursor);
+        b.put("p_cutoff_ms",cutoffMs);
+        b.put("p_limit",limit);
+        return new JSONObject(postRpc("driver_data_export_page_v1",b));
+    }
+
     private static String postRpc(String fn,JSONObject body) throws Exception {HttpURLConnection c=(HttpURLConnection)new URL(BASE+"/rest/v1/rpc/"+fn).openConnection();c.setConnectTimeout(12000);c.setReadTimeout(25000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("apikey",KEY);c.setRequestProperty("Content-Type","application/json");c.setRequestProperty("Accept","application/json");c.setRequestProperty("X-Client-Info","mapa-trayectos-android/0.1-R6");try(OutputStream os=c.getOutputStream()){os.write(body.toString().getBytes(StandardCharsets.UTF_8));}int code=c.getResponseCode();InputStream is=code>=200&&code<300?c.getInputStream():c.getErrorStream();String text=readAll(is);c.disconnect();if(code<200||code>=300)throw new IOException("HTTP "+code+" "+text);return text;}
     private static String readAll(InputStream is) throws Exception {if(is==null)return "";StringBuilder sb=new StringBuilder();try(BufferedReader br=new BufferedReader(new InputStreamReader(is,StandardCharsets.UTF_8))){String l;while((l=br.readLine())!=null)sb.append(l);}return sb.toString();}
 }
